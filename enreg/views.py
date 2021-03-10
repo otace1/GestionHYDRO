@@ -48,13 +48,15 @@ class GestionCargaison():
         user = request.user
         role = user.role_id
         id = user.id
+        u = user.username
         frontiere = AffectationVille.objects.get(username=id)
         user = frontiere.username_id
         form = Ajoutcargaison(request.POST, user=user)
         today = date.today()
 
+
         if role == 2:
-            table = CargaisonTable(Cargaison.objects.order_by('-dateheurecargaison').filter(user=user.username,
+            table = CargaisonTable(Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,
                                                                                             dateheurecargaison__year=today.year))
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             return render(request, 'cargaison/cargaison.html', {'cargaison': table,
@@ -75,6 +77,7 @@ class GestionCargaison():
         user = request.user
         role = user.role_id
         id = user.id
+        u = user.username
         username = user.username
         frontiere = AffectationVille.objects.get(username=id)
         user = frontiere.ville_id
@@ -181,7 +184,7 @@ class GestionCargaison():
                               tempcargaison=tempcargaison, densitecargaison=densite, volume_decl15=volume_decl15,
                               t1d=t1d, t1e=t1e, idchauffeur=idchauffeur,
                               nationalite=n, nomchauffeur=nomchauffeur, immatriculation=immatriculation,
-                              qrcode=code, etat=etat, user=username)
+                              qrcode=code, etat=etat, user=u)
                 p.save()
                 return JsonResponse(code, safe=False, status=200)
             else:
