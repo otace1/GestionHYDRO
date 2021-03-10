@@ -1,0 +1,25 @@
+{% extends 'base_user_layout.html' %}
+{% load crispy_forms_tags %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form | crispy }}
+        <button type="submit" name="user_submit" value="user_sub" class="btn btn-primary">Enregistrer</button>
+    </form>
+{% endblock %}
+
+{% block content2 %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form1 | crispy }}
+        <button type="submit" name="affectation_submit" value="affectation_sub" class="btn btn-primary">Enregistrer</button>
+    </form>
+{% endblock %}
+
+{% block content1 %}
+        {% render_table table %}
+{% endblock %}

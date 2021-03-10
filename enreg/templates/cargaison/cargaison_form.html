@@ -1,0 +1,19 @@
+{% extends 'base_carg_layout.html' %}
+{% load crispy_forms_tags %}
+{% load qr_code %}
+
+
+{% block content %}
+
+    {% crispy form %}
+
+    <script>
+        window.onload = function () {
+            // similar behavior as clicking on a link
+            window.location.href = {% url 'nouvelle' %};
+        }
+
+    </script>
+
+{% endblock %}
+

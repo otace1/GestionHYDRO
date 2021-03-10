@@ -1,0 +1,13 @@
+{% extends 'labo/base_lab_encodage.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="card-header">
+            <h3 class="card-title">Encodage {{ nom }}</h3>
+          </div>
+          <!-- /.card-header -->
+          <div class="card-body">
+              {% crispy form %}
+          </div>
+
+{% endblock %}

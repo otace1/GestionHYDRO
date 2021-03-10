@@ -1,0 +1,30 @@
+{% extends 'base_layout.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+    {% if messages %}
+
+        {% for message in messages %}
+            <div>
+                <strong>{{ message|safe }}</strong>
+            </div>
+        {% endfor %}
+    {% else %}
+        {{ order }}
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="file">
+            <p>Fichier CSV seulement</p>
+            <br>
+            <button type="submit">Upload</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+
+
+
+
+
+

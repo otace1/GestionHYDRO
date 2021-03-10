@@ -1,0 +1,119 @@
+{% extends 'base_facturations_layout.html' %}
+{% load crispy_forms_tags %}
+{% load django_tables2 %}
+{% block extrahead %}
+    {{ form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+{%render_table facturations%}
+     <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Informations du BL</h4>
+{#              <button type="button" class="close" data-dismiss="modal" aria-label="Close">#}
+{#                <span aria-hidden="true">&times;</span>#}
+{#              </button>#}
+            </div>
+            <div class="modal-body">
+              <form method="post" action="" id="post-form">
+                  {% csrf_token %}
+                  {% crispy form %}
+            </div>
+            <div class="modal-footer justify-content-between">
+              <button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>
+              <button type="button" class="btn btn-primary">Enregistrer</button>
+            </div>
+                 <script>
+        $(function () {
+            $("#id_date").datepicker({
+                format: 'dd/mm/yyyy',
+            });
+        });
+    </script>
+              </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+{% endblock %}
+
+
+
+{% block content1 %}
+{%render_table facturations1%}
+{% endblock %}
+
+
+<script>
+{% block javascript %}
+
+
+  // using jQuery
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+var csrftoken = getCookie('csrftoken');
+
+function csrfSafeMethod(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+}
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
+//script for submitting data in ajax
+ $('.btn.btn-warning').click(function () {
+     Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
+     console.log(Id); //Sanity check
+ });
+
+ $('.btn.btn-primary').click((function (e) {
+            e.preventDefault()
+            var pk=Id;
+            var APIurl="{% url 'saisiebl' %}";
+            $input = $('<input type="hidden" name="pk">').val(pk);
+            $('#post-form').append($input);
+            var SerializedData = $("#post-form").serialize();
+            console.log(SerializedData);
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                success: function () {
+                    location.reload();
+                },
+            });
+                }))
+
+ $('.btn.btn-danger').click(
+     function () {
+         location.reload();
+     }
+ )
+
+{% endblock %}
+</script>

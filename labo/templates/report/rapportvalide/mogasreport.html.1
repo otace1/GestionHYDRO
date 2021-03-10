@@ -1,0 +1,2122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Mogas</title>
+    <style>
+hr {
+  display: block;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: inset;
+  border-width: 1px;
+}
+</style>
+ </head>
+
+<div align="right">EQF 300.000.26 Rev.00 Du 16.09.14</div>
+
+<table style="width:100%;">
+    <tbody>
+    <tr>
+        <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
+        <td align="center" style="font-size:13px; width: 90%">
+    <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
+    <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
+    <b>DIRECTION PROVINCIALE DU KATANGA</b><br/>
+    DIVISION LABORATOIRE/LUBUMBASHI
+    </td>
+        <td style="width: 10%">Page 1/1</td>
+    </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<table>
+
+    <tbody>
+    <tr>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 20%"></td>
+        <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
+		<span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
+            <span><b>RAPPORT D'ESSAI N° PP {{numcertificatqualite}}/{{annee}}</b></span><br/>
+        </td>
+        <td align="right" style="width: 20%;"></td>
+    </tr>
+    </tbody>
+</table>
+
+
+<table cellspacing="2" cellpadding="1" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+      <tr>
+        <td  style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
+		<span><b>Date d'impression: {{dateimpression}}</b></span><br>
+		<span><b>Date d'analyse: {{dateanalyse}}</b></span>
+        </td>
+         <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
+		<span><b><u>Client : </u>{{importateur}} </b></span><br/>
+                 <span><b><u>Déclarant : </u>{{declarant}}</b></span>
+        </td>
+    </tr>
+         <tr>
+        <td colspan="4"  style="font-size:10.5px;font-family:'Times New Roman';">
+		<span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{produit}}</b></span><br/>
+                <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
+        </td>
+
+    </tr>
+           <tr>
+        <td colspan="4"  style="font-size:10.5px;font-family:'Times New Roman';">
+		<span><b>Document de réference: Rapport d'échantillonnage n°: {{numrappech}}</b> <b>du {{dateechantillonage}}</b></span>
+        </td>
+
+
+    </tr>
+
+     <tr >
+        <td colspan="2"  style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+		<span><b>II.1. Provenance: </b>{{provenance}}</span><br/>
+                <span><b>II.2. Marque d'identification:</b></span><br/>
+                <span><b>II.3. Nombre d'échantillon de Labo: </b>{{qte}} L</span><br/>
+                <span><b>II.4. Date de réception au Labo: </b>{{datereceptionlabo}}</span><br/>
+                <span><b>II.5. Quantité marchandise:</b> - </span>
+        </td>
+         <td colspan="2" style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;" >
+		<span><b>II.6. Lieu/Date prélèvement: </b> {{entrepot}} / Le {{dateechantillonage}}</span><br/>
+                <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
+                <span><b>II.8. Code Labo: </b>{{codelabo}}/PP/2/{{mois}}/{{annee}}</span><br/>
+                <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
+                <span><b>II.10. N° de dossier: </b>{{numdossier}}</span><br/>
+                <span><b>II.10. Camion:</b> {{immatriculation}}</span>
+        </td>
+
+    </tr>
+        <tr >
+        <td colspan="2">
+        </td>
+
+
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;">
+		<span><b>III. ESSAI + UNITES DE MESURE</b></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>EXIGENCES</b></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>RESULTATS</b></span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>METHODES ASTM</b></span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ORGANOLEPTIQUES</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Aspect</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Claire et limpide</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{aspect}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+      <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Odeur</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Marchande</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{odeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+			<span> VISUELLE</span>
+				 </td>
+    </tr>
+
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Couleur</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Rouge</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{couleursaybolt}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMPOSITION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Soufre total en %</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,15 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{soufre}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D1266</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>VOLATILITE</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Masse volumique à 15°C en Kg/l<sup></sup></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,710-0,790</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{massevolumique15}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM 6822</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Distillation</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman';border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span>{{distillation}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';border-right: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 10% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 70 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent10}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;"><span>   - 20% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+        <span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+         <span>{{pourcent20}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 50% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 105,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent50}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 70% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent70}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 90% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 180,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent90}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Point final à °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 215,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pointfinal}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>-Diff. Température évaporé (20%-10% en °C)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> (20-10%) min 8</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{difftemperature}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+       <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Résidu en % vol.</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 2,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{residu}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Tension en vapeur Reid à 37,3 °C en Kpa</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 63,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{tensionvapeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D323</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>CONTAMINANTS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Corrosion de cuivre (1h à 50°C)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 1 max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{corrosion}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D130</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMBUSTION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Indice d'Octane Recherche (RON)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 91 min</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{indiceoctane}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D2699</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ADDITIFS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Plomb g/l</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Indétectable</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{plomb}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D5059</span>
+        </td>
+    </tr>
+        <tr>
+        <td colspan="3"  style="font-size:10.5px;font-family:'Times New Roman';">
+            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués. </span><br/>
+            <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
+        </td>
+    </tr>
+</br>
+    <tr>
+        <td colspan="2"  style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS Adj.</span><br/>
+            <span style="text-align: center;"><b>LUEMBE MUBANGA</b></span><br/>
+            <span style="text-align: center;"><b>FP</b></span><br/>
+        </td>
+
+        <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
+        </td>
+
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
+            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
+            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+        </td>
+
+    </tr>
+
+
+</div>
+
+</table>
+<br>
+<br>
+
+
+
+
+<div id="footerContent" style="text-align:center">
+    <tr>
+        <td><span style="font-size: 9px">Fin Rapport.</span><br/>
+            <hr>
+            <span style="font-size:8px; text-align:center;"><i>R.C.KIN.84.534 N°Ident.Nat.A-04900-B-225, Bd M'SIRI B.P:1236 L'SHI | Email: occ_ic-lubum.cd</i></span>
+            <span style="font-size:8px; text-align:center;"><i>OCC: Membre de l'Organisation Internationale de Normalisation (ISO), Membre des pays affiliés à la Commission</i></span>
+            <span style="font-size:8px; text-align:center;"><i>Electrotechnique Internationale (CEI) et Membre de l'Organisation Régionale de Normalisation (ORAN)</i></span>
+        </td>
+    </tr>
+
+</div>
+</body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Mogas</title>
+    <style>
+hr {
+  display: block;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: inset;
+  border-width: 1px;
+}
+</style>
+ </head>
+
+<div align="right">EQF 300.000.26 Rev.00 Du 16.09.14</div>
+
+<table style="width:100%;">
+    <tbody>
+    <tr>
+        <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
+        <td align="center" style="font-size:11.5px; width: 90%">
+    <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
+    <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
+    <b>DIRECTION PROVINCIALE DU KATANGA</b><br/>
+    DIVISION LABORATOIRE/LUBUMBASHI
+    </td>
+        <td style="width: 10%">Page 1/1</td>
+    </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<table>
+
+    <tbody>
+    <tr>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 20%"></td>
+        <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
+		<span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
+            <span><b>RAPPORT D'ESSAI N° PP {{numcertificatqualite}}/{{annee}}</b></span><br/>
+        </td>
+        <td align="right" style="width: 20%;"></td>
+    </tr>
+    </tbody>
+</table>
+
+
+<table cellspacing="2" cellpadding="1" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+      <tr>
+        <td  style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
+		<span><b>Date d'impression: {{dateimpression}}</b></span><br>
+		<span><b>Date d'analyse: {{dateanalyse}}</b></span>
+        </td>
+         <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
+		<span><b><u>Client : </u>{{importateur}} </b></span><br/>
+                 <span><b><u>Déclarant : </u>{{declarant}}</b></span>
+        </td>
+    </tr>
+         <tr>
+        <td colspan="4"  style="font-size:10.5px;font-family:'Times New Roman';">
+		<br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{produit}}</b></span><br/>
+                <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
+        </td>
+
+    </tr>
+           <tr>
+        <td colspan="4"  style="font-size:10.5px;font-family:'Times New Roman';">
+		<span><b>Document de réference: Rapport d'échantillonnage n°: {{numrappech}}</b> <b>du {{dateechantillonage}}</b></span>
+        </td>
+
+
+    </tr>
+
+     <tr >
+        <td colspan="2"  style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+		<span><b>II.1. Provenance: </b>{{provenance}}</span><br/>
+                <span><b>II.2. Marque d'identification:</b></span><br/>
+                <span><b>II.3. Nombre d'échantillon de Labo: </b>{{qte}} L</span><br/>
+                <span><b>II.4. Date de réception au Labo: </b>{{datereceptionlabo}}</span><br/>
+                <span><b>II.5. Quantité marchandise:</b> - </span>
+        </td>
+         <td colspan="2" style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;" >
+		<span><b>II.6. Lieu/Date prélèvement: </b> {{entrepot}} / Le {{dateechantillonage}}</span><br/>
+                <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
+                <span><b>II.8. Code Labo: </b>{{codelabo}}/PP/2/{{mois}}/{{annee}}</span><br/>
+                <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
+                <span><b>II.10. N° de dossier: </b>{{numdossier}}</span><br/>
+                <span><b>II.10. Camion:</b> {{immatriculation}}</span>
+        </td>
+
+    </tr>
+        <tr >
+        <td colspan="2">
+        </td>
+
+
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;">
+		<span><b>III. ESSAI + UNITES DE MESURE</b></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>EXIGENCES</b></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>RESULTATS</b></span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>METHODES ASTM</b></span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ORGANOLEPTIQUES</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Aspect</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Claire et limpide</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{aspect}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+      <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Odeur</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Marchande</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{odeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+			<span> VISUELLE</span>
+				 </td>
+    </tr>
+
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Couleur</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Rouge</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{couleursaybolt}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMPOSITION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Soufre total en %</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,15 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{soufre}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D1266</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>VOLATILITE</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Masse volumique à 15°C en Kg/l<sup></sup></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,710-0,790</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{massevolumique15}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM 6822</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Distillation</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman';border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span>{{distillation}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';border-right: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 10% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 70 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent10}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;"><span>   - 20% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+        <span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+         <span>{{pourcent20}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 50% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 105,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent50}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 70% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent70}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 90% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 180,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent90}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Point final à °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 215,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pointfinal}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>-Diff. Température évaporé (20%-10% en °C)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> (20-10%) min 8</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{difftemperature}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+       <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Résidu en % vol.</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 2,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{residu}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Tension en vapeur Reid à 37,3 °C en Kpa</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 63,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{tensionvapeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D323</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>CONTAMINANTS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Corrosion de cuivre (1h à 50°C)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 1 max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{corrosion}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D130</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMBUSTION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Indice d'Octane Recherche (RON)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 91 min</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{indiceoctane}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D2699</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ADDITIFS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Plomb g/l</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Indétectable</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{plomb}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D5059</span>
+        </td>
+    </tr>
+        <tr>
+        <td colspan="3"  style="font-size:10.5px;font-family:'Times New Roman';">
+            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués. </span><br/>
+            <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
+        </td>
+    </tr>
+</br>
+    <tr>
+        <td colspan="2"  style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS Adj.</span><br/>
+            <span style="text-align: center;"><b>LUEMBE MUBANGA</b></span><br/>
+            <span style="text-align: center;"><b>FP</b></span><br/>
+        </td>
+
+        <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
+        </td>
+
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
+            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
+            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+        </td>
+
+    </tr>
+
+
+</div>
+
+</table>
+<br>
+<br>
+
+
+
+
+<div id="footerContent" style="text-align:center">
+    <tr>
+        <td><span style="font-size: 9px">Fin Rapport.</span><br/>
+            <hr>
+            <span style="font-size:8px; text-align:center;"><i>R.C.KIN.84.534 N°Ident.Nat.A-04900-B-225, Bd M'SIRI B.P:1236 L'SHI | Email: occ_ic-lubum.cd</i></span>
+            <span style="font-size:8px; text-align:center;"><i>OCC: Membre de l'Organisation Internationale de Normalisation (ISO), Membre des pays affiliés à la Commission</i></span>
+            <span style="font-size:8px; text-align:center;"><i>Electrotechnique Internationale (CEI) et Membre de l'Organisation Régionale de Normalisation (ORAN)</i></span>
+        </td>
+    </tr>
+
+</div>
+</body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Mogas</title>
+    <style>
+hr {
+  display: block;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: inset;
+  border-width: 1px;
+}
+</style>
+ </head>
+
+<div align="right">EQF 300.000.26 Rev.00 Du 16.09.14</div>
+
+<table style="width:100%;">
+    <tbody>
+    <tr>
+        <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
+        <td align="center" style="font-size:11.5px; width: 90%">
+    <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
+    <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
+    <b>DIRECTION PROVINCIALE DU KATANGA</b><br/>
+    DIVISION LABORATOIRE/LUBUMBASHI
+    </td>
+        <td style="width: 10%">Page 1/1</td>
+    </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<table>
+
+    <tbody>
+    <tr>
+        <td>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 20%"></td>
+        <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
+		<span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
+            <span><b>RAPPORT D'ESSAI N° PP {{numcertificatqualite}}/{{annee}}</b></span><br/>
+        </td>
+        <td align="right" style="width: 20%;"></td>
+    </tr>
+    </tbody>
+</table>
+
+
+<table cellspacing="2" cellpadding="1" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+      <tr>
+        <td  style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
+		<span><b>Date d'impression: {{dateimpression}}</b></span><br>
+		<span><b>Date d'analyse: {{dateanalyse}}</b></span>
+        </td>
+         <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
+		<span><b><u>Client : </u>{{importateur}} </b></span><br/>
+                 <span><b><u>Déclarant : </u>{{declarant}}</b></span>
+        </td>
+    </tr>
+         <tr>
+        <td colspan="4"  style="font-size:10.5px;font-family:'Times New Roman';">
+		<br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{produit}}</b></span><br/>
+                <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
+        </td>
+
+    </tr>
+           <tr>
+        <td colspan="4"  style="font-size:10.5px;font-family:'Times New Roman';">
+		<span><b>Document de réference: Rapport d'échantillonnage n°: {{numrappech}}</b> <b>du {{dateechantillonage}}</b></span>
+        </td>
+
+
+    </tr>
+
+     <tr >
+        <td colspan="2"  style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+		<span><b>II.1. Provenance: </b>{{provenance}}</span><br/>
+                <span><b>II.2. Marque d'identification:</b></span><br/>
+                <span><b>II.3. Nombre d'échantillon de Labo: </b>{{qte}} L</span><br/>
+                <span><b>II.4. Date de réception au Labo: </b>{{datereceptionlabo}}</span><br/>
+                <span><b>II.5. Quantité marchandise:</b> - </span>
+        </td>
+         <td colspan="2" style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;" >
+		<span><b>II.6. Lieu/Date prélèvement: </b> {{entrepot}} / Le {{dateechantillonage}}</span><br/>
+                <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
+                <span><b>II.8. Code Labo: </b>{{codelabo}}/PP/2/{{mois}}/{{annee}}</span><br/>
+                <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
+                <span><b>II.10. N° de dossier: </b>{{numdossier}}</span><br/>
+                <span><b>II.10. Camion:</b> {{immatriculation}}</span>
+        </td>
+
+    </tr>
+        <tr >
+        <td colspan="2">
+        </td>
+
+
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;">
+		<span><b>III. ESSAI + UNITES DE MESURE</b></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>EXIGENCES</b></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>RESULTATS</b></span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>METHODES ASTM</b></span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ORGANOLEPTIQUES</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Aspect</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Claire et limpide</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{aspect}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+      <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Odeur</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Marchande</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{odeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+			<span> VISUELLE</span>
+				 </td>
+    </tr>
+
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Couleur</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Rouge</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{couleursaybolt}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMPOSITION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Soufre total en %</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,15 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{soufre}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D1266</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>VOLATILITE</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Masse volumique à 15°C en Kg/l<sup></sup></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,710-0,790</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{massevolumique15}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM 6822</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Distillation</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman';border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span>{{distillation}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';border-right: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 10% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 70 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent10}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;"><span>   - 20% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+        <span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+         <span>{{pourcent20}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 50% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 105,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent50}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 70% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent70}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 90% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 180,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent90}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Point final à °C</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 215,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pointfinal}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>-Diff. Température évaporé (20%-10% en °C)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> (20-10%) min 8</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{difftemperature}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+       <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Résidu en % vol.</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 2,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{residu}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Tension en vapeur Reid à 37,3 °C en Kpa</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 63,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{tensionvapeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D323</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>CONTAMINANTS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Corrosion de cuivre (1h à 50°C)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 1 max</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{corrosion}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D130</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMBUSTION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Indice d'Octane Recherche (RON)</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 91 min</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{indiceoctane}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D2699</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ADDITIFS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Plomb g/l</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Indétectable</span>
+        </td>
+         <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{plomb}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D5059</span>
+        </td>
+    </tr>
+        <tr>
+        <td colspan="3"  style="font-size:10.5px;font-family:'Times New Roman';">
+            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués. </span><br/>
+            <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
+        </td>
+    </tr>
+</br>
+    <tr>
+        <td colspan="2"  style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS Adj.</span><br/>
+            <span style="text-align: center;"><b>LUEMBE MUBANGA</b></span><br/>
+            <span style="text-align: center;"><b>FP</b></span><br/>
+        </td>
+
+        <td  style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
+        </td>
+
+        <td  style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
+            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
+            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+        </td>
+
+    </tr>
+
+
+</div>
+
+</table>
+<br>
+<br>
+
+
+
+
+<div id="footerContent" style="text-align:center">
+    <tr>
+        <td><span style="font-size: 9px">Fin Rapport.</span><br/>
+            <hr>
+            <span style="font-size:8px; text-align:center;"><i>R.C.KIN.84.534 N°Ident.Nat.A-04900-B-225, Bd M'SIRI B.P:1236 L'SHI | Email: occ_ic-lubum.cd</i></span>
+            <span style="font-size:8px; text-align:center;"><i>OCC: Membre de l'Organisation Internationale de Normalisation (ISO), Membre des pays affiliés à la Commission</i></span>
+            <span style="font-size:8px; text-align:center;"><i>Electrotechnique Internationale (CEI) et Membre de l'Organisation Régionale de Normalisation (ORAN)</i></span>
+        </td>
+    </tr>
+
+</div>
+</body>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Mogas</title>
+ </head>
+
+<table style="width:100%;">
+   <colgroup>
+       <col span="1" style="width:20%;">
+       <col span="1" style="width:60%;">
+       <col span="1" style="width:20%;">
+   </colgroup>
+
+    <tbody>
+    <tr>
+        <td align="center"><img src="/media/occ.png" width="100px" height="100px"/></td>
+        <td align="center" style="font-size:14px;" colspan="0" width="70%">
+    <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
+    <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
+    <b>DIRECTION PROVINCIALE DU KATANGA</b><br/>
+    DIVISION LABORATOIRE/LUBUMBASHI
+    </td>
+        <td></td>
+    </tr>
+</table>
+
+
+<hr>
+
+<div style="font-size:12px" align="center">
+    <span><b>LABORATOIRE DE CHIMIE ET DE MICROBIOLOGIE DE LUBUMBASHI</b></span><br/>
+</div>
+
+<table style="width:100%;border:0.2px solid black;border-collapse:collapse;text-align:center">
+    <tr>
+    <th></th>
+    <th></th>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center"><b>FICHE DES RESULTATS</b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b>ETF : 300.104.05</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b>Rév 02 du 22/09/2016</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b>Page 1/1</b></td>
+  </tr>
+</table>
+<br>
+<div align="center" style="font-size:12px">
+
+    <b>RAPPORT D'ESSAI N° PP {{numcertificatqualite}}/{{annee}} </b>
+
+</div>
+
+
+<table cellspacing="0" cellpadding="1" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+
+
+         <tr>
+        <td colspan="4"  style="font-size:10px;font-family: 'Times New Roman';">
+		<span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{produit}}</b></span><br/>
+                <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
+        </td>
+
+    </tr>
+           <tr>
+        <td colspan="4"  style="font-size:10px;font-family: 'Times New Roman';">
+		<span><b>Document de réference: Rapport d'échantillonnage n°: {{numrappech}}</b> <b>du {{dateechantillonage}}</b></span>
+        </td>
+
+
+    </tr>
+
+     <tr >
+        <td colspan="2"  style="width:35%;font-size:10px;font-family: 'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+		<span><b>II.1. Provenance: </b>{{provenance}}</span><br/>
+                <span><b>II.2. Marque d'identification:</b></span><br/>
+                <span><b>II.3. Nombre d'échantillon de Labo: </b>{{qte}} L</span><br/>
+                <span><b>II.4. Date de réception au Labo: </b>{{datereceptionlabo}}</span><br/>
+                <span><b>II.5. Quantité marchandise:</b> - </span>
+        </td>
+         <td colspan="2" style="width:65%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;" >
+		<span><b>II.6. Lieu/Date prélèvement: </b> {{entrepot}} / Le {{dateechantillonage}}</span><br/>
+                <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
+                <span><b>II.8. Code Labo: </b>{{codelabo}}/PP/2/{{mois}}/{{annee}}</span><br/>
+                <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
+                <span><b>II.10. N° de dossier: </b>{{numdossier}}</span><br/>
+                <span><b>II.11. Camion:</b> {{immatriculation}}</span>
+        </td>
+
+    </tr>
+        <tr >
+        <td colspan="2">
+		<br/>
+        </td>
+         <td colspan="2" >
+		<br/>
+        </td>
+
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;">
+		<span><b>III. ESSAI + UNITES DE MESURE</b></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>EXIGENCES</b></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>RESULTATS</b></span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span><b>METHODES ASTM</b></span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ORGANOLEPTIQUES</u></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Aspect</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Claire et limpide</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{aspect}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+      <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Odeur</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Marchande</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{odeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+			<span> VISUELLE</span>
+				 </td>
+    </tr>
+
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> - Couleur</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Rouge</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{couleursaybolt}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> VISUELLE</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMPOSITION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Soufre total en %</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,15 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{soufre}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D1266</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>VOLATILITE</u></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Masse volumique à 15°C en Kg/l<sup></sup></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 0,710-0,790</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{massevolumique15}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM 6822</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Distillation</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman';border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+		<span>{{distillation}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman';border-right: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 10% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 70 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent10}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;"><span>   - 20% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+        <span></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+         <span>{{pourcent20}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 50% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 115,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent50}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 70% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent70}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - 90% évaporé °C</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 180,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pourcent90}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+        <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Point final à °C</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 215,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{pointfinal}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>-Diff. Température évaporé (20%-10% en °C)</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> (20-10%) min 8</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{difftemperature}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+       <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span>   - Résidu en % vol.</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 2,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{residu}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+<span> ASTM D 86</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Tension en vapeur Reid à 37,3 °C en Kpa</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 63,0 Max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{tensionvapeur}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D323</span>
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>CONTAMINANTS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Corrosion de cuivre (1h à 50°C)</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 1 max</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{corrosion}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D130</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>COMBUSTION</u></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Indice d'Octane Recherche (RON)</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> 91 min</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{indiceoctane}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D2699</span>
+        </td>
+    </tr>
+         <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+		<span><u>ADDITIFS</u></span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+
+        </td>
+    </tr>
+          <tr>
+        <td  style="width:40%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-left: 0.10px solid black;">
+		<span> Plomb g/l</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> Indétectable</span>
+        </td>
+         <td  style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span>{{plomb}}</span>
+        </td>
+
+         <td style="width:20%;font-size:10px;font-family: 'Times New Roman'; border: 0.10px solid black;text-align:center;">
+		<span> ASTM D5059</span>
+        </td>
+    </tr>
+        <tr>
+        <td colspan="3"  style="text-align:left;border-top: 1.5px";">
+            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués. </span><br/>
+            <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
+        </td>
+    </tr>
+</br>
+
+
+</div>
+
+</table>
+<br>
+
+<table style="width:100%;border:0.2px solid black;border-collapse:collapse;text-align:center">
+ <tr>
+    <th></th>
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center">ANALYSTE</td>
+    <td style="padding:1px;font-size:12px" align="center">RT/LACHIMIE</td>
+    <td style="padding:1px;font-size:12px" align="center">RTL</td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center">NOM</td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center">SIGNATURE</td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center">DATE</td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b></b></td>
+  </tr>
+
+</table>
+</body>

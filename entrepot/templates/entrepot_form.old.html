@@ -1,0 +1,42 @@
+{% extends 'entrepot/base_layout.html' %}
+{% load i18n widget_tweaks %}
+{% load crispy_forms_tags %}
+{% load bootstrap3 %}
+
+{% block extrahead %}
+{{ form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+<header>
+    <h3><b>Immatriculation</b></h3>{{ immatriculation }} <br>
+    <h3><b>Nom du Chauffeur</b></h3>{{ noms }}
+</header>
+<br>
+    <br>
+{% crispy form %}
+
+    </div>
+    <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <input type="submit" class="btn btn-primary" value="Save changes" />
+            </div>
+        </div><!-- /.modal-content -->
+
+    <script>
+  $(function () {
+    $("#id_date").datepicker({
+      format:'dd/mm/yyyy',
+    });
+  });
+
+  var form_options = { target: '#modal', success: function(response) {} };
+    $('#entrepot').ajaxForm(form_options);
+
+</script>
+
+
+{% endblock %}
+

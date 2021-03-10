@@ -1,0 +1,13 @@
+{% extends 'base_layout.html' %}
+{% load crispy_forms_tags %}
+{% load bootstrap3 %}
+
+{% block content %}
+    <div><h4><b>Immatriculation Camion/Remorques/ : {{ immatriculation }}</b></h4></div>
+    <div><h4><b>Numéro Dossier: {{ numerodossier }}</b></h4></div>
+    <div><h4><b>Code Camion: {{ codecamion }}</b></h4></div>
+    <hr>
+{% crispy form %}
+
+{% endblock %}
+

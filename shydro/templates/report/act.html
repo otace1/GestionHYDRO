@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>ACT </title>
+</head>
+<body>
+
+<table style="width:100%;">
+   <colgroup>
+       <col span="1" style="width:5%;">
+       <col span="1" style="width:90%;">
+       <col span="1" style="width:5%;">
+   </colgroup>
+
+    <tbody>
+    <tr>
+        <td align="center"><img src="/media/occ.png" width="100px" height="100px"/></td>
+        <td align="center" style="font-size:13px;" colspan="0" width="70%">
+    <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
+    <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
+    <b>DIRECTION PROVINCIALE DU KATANGA</b>
+            <b>DIVISION CONTROLE DES HYDROCARBURES</b>
+    </td>
+        <td align="right">Page 1/1</td>
+    </tr>
+    </tbody>
+
+</table>
+<hr>
+<br>
+
+<table cellspacing="0" cellpadding="1" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+<colgroup>
+       <col span="1" style="width:5%;">
+       <col span="1" style="width:90%;">
+       <col span="1" style="width:5%;">
+</colgroup>
+
+     <tr>
+        <td></td>
+        <td align="center" style="font-size:12px;" colspan="0" width="90%" >
+			<b>ATTESTATION DE CODIFICATION ET DE TRACABILITE POUR LA QUANTIFICATION DES PRODUITS PETROLIERS </b>
+        </td>
+        <td>
+        </td>
+     </tr>
+</table>
+<br>
+<br>
+<table cellspacing="1" cellpadding="1" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+<colgroup>
+       <col span="1" style="width:5%;">
+       <col span="1" style="width:90%;">
+       <col span="1" style="width:5%;">
+</colgroup>
+    <tr>
+        <td></td>
+        <td width="40%" style="text-align:center; font-size:11px; border: 0.5px solid black;">
+			<b>ACT N°:  {{numact}} / {{ year }}</b>
+        </td>
+        <td></td>
+    </tr>
+</table>
+<br>
+
+<b size="10px">Date d'impression: {{printactdate}}</b>
+
+
+<div style="text-align:center; font-size:11px;">
+                    <em>
+                    Cette attestation de codification et de traçabilité est établie conformément
+                    à la convention de collaboration entre OCC et CGW approuvée par le gouvernement
+                    de la République Démocratique du Congo.
+                    </em>
+</div>
+<br>
+
+<b>I. CODIFICATION</b>
+
+<table style="width:100%;border:0.5px solid black;border-collapse:collapse;text-align:center">
+  <tr>
+    <td width="25%" style="padding:1px;font-size:11px;">
+			<b>Documents de référence :</b>
+        </td>
+        <td width="25%" style="text-align:left;padding:1px;font-size:10px; border: 0.5px solid black;">
+			 T1 : <b>{{t1d}}</b>
+        </td>
+
+		<td width="25%" style="text-align:left;padding:1px; font-size:10px; border: 0.5px solid black;">
+			 N° Dossier : <b> {{numdossier}} </b>
+        </td>
+
+		<td width="25%" style="text-align:left;padding:1px; font-size:10px; border: 0.5px solid black;">
+			Code Cargaison : <b> {{codecargaison}} </b>
+        </td>
+  </tr>
+
+</table>
+<br>
+<table style="width:100%;border:0.5px solid black;border-collapse:collapse;text-align:center">
+  <tr>
+    <td style="padding:1px; font-size:12px" align="left">I.1.a. Nom de l'Importateur : <b>{{importateur}}<b></b></td>
+    <td style="padding:1px;font-size:12px" align="left">I.1.b. Adresse de l'Importateur: <b>{{addressimport}}</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px;font-size:12px" align="left">I.2.a. Nom du Fournisseur : </td>
+    <td style="padding:1px;font-size:12px" align="left">I.2.b. Adresse du Fournisseur : </td>
+  </tr>
+  <tr>
+      <td style="padding:1px;font-size:12px" align="left">I.3. Pays de provenance : <b>{{provenance}}</b></td>
+      <td style="padding:1px;font-size:12px" align="left">I.4. Camion-citerne/HGS : <b>{{immatriculation}}</b></td>
+  </tr>
+  <tr>
+      <td style="padding:1px;font-size:12px" align="left">I.5. Nature de produit déclarée : <b>{{produit}}</b></td>
+      <td style="padding:1px;font-size:12px" align="left">I.6. Volume déclaré : <b>{{voldecl}}</b>m<sup>3</sup> </td>
+  </tr>
+  <tr>
+      <td style="padding:1px;font-size:12px" align="left">I.7. Entrépot de déchargement : <b>{{entrepot}}</b> </td>
+      <td style="padding:1px;font-size:12px" align="left">    </td>
+  </tr>
+  <tr>
+      <td style="padding:1px;font-size:12px" align="left">I.8. Nom du conducteur : <b>{{chauffeur}}</b> </td>
+      <td style="padding:1px;font-size:12px" align="left">I.9. Nationalité conducteur : <b>{{nationalite}}</b></td>
+  </tr>
+</table>
+<br>
+<br>
+<br>
+
+
+<b>II. CERTIFICATION QUANTITATIVE</b>
+
+<table style="width:100%;border:1px solid black;border-collapse:collapse;text-align:center">
+  <tr>
+    <th></th>
+    <th></th>
+
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="left">II.1. N° du rapport d'échantillonage : <b>{{numrappech}}</b></td>
+    <td style="padding:1px;font-size:12px" align="left">II.3. N° du rapport d'essaie : <b>{{numerore}}</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="left">II.2. Date de prélèvement : <b>{{dateech}}</b></td>
+    <td style="padding:1px;font-size:12px" align="left">II.4. Date d'émission : <b>{{datecert}}</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="left">II.5. Date de déchargement : <b>{{datedech}}</></td>
+    <td style="padding:1px;font-size:12px" align="left">    </td>
+  </tr>
+  <tr>
+    <td style="padding:1px;font-size:12px" align="left">II.6. Nature du produit: <b>{{produit}}</b></td>
+  </tr>
+  <tr>
+      <td style="padding:1px;font-size:12px" align="left">II.7. GOV en m<sup>3</sup> : <b>{{gov}}</b>m<sup>3</sup></td>
+  </tr>
+  <tr>
+    <td style="padding:1px;font-size:12px" align="left">II.8. GSV en m<sup>3</sup> : <b>{{gsv}}</b>m<sup>3</sup></td>
+  </tr>
+    <tr>
+    <td style="padding:1px;font-size:12px" align="left">II.9. Différence de volume: <b>{{diffvolume}}</b>%</td>
+  </tr>
+
+</table>
+<br>
+
+<br>
+
+<table>
+  <tr>
+    <th></th>
+    <th></th>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center">CHEF DE SERVICE AVAL PETROLIER<b></b></td>
+    <td style="padding:1px;font-size:12px" align="center">CHEF DE DIVISION Adjoint</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center"><b>KONGOLO TSHIAKUBAH</b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b>Odette MUNONA KAPYA</b></td>
+  </tr>
+  <tr>
+    <td style="padding:1px; font-size:12px" align="center"><b>FP</b></td>
+    <td style="padding:1px;font-size:12px" align="center"><b>FPP</b></td>
+  </tr>
+
+
+
+</table>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+
+
+
+
+<hr>
+
+<footer>
+    <div align="center" style="font-size:12px">
+        Fin Act.
+    </div>
+    <div align="center" style="font-size:9px">
+        695, Chausse L.D.KABILA/Lubumbashi - B.P.:1236 TEl:+243810805466 - Site OCC: www.occ-rdc.cd, E-mail: dchkatanga@gmail.com
+        OCC: Membre Correspondant de l'Organisation International de Normalisation(ISO)
+        Membre du programme des pays affilies a la commission Electronique International(CEI) et Membre de l'Organisation Regionale de Normalisation(ORAN).
+    </div>
+</footer>
+
+
+</body>
+</html>

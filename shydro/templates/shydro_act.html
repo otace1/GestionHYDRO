@@ -1,0 +1,25 @@
+{% extends 'shydro/shydro_layout_act.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+
+{% block content %}
+
+{%render_table act%}
+
+{% endblock %}
+
+{% block content1 %}
+ <div class="md-form mt-12">
+    <form method="get" action="{% url 'rechercheact' %}" class="form-inline my-8 my-lg-2">
+
+        <input class="form-control" type="text" name="valeur" placeholder="Recherche ACT..." aria-label="Search">
+        <button type="submit" class="btn btn-success">Recherche</button>
+        <button type="cancel" class="btn btn-danger">Retour</button>
+
+    </form>
+
+
+</div>
+    {%render_table act1%}
+
+{% endblock %}

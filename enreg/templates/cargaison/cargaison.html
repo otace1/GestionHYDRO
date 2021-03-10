@@ -1,0 +1,144 @@
+{% extends 'base_carg_layout.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load django_tables2 %}
+{% load qr_code %}
+
+{% block extra_js %}
+    <script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>
+    <script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
+{% endblock %}
+
+
+{% block content %}
+
+    {% render_table cargaison %}
+
+    <div class="modal fade" id="modal-lg">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Enregistrement de cargaison</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="post-form" method="post" action="">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {% crispy form %}
+                    </div>
+                    <div id="submit-control" class="modal-footer justify-content-between">
+                        <button type="reset" id="closemodal" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+                        <button id="submitButton" class="btn btn-success">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+
+
+    <div class="modal fade" id="modal_qrcode">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">QR Code</h4>
+                </div>
+                    <div class="modal-body">
+                        <div id="codeQR"></div>
+                    </div>
+                     <div class="modal-footer justify-content-between">
+
+                    </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+
+
+{% endblock %}
+
+<script>
+    {% block javascript %}
+        // using jQuery
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        var csrftoken = getCookie('csrftoken');
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+
+        //script for submitting data in ajax
+        $('.btn.btn-info').click(function () {
+            Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
+        });
+
+        $('.btn.btn-success').click((function (e) {
+            e.preventDefault()
+            {#var pk=Id;#}
+            var APIurl = "{% url 'nouvelle' %}";
+            {#$input = $('<input type="hidden" name="pk">').val(pk);#}
+            {#$('#post-form').append($input);#}
+            var SerializedData = $("#post-form").serialize();
+            console.log(SerializedData);
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                beforeSend: function (){
+                  $('#submit-control').html("<img src='/media/LoaderIcon.gif' /> En cours de traitement")
+                },
+                success: function (data) {
+                    var qrcode = new QRCode(document.getElementById("codeQR"), {
+                        text: data,
+                        width: 250,
+                        height: 250,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+
+                    $('#modal-lg').modal('hide');
+
+                    $('#modal_qrcode').modal('show');
+
+                    var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Fermer</button>';
+                    $('.modal-footer').html(modalFooter);
+
+                },
+            });
+        }))
+
+    {% endblock %}
+</script>
+
+
+
+

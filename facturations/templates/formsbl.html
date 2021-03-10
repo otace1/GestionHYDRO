@@ -1,0 +1,44 @@
+{% extends 'facturations/facturation_layout_forms.html' %}
+{% load crispy_forms_tags %}
+{% load bootstrap4 %}
+
+{% block extrahead %}
+    {{ form.media }}
+{% endblock %}
+
+
+
+{% block content %}
+
+
+    <div class="box col-md-6">
+    <!-- general form elements -->
+{#    <div class="box box-primary">#}
+{#        <div class="box-header with-border">#}
+{#            <h3 class="box-title">Saisie des details du BL</h3>#}
+{#        </div>#}
+        <div class="alert alert-danger">
+            {{ context }}
+        </div>
+        <!-- /.box-header -->
+        <!-- form start -->
+
+        <a href="{% url 'facturations' %}"><button class="btn btn-primary"><< retour</button></a>
+     {% crispy form %}
+    </div>
+
+
+
+    <script>
+        $(function () {
+            $("#id_date").datepicker({
+                format: 'dd/mm/yyyy',
+            });
+        });
+    </script>
+
+    </form>
+
+
+{% endblock %}
+

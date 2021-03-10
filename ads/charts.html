@@ -1,0 +1,27 @@
+{% extends 'base_layout.html' %}
+
+{% load bootstrap3 %}
+
+{% block script %}
+    var endpoint = '/ads/api/data'
+
+    $.ajax({
+    method:"GET",
+    url: endpoint,
+    success: function(data){
+    console.log(data)
+    },
+    error: function(error_data){
+    console.log(error)
+    console.log(error_data)
+
+    })
+
+{% endblock %}
+
+{% block content %}
+
+
+
+{% endblock %}
+

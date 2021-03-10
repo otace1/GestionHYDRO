@@ -1,0 +1,339 @@
+{% extends 'base_dashboard.html' %}
+{% load crispy_forms_tags %}
+{% block extrahead %}
+    {{ form.media }}
+{% endblock %}
+{% load django_tables2 %}
+
+
+{% block dashboard %}
+    <!-- Morris chart - Sales -->
+    <div class="chart tab-pane active" id="revenue-chart" style="position: relative; height: 450px;">
+        <div id="container1"></div>
+        <script src="https://code.highcharts.com/highcharts.src.js"></script>
+        <script src="https://code.highcharts.com/modules/data.js"></script>
+        <script src="https://code.highcharts.com/modules/exporting.js"></script>
+        <script src="https://code.highcharts.com/modules/export-data.js"></script>
+
+        <script>
+            Highcharts.chart('container1', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: "Flux des produits pétroliers en volume pour l'Année {% now 'Y' %}"
+                },
+                xAxis: {
+                    categories: {{categories|safe}}
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Volume'
+                    }
+                },
+                plotOptions: {
+                    line: {
+                        dataLabels: {
+                            enabled: true
+                        },
+                        enableMouseTracking: true
+                    }
+                },
+
+                series: [{
+                    name: 'Gasoil',
+                    data: {{gasoil_list}},
+                    color: 'red'
+
+                }, {
+                    name: 'Mogas',
+                    data: {{mogas_list}},
+                    color: 'green'
+                }, {
+                    name: 'Jet A1',
+                    data: {{jeta1_list}},
+
+                }, {
+                    name: 'Petrole Lampant',
+                    data: {{petrole_list}},
+                    color: 'black'
+                }]
+            });
+        </script>
+    </div>
+    <!-- /.nav-tabs-custom -->
+
+{% endblock %}
+
+
+{% block stats %}
+    <!--Modal Rapport d'importation-->
+        <div class="modal" tabindex="-1" role="dialog" id="RechercheModal">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title">Statistiques des Importations</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+                                  <form method="post" action="{% url 'statistiques' %}">
+
+              <div class="modal-body">
+                        {% csrf_token %}
+                        {{ form | crispy }}
+{#                        <script>#}
+{#                            $(function () {#}
+{#                                $("#id_date").datepicker({#}
+{#                                    format: 'dd/mm/yyyy',#}
+{#                                });#}
+{#                            });#}
+{#                        </script>#}
+              </div>
+              <div class="modal-footer">
+                  <button type='submit' class="btn btn-success">Recherche</button>
+                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+              </div>
+                </form>
+            </div>
+          </div>
+        </div>
+
+     <!--Modal Rapport de production-->
+        <div class="modal" tabindex="-1" role="dialog" id="RechercheModal1">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title">Statistiques de Production</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+                   <form method="post" action="{% url 'statProd' %}">
+
+              <div class="modal-body">
+                        {% csrf_token %}
+                        {{ form | crispy }}
+{#                        <script>#}
+{#                            $(function () {#}
+{#                                $("#id_date").datepicker({#}
+{#                                    format: 'dd/mm/yyyy',#}
+{#                                });#}
+{#                            });#}
+{#                        </script>#}
+              </div>
+              <div class="modal-footer">
+                  <button type='submit' class="btn btn-success">Recherche</button>
+                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+              </div>
+                </form>
+            </div>
+          </div>
+        </div>
+
+
+     <!--Modal Rapport des encaissements-->
+        <div class="modal" tabindex="-1" role="dialog" id="RechercheModal2">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 class="modal-title">Statistiques des Encaissements</h3>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+                                  <form method="post" action="{% url 'statencaissement' %}" id="post-form">
+
+              <div class="modal-body">
+                        {% csrf_token %}
+                        {{ form1 | crispy }}
+{#                        <script>#}
+{#                            $(function () {#}
+{#                                $("#id_date").datepicker({#}
+{#                                    format: 'dd/mm/yyyy',#}
+{#                                });#}
+{#                            });#}
+{#                        </script>#}
+              </div>
+              <div class="modal-footer">
+                  <button type='submit' class="btn btn-success" id="enc">Recherche</button>
+                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+              </div>
+                </form>
+            </div>
+          </div>
+        </div>
+
+                    {% render_table table %}
+
+{% endblock %}
+
+
+
+{% block reception %}
+
+    <!-- /.col -->
+            <div class="progress-group">
+                <span class="progress-text">{{ i1 }}</span>
+                <span class="progress-number"><b>{{ v1 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p1 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i2 }}</span>
+                <span class="progress-number"><b>{{ v2 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p2 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i3 }}</span>
+                <span class="progress-number"><b>{{ v3 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p3 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i4 }}</span>
+                <span class="progress-number"><b>{{ v4 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p4 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i5 }}</span>
+                <span class="progress-number"><b>{{ v5 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p5 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i6 }}</span>
+                <span class="progress-number"><b>{{ v6 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p6 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i7 }}</span>
+                <span class="progress-number"><b>{{ v7 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p7 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i8 }}</span>
+                <span class="progress-number"><b>{{ v8 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p8 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i9 }}</span>
+                <span class="progress-number"><b>{{ v9 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p9 }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-group">
+                <span class="progress-text">{{ i10 }}</span>
+                <span class="progress-number"><b>{{ v10 }}</b><b> m<sup>3</sup></b></span>
+
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-aqua" style="width:{{ p10 }}%"></div>
+                </div>
+            </div>
+
+{% endblock %}
+
+
+
+{% block pie %}
+
+
+<div class="row ">
+        <div class="col-md-12">
+            <!-- small box -->
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>{{ n.0 }}</h3>
+                    <p>Total des cargaisons enregistrées</p>
+                </div>
+                <div class="icon">
+                    <i class="ion ion-truck"></i>
+                </div>
+                <a href="#" class="small-box-footer"><i class="fa fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <!-- ./col -->
+         <div class="col-md-12">
+            <!-- small box -->
+            <div class="small-box bg-green">
+                <div class="inner">
+                    <h3>{{ e.0 }}<sup style="font-size: 20px"></sup></h3>
+
+                    <p>Total des cargaisons échantillonées</p>
+                </div>
+                <div class="icon">
+                    <i class=""></i>
+                </div>
+                <a href="#" class="small-box-footer"> <i class="fa fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <!-- ./col -->
+        <div class="col-md-12">
+            <!-- small box -->
+            <div class="small-box bg-yellow">
+                <div class="inner">
+                    <h3>{{ l.0 }}</h3>
+
+                    <p>Total des cargaisons en cours d'analyses</p>
+                </div>
+                <div class="icon">
+                    <i class=""></i>
+                </div>
+                <a href="#" class="small-box-footer"> <i class="fa fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <!-- ./col -->
+         <div class="col-md-12">
+            <!-- small box -->
+            <div class="small-box bg-red">
+                <div class="inner">
+                    <h3>{{ d.0 }}</h3>
+
+                    <p>Total des cargaisons déchargées</p>
+                </div>
+                <div class="icon">
+                    <i class=""></i>
+                </div>
+                <a href="#" class="small-box-footer"> <i class="fa fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <!-- ./col -->
+
+</div>
+{% endblock %}
+
+
+

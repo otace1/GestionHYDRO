@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="ed6e20e9-5045-4854-9a05-fe192b2866a0" name="[CGW SERVER]" url="https://hydro.cgworldwide.org">
+        <fileTransfer rootFolder="/home/ubuntu/hydrocarbures/hydrocarbures" host="51.83.33.22" port="21">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
