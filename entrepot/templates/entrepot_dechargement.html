@@ -79,29 +79,33 @@ $.ajaxSetup({
 });
 
 //script for submitting data in ajax
- $('.btn.btn-primary').click(function () {
-     Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
-      console.log(Id); //Sanity check
- });
+      $('.btn.btn-primary').click(function () {
+          Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
+          console.log(Id); //Sanity check
+      });
 
- $('.btn.btn-success').click(function (e) {
-            e.preventDefault()
-            var pk=Id;
-            var APIurl="{% url 'decharger' %}";
-            $input = $('<input type="hidden" name="pk">').val(pk);
-            $('#post-form').append($input);
-            var SerializedData = $("#post-form").serialize();
-            console.log(SerializedData);
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                success: function () {
-                   $('#DechargementTable #id').remove();
-                },
-            });
-                })
+      $('.btn.btn-success').click(function (e) {
+          e.preventDefault()
+          var pk = Id;
+          var APIurl = "{% url 'decharger' %}";
+          $input = $('<input type="hidden" name="pk">').val(pk);
+          $('#post-form').append($input);
+          var SerializedData = $("#post-form").serialize();
+          console.log(SerializedData);
+          $.ajax({
+              url: APIurl,
+              type: "POST",
+              data: SerializedData,
+              beforeSend: function () {
+                  $('#submit-control').html("<img src='/media/LoaderIcon.gif' /> En cours de traitement")
+              },
+              success: function () {
+                  window.location.reload();
+                  {#$('#DechargementTable #id').remove();#}
+              },
+          });
+      })
 
-    {% endblock %}
+  {% endblock %}
 </script>
 

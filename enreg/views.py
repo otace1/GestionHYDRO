@@ -54,7 +54,6 @@ class GestionCargaison():
         form = Ajoutcargaison(request.POST, user=user)
         today = date.today()
 
-
         if role == 2:
             table = CargaisonTable(Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,
                                                                                             dateheurecargaison__year=today.year))
