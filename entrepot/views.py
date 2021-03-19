@@ -209,9 +209,9 @@ class GestionEchantillonage():
                                              numplombb=numplombb, numplombbr=numplombbr, numplombaph=numplombaph,
                                              etatphysique=etatphysique, qte=qte, conformite=conformite,
                                              dateechantillonage=dateechantillonage)
-                p.save()
-                   response = {'valid':True}
-                   return JsonResponse(response,status=200)
+                    p.save()
+                    response = {'valid': True}
+                    return JsonResponse(response, status=200)
                 else:
                    c.tampon = "1"
                    c.numdossier = numdossier
