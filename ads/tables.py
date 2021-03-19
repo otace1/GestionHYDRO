@@ -69,11 +69,14 @@ class StatistiquesTable(tables.Table):
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison','fournisseur','importateur', 'frontiere', 'entrepot','produit','volume', 'poids','immatriculation','valeurfacture','numbtfh','numdeclaration','manifestdgda','t1e', 't1d']
-        exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance','datereceptionlabo', 'dateanalyse', 'numcertificatqualite',
+        sequence = ['dateheurecargaison', 'fournisseur', 'importateur', 'frontiere', 'entrepot', 'produit', 'volume',
+                    'poids', 'immatriculation', 't1e', 't1d', 'numbtfh', 'numdeclaration', 'manifestdgda']
+        exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo',
+                   'dateanalyse', 'numcertificatqualite', 'valeurfacture',
                    'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
                    'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
-                   'temperature','codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv']
+                   'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
+                   'l_control']
 
 
 class DerniersEnregistrements(tables.Table):

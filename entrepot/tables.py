@@ -6,18 +6,18 @@ TEMPLATE = """
            """
 
 TEMPLATE1 = """
-            <button type="button" data-id="{{record.pk}}" class="btn btn-primary" data-toggle="modal" data-target="#modal-lg">
-                  Déchargement
-                </button>
+            <button type="button" data-id="{{record.pk}}" class="fas fa-arrow-alt-circle-down" data-toggle="modal" data-target="#modal-lg">
+                  </button>
            """
 
 TEMPLATE2 = """
     <a href="#" class="btn btn-success">Rapport</a>
-"""
+            """
 
 
 class EchantillonTable(tables.Table):
     Echantilloner = tables.TemplateColumn(TEMPLATE, verbose_name='')
+    idcargaison = tables.Column(verbose_name='N.Enr.')
 
     class Meta:
         attrs = {

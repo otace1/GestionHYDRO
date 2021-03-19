@@ -6,6 +6,7 @@ import pyqrcode
 from PIL import Image
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.core import serializers
 from django.shortcuts import render, HttpResponse, redirect
 from django_tables2 import RequestConfig
 from django_tables2.paginators import LazyPaginator
@@ -15,6 +16,7 @@ from .models import Cargaison
 from .models import Ville, Voie, Entrepot, Importateur, Produit, Nationalites
 from accounts.models import *
 from .tables import CargaisonTable
+
 
 
 # Create your views here.
@@ -51,7 +53,7 @@ class GestionCargaison():
         u = user.username
         frontiere = AffectationVille.objects.get(username=id)
         user = frontiere.username_id
-        form = Ajoutcargaison(request.POST, user=user)
+        form = Ajoutcargaison()
         today = date.today()
 
         if role == 2:
@@ -62,7 +64,7 @@ class GestionCargaison():
                                                                 'form': form})
         else:
             if role == 1:
-                form = Ajoutcargaison(request.POST, user=user)
+                form = Ajoutcargaison()
                 table = CargaisonTable(
                     Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison'))
                 RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -80,11 +82,24 @@ class GestionCargaison():
         username = user.username
         frontiere = AffectationVille.objects.get(username=id)
         user = frontiere.ville_id
+        d = date.today()
 
         if role == 2 or role == 1 or role == 7:
             template = 'cargaison/cargaison_form.html'
 
+            # if request.is_ajax and request.method == "POST":
             if request.method == "POST":
+                # Get Form DATA
+                form = Ajoutcargaison(request.POST)
+
+                #     if form.is_valid():
+                #         instance=form.save()
+                #         ser_instance = serializers.serialize('json',[instance,])
+                #         return JsonResponse({'instance':ser_instance},status=200)
+                #     else:
+                #         return JsonResponse({'error':form.errors}, status=400)
+                #         # some error occured
+                # return JsonResponse({"error": ""}, status=400)
                 voie = request.POST['voie']
                 fournisseur = request.POST['fournisseur']
                 manifestdgda = request.POST['manifestdgda']
@@ -108,6 +123,9 @@ class GestionCargaison():
                 nomchauffeur = request.POST['nomchauffeur']
                 immatriculation = request.POST['immatriculation']
                 tempcargaison = 20.00
+
+                if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or transporteur == '' or declarant == '' or produit == '' or poids == '' or volume == '' or nationalite == '' or nomchauffeur == '' or immatriculation == '':
+                    return JsonResponse({'error': form.errors}, status=400)
 
                 if densite == '':
                     densite = 1
@@ -170,6 +188,11 @@ class GestionCargaison():
                 e = Entrepot.objects.get(pk=entrepot)
                 n = Nationalites.objects.get(pk=nationalite)
 
+                # Get the name for populating Table with Ajax
+                i1 = i.nomimportateur
+                p1 = p.nomproduit
+                e1 = e.nomentrepot
+
                 # Assignation de l'etat de l'enregistrenment
                 etat = ("En attente requisition")
 
@@ -185,9 +208,24 @@ class GestionCargaison():
                               nationalite=n, nomchauffeur=nomchauffeur, immatriculation=immatriculation,
                               qrcode=code, etat=etat, user=u)
                 p.save()
-                return JsonResponse(code, safe=False, status=200)
+                data = {'code': code,
+                        # 'date':d,
+                        # 'manifestdgda':manifestdgda,
+                        # 'numbtfh':numbtfh,
+                        # 'numdeclaration':numdeclaration,
+                        # 'valeurfacture':valeurfacture,
+                        # 'importateur':i1,
+                        # 'produit': p1,
+                        # 'entrepot':entrepot,
+                        # 'volume':volume,
+                        # 'entrepot':e1,
+                        # 'immatriculation':immatriculation,
+                        # 't1d':t1d,
+                        # 't1e':t1e
+                        }
+                return JsonResponse(data, safe=False, status=200)
             else:
-                form = Ajoutcargaison(request.POST, user=user)
+                form = Ajoutcargaison()
             return render(request, template, {'form': form})
         else:
             return redirect('logout')

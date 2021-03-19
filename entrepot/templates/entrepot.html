@@ -81,19 +81,28 @@ $.ajaxSetup({
             e.preventDefault()
             var pk=Id;
             var APIurl="{% url 'echantilloner' %}";
-            $input = $('<input type="hidden" name="pk">').val(pk);
-            $('#post-form').append($input);
-            var SerializedData = $("#post-form").serialize();
-            console.log(SerializedData);
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                success: function () {
-                   location.reload();
-                },
-            });
-                })
+     $input = $('<input type="hidden" name="pk">').val(pk);
+     $('#post-form').append($input);
+     var SerializedData = $("#post-form").serialize();
+     console.log(SerializedData);
+     $.ajax({
+         url: APIurl,
+         type: "POST",
+         data: SerializedData,
+         dataType: 'json',
+
+         success: function () {
+             alert("Données sauvegardées");
+             location.reload();
+         },
+
+         error: function () {
+             console.log('Erreur');
+             alert("Erreur de données! Veuillez completer tous les champs obligatoires !");
+             location.reload();
+         }
+     });
+ })
 
     {% endblock %}
 </script>

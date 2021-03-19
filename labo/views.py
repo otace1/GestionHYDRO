@@ -71,6 +71,10 @@ class GestionLaboratoire():
                 dateechantillon = request.POST.get('dateprelevement', None)
                 # numrappech = request.POST.get('numerore',None)
 
+                # Test de conformite des donnees saisies
+                if pk == '' or codelabo == '' or datereception == '' or dateechantillon == '':
+                    return JsonResponse(status=400)
+
                 # Test pour voir si il y'a déjà eu enregistrement
                 if Entrepot_echantillon.objects.filter(idcargaison_id=pk).exists():
                     t = Entrepot_echantillon.objects.get(idcargaison_id=pk)

@@ -96,13 +96,16 @@ $.ajaxSetup({
               url: APIurl,
               type: "POST",
               data: SerializedData,
-              beforeSend: function () {
-                  $('#submit-control').html("<img src='/media/LoaderIcon.gif' /> En cours de traitement")
-              },
+
               success: function () {
+                  alert('Données sauvegardées')
                   window.location.reload();
                   {#$('#DechargementTable #id').remove();#}
               },
+              error: function () {
+                  alert("Erreur de données! Veuillez completer tous les champs obligatoires !");
+                  location.reload();
+              }
           });
       })
 

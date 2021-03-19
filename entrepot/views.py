@@ -171,6 +171,7 @@ class GestionEchantillonage():
         user = request.user
         id = user.id
         role = user.role_id
+        form = Echantilloner(request.POST or None)
 
         # Getting current Year & Month
         today = date.today()
@@ -181,30 +182,34 @@ class GestionEchantillonage():
         url = request.session['url']
         if role == 3 or role == 1 or role == 9:
             if request.is_ajax():
-                pk = request.POST.get('pk',None)
-                numrappech = request.POST.get('numrappech',None)
-                numplombh = request.POST.get('numplombh',None)
-                numplombb = request.POST.get('numplombb',None)
-                numplombbr = request.POST.get('numplombbr',None)
-                numplombaph = request.POST.get('numplombaph',None)
-                etatphysique = request.POST.get('etatphysique',None)
-                qte = request.POST.get('qte',None)
-                conformite = request.POST.get('conformite',None)
-                dateechantillonage = request.POST.get('dateechantillonage',None)
-                numdossier = request.POST.get('numdossier',None)
-                codecargaison = request.POST.get('codecargaison',None)
+                pk = request.POST.get('pk', None)
+                numrappech = request.POST.get('numrappech', None)
+                numplombh = request.POST.get('numplombh', None)
+                numplombb = request.POST.get('numplombb', None)
+                numplombbr = request.POST.get('numplombbr', None)
+                numplombaph = request.POST.get('numplombaph', None)
+                etatphysique = request.POST.get('etatphysique', None)
+                qte = request.POST.get('qte', None)
+                conformite = request.POST.get('conformite', None)
+                dateechantillonage = request.POST.get('dateechantillonage', None)
+                numdossier = request.POST.get('numdossier', None)
+                codecargaison = request.POST.get('codecargaison', None)
                 c = Cargaison.objects.get(idcargaison=pk)
 
-    #Test pour savoir si le laboratoire a deja pris en charge lechantillon
+                if dateechantillonage == '' or numdossier == '' or numrappech == '' or numplombh == '' or qte == '' or conformite == '':
+                    return JsonResponse({'error': form.errors}, status=400)
+
+                # Test pour savoir si le laboratoire a deja pris en charge lechantillon
                 if c.tampon == "1":
-                   c.etat = "Echantillonner"
-                   c.numdossier = numdossier
-                   c.codecargaison = codecargaison
-                   c.save(update_fields=['etat','numdossier','codecargaison'])
-                   p = Entrepot_echantillon(idcargaison=c, numrappech=numrappech,numplombh=numplombh,
-                                            numplombb=numplombb,numplombbr=numplombbr,numplombaph=numplombaph,
-                                           etatphysique=etatphysique, qte=qte, conformite=conformite,dateechantillonage=dateechantillonage)
-                   p.save()
+                    c.etat = "Echantillonner"
+                    c.numdossier = numdossier
+                    c.codecargaison = codecargaison
+                    c.save(update_fields=['etat', 'numdossier', 'codecargaison'])
+                    p = Entrepot_echantillon(idcargaison=c, numrappech=numrappech, numplombh=numplombh,
+                                             numplombb=numplombb, numplombbr=numplombbr, numplombaph=numplombaph,
+                                             etatphysique=etatphysique, qte=qte, conformite=conformite,
+                                             dateechantillonage=dateechantillonage)
+                p.save()
                    response = {'valid':True}
                    return JsonResponse(response,status=200)
                 else:
@@ -225,8 +230,6 @@ class GestionEchantillonage():
                    response = {'valid':True}
                    return JsonResponse(response, status=200)
 
-            response = {'valid':True}
-            return JsonResponse(response,status=200)
         else:
             return redirect('logout')
 
@@ -358,91 +361,101 @@ class GestionDechargement():
                 pk = request.POST.get('pk', None)
                 densite15 = request.POST.get('densite15', None)
                 gov = request.POST.get('gov', None)
-                temperature = request.POST.get('temperature',None)
+                temperature = request.POST.get('temperature', None)
 
-                carg=Cargaison.objects.get(idcargaison=pk)
-                carg.etat = "Cargaison dechargee"
-                immatriculation = carg.immatriculation
-                numerodossier = carg.numdossier
-                codecamion = carg.codecargaison
-
-                densite15 = float(densite15)
-                temperature = float(temperature)
-                gov = float(gov)
-
-                    #Calcul des GSV MTV MTA
-                if densite15 >= float(839):
-                    a = 186.9696
-                    b = 0.4862
-                    delta = temperature - 15
-                    alpha = (a / densite15) / densite15 + (b / densite15)
-                    vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                    gsv = round((vcf * gov), 5)
-                    mtv = gsv * (densite15) / 1000
-                    mta = ((densite15) - 1.1) * (gsv / 1000)
+                # Test de la conformite des donnees
+                if pk == '' or densite15 == '' or gov == '' or temperature == '':
+                    reponse = 'Erreur de données! Veuillez completer tous les champs obligatoires !'
+                    return JsonResponse(reponse, status=400)
                 else:
-                    if (densite15 >= float(788)) & (densite15 < float(839)):
-                        a = 594.5418
+                    if densite15 < 1:
+                        reponse = 'Densite introduite incorrect'
+                        return JsonResponse(reponse, status=400)
+
+                    carg = Cargaison.objects.get(idcargaison=pk)
+                    carg.etat = "Cargaison dechargee"
+                    immatriculation = carg.immatriculation
+                    numerodossier = carg.numdossier
+                    codecamion = carg.codecargaison
+
+                    densite15 = float(densite15)
+                    temperature = float(temperature)
+                    gov = float(gov)
+
+                    # Calcul des GSV MTV MTA
+                    if densite15 >= float(839):
+                        a = 186.9696
+                        b = 0.4862
                         delta = temperature - 15
-                        alpha = (a / densite15) / densite15
-                        vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                        alpha = (a / densite15) / densite15 + (b / densite15)
+                        vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
                         gsv = round((vcf * gov), 5)
                         mtv = gsv * (densite15) / 1000
                         mta = ((densite15) - 1.1) * (gsv / 1000)
                     else:
-                        if (densite15 > float(770)) & (densite15 < float(788)):
-                            a = 0.00336312
-                            b = 2680.3206
+                        if (densite15 >= float(788)) & (densite15 < float(839)):
+                            a = 594.5418
                             delta = temperature - 15
-                            alpha = ((-a) + (b)) / densite15 / densite15
+                            alpha = (a / densite15) / densite15
                             vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
                             gsv = round((vcf * gov), 5)
-                            mtv = gsv * densite15 / 1000
+                            mtv = gsv * (densite15) / 1000
                             mta = ((densite15) - 1.1) * (gsv / 1000)
                         else:
-                            a = 346.4228
-                            b = 0.4388
-                            d = densite15
-                            delta = temperature - 15
-                            alpha = (((a) / (d)) / (d)) + (b / d)
-                            vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                            gsv = round((vcf * gov), 5)
-                            mtv = gsv * densite15 / 1000
-                            mta = ((densite15) - 1.1) * (gsv / 1000)
+                            if (densite15 > float(770)) & (densite15 < float(788)):
+                                a = 0.00336312
+                                b = 2680.3206
+                                delta = temperature - 15
+                                alpha = ((-a) + (b)) / densite15 / densite15
+                                vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                                gsv = round((vcf * gov), 5)
+                                mtv = gsv * densite15 / 1000
+                                mta = ((densite15) - 1.1) * (gsv / 1000)
+                            else:
+                                a = 346.4228
+                                b = 0.4388
+                                d = densite15
+                                delta = temperature - 15
+                                alpha = (((a) / (d)) / (d)) + (b / d)
+                                vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                                gsv = round((vcf * gov), 5)
+                                mtv = gsv * densite15 / 1000
+                                mta = ((densite15) - 1.1) * (gsv / 1000)
 
-                try:
-                    r = Resultat.objects.get(idcargaison=pk)
+                    try:
+                        r = Resultat.objects.get(idcargaison=pk)
 
-                    carg.save(update_fields=['etat'])
+                        carg.save(update_fields=['etat'])
 
-                    p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
-                                     mtv=mtv, mta=mta)
-                    p.save()
+                        p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
+                                         mtv=mtv, mta=mta)
+                        p.save()
 
-                    response = {'valid': True}
-                    return JsonResponse(response, status=200)
+                        response = {'valid': True}
+                        return JsonResponse(response, status=200)
 
-                except ObjectDoesNotExist:
+                    except ObjectDoesNotExist:
 
-                    d = datetime.datetime.today()
-                    d = d.date()
+                        d = datetime.datetime.today()
+                        d = d.date()
 
-                    c = LaboReception(idcargaison_id=pk, datereceptionlabo=d)
-                    c.save()
+                        c = LaboReception(idcargaison_id=pk, datereceptionlabo=d)
+                        c.save()
 
-                    r = Resultat(idcargaison_id=pk, dateimpression=d)
-                    r.save()
+                        r = Resultat(idcargaison_id=pk, dateimpression=d)
+                        r.save()
 
-                    carg.save(update_fields=['etat'])
+                        carg.save(update_fields=['etat'])
 
-                    p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
-                                     mtv=mtv, mta=mta)
-                    p.save()
+                        p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
+                                         mtv=mtv, mta=mta)
+                        p.save()
 
-                    response = {'valid': True}
-                    return JsonResponse(response, status=200)
+                        response = {'valid': True}
+                        return JsonResponse(response, status=200)
 
             else:
                 return redirect('dechargement')
+
         else:
             return redirect('logout')

@@ -13,7 +13,7 @@ class Ajoutcargaison(forms.Form):
     importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'),
                                          label="Nom de l'importateur :")
     produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="Nature du produit :")
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.none(), label="Frontière d'entrée :")
+    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Frontière d'entrée :")
     provenance = CountryField().formfield()
     entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'),
                                       label="Entrepot de destination :")
@@ -35,10 +35,10 @@ class Ajoutcargaison(forms.Form):
     immatriculation = forms.CharField(label="Immatriculation du camion/remorque/train/navire :")
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')
+        # user = kwargs.pop('user')
         super(Ajoutcargaison, self).__init__(*args, **kwargs)
-        qs = Ville.objects.filter(affectationville__username_id=user)
-        self.fields['frontiere'].queryset = qs
+        # qs = Ville.objects.filter(affectationville__username_id=user)
+        # self.fields['frontiere'].queryset = qs
         self.helper = FormHelper()
         self.helper.form_id = 'carg_form'
         self.helper.form_method = 'POST'
@@ -48,7 +48,7 @@ class Ajoutcargaison(forms.Form):
         self.helper.field_class = 'col-md-8'
         self.helper.layout = Layout(
             Fieldset("Identification de l'importation",
-                     Field('voie', css_class='col-md-6'),
+                     Field('voie', css_class='col-md-6', id='voie'),
                      Field('frontiere', css_class='col-md-6'),
                      Field('fournisseur', placeholder='Nom du Fournisseur si applicable'),
                      'importateur',
