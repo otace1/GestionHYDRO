@@ -125,16 +125,18 @@ $.ajaxSetup({
     }
 });
 
-//script for submitting data in ajax posting echantillon
- $('.btn.btn-success').click(function () {
-     Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
-     console.log(Id); //Sanity Check
- });
+    //script for submitting data in ajax posting echantillon
+    $('.btn.btn-success').click(function () {
+        Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
+        console.log(Id); //Sanity Check
+    });
 
- $('.btn.btn-primary').click(function (e) {
-            e.preventDefault()
-            var pk=Id;
-            var APIurl="{% url 'reception' %}";
+    $('.btn.btn-primary').click(function (e) {
+        e.preventDefault()
+        //Disable Submit button
+        $('.btn.btn-primary').attr("disabled", true);
+        var pk = Id;
+        var APIurl = "{% url 'reception' %}";
      $input = $('<input type="hidden" name="pk">').val(pk);
      $('#post-form').append($input);
      var SerializedData = $("#post-form").serialize();
@@ -155,10 +157,11 @@ $.ajaxSetup({
          error: function () {
              console.log('Erreur');
              alert('Veuillez completer tous les champs obligatoires !');
+             $('.btn.btn-primary').attr("disabled", false);
              location.reload();
          }
      });
- })
+    })
 
 
     $('.btn.btn-warning').click(function (e) {

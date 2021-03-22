@@ -102,6 +102,8 @@
 
         $('.btn.btn-success').click((function (e) {
             e.preventDefault()
+            //Disable our button
+            $('.btn.btn-success').attr("disabled", true);
             var APIurl = "{% url 'nouvelle' %}";
             var SerializedData = $("#post-form").serialize();
             console.log(SerializedData);
@@ -149,6 +151,7 @@
                 error: function (response) {
                     console.log('Erreur');
                     alert("Veuillez completer tous les champs obligatoires !");
+                    $('.btn.btn-success').attr("disabled", false);
 
                 },
 

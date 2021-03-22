@@ -70,22 +70,30 @@ function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
 }
-$.ajaxSetup({
-    beforeSend: function(xhr, settings) {
-        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
-    }
-});
+      $.ajaxSetup({
+          beforeSend: function (xhr, settings) {
+              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                  xhr.setRequestHeader("X-CSRFToken", csrftoken);
+              }
+          }
+      });
 
-//script for submitting data in ajax
-      $('.btn.btn-primary').click(function () {
+      //script for submitting data in ajax
+      //      $('.btn.btn-primary').click(function () {
+      $('.fas.fa-arrow-alt-circle-down').click(function () {
+//      $('#idechant').click(function () {
           Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
           console.log(Id); //Sanity check
       });
 
+      $('.btn.btn-danger').click(function () {
+          console.log('refresh');
+      })
+
       $('.btn.btn-success').click(function (e) {
           e.preventDefault()
+          //Disable Submit button
+          $('.btn.btn-success').attr("disabled", true);
           var pk = Id;
           var APIurl = "{% url 'decharger' %}";
           $input = $('<input type="hidden" name="pk">').val(pk);
@@ -96,7 +104,6 @@ $.ajaxSetup({
               url: APIurl,
               type: "POST",
               data: SerializedData,
-
               success: function () {
                   alert('Données sauvegardées')
                   window.location.reload();
@@ -104,6 +111,7 @@ $.ajaxSetup({
               },
               error: function () {
                   alert("Erreur de données! Veuillez completer tous les champs obligatoires !");
+                  $('.btn.btn-success').attr("disabled", false);
                   location.reload();
               }
           });

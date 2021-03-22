@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'bootstrap4',
     'wkhtmltopdf',
     'bootstrap_datepicker_plus',
+    # 'tempus_dominus',
     # 'jquery',
     # 'django_filters',
     # 'import_export',
@@ -91,8 +92,7 @@ MESSAGE_TAGS = {
 
     }
 
-
-BOOTSTRAP3 = {
+BOOTSTRAP4 = {
     'include_jquery': True,
 }
 

@@ -72,15 +72,18 @@ $.ajaxSetup({
     }
 });
 
-//script for submitting data in ajax
- $('.btn.btn-info').click(function () {
-     Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
- });
+        //script for submitting data in ajax
+        $('.btn.btn-info').click(function () {
+            Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
+        });
 
- $('.btn.btn-success').click(function (e) {
+        $('.btn.btn-success').click(function (e) {
             e.preventDefault()
-            var pk=Id;
-            var APIurl="{% url 'echantilloner' %}";
+
+            //Disable Submit button
+            $('.btn.btn-success').attr("disabled", true);
+            var pk = Id;
+            var APIurl = "{% url 'echantilloner' %}";
      $input = $('<input type="hidden" name="pk">').val(pk);
      $('#post-form').append($input);
      var SerializedData = $("#post-form").serialize();
@@ -99,10 +102,11 @@ $.ajaxSetup({
          error: function () {
              console.log('Erreur');
              alert("Erreur de données! Veuillez completer tous les champs obligatoires !");
+             $('.btn.btn-success').attr("disabled", false);
              location.reload();
          }
      });
- })
+        })
 
     {% endblock %}
 </script>
