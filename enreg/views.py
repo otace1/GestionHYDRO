@@ -127,103 +127,109 @@ class GestionCargaison():
                 if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or transporteur == '' or declarant == '' or produit == '' or poids == '' or volume == '' or nationalite == '' or nomchauffeur == '' or immatriculation == '':
                     return JsonResponse({'error': form.errors}, status=400)
 
-                if densite == '':
-                    densite = 1
-
-                if valeurfacture == '':
-                    valeurfacture = 0
-
-                # caste des variables
-                densite = float(densite)
-                tempcargaison = float(tempcargaison)
-                volume = float(volume)
-
-                # Calcul du volume declare a 15 degre
-                if densite >= float(839):
-                    a = 186.9696
-                    b = 0.4862
-                    delta = tempcargaison - 15
-                    alpha = (a / densite) / densite + (b / densite)
-                    vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                    gsv = round((vcf * volume), 5)
-                    mtv = gsv * (densite) / 1000
-                    mta = ((densite) - 1.1) * (gsv / 1000)
+                # verification de la quantite saisie
+                if voie == 1:
+                    if volume > 50:
+                        msg = 'Vous avez introduit un volume eronee pour la voie routiere'
+                        return JsonResponse(msg, safe=False, status=400)
                 else:
-                    if (densite >= float(788)) & (densite < float(839)):
-                        a = 594.5418
+                    if densite == '':
+                        densite = 1
+
+                    if valeurfacture == '':
+                        valeurfacture = 0
+
+                    # caste des variables
+                    densite = float(densite)
+                    tempcargaison = float(tempcargaison)
+                    volume = float(volume)
+
+                    # Calcul du volume declare a 15 degre
+                    if densite >= float(839):
+                        a = 186.9696
+                        b = 0.4862
                         delta = tempcargaison - 15
-                        alpha = (a / densite) / densite
-                        vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                        alpha = (a / densite) / densite + (b / densite)
+                        vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
                         gsv = round((vcf * volume), 5)
                         mtv = gsv * (densite) / 1000
                         mta = ((densite) - 1.1) * (gsv / 1000)
                     else:
-                        if (densite > float(770)) & (densite < float(788)):
-                            a = 0.00336312
-                            b = 2680.3206
+                        if (densite >= float(788)) & (densite < float(839)):
+                            a = 594.5418
                             delta = tempcargaison - 15
-                            alpha = ((-a) + (b)) / densite / densite
+                            alpha = (a / densite) / densite
                             vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
                             gsv = round((vcf * volume), 5)
-                            mtv = gsv * densite / 1000
+                            mtv = gsv * (densite) / 1000
                             mta = ((densite) - 1.1) * (gsv / 1000)
                         else:
-                            a = 346.4228
-                            b = 0.4388
-                            d = densite
-                            delta = tempcargaison - 15
-                            alpha = (((a) / (d)) / (d)) + (b / d)
-                            vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                            gsv = round((vcf * volume), 5)
-                            mtv = gsv * densite / 1000
-                            mta = ((densite) - 1.1) * (gsv / 1000)
+                            if (densite > float(770)) & (densite < float(788)):
+                                a = 0.00336312
+                                b = 2680.3206
+                                delta = tempcargaison - 15
+                                alpha = ((-a) + (b)) / densite / densite
+                                vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                                gsv = round((vcf * volume), 5)
+                                mtv = gsv * densite / 1000
+                                mta = ((densite) - 1.1) * (gsv / 1000)
+                            else:
+                                a = 346.4228
+                                b = 0.4388
+                                d = densite
+                                delta = tempcargaison - 15
+                                alpha = (((a) / (d)) / (d)) + (b / d)
+                                vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                                gsv = round((vcf * volume), 5)
+                                mtv = gsv * densite / 1000
+                                mta = ((densite) - 1.1) * (gsv / 1000)
 
-                volume_decl15 = gsv
+                    volume_decl15 = gsv
 
-                # Gestion des cles etrangeres
-                v = Voie.objects.get(pk=voie)
-                i = Importateur.objects.get(pk=importateur)
-                p = Produit.objects.get(pk=produit)
-                f = Ville.objects.get(pk=frontiere)
-                e = Entrepot.objects.get(pk=entrepot)
-                n = Nationalites.objects.get(pk=nationalite)
+                    # Gestion des cles etrangeres
+                    v = Voie.objects.get(pk=voie)
+                    i = Importateur.objects.get(pk=importateur)
+                    p = Produit.objects.get(pk=produit)
+                    f = Ville.objects.get(pk=frontiere)
+                    e = Entrepot.objects.get(pk=entrepot)
+                    n = Nationalites.objects.get(pk=nationalite)
 
-                # Get the name for populating Table with Ajax
-                i1 = i.nomimportateur
-                p1 = p.nomproduit
-                e1 = e.nomentrepot
+                    # Get the name for populating Table with Ajax
+                    i1 = i.nomimportateur
+                    p1 = p.nomproduit
+                    e1 = e.nomentrepot
 
-                # Assignation de l'etat de l'enregistrenment
-                etat = ("En attente requisition")
+                    # Assignation de l'etat de l'enregistrenment
+                    etat = ("En attente requisition")
 
-                # Utilisation de l'UUID comme id unique dans la base de donnee
-                code = str(uuid.uuid4())
+                    # Utilisation de l'UUID comme id unique dans la base de donnee
+                    code = str(uuid.uuid4())
 
-                p = Cargaison(voie=v, importateur=i, produit=p, frontiere=f, provenance=provenance, entrepot=e,
-                              fournisseur=fournisseur, manifestdgda=manifestdgda, numbtfh=numbtfh,
-                              numdeclaration=numdeclaration, valeurfacture=valeurfacture, transporteur=transporteur,
-                              declarant=declarant, poids=poids, volume=volume,
-                              tempcargaison=tempcargaison, densitecargaison=densite, volume_decl15=volume_decl15,
-                              t1d=t1d, t1e=t1e, idchauffeur=idchauffeur,
-                              nationalite=n, nomchauffeur=nomchauffeur, immatriculation=immatriculation,
-                              qrcode=code, etat=etat, user=u)
-                p.save()
-                data = {'code': code,
-                        # 'date':d,
-                        # 'manifestdgda':manifestdgda,
-                        # 'numbtfh':numbtfh,
-                        # 'numdeclaration':numdeclaration,
-                        # 'valeurfacture':valeurfacture,
-                        # 'importateur':i1,
-                        # 'produit': p1,
-                        # 'entrepot':entrepot,
-                        # 'volume':volume,
-                        # 'entrepot':e1,
-                        # 'immatriculation':immatriculation,
-                        # 't1d':t1d,
-                        # 't1e':t1e
-                        }
-                return JsonResponse(data, safe=False, status=200)
+                    p = Cargaison(voie=v, importateur=i, produit=p, frontiere=f, provenance=provenance, entrepot=e,
+                                  fournisseur=fournisseur, manifestdgda=manifestdgda, numbtfh=numbtfh,
+                                  numdeclaration=numdeclaration, valeurfacture=valeurfacture, transporteur=transporteur,
+                                  declarant=declarant, poids=poids, volume=volume,
+                                  tempcargaison=tempcargaison, densitecargaison=densite, volume_decl15=volume_decl15,
+                                  t1d=t1d, t1e=t1e, idchauffeur=idchauffeur,
+                                  nationalite=n, nomchauffeur=nomchauffeur, immatriculation=immatriculation,
+                                  qrcode=code, etat=etat, user=u)
+                    p.save()
+                    data = {'code': code,
+                            # 'date':d,
+                            # 'manifestdgda':manifestdgda,
+                            # 'numbtfh':numbtfh,
+                            # 'numdeclaration':numdeclaration,
+                            # 'valeurfacture':valeurfacture,
+                            # 'importateur':i1,
+                            # 'produit': p1,
+                            # 'entrepot':entrepot,
+                            # 'volume':volume,
+                            # 'entrepot':e1,
+                            # 'immatriculation':immatriculation,
+                            # 't1d':t1d,
+                            # 't1e':t1e
+                            }
+                    return JsonResponse(data, safe=False, status=200)
             else:
                 form = Ajoutcargaison()
             return render(request, template, {'form': form})

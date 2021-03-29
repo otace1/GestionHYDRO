@@ -301,11 +301,16 @@ class GestionDechargement():
         id = user.id
         role = user.role_id
         request.session['url'] = request.get_full_path()
-        form=Decharger(request.POST or None)
+        form = Decharger(request.POST or None)
         today = date.today()
 
-        if role == 9:
-            table = CargaisonDechargement(Cargaison.objects.filter(etat="Echantillonner").filter(entrepot__affectationentrepot__username_id=id, dateheurecargaison__lte=today, dateheurecargaison__gt=today-datetime.timedelta(days=120)).order_by('-dateheurecargaison'),prefix='2_')
+        if role == 9 or role == 1:
+            table = CargaisonDechargement(
+                Cargaison.objects.filter(etat="Echantillonner").filter(entrepot__affectationentrepot__username_id=id,
+                                                                       dateheurecargaison__lte=today,
+                                                                       dateheurecargaison__gt=today - datetime.timedelta(
+                                                                           days=120)).order_by('-dateheurecargaison'),
+                prefix='2_')
             table1 = CargaisonDechargee(Dechargement.objects.raw('SELECT DISTINCT(d.idcargaison_id) , d.datedechargement, c.numdossier, c.codecargaison, c.immatriculation, d.gov, d.gsv, d.mta, d.mtv \
                                              FROM hydro_occ.enreg_dechargement d, hydro_occ.enreg_resultat r,hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.accounts_affectationentrepot a, hydro_occ.accounts_myuser u \
                                              WHERE d.idcargaison_id = r.idcargaison_id \
@@ -366,7 +371,7 @@ class GestionDechargement():
                 # Test de la conformite des donnees
                 if pk == '' or densite15 == '' or gov == '' or temperature == '':
                     reponse = 'Erreur de données! Veuillez completer tous les champs obligatoires !'
-                    return JsonResponse(reponse, safe=False, status=400)
+                    return JsonResponse(reponse, status=400)
 
                 carg = Cargaison.objects.get(idcargaison=pk)
                 carg.etat = "Cargaison dechargee"
@@ -418,36 +423,59 @@ class GestionDechargement():
                             mtv = gsv * densite15 / 1000
                             mta = ((densite15) - 1.1) * (gsv / 1000)
 
-                try:
-                    r = Resultat.objects.get(idcargaison=pk)
-
+                if Resultat.objects.filter(idcargaison_id=pk).exists():
                     carg.save(update_fields=['etat'])
-
                     p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
                                      mtv=mtv, mta=mta)
                     p.save()
-
                     response = {'valid': True}
                     return JsonResponse(response, status=200)
-
-                except ObjectDoesNotExist:
-
+                else:
+                    e = Entrepot_echantillon.objects.get(idcargaison_id=pk)
+                    e = e.idcargaison_id
                     d = datetime.datetime.today()
                     d = d.date()
+                    codelabo = 0
 
-                    c = LaboReception(idcargaison_id=pk, datereceptionlabo=d)
+                    c = LaboReception(idcargaison_id=e, codelabo=codelabo, datereceptionlabo=d)
                     c.save()
-
                     r = Resultat(idcargaison_id=pk, dateimpression=d)
                     r.save()
-
                     carg.save(update_fields=['etat'])
-
                     p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
                                      mtv=mtv, mta=mta)
                     p.save()
                     response = {'valid': True}
                     return JsonResponse(response, status=200)
+
+                # try:
+                #     r = Resultat.objects.get(idcargaison=pk)
+                #
+                #     carg.save(update_fields=['etat'])
+                #
+                #     p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
+                #                      mtv=mtv, mta=mta)
+                #     p.save()
+                #
+                # except ObjectDoesNotExist:
+                #
+                #     d = datetime.datetime.today()
+                #     d = d.date()
+                #     codelabo = 0
+                #
+                #     c = LaboReception(idcargaison_id=pk, codelabo=codelabo, datereceptionlabo=d)
+                #     c.save()
+                #
+                #     r = Resultat(idcargaison_id=pk, dateimpression=d)
+                #     r.save()
+                #
+                #     carg.save(update_fields=['etat'])
+                #
+                #     p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
+                #                      mtv=mtv, mta=mta)
+                #     p.save()
+                #     response = {'valid': True}
+                #     return JsonResponse(response, status=200)
             else:
                 return redirect('dechargement')
         else:

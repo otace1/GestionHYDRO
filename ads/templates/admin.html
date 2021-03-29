@@ -1,8 +1,5 @@
 {% extends 'base_dashboard.html' %}
 {% load crispy_forms_tags %}
-{% block extrahead %}
-    {{ form.media }}
-{% endblock %}
 {% load django_tables2 %}
 
 
@@ -83,29 +80,30 @@
               <div class="modal-body">
                         {% csrf_token %}
                         {{ form | crispy }}
-{#                        <script>#}
-{#                            $(function () {#}
-{#                                $("#id_date").datepicker({#}
-{#                                    format: 'dd/mm/yyyy',#}
-{#                                });#}
-{#                            });#}
-{#                        </script>#}
+                  <script>
+                      $(function () {
+                          $("#id_date").datepicker({
+                              format: 'dd/mm/yyyy',
+                          });
+                      });
+                  </script>
               </div>
-              <div class="modal-footer">
-                  <button type='submit' class="btn btn-success">Recherche</button>
-                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-              </div>
-                </form>
+                                      <div class="modal-footer">
+                                          <button type='submit' class="btn btn-success">Recherche</button>
+                                          <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler
+                                          </button>
+                                      </div>
+                                  </form>
             </div>
           </div>
         </div>
 
-     <!--Modal Rapport de production-->
-        <div class="modal" tabindex="-1" role="dialog" id="RechercheModal1">
-          <div class="modal-dialog" role="document">
+    <!--Modal Rapport de production-->
+    <div class="modal" tabindex="-1" role="dialog" id="RechercheModal1">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
-              <div class="modal-header">
-                <h3 class="modal-title">Statistiques de Production</h3>
+                <div class="modal-header">
+                    <h3 class="modal-title">Statistiques de Production</h3>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
                 </button>
@@ -115,29 +113,29 @@
               <div class="modal-body">
                         {% csrf_token %}
                         {{ form | crispy }}
-{#                        <script>#}
-{#                            $(function () {#}
-{#                                $("#id_date").datepicker({#}
-{#                                    format: 'dd/mm/yyyy',#}
-{#                                });#}
-{#                            });#}
-{#                        </script>#}
+                  <script>
+                      $(function () {
+                          $("#id_date").datepicker({
+                              format: 'dd/mm/yyyy',
+                          });
+                      });
+                  </script>
               </div>
-              <div class="modal-footer">
-                  <button type='submit' class="btn btn-success">Recherche</button>
-                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-              </div>
-                </form>
+                       <div class="modal-footer">
+                           <button type='submit' class="btn btn-success">Recherche</button>
+                           <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
+                       </div>
+                   </form>
             </div>
-          </div>
         </div>
+    </div>
 
 
-     <!--Modal Rapport des encaissements-->
-        <div class="modal" tabindex="-1" role="dialog" id="RechercheModal2">
-          <div class="modal-dialog" role="document">
+    <!--Modal Rapport des encaissements-->
+    <div class="modal" tabindex="-1" role="dialog" id="RechercheModal2">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
-              <div class="modal-header">
+                <div class="modal-header">
                 <h3 class="modal-title">Statistiques des Encaissements</h3>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
@@ -148,24 +146,25 @@
               <div class="modal-body">
                         {% csrf_token %}
                         {{ form1 | crispy }}
-{#                        <script>#}
-{#                            $(function () {#}
-{#                                $("#id_date").datepicker({#}
-{#                                    format: 'dd/mm/yyyy',#}
-{#                                });#}
-{#                            });#}
-{#                        </script>#}
+                  <script>
+                      $(function () {
+                          $("#id_date").datepicker({
+                              format: 'dd/mm/yyyy',
+                          });
+                      });
+                  </script>
               </div>
-              <div class="modal-footer">
-                  <button type='submit' class="btn btn-success" id="enc">Recherche</button>
-                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-              </div>
-                </form>
+                                      <div class="modal-footer">
+                                          <button type='submit' class="btn btn-success" id="enc">Recherche</button>
+                                          <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler
+                                          </button>
+                                      </div>
+                                  </form>
             </div>
-          </div>
         </div>
+    </div>
 
-                    {% render_table table %}
+    {% render_table table %}
 
 {% endblock %}
 

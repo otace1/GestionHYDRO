@@ -125,33 +125,17 @@
                     });
                     $('#modal-lg').modal('hide');
                     alert("Données sauvegardées");
-                    {#console.log(data);#}
-
-                    {#// display the newly friend to table.#}
-                    {#var instance = JSON.parse(response["data"]);#}
-                    {#var fields = instance[0]["fields"];#}
-                    {#$("#cargaison tbody").prepend(#}
-                    {#    `<tr>#}
-                    {#        <td>${fields["date"]||""}</td>#}
-                    {#        <td>${fields["importateur"]||""}</td>#}
-                    {#        <td>${fields["volume"]||""}</td>#}
-                    {#        <td>${fields["entrepot"]||""}</td>#}
-                    {#        <td>${fields["immatriculation"]||""}</td>#}
-                    {#        <td>${fields["numdeclaration"]||""}</td>#}
-                    {#        <td>${fields["manifestdgda"]||""}</td>#}
-                    {#        <td>${fields["t1e"]||""}</td>#}
-                    {#        <td>${fields["t1d"]||""}</td>`#}
-                    {#)#}
 
                     $('#modal_qrcode').modal('show');
                     var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Fermer</button>';
                     $('.modal-footer').html(modalFooter);
                 },
 
-                error: function (response) {
-                    console.log('Erreur');
+                error: function (msg) {
+                    console.log(msg);
                     alert("Veuillez completer tous les champs obligatoires !");
                     $('.btn.btn-success').attr("disabled", false);
+                    location.reload();
 
                 },
 

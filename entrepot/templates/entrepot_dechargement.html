@@ -106,11 +106,13 @@ function csrfSafeMethod(method) {
               data: SerializedData,
               success: function () {
                   alert('Données sauvegardées')
+                  console.log('Data Saved');
                   window.location.reload();
                   {#$('#DechargementTable #id').remove();#}
               },
               error: function () {
                   alert("Erreur de données! Veuillez completer tous les champs obligatoires !");
+                  console.log('Data Not Saved');
                   $('.btn.btn-success').attr("disabled", false);
                   location.reload();
               }

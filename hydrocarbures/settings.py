@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'bootstrap4',
     'wkhtmltopdf',
     'bootstrap_datepicker_plus',
+    'bootstrap_datepicker',
     # 'tempus_dominus',
     # 'jquery',
     # 'django_filters',
@@ -71,7 +72,6 @@ INSTALLED_APPS = [
     # 'bootstrap_modal_forms',
     # 'reset_migrations',
 
-    
     # My Apps
     'enreg',
     'shydro',

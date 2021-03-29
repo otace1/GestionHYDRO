@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django_tables2.export.export import TableExport
 import math
+import xlwt
 
 
 
@@ -1763,10 +1764,10 @@ class Dashboard():
                                                                                            dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                                          "per_page": 15}).configure(table)
-                                        export_format = request.GET.get('_export', None)
+                                        export_format = request.GET.get("_export", None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
-                                            return exporter.response('table.{}'.format(export_format))
+                                            return exporter.response("table.{}".format(export_format))
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R35
@@ -7627,6 +7628,3 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                                 return render(request, 'stats.html', {'cargaison': table})
     else:
         return redirect('logout')
-
-
-
