@@ -201,15 +201,15 @@ class GestionEchantillonage():
 
                 # Test pour savoir si le laboratoire a deja pris en charge lechantillon
                 if c.tampon == "1":
-                    c.etat = "Echantillonner"
-                    c.numdossier = numdossier
-                    c.codecargaison = codecargaison
-                    c.save(update_fields=['etat', 'numdossier', 'codecargaison'])
-                    p = Entrepot_echantillon(idcargaison=c, numrappech=numrappech, numplombh=numplombh,
+                   c.etat = "Echantillonner"
+                   c.numdossier = numdossier
+                   c.codecargaison = codecargaison
+                   c.save(update_fields=['etat', 'numdossier', 'codecargaison'])
+                   p = Entrepot_echantillon(idcargaison=c, numrappech=numrappech, numplombh=numplombh,
                                              numplombb=numplombb, numplombbr=numplombbr, numplombaph=numplombaph,
                                              etatphysique=etatphysique, qte=qte, conformite=conformite,
                                              dateechantillonage=dateechantillonage)
-                p.save()
+                   p.save()
                    response = {'valid':True}
                    return JsonResponse(response,status=200)
                 else:
