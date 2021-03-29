@@ -18,6 +18,7 @@ django-tempus-dominus==5.1.2.13
 django-wkhtmltopdf==3.3.0
 django-xhtml2pdf==0.0.4
 future==0.18.2
+gunicorn==20.1.0
 html5lib==1.1
 Pillow==8.1.0
 PyMySQL==1.0.2
@@ -41,3 +42,7 @@ whitenoise==5.2.0
 wkhtmltopdf==0.2
 xhtml2pdf==0.2.5
 xlwt==1.3.0
+gunicorn==20.1.0
+
+
+
