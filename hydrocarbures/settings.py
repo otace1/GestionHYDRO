@@ -32,7 +32,7 @@ SECRET_KEY = '%t(w0ix8nx()z01fq@fjbm3w+59ij53qp%h%3g2a4k3cm+)ls)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['hydro-fw3xw.ondigitalocean.app']
 
 INTERNAL_IPS = [
     '127.0.0.1',
