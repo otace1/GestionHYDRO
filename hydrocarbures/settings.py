@@ -153,15 +153,33 @@ WSGI_APPLICATION = 'hydrocarbures.wsgi.application'
 #     }
 # }
 
+#DATABASES = {
+#    'default': {
+#        'NAME': 'hydro_occ',
+#        'ENGINE': 'django.db.backends.mysql',
+        # 'ENGINE': 'django.db.backends.mysql',
+#        'USER': 'cgw',
+#        'PASSWORD': 'wJ7L9e8E45JbJje',
+#        'HOST': '51.75.244.114',
+#        'PORT': '35512',
+#        'OPTIONS': {
+#            'autocommit': True,
+#        },
+#    }
+#}
+
+
+
+
 DATABASES = {
     'default': {
-        'NAME': 'hydro_occ',
+        'NAME': 'defaultdb',
         'ENGINE': 'django.db.backends.mysql',
         # 'ENGINE': 'django.db.backends.mysql',
-        'USER': 'cgw',
-        'PASSWORD': 'wJ7L9e8E45JbJje',
-        'HOST': '51.75.244.114',
-        'PORT': '35512',
+        'USER': 'doadmin',
+        'PASSWORD': 'yv7nkqp7kg99ezzk',
+        'HOST': 'db-mysql-fra1-94949-do-user-4618658-0.b.db.ondigitalocean.com',
+        'PORT': '25060',
         'OPTIONS': {
             'autocommit': True,
         },
