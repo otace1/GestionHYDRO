@@ -19,9 +19,6 @@ from django.contrib.messages import constants as messages
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -32,7 +29,7 @@ SECRET_KEY = '%t(w0ix8nx()z01fq@fjbm3w+59ij53qp%h%3g2a4k3cm+)ls)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -64,8 +61,6 @@ INSTALLED_APPS = [
     'bootstrap4',
     'wkhtmltopdf',
     'bootstrap_datepicker_plus',
-    'bootstrap_datepicker',
-    # 'tempus_dominus',
     # 'jquery',
     # 'django_filters',
     # 'import_export',
@@ -83,16 +78,15 @@ INSTALLED_APPS = [
 
 ]
 
-
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 
 MESSAGE_TAGS = {
 
-    messages.ERROR:'danger'
+    messages.ERROR: 'danger'
 
-    }
+}
 
-BOOTSTRAP4 = {
+BOOTSTRAP3 = {
     'include_jquery': True,
 }
 
@@ -137,21 +131,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'hydrocarbures.wsgi.application'
 
+
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'NAME': 'hydro_occ',
-#         'ENGINE': 'django.db.backends.mysql',
-#         # 'ENGINE': 'django.db.backends.mysql',
-#         'USER': 'cgw',
-#         'PASSWORD': 'P@55w0rd!',
-#         'OPTIONS': {
-#           'autocommit': True,
-#         },
-#     }
-# }
 
 DATABASES = {
     'default': {
@@ -159,15 +141,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # 'ENGINE': 'django.db.backends.mysql',
         'USER': 'cgw',
-        'PASSWORD': 'wJ7L9e8E45JbJje',
-        'HOST': '51.75.244.114',
-        'PORT': '35512',
+        'PASSWORD': 'P@55w0rd!',
         'OPTIONS': {
             'autocommit': True,
         },
     }
 }
-
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
@@ -205,21 +184,21 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = (
-
     os.path.join(BASE_DIR, 'assets'),
-
 )
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# MEDIA_URL = '/media/'
+
 
 # Sentry
 

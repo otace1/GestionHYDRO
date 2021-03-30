@@ -1,5 +1,4 @@
-#{% load static %}
-{% load staticfiles %}
+{% load static from staticfiles %}
 
 <html>
 <head>
@@ -20,15 +19,15 @@
     <link rel="stylesheet" href="{% static '/dist/css/skins/skin-blue.min.css' %}">
 
     <!-- Google Font -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
 
-  <!-- Date picker -->
-  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+    <!-- Date picker -->
+    <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
+    <link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+    <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block script %}
+    {% block script %}
 
   {% endblock %}
 
