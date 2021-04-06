@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect
+from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect, HttpResponse
 from django.db import connection
 from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation
 from django.db.models import Q
@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django_tables2.export.export import TableExport
 import math
-import xlwt
+import xlsxwriter
 
 
 
@@ -1165,6 +1165,7 @@ class Dashboard():
                                             prefix='2_')
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                                          "per_page": 15}).configure(table)
+
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)

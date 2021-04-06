@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'django_tables2',
     # 'bootstrap3',
     'bootstrap4',
-    'wkhtmltopdf',
     'bootstrap_datepicker_plus',
     # 'jquery',
     # 'django_filters',
@@ -176,7 +175,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'fr-FR'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Lubumbashi'
 
 USE_I18N = True
 
@@ -200,18 +199,18 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # MEDIA_URL = '/media/'
 
 
-# Sentry
-
-sentry_sdk.init(
-    dsn="https://152f9554cbe24dc796c9a356bcf74959@o554823.ingest.sentry.io/5683884",
-    integrations=[DjangoIntegration()],
-
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
-    traces_sample_rate=1.0,
-
-    # If you wish to associate users to errors (assuming you are using
-    # django.contrib.auth) you may enable sending PII data.
-    send_default_pii=True
-)
+# # Sentry
+#
+# sentry_sdk.init(
+#     dsn="https://152f9554cbe24dc796c9a356bcf74959@o554823.ingest.sentry.io/5683884",
+#     integrations=[DjangoIntegration()],
+#
+#     # Set traces_sample_rate to 1.0 to capture 100%
+#     # of transactions for performance monitoring.
+#     # We recommend adjusting this value in production.
+#     traces_sample_rate=1.0,
+#
+#     # If you wish to associate users to errors (assuming you are using
+#     # django.contrib.auth) you may enable sending PII data.
+#     send_default_pii=True
+# )

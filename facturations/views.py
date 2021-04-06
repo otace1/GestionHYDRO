@@ -30,7 +30,8 @@ def facturations(request):
                                                   WHERE l.idcargaison_id = c.idcargaison \
                                                   AND c.frontiere_id = a.ville_id \
                                                   AND a.username_id = %s \
-                                                  ORDER BY l.datebl DESC',[id,]), prefix='2_')
+                                                  AND l.type_appurement = 3 \
+                                                  ORDER BY l.datebl DESC', [id,]), prefix='2_')
 
 
 # Traitement tableau 2
@@ -50,11 +51,11 @@ def facturations(request):
 
     table2 = Facturations1(list)
 
-    RequestConfig(request, paginate=True).configure(table)
-    RequestConfig(request, paginate={"per_page": 15}).configure(table2)
+    RequestConfig(request, paginate={"per_page": 8}).configure(table)
+    RequestConfig(request, paginate={"per_page": 8}).configure(table2)
     return render(request, 'facturations.html', {'facturations': table,
-                                                 'facturations1':table2,
-                                                 'form':form,
+                                                 'facturations1': table2,
+                                                 'form': form,
                                                  })
 
 def saisiebl(request):
@@ -115,7 +116,7 @@ def appureration(request):
                                                   AND c.frontiere_id = a.ville_id \
                                                   AND a.username_id = %s \
                                                   ORDER BY l.datebl DESC', [id,]), prefix='2_')
-    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"per_page": 8}).configure(table)
     return render(request, 'appuration.html', {'appuration': table})
 
 def detailsappuration(request,pk):

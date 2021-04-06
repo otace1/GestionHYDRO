@@ -5,16 +5,21 @@
 
 {% block extra %}
     <div class="col-md-2">
-            <a href="{% url 'dashboard' %}"><button class="btn btn-danger"><i class="fa fa-backward"></i>Retour</button></a>
+        <a href="{% url 'dashboard' %}">
+            <button class="btn btn-danger"><i class="fa fa-backward"></i>Retour</button>
+        </a>
     </div>
     <div class="col-md-2">
-            <a href="{% querystring '_export'='xlsx' %}"><button class="btn btn-success"><i class="fa fa-download"></i>Telech.</button></a>
-       </div>
+        <a href="{% querystring '_export'='csv' %}">
+            <button class="btn btn-success"><i class="fa fa-download"></i>Telech.</button>
+        </a>
+    </div>
 {% endblock %}
 
 
-{% block dashboard%}
+{% block dashboard %}
     {% render_table cargaison %}
+
 {% endblock %}
 
 

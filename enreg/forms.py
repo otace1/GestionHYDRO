@@ -66,7 +66,7 @@ class Ajoutcargaison(forms.Form):
                      'produit',
                      Field('valeurfacture', placeholder='Valeur facture en USD si applicable '),
                      Field('poids', placeholder='Le poids est exprimé en Kg'),
-                     Field('volume', placeholder='Introduire une valeure égale à zero donnera une erreur'),
+                     Field('volume', placeholder='Volume en metre Cube Ex: 30.33'),
                      'densitecargaison',
                      Field('tempcargaison',
                            placeholder='Cette valeur est prise à 20°C en accord avec les normes internationales',

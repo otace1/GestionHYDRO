@@ -8,6 +8,7 @@ urlpatterns = [
     path('statistiques/', views.Dashboard.statistiquesimportations, name='statistiques'),
     path('statProduct/', views.statproduction, name='statProd'),
     path('statEncaissement/', views.statencaissement, name='statencaissement'),
+    # path('export/', views.export_import, name='export_import'),
 
 
     path('entrepot/', views.gestionentrepot, name='gest_entrepot'),
