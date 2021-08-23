@@ -9,7 +9,7 @@ TEMPLATE = """
 
 
 class CargaisonTable(tables.Table):
-    Print = tables.TemplateColumn(TEMPLATE, verbose_name='QRCode')
+    Print = tables.TemplateColumn(TEMPLATE, verbose_name='')
     user = tables.Column(verbose_name='Utilisateur')
 
     class Meta:

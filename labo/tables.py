@@ -3,7 +3,7 @@ from enreg.models import Cargaison, Entrepot_echantillon, LaboReception, Resulta
 
 TEMPLATE = """
             <button type="button" class="btn btn-success" data-id={{record.pk}} data-toggle="modal" data-target="#modal-default">
-                  Reception
+                  Réception
                 </button>
            """
 
@@ -60,10 +60,10 @@ TEMPLATE2 = """
             """
 
 VALIDATION1 = """
-<a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">Afficher</a>
-<a href="{%url 'conforme' record.pk%}" class="btn btn-success">Conforme</a>
-<a href="{%url 'nonconforme' record.pk%}" class="btn btn-danger">Non Conforme</a>
-<a href="{%url 'refaire' record.pk%}" class="btn btn-black">Refaire</a>
+<a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
+<a href="{%url 'conforme' record.pk%}" class="btn btn-success">CONFORME</a>
+<a href="{%url 'nonconforme' record.pk%}" class="btn btn-danger">NON CONFORME</a>
+<a href="{%url 'refaire' record.pk%}" class="btn btn-light">A REFAIRE</a>
 """
 
 CQ = """
@@ -75,7 +75,7 @@ CQ = """
 """
 
 VALIDATION2 = """
-<a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-info">Afficher les resultats</a>
+<a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-info">Afficher les résultats</a>
               """
 
 IMPRESSION = """
@@ -86,7 +86,7 @@ REIMPRESSION = """
     <a href="{%url 'reprint' record.pk%}" class="btn btn-info">Impression</a>
     """
 
-IMPRESSION1 = """   <a href="{%url 'fiche' record.pk%}" class="btn btn-info">Fiche Resultat</a>
+IMPRESSION1 = """   <a href="{%url 'fiche' record.pk%}" class="btn btn-info">Fiche Résultat</a>
              """
 
 GO = """
@@ -168,7 +168,7 @@ class AffichageValidation1(tables.Table):
     importateur = tables.Column(accessor='idcargaison.idcargaison.idcargaison.importateur', verbose_name="Importateur")
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
         template_name = "django_tables2/bootstrap4.html"
         model = Resultat
         sequence = ['codelabo', 'numrappech', 'importateur', 'produit', 'numcertificatqualite', 'certificat']
@@ -327,3 +327,27 @@ class TableEnvoiGo(tables.Table):
                    'tensionvapeur', 'plomb', 'indiceoctane',
                    'vol10', 'vol20', 'vol30', 'vol40', 'vol50', 'vol60', 'vol70', 'vol80', 'vol90', 'indicecetane',
                    'densite', 'recuperation362', 'cendre', 'massevolumique15', 'dateanalyse', 'dateimpression']
+
+
+class RapportLaboTable(tables.Table):
+    dateechantillonage = tables.Column(verbose_name='Date Ech.')
+    datereceptionlabo = tables.Column(verbose_name='Date Reception Labo')
+    nomimportateur = tables.Column(verbose_name='Importateur')
+    nomentrepot = tables.Column(verbose_name='Entrepot')
+    immatriculation = tables.Column(verbose_name='Immatriculation')
+    numdossier = tables.Column(verbose_name='Num. Dossier')
+    codecargaison = tables.Column(verbose_name='Code Camion')
+    numrappech = tables.Column(verbose_name="Rapport d'Ech.")
+    codelabo = tables.Column(verbose_name='Code Labo')
+    dateanalyse = tables.Column(verbose_name='Date Enc.')
+    dateimpression = tables.Column(verbose_name='Date Impr.')
+    numcertificatqualite = tables.Column(verbose_name='Num. CQ')
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+        model = LaboReception
+        sequence = ['datereceptionlabo', 'dateechantillonage', 'nomimportateur', 'nomentrepot', 'immatriculation',
+                    'numdossier', 'codecargaison', 'numrappech', 'codelabo', 'dateanalyse', 'dateimpression',
+                    'numcertificatqualite']
+        exclude = ['idcargaison']

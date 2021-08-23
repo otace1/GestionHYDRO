@@ -1,15 +1,17 @@
 from django.shortcuts import render, redirect
 from enreg.models import Entrepot_echantillon, LaboReception, Cargaison, Resultat, Produit
+from accounts.models import AffectationVille, AffectationEntrepot
 from .tables import LaboratoireReception, AffichageAnalyse, AffichageValidation1, AffichageValidation2, \
     AffichageTableauImpression, TableEnvoiGo, AffichageValidation2Go, TableauEchantillonRecu, \
-    AffichageTableauReImpression, AffichageAnalyseRefaire
-from .forms import ReceptionEchantillon, Mogas, Gasoil, JetA1, PetroleLampant, ModificationEchantillon
+    AffichageTableauReImpression, AffichageAnalyseRefaire, RapportLaboTable
+from .forms import ReceptionEchantillon, Mogas, Gasoil, JetA1, PetroleLampant, ModificationEchantillon, RapportLabo
 from django.contrib.auth.decorators import login_required
 from labo.utils import render_to_pdf
 from django.http import HttpResponse
 from django.db.models import Q
 from django_tables2.paginators import LazyPaginator
 from django_tables2 import RequestConfig
+from django_tables2.export.export import TableExport
 from datetime import datetime
 from django.http import JsonResponse
 
@@ -41,8 +43,8 @@ class GestionLaboratoire():
                                                                           ORDER BY l.datereceptionlabo DESC'),
                                             prefix="2_")
 
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
             return render(request, 'labo.html', {
                 'labo': table,
                 'labo1': table1,
@@ -156,12 +158,15 @@ class GestionLaboratoire():
             if q == "":
                 return redirect('labo')
             else:
+                a = '%' + q + '%'
                 table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
                                                                     FROM hydro_occ.enreg_cargaison c  \
                                                                     LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
-                                                                    WHERE c.qrcode = %s \
-                                                                    OR e.numrappech = %s \
-                                                                    ORDER BY dateechantillonage DESC', [q, q]),
+                                                                    WHERE c.qrcode LIKE %s \
+                                                                    OR e.numrappech LIKE %s \
+                                                                    OR c.immatriculation LIKE %s \
+                                                                    OR c.codecargaison LIKE %s \
+                                                                    ORDER BY dateechantillonage DESC', [q, a, a, q, ]),
                                              prefix="1_")
 
                 table1 = TableauEchantillonRecu(Entrepot_echantillon.objects.raw('SELECT e.idcargaison_id, l.datereceptionlabo, l.codelabo ,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
@@ -252,8 +257,8 @@ class GestionAnalyse():
                                                                     AND c.etat = "Refaire" \
                                                                     ORDER BY l.datereceptionlabo DESC'), prefix="2_")
 
-            RequestConfig(request, paginate={"per_page": 10}).configure(table1)
-            RequestConfig(request, paginate={"per_page": 10}).configure(table2)
+            RequestConfig(request, paginate={"per_page": 17}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 17}).configure(table2)
             return render(request, 'labo_analyse.html', {
                 'analyse': table1,
                 'refaire': table2,
@@ -290,9 +295,9 @@ class GestionAnalyse():
                                                                                                         ORDER BY l.datereceptionlabo DESC'),
                                                  prefix="2_")
 
-                RequestConfig(request, paginate={"per_page": 10}).configure(
+                RequestConfig(request, paginate={"per_page": 15}).configure(
                     table1)
-                RequestConfig(request, paginate={"per_page": 10}).configure(
+                RequestConfig(request, paginate={"per_page": 15}).configure(
                     table2)
 
                 return render(request, 'labo_analyse.html', {
@@ -329,9 +334,9 @@ class GestionAnalyse():
                                                                                                         AND l.codelabo = %s',
                                                                            [q, ]), prefix="2_")
 
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(
                     table1)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(
                     table2)
 
                 return render(request, 'labo_analyse.html', {
@@ -442,6 +447,7 @@ class GestionAnalyse():
         id = user.id
         role = user.role_id
         url = request.session['url']
+
 
         td = datetime.today()
         today = td.date()
@@ -1038,8 +1044,8 @@ class GestionValidation():
         user = request.user
         id = user.id
         role = user.role_id
-
         request.session['url'] = request.get_full_path()
+        form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
             table = AffichageValidation1(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, c.importateur_id, c.produit_id, e.numrappech, l.codelabo, l.numcertificatqualite \
                                                                 FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
@@ -1049,8 +1055,9 @@ class GestionValidation():
                                                                 AND c.etat = "Validation en cours 1" \
                                                                 ORDER BY r.dateanalyse DESC'))
 
-            RequestConfig(request, paginate={"per_page": 10}).configure(table)
-            return render(request, 'labo_validation1.html', {'labo': table})
+            RequestConfig(request, paginate={"per_page": 14}).configure(table)
+            return render(request, 'labo_validation1.html', {'labo': table,
+                                                             'form': form, })
         else:
             return redirect('logout')
 
@@ -1615,8 +1622,8 @@ class GestionImpressionLabo():
                                                 AND c.impression = 1 \
                                                 ORDER BY r.dateanalyse DESC'), prefix='3_')
 
-            RequestConfig(request, paginate={"per_page": 10}).configure(table)
-            RequestConfig(request, paginate={"per_page": 10}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 14}).configure(table)
+            RequestConfig(request, paginate={"per_page": 14}).configure(table1)
 
             return render(request, 'labo_impression.html',
                           {
@@ -2089,7 +2096,6 @@ class GestionImpressionLabo():
         role = user.role_id
         url = request.session['url']
         if role == 5 or role == 1 or role == "v1" or role == "v2":
-
             td = datetime.today()
             today = td.date()
 
@@ -2460,7 +2466,6 @@ class GestionImpressionLabo():
         user = request.user
         id = user.id
         role = user.role_id
-
         if role == 5 or role == 1 or role == 6 or role == "v2":
 
             # Récuperation des dates
@@ -2471,7 +2476,6 @@ class GestionImpressionLabo():
             for obj in d:
                 mois = obj.mois
                 annee = obj.annee
-
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
             produit = p.nomproduit
@@ -2827,3 +2831,73 @@ class EnvoiGoHydro():
             return render(request, 'labo_validation2.html', {'labo': table})
         else:
             return redirect('logout')
+
+
+@login_required(login_url='login')
+def labdashboard(request):
+    user = request.user
+    role = user.role_id
+    id = user.id
+    u = user.username
+    username = user.username
+    ville = AffectationVille.objects.get(username=id)
+    ville = ville.ville_id
+    template = 'labodashboard.html'
+    form = RapportLabo()
+
+    # compteur de nombre de cargaison en attente de reception
+
+    data = {'form': form}
+    return render(request, template, data)
+
+
+@login_required(login_url='login')
+def labdashboardrapport(request):
+    user = request.user
+    role = user.role_id
+    id = user.id
+    u = user.username
+    username = user.username
+    ville = AffectationVille.objects.get(username=id)
+    ville = ville.ville_id
+    template = 'labodashboardrapport.html'
+    if request.method == 'POST':
+        datedebut = request.POST['datedebut']
+        datefin = request.POST['datefin']
+        request.session['datedebut'] = datedebut
+        request.session['datefin'] = datefin
+        table1 = RapportLaboTable(LaboReception.objects.raw('SELECT DISTINCT(l.idcargaison_id), e.dateechantillonage, l.datereceptionlabo, i.nomimportateur , ee.nomentrepot , c.immatriculation, c.numdossier, c.codecargaison, e.numrappech, l.codelabo, r.dateanalyse, r.dateimpression, l.numcertificatqualite \
+                                                                        FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.enreg_resultat r, hydro_occ.enreg_importateur i, hydro_occ.enreg_entrepot ee \
+                                                                        WHERE l.idcargaison_id = e.idcargaison_id \
+                                                                        AND e.idcargaison_id = c.idcargaison \
+                                                                        AND l.idcargaison_id = r.idcargaison_id \
+                                                                        AND i.idimportateur = c.importateur_id \
+                                                                        AND ee.identrepot = c.entrepot_id \
+                                                                        AND c.frontiere_id = %s \
+                                                                        AND l.datereceptionlabo BETWEEN %s AND %s \
+                                                                        ORDER BY DATE(l.datereceptionlabo) DESC',
+                                                            [ville, datedebut, datefin, ]), prefix='1_')
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                         "per_page": 20}).configure(table1)
+        return render(request, template, {'table': table1})
+    else:
+        datedebut = request.session['datedebut']
+        datefin = request.session['datefin']
+        table1 = RapportLaboTable(LaboReception.objects.raw('SELECT DISTINCT(l.idcargaison_id), e.dateechantillonage, l.datereceptionlabo, i.nomimportateur , ee.nomentrepot , c.immatriculation, c.numdossier, c.codecargaison, e.numrappech, l.codelabo, r.dateanalyse, r.dateimpression, l.numcertificatqualite \
+                                                                                FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.enreg_resultat r, hydro_occ.enreg_importateur i, hydro_occ.enreg_entrepot ee \
+                                                                                WHERE l.idcargaison_id = e.idcargaison_id \
+                                                                                AND e.idcargaison_id = c.idcargaison \
+                                                                                AND l.idcargaison_id = r.idcargaison_id \
+                                                                                AND i.idimportateur = c.importateur_id \
+                                                                                AND ee.identrepot = c.entrepot_id \
+                                                                                AND c.frontiere_id = %s \
+                                                                                AND l.datereceptionlabo BETWEEN %s AND %s \
+                                                                                ORDER BY DATE(l.datereceptionlabo) DESC',
+                                                            [ville, datedebut, datefin, ]), prefix='1_')
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                         "per_page": 20}).configure(table1)
+        export_format = request.GET.get('_export', None)
+        if TableExport.is_valid_format(export_format):
+            exporter = TableExport(export_format, table1)
+            return exporter.response('table.{}'.format(export_format))
+        return render(request, template, {'table': table1})

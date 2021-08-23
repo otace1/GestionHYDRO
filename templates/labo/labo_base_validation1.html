@@ -4,6 +4,7 @@
 {% bootstrap_javascript jquery='full' %}
 
 {% block extrahead %}
+    {{ form.media }}
 {% endblock %}
 
 <html>
@@ -158,42 +159,41 @@
 {#        </div>#}
 {#      </li>#}
 {#      <li class="nav-item">#}
-{#        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">#}
-{#          <i class="fas fa-th-large"></i>#}
-{#        </a>#}
-{#      </li>#}
+        {#        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">#}
+        {#          <i class="fas fa-th-large"></i>#}
+        {#        </a>#}
+        {#      </li>#}
     </ul>
   </nav>
 
     <!-- Left side column. contains the logo and sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <!-- Brand Logo -->
-    <a href="#" class="brand-link">
-      <img src="" alt="" class="brand-image img-circle elevation-3"
-           style="opacity: .8">
-      <span class="brand-text font-weight-light">CGW|<b>APP</b></span>
-    </a>
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="#" class="brand-link">
+            {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
+            <span class="brand-text font-weight-light"><b>CGW</b>||<b>HYDRO</b></span>
+        </a>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <!-- Sidebar user panel (optional) -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="image">
-{#         <span class="dot"></span>#}
-        </div>
-        <div class="btn-success btn-lg">
-          <span class="badge badge-pill badge-success">{{ request.user.first_name }} {{ request.user.last_name }}</span>
-{#          <a href="#" class="d-block"></a>#}
-        </div>
-      </div>
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+                    <img src="/media/images.png" class="img-circle elevation-2" alt="User Image">
+                </div>
+                <div class="info">
+                    <a href="#" class="d-block">{{ request.user.first_name }} {{ request.user.last_name }}</a>
+                </div>
+            </div>
 
-  <!-- sidebar: style can be found in sidebar.less -->
-   <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+            <!-- sidebar: style can be found in sidebar.less -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    <!-- Add icons to the links using the .nav-icon class
+                         with font-awesome or any other icon font library -->
 
-        {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 'st'%}
+                    {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 'st' %}
 
          <li class="nav-item has-treeview menu-open">
             <a href="{%url 'dashboard'%}" class="nav-link active">
@@ -251,25 +251,33 @@
 
         <li class="header">CERTIFICATION</li>
 
-        <li class="nav-item has-treeview">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-flask"></i>
-              <p>
-                Laboratoire
-                <i class="fas fa-angle-left right"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-                {% if user.role_id == 4 or user.role_id == 1%}
-              <li class="nav-item">
-                <a href="{%url 'labo'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Réception d'échantillons</p>
+            <li class="nav-item has-treeview">
+                <a href="#" class="nav-link">
+                    <i class="nav-icon fas fa-flask"></i>
+                    <p>
+                        Laboratoire
+                        <i class="fas fa-angle-left right"></i>
+                    </p>
                 </a>
-              </li>
-                {% endif %}
-                {% if user.role_id == 5 or user.role_id == 1%}
-              <li class="nav-item">
+                <ul class="nav nav-treeview">
+                    {% if user.role_id == 6 or user.role_id == 1 %}
+                        <li class="nav-item">
+                            <a href="{% url 'labodashboard' %}" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard LABO</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.role_id == 4 or user.role_id == 1 %}
+                        <li class="nav-item">
+                            <a href="{% url 'labo' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Réception d'échantillons</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.role_id == 5 or user.role_id == 1 %}
+                        <li class="nav-item">
                 <a href="{%url 'analyse'%}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Encodage des résultats</p>
@@ -551,31 +559,147 @@
         </div><!-- /.row -->
       </div><!-- /.container-fluid -->
     </div>
-    <!-- /.content-header -->
+       <!-- /.content-header -->
 
-    <!-- Main content -->
-    <section class="content">
-    <div class="container-fluid">
-    <div class="row">
-    <div class="col-md-12">
-    <div class="card card-default">
-     <div class="card-header">
-            <h3 class="card-title">Validation des Analyses</h3>
-          </div>
-              {% block content %}
+       <!-- Main content -->
+       <section class="content">
+           <div class="container-fluid">
+               <div class="col-sm-6">
+                   <h1 class="m-0 text-dark"><b>Validation & contrôle des résultats</b></h1>
+               </div>
+               <!-- /.row -->
+               <!-- /.container-fluid -->
 
 
-              {% endblock %}
-              </div>
-          </div>
-    </div>
-    </div>
-      <!-- /.row -->
-    </section>
-  </div>
-  <!-- /.content-wrapper -->
- <footer class="main-footer">
-    <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
+               <div class="row">
+                   <!--Modal Rapport d'importation-->
+                   <div class="modal" tabindex="-1" role="dialog" id="RechercheModal">
+                       <div class="modal-dialog" role="document">
+                           <div class="modal-content">
+                               <div class="modal-header">
+                                   <h3 class="modal-title">Rapport périodique</h3>
+                                   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                       <span aria-hidden="true">&times;</span>
+                                   </button>
+                               </div>
+                               <form method="post" action="{% url 'labodashboardrapport' %}">
+
+                                   <div class="modal-body">
+                                       {% block modal1 %}
+                                       {% endblock %}
+
+                                   </div>
+                                   <div class="modal-footer">
+                                       <button type='submit' class="btn btn-success">Recherche</button>
+                                       <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler
+                                       </button>
+                                   </div>
+                               </form>
+                           </div>
+                       </div>
+                   </div>
+               </div><!-- /.container-fluid -->
+               <br>
+               <div class="row">
+                   <div class="col-md-8">
+                       <div class="card bg-gradient-dark">
+                           <div class="card-header border-0">
+                               <h3 class="card-title"><b>Résultats en attente de validation</b></h3>
+                           </div>
+                           <div class="card-body table-responsive p-0">
+                               {% block content %}
+                               {% endblock %}
+                           </div>
+                       </div>
+                   </div>
+
+                   <div class="col-md-4">
+                       <div class="col-sm-6">
+                           <h1 class="m-0 text-dark"><b>KPIs LABO</b></h1>
+                       </div>
+                       <br>
+                       <div class="col-lg-12 col-12">
+                           <div class="col-md-6">
+                               <a href="" data-toggle="modal" data-target="#RechercheModal"
+                                  class="btn btn-outline-danger" role="button">Rapport périodique du Labo</a>
+                           </div>
+                           <br>
+                           <!-- small box -->
+                           <div class="small-box bg-info">
+                               <div class="inner">
+                                   <h3>150</h3>
+
+                                   <p>Échantillons en attente de réceptions</p>
+                               </div>
+                               <div class="icon">
+                                   <i class="ion ion-bag"></i>
+                               </div>
+                               <a href="#" class="small-box-footer">Plus d'info <i
+                                       class="fas fa-arrow-circle-right"></i></a>
+                           </div>
+                       </div>
+                       <!-- ./col -->
+                       <div class="col-lg-12 col-12">
+                           <!-- small box -->
+                           <div class="small-box bg-success">
+                               <div class="inner">
+                                   <h3>53<sup style="font-size: 20px">%</sup></h3>
+
+                                   <p>Échantillons réceptionnés et En cours d'analyse</p>
+                               </div>
+                               <div class="icon">
+                                   <i class="ion ion-stats-bars"></i>
+                               </div>
+                               <a href="#" class="small-box-footer">Plus d'info <i
+                                       class="fas fa-arrow-circle-right"></i></a>
+                           </div>
+                       </div>
+                       <!-- ./col -->
+                       <div class="col-lg-12 col-12">
+                           <!-- small box -->
+                           <div class="small-box bg-warning">
+                               <div class="inner">
+                                   <h3>44</h3>
+
+                                   <p>En Attente de vérification et validation</p>
+                               </div>
+                               <div class="icon">
+                                   <i class="ion ion-person-add"></i>
+                               </div>
+                               <a href="#" class="small-box-footer">Plus d'info <i
+                                       class="fas fa-arrow-circle-right"></i></a>
+                           </div>
+                       </div>
+                       <!-- ./col -->
+                       <div class="col-lg-12 col-12">
+                           <!-- small box -->
+                           <div class="small-box bg-danger">
+                               <div class="inner">
+                                   <h3>65</h3>
+
+                                   <p>Certificats Imprimés</p>
+                               </div>
+                               <div class="icon">
+                                   <i class="ion ion-pie-graph"></i>
+                               </div>
+                               <a href="#" class="small-box-footer">Plus d'info <i
+                                       class="fas fa-arrow-circle-right"></i></a>
+                           </div>
+                       </div>
+                       <!-- ./col -->
+
+                   </div>
+
+               </div>
+
+           </div>
+
+           <!-- /.row -->
+       </section>
+   </div>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
     All rights reserved.
     <div class="float-right d-none d-sm-inline-block">
       <b>Version</b> 3.0

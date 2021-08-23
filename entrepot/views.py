@@ -13,8 +13,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 import datetime
 
-
-
 #Gestion des echantillonages
 class GestionEchantillonage():
 
@@ -29,12 +27,6 @@ class GestionEchantillonage():
         form = Echantilloner(request.POST or None)
 
         if role == 3 or role == 1 or role == 9:
-           # table = EchantillonTable(Cargaison.objects.filter(Q(etat="En attente d'echantillonage")|Q(tampon='0')|Q(etat="En attente requisition")).filter(entrepot__affectationentrepot__username_id=id, dateheurecargaison__year=today.year).order_by('-dateheurecargaison'), prefix="1_")
-           # RequestConfig(request, paginate={"per_page":15}).configure(table)
-           #
-           # table1 = EchantillonEnregistrer(Cargaison.objects.filter(Q(etat="En attente requisition")|Q(tampon='0')).filter(entrepot__affectationentrepot__username_id=id, dateheurecargaison__year=today.year).order_by('-dateheurecargaison'), prefix="2_")
-           # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":15}).configure(table1)
-
            table = EchantillonTable(Cargaison.objects.filter(
                Q(etat="En attente d'echantillonage") | Q(tampon='0') | Q(etat="En attente requisition")).filter(
                entrepot__affectationentrepot__username_id=id).order_by(
@@ -254,7 +246,9 @@ class GestionEchantillonage():
                 table1 = EchantillonEnregistrer(Cargaison.objects.filter(Q(etat="En attente requisition")|Q(etat="En attente d'echantillonage")|Q(tampon='0')).filter(entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison'), prefix="2_")
                 RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table1)
 
-                table = EchantillonTable(Cargaison.objects.filter(qrcode=q).filter(Q(etat="En attente d'echantillonage")|Q(etat="En attente requisition")|Q(tampon='0')), prefix="1_")
+                table = EchantillonTable(Cargaison.objects.filter(Q(qrcode=q) | Q(immatriculation=q)).filter(
+                    Q(etat="En attente d'echantillonage") | Q(etat="En attente requisition") | Q(tampon='0')),
+                                         prefix="1_")
                 RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
 
                 # #Compteur de la page principale de l'entrepot
@@ -322,12 +316,12 @@ class GestionDechargement():
                                              GROUP BY d.idcargaison_id \
                                              ORDER BY d.datedechargement DESC', [id, ]), prefix="1_")
 
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 20}).configure(table)
+            RequestConfig(request, paginate={"per_page": 20}).configure(table1)
             return render(request, 'entrepot_dechargement.html', {'cargaison': table,
-                                                                  'rapport':table1,
-                                                                  'form':form,
-                                                                 })
+                                                                  'rapport': table1,
+                                                                  'form': form,
+                                                                  })
         else:
             if role == 3 or role == 1:
                 table = CargaisonDechargement(Cargaison.objects.filter(etat="En attente de dechargement").filter(entrepot__affectationentrepot__username_id=id, dateheurecargaison__lte=today, dateheurecargaison__gt=today-datetime.timedelta(days=120)).order_by('-dateheurecargaison'), prefix='2_')
@@ -341,14 +335,13 @@ class GestionDechargement():
                                                  AND c.entrepot_id = a.entrepot_id \
                                                  AND a.username_id = %s \
                                                  GROUP BY d.idcargaison_id \
-                                                 ORDER BY d.datedechargement DESC', [id,]), prefix="1_")
+                                                 ORDER BY d.datedechargement DESC', [id, ]), prefix="1_")
 
-
-                RequestConfig(request, paginate={"per_page": 15}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
+                RequestConfig(request, paginate={"per_page": 20}).configure(table)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table1)
                 return render(request, 'entrepot_dechargement.html', {'cargaison': table,
                                                                       'rapport': table1,
-                                                                      'form':form,
+                                                                      'form': form,
                                                                       })
             else:
                 return redirect('logout')
@@ -425,6 +418,8 @@ class GestionDechargement():
 
                 if Resultat.objects.filter(idcargaison_id=pk).exists():
                     carg.save(update_fields=['etat'])
+                    r = Resultat.objects.get(idcargaison_id=pk)
+
                     p = Dechargement(idcargaison=r, densite15=densite15, temperature=temperature, gov=gov, gsv=gsv,
                                      mtv=mtv, mta=mta)
                     p.save()

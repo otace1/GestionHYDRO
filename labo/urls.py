@@ -47,4 +47,8 @@ urlpatterns = [
     path('val4/<int:pk>', views.GestionValidation.conforme2, name='conforme2'),
     path('val5/<int:pk>', views.GestionValidation.nonconforme2, name='nonconforme2'),
 
+    # Dashboard Laboratoire
+    path('labdash/', views.labdashboard, name='labodashboard'),
+    path('labdashrap/', views.labdashboardrapport, name='labodashboardrapport'),
+
 ]

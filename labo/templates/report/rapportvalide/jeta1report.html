@@ -18,7 +18,7 @@
 
 <div align="right">EQF 300.000.26 Rev.00 Du 16.09.14</div>
 
-<table style="width:100%;">
+<table style="width:100%; margin-bottom:-5px;">
     <tbody>
     <tr>
         <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
@@ -35,81 +35,66 @@
 
 <hr>
 
-<table>
+<table cellspacing="0.5" cellpadding="0.5" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black; margin-top:                                                                                                                                                                                                                                                                                                                                                            -5px;">
 
     <tbody>
     <tr>
-        <td>
-        </td>
-    </tr>
-    <tr>
-        <td style="width: 20%"></td>
-        <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
+        <td align="center" colspan="4" style="width: 100%;font-family: 'Times New Roman';font-size: 10px">
             <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
-            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/>
+            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/><br/>
         </td>
-        <td align="right" style="width: 20%;"></td>
     </tr>
-    </tbody>
-</table>
 
-
-<table cellspacing="0" cellpadding="1" border="0"
-       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
-        <td style="font-size:11px;font-family: 'Times New Roman';" colspan="3" width="50%">
+        <td style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
             <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
             <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
         </td>
-
-        <td style="font-size:11px;font-family: 'Times New Roman';" width="50%">
+        <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
             <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
             <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
         </td>
     </tr>
     <tr>
-        <td colspan="4" style="font-size:11px;font-family: 'Times New Roman';">
-            <br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
 
     </tr>
     <tr>
-        <td colspan="4" style="font-size:11px;font-family: 'Times New Roman';">
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
             <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
         </td>
-
 
     </tr>
     <tr>
         <td colspan="2"
-            style="width:35%;font-size:11px;font-family: 'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>&plusmn; {{ qte }} L</span><br/>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
             <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
             <span><b>II.5. Quantité marchandise:</b> - </span>
         </td>
         <td colspan="2"
-            style="width:65%;font-size:11px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
             <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
             <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
             <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
-            <span><b>II.9. Type d'emballage: </b> Boites métallique </span><br/>
+            <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
             <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.11. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
         </td>
 
     </tr>
     <tr>
         <td colspan="2">
-            <br/>
-        </td>
-        <td colspan="2">
-            <br/>
         </td>
 
     </tr>
+
     <tr>
         <td style="width:30%;font-size:11px;font-family: 'Times New Roman'; border: 0.10px solid black;">
             <span><b>III. ESSAI + UNITES DE MESURE</b></span>
@@ -439,11 +424,16 @@
 
     </tr>
     </br>
+    </br>
+    </br>
+    </br>
     <tr>
         <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
             <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
             <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
             <span style="text-align: center;"><b>Sous- Directeur</b></span><br/>
+            <img src="/media/rc.png" width="100px" height="100px"/>
+
         </td>
 
         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
@@ -453,18 +443,16 @@
             <span style="text-align: center;">CHEF DE DIVISION</span><br/>
             <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
             <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <img src="/media/rc.png" width="90px" height="90px"/>
+
         </td>
 
     </tr>
 
 
     </div>
-
+    </tbody>
 </table>
-<br>
-<br>
-<br>
-<br>
 <br>
 
 
@@ -519,81 +507,71 @@
 
 <hr>
 
-<table>
+<table cellspacing="0.5" cellpadding="0.5" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
 
     <tbody>
     <tr>
-        <td>
-        </td>
-    </tr>
-    <tr>
-        <td style="width: 20%"></td>
-        <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
+        <td align="center" colspan="4" style="width: 100%;font-family: 'Times New Roman';font-size: 10px">
             <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
-            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/>
+            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/><br/>
         </td>
-        <td align="right" style="width: 20%;"></td>
     </tr>
-    </tbody>
-</table>
+    {#    </tbody>#}
 
 
-<table cellspacing="0" cellpadding="1" border="0"
-       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    {##}
+    {#<table cellspacing="2" cellpadding="1" border="0"#}
+    {#       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
     <tr>
-        <td style="font-size:11px;font-family: 'Times New Roman';" colspan="3" width="50%">
+        <td style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
             <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
             <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
         </td>
-
-        <td style="font-size:11px;font-family: 'Times New Roman';" width="50%">
+        <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
             <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
             <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
         </td>
     </tr>
     <tr>
-        <td colspan="4" style="font-size:11px;font-family: 'Times New Roman';">
-            <br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
 
     </tr>
     <tr>
-        <td colspan="4" style="font-size:11px;font-family: 'Times New Roman';">
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
             <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
         </td>
-
 
     </tr>
     <tr>
         <td colspan="2"
-            style="width:35%;font-size:11px;font-family: 'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>&plusmn; {{ qte }} L</span><br/>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
             <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
             <span><b>II.5. Quantité marchandise:</b> - </span>
         </td>
         <td colspan="2"
-            style="width:65%;font-size:11px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
             <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
             <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
             <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
-            <span><b>II.9. Type d'emballage: </b> Boites métallique </span><br/>
+            <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
             <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.11. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
         </td>
 
     </tr>
     <tr>
         <td colspan="2">
-            <br/>
-        </td>
-        <td colspan="2">
-            <br/>
         </td>
 
     </tr>
+
     <tr>
         <td style="width:30%;font-size:11px;font-family: 'Times New Roman'; border: 0.10px solid black;">
             <span><b>III. ESSAI + UNITES DE MESURE</b></span>
@@ -923,11 +901,16 @@
 
     </tr>
     </br>
+    </br>
+    </br>
+    </br>
     <tr>
         <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
             <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
             <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
             <span style="text-align: center;"><b>Sous- Directeur</b></span><br/>
+            <img src="/media/rc.png" width="100px" height="100px"/>
+
         </td>
 
         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
@@ -937,6 +920,8 @@
             <span style="text-align: center;">CHEF DE DIVISION</span><br/>
             <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
             <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <img src="/media/rc.png" width="90px" height="90px"/>
+
         </td>
 
     </tr>
@@ -945,10 +930,6 @@
     </div>
 
 </table>
-<br>
-<br>
-<br>
-<br>
 <br>
 
 
@@ -1003,81 +984,71 @@
 
 <hr>
 
-<table>
+<table cellspacing="0.5" cellpadding="0.5" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
 
     <tbody>
     <tr>
-        <td>
-        </td>
-    </tr>
-    <tr>
-        <td style="width: 20%"></td>
-        <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
+        <td align="center" colspan="4" style="width: 100%;font-family: 'Times New Roman';font-size: 10px">
             <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
-            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/>
+            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/><br/>
         </td>
-        <td align="right" style="width: 20%;"></td>
     </tr>
-    </tbody>
-</table>
+    {#    </tbody>#}
 
 
-<table cellspacing="0" cellpadding="1" border="0"
-       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    {##}
+    {#<table cellspacing="2" cellpadding="1" border="0"#}
+    {#       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
     <tr>
-        <td style="font-size:11px;font-family: 'Times New Roman';" colspan="3" width="50%">
+        <td style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
             <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
             <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
         </td>
-
-        <td style="font-size:11px;font-family: 'Times New Roman';" width="50%">
+        <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
             <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
             <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
         </td>
     </tr>
     <tr>
-        <td colspan="4" style="font-size:11px;font-family: 'Times New Roman';">
-            <br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
 
     </tr>
     <tr>
-        <td colspan="4" style="font-size:11px;font-family: 'Times New Roman';">
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
             <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
         </td>
-
 
     </tr>
     <tr>
         <td colspan="2"
-            style="width:35%;font-size:11px;font-family: 'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>&plusmn; {{ qte }} L</span><br/>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
             <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
             <span><b>II.5. Quantité marchandise:</b> - </span>
         </td>
         <td colspan="2"
-            style="width:65%;font-size:11px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
             <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
             <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
             <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
-            <span><b>II.9. Type d'emballage: </b> Boites métallique </span><br/>
+            <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
             <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.11. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
         </td>
 
     </tr>
     <tr>
         <td colspan="2">
-            <br/>
-        </td>
-        <td colspan="2">
-            <br/>
         </td>
 
     </tr>
+
     <tr>
         <td style="width:30%;font-size:11px;font-family: 'Times New Roman'; border: 0.10px solid black;">
             <span><b>III. ESSAI + UNITES DE MESURE</b></span>
@@ -1247,6 +1218,7 @@
             <span> ASTM D 86</span>
         </td>
     </tr>
+
     <tr>
         <td style="width:30%;font-size:11px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-left: 0.10px solid black;">
             <span>  - Rec. 90% Vol. °C</span>
@@ -1406,11 +1378,16 @@
 
     </tr>
     </br>
+    </br>
+    </br>
+    </br>
     <tr>
         <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
             <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
             <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
             <span style="text-align: center;"><b>Sous- Directeur</b></span><br/>
+            <img src="/media/rc.png" width="100px" height="100px"/>
+
         </td>
 
         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
@@ -1420,6 +1397,8 @@
             <span style="text-align: center;">CHEF DE DIVISION</span><br/>
             <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
             <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <img src="/media/rc.png" width="90px" height="90px"/>
+
         </td>
 
     </tr>
@@ -1429,8 +1408,7 @@
 
 </table>
 <br>
-<br>
-<br>
+
 
 <div id="footerContent" style="text-align:center">
     <tr>

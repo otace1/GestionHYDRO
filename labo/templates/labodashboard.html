@@ -1,0 +1,80 @@
+{% extends 'base_labdashboard_layout.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+{% load crispy_forms_tags %}
+{% block extrahead %}
+    {{ form.media }}
+{% endblock %}
+
+{% block dashboard %}
+    <!-- Morris chart - Sales -->
+    <div class="chart tab-pane active" id="revenue-chart" style="position: relative; height: 450px;">
+        <div id="container1"></div>
+        <script src="https://code.highcharts.com/highcharts.src.js"></script>
+        <script src="https://code.highcharts.com/modules/data.js"></script>
+        <script src="https://code.highcharts.com/modules/exporting.js"></script>
+        <script src="https://code.highcharts.com/modules/export-data.js"></script>
+
+        <script>
+            Highcharts.chart('container1', {
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: "Flux des produits pétroliers en volume pour l'Année {% now 'Y' %}"
+                },
+                xAxis: {
+                    categories: {{categories|safe}}
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Volume'
+                    }
+                },
+                plotOptions: {
+                    line: {
+                        dataLabels: {
+                            enabled: true
+                        },
+                        enableMouseTracking: true
+                    }
+                },
+
+                series: [{
+                    name: 'Gasoil',
+                    data: {{gasoil_list}},
+                    color: 'red'
+
+                }, {
+                    name: 'Mogas',
+                    data: {{mogas_list}},
+                    color: 'green'
+                }, {
+                    name: 'Jet A1',
+                    data: {{jeta1_list}},
+
+                }, {
+                    name: 'Petrole Lampant',
+                    data: {{petrole_list}},
+                    color: 'black'
+                }]
+            });
+        </script>
+    </div>
+    <!-- /.nav-tabs-custom -->
+{% endblock %}
+
+{% block modal1 %}
+    {% csrf_token %}
+    {{ form | crispy }}
+    <script>
+        $(function () {
+            $("#id_date").datepicker({
+                format: 'dd/mm/yyyy',
+            });
+        });
+    </script>
+{% endblock %}
+
+

@@ -27,16 +27,16 @@
 <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
 <!-- JQVMap -->
 <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-  <!-- overlayScrollbars -->
-  <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-  <!-- Daterange picker -->
-  <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-  <!-- summernote -->
-  <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-  <!-- DataTables -->
-  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css'%}">
+<!-- Theme style -->
+<link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+<!-- overlayScrollbars -->
+<link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+<!-- Daterange picker -->
+<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+<!-- summernote -->
+<link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+<!-- DataTables -->
+<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
   <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
 
    <!-- Google Font: Source Sans Pro -->
@@ -163,25 +163,33 @@
 
         <li class="header">CERTIFICATION</li>
 
-        <li class="nav-item has-treeview">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-flask"></i>
-              <p>
-                Laboratoire
-                <i class="fas fa-angle-left right"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-                {% if user.role_id == 4 or user.role_id == 1%}
-              <li class="nav-item">
-                <a href="{%url 'labo'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Réception d'échantillons</p>
+            <li class="nav-item has-treeview">
+                <a href="#" class="nav-link">
+                    <i class="nav-icon fas fa-flask"></i>
+                    <p>
+                        Laboratoire
+                        <i class="fas fa-angle-left right"></i>
+                    </p>
                 </a>
-              </li>
-                {% endif %}
-                {% if user.role_id == 5 or user.role_id == 1%}
-              <li class="nav-item">
+                <ul class="nav nav-treeview">
+                    {% if user.role_id == 6 or user.role_id == 1 %}
+                        {#              <li class="nav-item">#}
+                        {#                <a href="{%url 'labodashboard'%}" class="nav-link">#}
+                        {#                  <i class="nav-icon fas fa-tachometer-alt"></i>#}
+                        {#                  <p>Dashboard LABO</p>#}
+                        {#                </a>#}
+                        {#              </li>#}
+                    {% endif %}
+                    {% if user.role_id == 4 or user.role_id == 1 %}
+                        <li class="nav-item">
+                            <a href="{% url 'labo' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Réception d'échantillons</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.role_id == 5 or user.role_id == 1 %}
+                        <li class="nav-item">
                 <a href="{%url 'analyse'%}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Encodage des résultats</p>
@@ -470,12 +478,11 @@
     {% endblock %}
     </div>
 
-<div class="row">
-<div class="col-md-12">
-    <div class="card">
-
-              <div class="card-body table-responsive p-0">
-               {% block dashboard%}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body table-responsive p-0 thead-dark">
+                        {% block dashboard%}
           {% endblock%}
               </div>
           </div>
@@ -496,22 +503,22 @@
 
 
               {% endblock %}
-              </div>
-            <!-- /.box-body -->
+      </div>
+              <!-- /.box-body -->
           </div>
-          <!-- /.box -->
+        <!-- /.box -->
 
         <!-- /.col -->
-      </div>
-
-        </div>
     </div>
-      <!-- /.row -->
-    </section>
-    <!-- /.content -->
-  </div>
-  <!-- /.content-wrapper -->
-  <!-- /.content-wrapper -->
+
+   </div>
+</div>
+<!-- /.row -->
+</section>
+<!-- /.content -->
+</div>
+<!-- /.content-wrapper -->
+<!-- /.content-wrapper -->
 <footer class="main-footer">
     <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
     All rights reserved.

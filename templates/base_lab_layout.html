@@ -253,25 +253,33 @@
 
         <li class="header">CERTIFICATION</li>
 
-        <li class="nav-item has-treeview">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-flask"></i>
-              <p>
-                Laboratoire
-                <i class="fas fa-angle-left right"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-                {% if user.role_id == 4 or user.role_id == 1%}
-              <li class="nav-item">
-                <a href="{%url 'labo'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Réception d'échantillons</p>
+            <li class="nav-item has-treeview">
+                <a href="#" class="nav-link">
+                    <i class="nav-icon fas fa-flask"></i>
+                    <p>
+                        Laboratoire
+                        <i class="fas fa-angle-left right"></i>
+                    </p>
                 </a>
-              </li>
-                {% endif %}
-                {% if user.role_id == 5 or user.role_id == 1%}
-              <li class="nav-item">
+                <ul class="nav nav-treeview">
+                    {% if user.role_id == 6 or user.role_id == 1 %}
+                        {#              <li class="nav-item">#}
+                        {#                <a href="{%url 'labodashboard'%}" class="nav-link">#}
+                        {#                  <i class="nav-icon fas fa-tachometer-alt"></i>#}
+                        {#                  <p>Dashboard LABO</p>#}
+                        {#                </a>#}
+                        {#              </li>#}
+                    {% endif %}
+                    {% if user.role_id == 4 or user.role_id == 1 %}
+                        <li class="nav-item">
+                            <a href="{% url 'labo' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Réception d'échantillons</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.role_id == 5 or user.role_id == 1 %}
+                        <li class="nav-item">
                 <a href="{%url 'analyse'%}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Encodage des résultats</p>
@@ -534,35 +542,35 @@
   </aside>
 
     <!-- Content Wrapper. Contains page content -->
- <div class="content-wrapper">
-  <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark">Laboratoire</h1>
-          </div><!-- /.col -->
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-              <li class="breadcrumb-item active">Laboratoire</li>
-            </ol>
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
-     <!-- Main content -->
-    <section class="content">
-    <div class="container-fluid">
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark"><b>Module de réception d'échantillons au Laboratoire</b></h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                            <li class="breadcrumb-item active">Laboratoire</li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
 
-<div class="row">
-<div class="col-md-6">
-    <div class="card">
-             <div class="card-header">
-                <h3 class="card-title">Echantillon en attente de réception</h3>
-             <div class="card-tools">
-                 <form method="get" action="{% url 'rechercheqr' %}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-gradient-dark">
+                            <div class="card-header">
+                                <h3 class="card-title"><b>Echantillons en attente de réception</b></h3>
+                                <div class="card-tools">
+                                    <form method="get" action="{% url 'rechercheqr' %}">
                   <div class="input-group input-group-sm" style="width: 300px;">
                     <input type="text" name="q" class="form-control float-right" placeholder="Recherche ....">
                     <div class="input-group-append">
@@ -584,19 +592,19 @@
              <div class="card-header">
              <div class="card-tools">
                  <form method="get" action="{% url 'recherchecode' %}">
-                  <div class="input-group input-group-sm" style="width: 300px;">
-                    <input type="text" name="q" class="form-control float-right" placeholder="Recherche ....">
-                    <div class="input-group-append">
-                      <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
-                    </div>
-                  </div>
-                     </form>
-                </div>
-                 <h3 class="card-title">Echantillon réceptionner</h3>
+                     <div class="input-group input-group-sm" style="width: 300px;">
+                         <input type="text" name="q" class="form-control float-right" placeholder="Recherche ....">
+                         <div class="input-group-append">
+                             <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
+                         </div>
+                     </div>
+                 </form>
+             </div>
+                 <h3 class="card-title">Echantillons réceptionnés</h3>
              </div>
 
-              <div class="card-body table-responsive p-0">
-                {% block reception %}
+                 <div class="card-body table-responsive p-0">
+                     {% block reception %}
 
                 {% endblock %}
             </div>

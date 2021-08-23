@@ -5,29 +5,12 @@
 
 
 {% block content %}
-
-    <div class="md-form mt-12">
-        <form method="get" action="{% url 'rechercheenc1' %}" class="form-inline my-8 my-lg-2">
-
-            <input class="form-control" type="text" name="codelabo" placeholder="Recherche ...." aria-label="Search">
-            <button type="submit" class="btn btn-success">Recherche</button>
-            <button type="cancel" class="btn btn-danger">Retour</button>
-        </form>
-    </div>
     {% render_table analyse %}
 {% endblock %}
 
 
 
 {% block content1 %}
-     <div class="md-form mt-12">
-        <form method="get" action="{% url 'rechercheenc2' %}" class="form-inline my-8 my-lg-2">
-
-            <input class="form-control" type="text" name="codelabo" placeholder="Recherche ...." aria-label="Search">
-            <button type="submit" class="btn btn-success">Recherche</button>
-            <button type="cancel" class="btn btn-danger">Retour</button>
-        </form>
-    </div>
     {% render_table refaire %}
 {% endblock %}
 

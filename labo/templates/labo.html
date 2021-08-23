@@ -11,19 +11,19 @@
     {% render_table labo %}
 
      <div class="modal fade" id="modal-default">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Enregistrement de l'échantillon</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-              <form method="post" action="" id="post-form">
-                  <div id="success-change">
-            <div class="modal-body">
+         <div class="modal-dialog">
+             <div class="modal-content bg-gradient-dark">
+                 <div class="modal-header">
+                     <h4 class="modal-title"><b>Enregistrement de l'échantillon</b></h4>
+                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                         <span aria-hidden="true">&times;</span>
+                     </button>
+                 </div>
+                 <form method="post" action="" id="post-form">
+                     <div id="success-change">
+                         <div class="modal-body">
 
-                    {% csrf_token %}
+                             {% csrf_token %}
                     {% crispy form %}
             </div>
 
@@ -52,19 +52,19 @@
 {% block reception %}
     {% render_table labo1 %}
 
-     <div class="modal fade" id="modal-modifier">
+    <div class="modal fade" id="modal-modifier">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Modification de l'échantillon</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-              <form method="post" action="" id="modification-form">
-                                    <div id="success-change1">
+            <div class="modal-content bg-gradient-dark">
+                <div class="modal-header">
+                    <h4 class="modal-title">Modification de l'échantillon</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="post" action="" id="modification-form">
+                    <div id="success-change1">
 
-            <div class="modal-body">
+                        <div class="modal-body">
                     {% csrf_token %}
                     {% crispy form1 %}
             </div>

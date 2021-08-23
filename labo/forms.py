@@ -20,6 +20,13 @@ class ModificationEchantillon(forms.Form):
     dateprelevement = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de prélèvement :")
 
 
+class RapportLabo(forms.Form):
+    # codelabo = forms.CharField(label="Code du Labo :")
+    # numerore= forms.CharField(label="Numero RE :")
+    datedebut = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de début :")
+    datefin = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de fin :")
+
+
 class Mogas(forms.Form):
     aspect = forms.CharField(max_length=32, label="Aspect", required=False)
     odeur = forms.CharField(max_length=32, label="Odeur", required=False)

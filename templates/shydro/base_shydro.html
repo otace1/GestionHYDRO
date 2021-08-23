@@ -69,41 +69,40 @@
     </ul>
 
     <!-- Right navbar links -->
-    <ul class="navbar-nav ml-auto">
-        <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b>
-        </a>
+      <ul class="navbar-nav ml-auto">
+          <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b>
+          </a>
 
-    </ul>
+      </ul>
   </nav>
 
     <!-- Left side column. contains the logo and sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <!-- Brand Logo -->
-    <a href="#" class="brand-link">
-      <img src="" alt="" class="brand-image img-circle elevation-3"
-           style="opacity: .8">
-      <span class="brand-text font-weight-light">CGW|<b>APP</b></span>
-    </a>
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="#" class="brand-link">
+            {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
+            <span class="brand-text font-weight-light"><b>CGW</b>||<b>HYDRO</b></span>
+        </a>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <!-- Sidebar user panel (optional) -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="image">
-{#         <span class="dot"></span>#}
-        </div>
-        <div class="btn-success btn-lg">
-          <span class="badge badge-pill badge-success">{{ request.user.first_name }} {{ request.user.last_name }}</span>
-{#          <a href="#" class="d-block"></a>#}
-        </div>
-      </div>
-  <!-- sidebar: style can be found in sidebar.less -->
-   <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+                    <img src="/media/images.png" class="img-circle elevation-2" alt="User Image">
+                </div>
+                <div class="info">
+                    <a href="#" class="d-block">{{ request.user.first_name }} {{ request.user.last_name }}</a>
+                </div>
+            </div>
+            <!-- sidebar: style can be found in sidebar.less -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    <!-- Add icons to the links using the .nav-icon class
+                         with font-awesome or any other icon font library -->
 
-        {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 8%}
+                    {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 8 %}
 
          <li class="nav-item has-treeview menu-open">
             <a href="{%url 'dashboard'%}" class="nav-link active">
@@ -121,17 +120,14 @@
               <i class="nav-icon fas fa-truck-moving"></i>
               <p>
                 Cargaisons
-
                 <span class="badge badge-info right"></span>
               </p>
             </a>
-
         </li>
         {% endif %}
 
         {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
         <li class="header">ENTREPOT</li>
-
         <li class="nav-item has-treeview">
             <a href="#" class="nav-link">
               <i class="nav-icon fas fa fa-industry"></i>
@@ -160,7 +156,6 @@
         {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1%}
 
         <li class="header">CERTIFICATION</li>
-
         <li class="nav-item has-treeview">
             <a href="#" class="nav-link">
               <i class="nav-icon fas fa-flask"></i>
@@ -270,7 +265,6 @@
 
 
         {% if user.role_id == 1%}
-
 <li class="nav-item has-treeview">ADMINISTRATION</li>
             <li class="nav-item has-treeview">
             <a href="" class="nav-link">
@@ -438,27 +432,27 @@
       </ul>
     </nav>
     <!-- /.sidebar -->
-    </div>
-  </aside>
+        </div>
+    </aside>
 
     <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
-  <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark">Cellule Hydro</h1>
-          </div><!-- /.col -->
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-              <li class="breadcrumb-item active">Cellule Hydro</li>
-            </ol>
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark"><b>Gestion des GO de déchargement</b></h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                            <li class="breadcrumb-item active">Cellule Hydro</li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
     <!-- /.content-header -->
 
     <!-- Content Wrapper. Contains page content -->
@@ -471,13 +465,13 @@
     </div>
     </div>
 
-    <!-- Main content -->
-    <div class="row">
-    <div class="col-md-12">
-        <div class="card">
-        <div class="card-body table-responsive p-0">
+        <!-- Main content -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card bg-gradient-dark">
+                    <div class="card-body table-responsive p-0">
 
-                    {% block content %}
+                        {% block content %}
               {% endblock %}
             <!-- /.box-header -->
               </div>

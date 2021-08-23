@@ -12,14 +12,15 @@
  <div class="md-form mt-12">
     <form method="get" action="{% url 'rechercheact' %}" class="form-inline my-8 my-lg-2">
 
-        <input class="form-control" type="text" name="valeur" placeholder="Recherche ACT..." aria-label="Search">
-        <button type="submit" class="btn btn-success">Recherche</button>
-        <button type="cancel" class="btn btn-danger">Retour</button>
+        <input class="form-control" style="margin:5px;" type="text" name="valeur" placeholder="Recherche ACT..."
+               aria-label="Search">
+        <button type="submit" style="margin:5px;" class="btn btn-success">Recherche</button>
+        <button type="cancel" style="margin:5px;" class="btn btn-danger">Retour</button>
 
     </form>
 
 
-</div>
+ </div>
     {%render_table act1%}
 
 {% endblock %}

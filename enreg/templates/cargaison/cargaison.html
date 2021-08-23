@@ -16,8 +16,8 @@
 
     <div class="modal fade" id="modal-lg">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content bg-gradient-dark">
+                <div class="modal-header bg-gradient-dark">
                     <h4 class="modal-title">Enregistrement de cargaison</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -112,9 +112,8 @@
                 type: "POST",
                 data: SerializedData,
                 dateType: "json",
-
                 success: function (data) {
-                    console.log('Nice');
+                    console.log(data)
                     var qrcode = new QRCode(document.getElementById("codeQR"), {
                         text: data,
                         width: 250,
@@ -123,6 +122,7 @@
                         colorLight: "#ffffff",
                         correctLevel: QRCode.CorrectLevel.H
                     });
+
                     $('#modal-lg').modal('hide');
                     alert("Données sauvegardées");
 
@@ -131,12 +131,18 @@
                     $('.modal-footer').html(modalFooter);
                 },
 
-                error: function (msg) {
-                    console.log(msg);
-                    alert("Veuillez completer tous les champs obligatoires !");
+                error: function (vol) {
+                    console.log(vol);
+                    alert('Echec! Veuillez verifier le volume introduit');
                     $('.btn.btn-success').attr("disabled", false);
                     location.reload();
+                },
 
+                error: function (vide) {
+                    console.log(vide);
+                    alert('Echec! Verifier les champs obligatoires et la valeur du volume introduite');
+                    $('.btn.btn-success').attr("disabled", false);
+                    location.reload();
                 },
 
             })

@@ -10,20 +10,20 @@
     {%render_table cargaison%}
 
     <div class="col-md-6">
-      <!--Modal Rapport des encaissements-->
+        <!--Modal Rapport des encaissements-->
         <div class="modal" tabindex="-1" role="dialog" id="Echantilloner">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h3 class="modal-title">Enregistrement d'echantillon</h3>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
+            <div class="modal-dialog" role="document">
+                <div class="modal-content bg-gradient-dark">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Enregistrement d'echantillon</h3>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
 
-              <form id="post-form" method="post" action="">
-              <div class="modal-body">
-                        {% csrf_token %}
+                    <form id="post-form" method="post" action="">
+                        <div class="modal-body">
+                            {% csrf_token %}
                         {{ form | crispy }}
 
               </div>

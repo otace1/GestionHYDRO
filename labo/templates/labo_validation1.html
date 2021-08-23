@@ -1,11 +1,23 @@
 {% extends 'labo/labo_base_validation1.html' %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
+{% load crispy_forms_tags %}
+
+
+{% block modal1 %}
+    {% csrf_token %}
+    {{ form | crispy }}
+    <script>
+        $(function () {
+            $("#id_date").datepicker({
+                format: 'dd/mm/yyyy',
+            });
+        });
+    </script>
+{% endblock %}
 
 
 {% block content %}
-
     {% render_table labo %}
-
 {% endblock %}
 

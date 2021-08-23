@@ -15,7 +15,6 @@ def facturations(request):
     user = request.user
     id = user.id
     form = SaisieBL()
-
     table = Facturations(Cargaison.objects.raw('SELECT c.idcargaison, c.dateheurecargaison, c.frontiere_id, c.importateur_id, c.declarant, c.immatriculation, c.t1e, c.t1d, c.numdeclaration, c.valeurfacture, c.produit_id, c.entrepot_id, c.fournisseur, c.volume, d.datedechargement, d.gsv \
                                                 FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_dechargement d,hydro_occ.accounts_affectationville a \
                                                 WHERE c.idcargaison = e.idcargaison_id \
@@ -116,7 +115,7 @@ def appureration(request):
                                                   AND c.frontiere_id = a.ville_id \
                                                   AND a.username_id = %s \
                                                   ORDER BY l.datebl DESC', [id,]), prefix='2_')
-    RequestConfig(request, paginate={"per_page": 8}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
     return render(request, 'appuration.html', {'appuration': table})
 
 def detailsappuration(request,pk):

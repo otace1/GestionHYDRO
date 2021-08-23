@@ -2,13 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRe
 from django.db import connection
 from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation
 from django.db.models import Q
-from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, DerniersEnregistrements, ProductionTable, EncaissementTable
+from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
+    DerniersEnregistrements, ProductionTable, EncaissementTable, StatistiquesJour
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat, RechercheEncaissement
 import json
 from django.db.models import Sum
 import simplejson
-from datetime import datetime
 import datetime
 import csv, io
 from django_tables2 import RequestConfig
@@ -18,13 +18,13 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django_tables2.export.export import TableExport
 import math
-import xlsxwriter
-
+import pytz
 
 
 @login_required(login_url='login')
 # Fonction pour affichage page dashboard
 class Dashboard():
+
     def chartjs(request):
         user = request.user
         role = user.role_id
@@ -151,7 +151,6 @@ class Dashboard():
             cursor6.execute('SELECT DISTINCT CONVERT(SUM(c.volume),CHAR) AS vol \
                              FROM hydro_occ.enreg_cargaison c \
                              WHERE YEAR(c.dateheurecargaison)=YEAR(CURRENT_DATE)')
-
             total=cursor6.fetchone()
 
             if total == 0:
@@ -279,7 +278,6 @@ class Dashboard():
         if role == 1 or role == 'st' or role == 7 or role == 8:
 
             if request.method == 'POST':
-
                 template = 'stats.html'
                 frontiere = request.POST['frontiere']
                 produit = request.POST['produit']
@@ -311,7 +309,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.order_by('-dateheurecargaison'),prefix="1_")
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
 
                                         return render(request, 'stats.html', {
                                             'cargaison': table
@@ -324,9 +322,13 @@ class Dashboard():
                             if entrepot == "":
                                 if date_d == "":
                                     if date_f != "":
-                                        table = StatistiquesTable(Cargaison.objects.filter(dateheurecargaison__startswith=date_f),prefix='2_')
+                                        table = StatistiquesTable(Cargaison.objects.raw('SELECT idcargaison, dateheurecargaison, fournisseur, importateur_id, frontiere_id, entrepot_id,produit_id, volume ,poids,immatriculation ,t1e ,t1d ,numbtfh ,numdeclaration, manifestdgda \
+                                                                                            FROM hydro_occ.enreg_cargaison \
+                                                                                            WHERE DATE(dateheurecargaison) LIKE %s',
+                                                                                        [date_f, ]), prefix='2_')
+                                        # table = StatistiquesTable(Cargaison.objects.filter(dateheurecargaison__startswith=date_f),prefix='2_')
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R3
@@ -338,7 +340,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(dateheurecargaison__startswith=date_d), prefix='3_')
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R4
@@ -350,7 +352,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R5
@@ -362,7 +364,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R6
@@ -374,7 +376,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R7
@@ -386,7 +388,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R8
@@ -398,7 +400,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R9
@@ -410,7 +412,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R10
@@ -422,7 +424,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R11
@@ -434,7 +436,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R12
@@ -446,7 +448,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R13
@@ -458,7 +460,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R14
@@ -470,7 +472,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R15
@@ -482,7 +484,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, entrepot=entrepot, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R16
@@ -493,7 +495,8 @@ class Dashboard():
                                 if date_d != "":
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur, entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,"per_page": 15}).configure(table)
+                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R17
@@ -505,7 +508,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R18
@@ -518,7 +521,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R19
@@ -531,7 +534,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R20
@@ -544,7 +547,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R21
@@ -556,7 +559,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R22
@@ -569,7 +572,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit,entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R23
@@ -582,7 +585,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, entrepot=entrepot, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R24
@@ -595,7 +598,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R25
@@ -607,7 +610,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R26
@@ -620,7 +623,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R26
@@ -646,7 +649,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R28
@@ -658,7 +661,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R29
@@ -670,7 +673,7 @@ class Dashboard():
                                     if date_f != "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur, entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R30
@@ -682,7 +685,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur, entrepot=entrepot, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R31
@@ -695,7 +698,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit, importateur=importateur, entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R32
@@ -707,7 +710,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R32
@@ -720,7 +723,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R33
@@ -733,7 +736,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R34
@@ -746,7 +749,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R35
@@ -758,7 +761,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R35
@@ -771,7 +774,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R36
@@ -784,7 +787,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot, dateheurecargaison__startwith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R37
@@ -797,7 +800,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 if frontiere != "":
@@ -808,7 +811,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R40
@@ -821,7 +824,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R41
@@ -834,7 +837,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R42
@@ -847,7 +850,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,importateur=importateur,dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R43
@@ -859,7 +862,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R44
@@ -872,7 +875,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur, entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R45
@@ -885,7 +888,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur, entrepot=entrepot, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R46
@@ -898,7 +901,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, importateur=importateur, entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R47
@@ -910,7 +913,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R48
@@ -923,7 +926,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R49
@@ -936,7 +939,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R50
@@ -949,7 +952,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R51
@@ -962,7 +965,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, dateheurecargaison__startswith=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R52
@@ -974,7 +977,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R53
@@ -987,7 +990,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, entrepot=entrepot, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R54
@@ -1001,7 +1004,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, entrepot=entrepot, dateheurecargaison__startswith=date_d))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R55
@@ -1014,7 +1017,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, entrepot=entrepot, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R56
@@ -1026,7 +1029,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R57
@@ -1039,7 +1042,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere, produit=produit, importateur=importateur, dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R58
@@ -1053,7 +1056,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit,importateur=importateur, dateheurecargaison__startswith=date_d))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R58
@@ -1067,7 +1070,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit,importateur=importateur, dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R59
@@ -1080,7 +1083,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit,importateur=importateur,entrepot=entrepot))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R60
@@ -1094,7 +1097,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit,importateur=importateur,entrepot=entrepot,dateheurecargaison__startswith=date_f))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
 
                 # R61
@@ -1108,7 +1111,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit,importateur=importateur,entrepot=entrepot, dateheurecargaison__startswith=date_d))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         return render(request, 'stats.html', {'cargaison': table})
                 # R62
                 if frontiere != "":
@@ -1120,7 +1123,7 @@ class Dashboard():
 
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,produit=produit,importateur=importateur,entrepot=entrepot,dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
 
                                         return render(request, 'stats.html', {'cargaison': table})
 
@@ -1143,7 +1146,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.order_by('-dateheurecargaison'),
                                                                   prefix="1_")
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1160,11 +1163,13 @@ class Dashboard():
                             if entrepot == "":
                                 if date_d == "":
                                     if date_f != "":
-                                        table = StatistiquesTable(
-                                            Cargaison.objects.filter(dateheurecargaison__startswith=date_f),
-                                            prefix='2_')
+                                        table = StatistiquesTable(Cargaison.objects.raw('SELECT idcargaison, dateheurecargaison, fournisseur, importateur_id, frontiere_id, entrepot_id,produit_id, volume ,poids,immatriculation ,t1e ,t1d ,numbtfh ,numdeclaration, manifestdgda \
+                                                    FROM hydro_occ.enreg_cargaison \
+                                                    WHERE DATE(dateheurecargaison) LIKE %s', [date_f, ]), prefix='2_')
+                                        # Cargaison.objects.filter(dateheurecargaison__startswith=date_f),
+                                        # prefix='2_')
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
 
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
@@ -1183,7 +1188,7 @@ class Dashboard():
                                             Cargaison.objects.filter(dateheurecargaison__startswith=date_d),
                                             prefix='3_')
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1201,7 +1206,7 @@ class Dashboard():
                                             Cargaison.objects.filter(dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1217,7 +1222,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1234,7 +1239,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot,
                                                                                            dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1251,7 +1256,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(entrepot=entrepot,
                                                                                            dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1269,7 +1274,7 @@ class Dashboard():
                                             Cargaison.objects.filter(entrepot=entrepot, dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1285,7 +1290,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1302,7 +1307,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur,
                                                                                            dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1319,7 +1324,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(importateur=importateur,
                                                                                            dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1337,7 +1342,7 @@ class Dashboard():
                                                                                            dateheurecargaison__gte=date_d,
                                                                                            dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1354,7 +1359,7 @@ class Dashboard():
                                         table = StatistiquesTable(
                                             Cargaison.objects.filter(importateur=importateur, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1372,7 +1377,7 @@ class Dashboard():
                                             Cargaison.objects.filter(importateur=importateur, entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1390,7 +1395,7 @@ class Dashboard():
                                             Cargaison.objects.filter(importateur=importateur, entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1409,7 +1414,7 @@ class Dashboard():
                                                                      dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1425,7 +1430,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1442,7 +1447,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit,
                                                                                            dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1459,7 +1464,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(produit=produit,
                                                                                            dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1477,7 +1482,7 @@ class Dashboard():
                                             Cargaison.objects.filter(produit=produit, dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1494,7 +1499,7 @@ class Dashboard():
                                         table = StatistiquesTable(
                                             Cargaison.objects.filter(produit=produit, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1512,7 +1517,7 @@ class Dashboard():
                                             Cargaison.objects.filter(produit=produit, entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1530,7 +1535,7 @@ class Dashboard():
                                             Cargaison.objects.filter(produit=produit, entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1549,7 +1554,7 @@ class Dashboard():
                                                                      dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1566,7 +1571,7 @@ class Dashboard():
                                         table = StatistiquesTable(
                                             Cargaison.objects.filter(produit=produit, importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1584,7 +1589,7 @@ class Dashboard():
                                             Cargaison.objects.filter(produit=produit, importateur=importateur,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1621,7 +1626,7 @@ class Dashboard():
                                                                      dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1639,7 +1644,7 @@ class Dashboard():
                                             Cargaison.objects.filter(produit=produit, importateur=importateur,
                                                                      entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1658,7 +1663,7 @@ class Dashboard():
                                                                      entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1677,7 +1682,7 @@ class Dashboard():
                                                                      entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1696,7 +1701,7 @@ class Dashboard():
                                                                      entrepot=entrepot, dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1712,7 +1717,7 @@ class Dashboard():
                                     if date_f == "":
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1729,7 +1734,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,
                                                                                            dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1746,7 +1751,7 @@ class Dashboard():
                                         table = StatistiquesTable(Cargaison.objects.filter(frontiere=frontiere,
                                                                                            dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1764,7 +1769,7 @@ class Dashboard():
                                                                                            dateheurecargaison__gte=date_d,
                                                                                            dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get("_export", None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1781,7 +1786,7 @@ class Dashboard():
                                         table = StatistiquesTable(
                                             Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1799,7 +1804,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1817,7 +1822,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, entrepot=entrepot,
                                                                      dateheurecargaison__startwith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1836,7 +1841,7 @@ class Dashboard():
                                                                      dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1852,7 +1857,7 @@ class Dashboard():
                                         table = StatistiquesTable(
                                             Cargaison.objects.filter(frontiere=frontiere, importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1870,7 +1875,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, importateur=importateur,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1888,7 +1893,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, importateur=importateur,
                                                                      dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1907,7 +1912,7 @@ class Dashboard():
                                                                      dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1925,7 +1930,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, importateur=importateur,
                                                                      entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1944,7 +1949,7 @@ class Dashboard():
                                                                      entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1963,7 +1968,7 @@ class Dashboard():
                                                                      entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1982,7 +1987,7 @@ class Dashboard():
                                                                      entrepot=entrepot, dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -1999,7 +2004,7 @@ class Dashboard():
                                         table = StatistiquesTable(
                                             Cargaison.objects.filter(frontiere=frontiere, produit=produit))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2017,7 +2022,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, produit=produit,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2035,7 +2040,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, produit=produit,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2053,7 +2058,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, produit=produit,
                                                                      dateheurecargaison__startswith=date_d))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2072,7 +2077,7 @@ class Dashboard():
                                                                      dateheurecargaison__startswith=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2090,7 +2095,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, produit=produit,
                                                                      entrepot=entrepot))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2109,7 +2114,7 @@ class Dashboard():
                                                                      entrepot=entrepot,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2129,7 +2134,7 @@ class Dashboard():
                                                                      dateheurecargaison__startswith=date_d))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2148,7 +2153,7 @@ class Dashboard():
                                                                      entrepot=entrepot, dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2166,7 +2171,7 @@ class Dashboard():
                                             Cargaison.objects.filter(frontiere=frontiere, produit=produit,
                                                                      importateur=importateur))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2185,7 +2190,7 @@ class Dashboard():
                                                                      importateur=importateur,
                                                                      dateheurecargaison__startswith=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2205,7 +2210,7 @@ class Dashboard():
                                                                      dateheurecargaison__startswith=date_d))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2226,7 +2231,7 @@ class Dashboard():
                                                                      dateheurecargaison__lte=date_f))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2245,7 +2250,7 @@ class Dashboard():
                                                                      importateur=importateur, entrepot=entrepot))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2265,7 +2270,7 @@ class Dashboard():
                                                                      dateheurecargaison__startswith=date_f))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2285,7 +2290,7 @@ class Dashboard():
                                                                      dateheurecargaison__startswith=date_d))
 
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
                                             exporter = TableExport(export_format, table)
@@ -2305,7 +2310,7 @@ class Dashboard():
                                                                      dateheurecargaison__gte=date_d,
                                                                      dateheurecargaison__lte=date_f))
                                         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 15}).configure(table)
+                                                                         "per_page": 20}).configure(table)
 
                                         export_format = request.GET.get('_export', None)
                                         if TableExport.is_valid_format(export_format):
@@ -2766,17 +2771,17 @@ def uploadsydonia(request):
         data_set = csv_file.read().decode('UTF-8')
         io_string = io.StringIO(data_set)
         next(io_string)
-        for column in csv.reader(io_string, delimiter=','):
+        for column in csv.reader(io_string, delimiter=':'):
             _, created = Paiement.objects.update_or_create(
                 code_bur=column[0],
-                bureau = column[1],
-                modele = column[2],
-                nif_importateur = column[3],
-                importateur = column[4],
-                nom_decl = column[5],
-                n_liq = column[6],
-                date_liq = column[7],
-                ide_ser = column[8],
+                bureau=column[1],
+                modele=column[2],
+                nif_importateur=column[3],
+                importateur=column[4],
+                nom_decl=column[5],
+                n_liq=column[6],
+                date_liq=column[7],
+                ide_ser=column[8],
                 ide_nbr = column[9],
                 date_pay = column[10],
                 tax_cod = column[11],
@@ -2794,7 +2799,7 @@ def uploadsydonia(request):
 
 
 # Recherche des statistiques de production
-
+@login_required(login_url='login')
 def statproduction(request):
     template = 'statsprod.html'
     user = request.user
@@ -2837,7 +2842,7 @@ def statproduction(request):
                                                         ORDER BY c.dateheurecargaison DESC'), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
 
                                     return render(request, 'stats.html', {
                                         'cargaison': table
@@ -2859,7 +2864,7 @@ def statproduction(request):
                                                                                             ORDER BY c.dateheurecargaison DESC',[date_f,]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
 
                                     return render(request, 'stats.html', {
                                         'cargaison': table
@@ -2882,7 +2887,7 @@ def statproduction(request):
                                                                                      [date_d, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
 
                                     return render(request, 'stats.html', {
                                         'cargaison': table
@@ -2905,7 +2910,7 @@ def statproduction(request):
                                                                                      [date_d,date_f, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
 
                                     return render(request, 'stats.html', {
                                         'cargaison': table
@@ -2927,7 +2932,7 @@ def statproduction(request):
                                                                                                                                   ORDER BY c.dateheurecargaison DESC',[entrepot, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'statsprod.html', {'cargaison': table})
 
             # R6
@@ -2947,9 +2952,8 @@ def statproduction(request):
                                                                                                                                   ORDER BY c.dateheurecargaison DESC',
                                                                                      [entrepot,date_f, ]), prefix="1_")
 
-
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R7
@@ -2969,7 +2973,7 @@ def statproduction(request):
                                                                                                                                                                       ORDER BY c.dateheurecargaison DESC',
                                                                                      [entrepot, date_d, ]), prefix="1_")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R8
@@ -2989,7 +2993,7 @@ def statproduction(request):
                                                                                                                                                                                                          ORDER BY c.dateheurecargaison DESC',
                                                                                      [entrepot, date_d,date_f, ]), prefix="1_1")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R9
@@ -3009,7 +3013,7 @@ def statproduction(request):
                                                                                      [importateur, ]),
                                                             prefix="1_1")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R10
@@ -3030,7 +3034,7 @@ def statproduction(request):
                                                                                      [importateur, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R11
@@ -3051,7 +3055,7 @@ def statproduction(request):
                                                                                      [importateur, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R12
@@ -3072,7 +3076,7 @@ def statproduction(request):
                                                                                      [importateur, date_d, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R13
@@ -3093,7 +3097,7 @@ def statproduction(request):
                                                                                      [importateur, entrepot, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R14
@@ -3114,7 +3118,7 @@ AND c.dateheurecargaison = %s \
 ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R15
@@ -3135,7 +3139,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                     ORDER BY c.dateheurecargaison DESC', [importateur, entrepot, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R16
@@ -3157,7 +3161,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                                                                      [importateur, entrepot, date_d, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R17
@@ -3177,7 +3181,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                                                                      [produit, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R18
@@ -3198,7 +3202,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                                                                      [produit, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R19
@@ -3219,7 +3223,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                                                                      [produit, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R20
@@ -3240,7 +3244,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                                                                      [produit, date_d, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R21
@@ -3261,7 +3265,7 @@ ORDER BY c.dateheurecargaison DESC',[importateur, entrepot, date_f, ]), prefix="
                                                                                      [produit, entrepot, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R22
@@ -3283,7 +3287,7 @@ ORDER BY c.dateheurecargaison DESC',
 [produit, entrepot, date_f ]),
 prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R23
@@ -3305,7 +3309,7 @@ prefix="1_2")
                                                                                      [produit, entrepot, date_d]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R24
@@ -3327,7 +3331,7 @@ prefix="1_2")
                                                                                      [produit, entrepot, date_d, date_f]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R25
@@ -3348,7 +3352,7 @@ prefix="1_2")
                                                                                      [produit, importateur,]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R26
@@ -3370,7 +3374,7 @@ prefix="1_2")
                                                                                      [produit, importateur, date_f ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R26
@@ -3416,7 +3420,7 @@ prefix="1_2")
                                     prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R28
@@ -3438,7 +3442,7 @@ prefix="1_2")
                                     [produit, importateur, entrepot,]),
                                     prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R29
@@ -3461,7 +3465,7 @@ prefix="1_2")
                                                                                      [produit, importateur,entrepot, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R30
@@ -3485,7 +3489,7 @@ prefix="1_2")
                                     prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R31
@@ -3509,7 +3513,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R32
@@ -3530,7 +3534,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R32
@@ -3552,7 +3556,7 @@ prefix="1_2")
                                     prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R33
@@ -3573,7 +3577,7 @@ prefix="1_2")
                                     [frontiere, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R34
@@ -3595,7 +3599,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R35
@@ -3617,7 +3621,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R35
@@ -3640,7 +3644,7 @@ prefix="1_2")
                                     prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R36
@@ -3663,7 +3667,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R37
@@ -3686,7 +3690,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             if frontiere != "":
@@ -3707,7 +3711,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R40
@@ -3730,7 +3734,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R41
@@ -3754,7 +3758,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R42
@@ -3778,7 +3782,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R43
@@ -3801,7 +3805,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R44
@@ -3825,7 +3829,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R45
@@ -3849,7 +3853,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R46
@@ -3874,7 +3878,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R47
@@ -3896,7 +3900,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R48
@@ -3919,7 +3923,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -3943,7 +3947,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R51
@@ -3966,7 +3970,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R52
@@ -3989,7 +3993,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R53
@@ -4013,7 +4017,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R54
@@ -4037,7 +4041,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R55
@@ -4061,7 +4065,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R56
@@ -4084,7 +4088,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R57
@@ -4109,7 +4113,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R58
@@ -4134,7 +4138,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R58
@@ -4159,7 +4163,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R59
@@ -4184,7 +4188,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R60
@@ -4210,7 +4214,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
 
             # R61
@@ -4236,7 +4240,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     return render(request, 'stats.html', {'cargaison': table})
             # R62
             if frontiere != "":
@@ -4260,9 +4264,8 @@ prefix="1_2")
                                                                                       importateur, entrepot, date_d, date_f]),
                                                             prefix="1_2")
 
-
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
 
                                     return render(request, 'stats.html', {'cargaison': table})
 
@@ -4291,7 +4294,7 @@ prefix="1_2")
                                                              prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4318,7 +4321,7 @@ prefix="1_2")
                                                                                      [date_f, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4342,7 +4345,7 @@ prefix="1_2")
                                                                                      [date_d, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4366,7 +4369,7 @@ prefix="1_2")
                                                                                      [date_d, date_f, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4390,7 +4393,7 @@ prefix="1_2")
                                                                                      [entrepot, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4415,7 +4418,7 @@ prefix="1_2")
                                                                                      [entrepot, date_f, ]), prefix="1_")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4439,7 +4442,7 @@ prefix="1_2")
                                                                                                                                                                                                          ORDER BY c.dateheurecargaison DESC',
                                                                                      [entrepot, date_d, ]), prefix="1_")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4464,7 +4467,7 @@ prefix="1_2")
                                                                                      [entrepot, date_d, date_f, ]),
                                                             prefix="1_1")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4488,7 +4491,7 @@ prefix="1_2")
                                                                                      [importateur, ]),
                                                             prefix="1_1")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4513,7 +4516,7 @@ prefix="1_2")
                                                                                      [importateur, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4538,7 +4541,7 @@ prefix="1_2")
                                                                                      [importateur, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4563,7 +4566,7 @@ prefix="1_2")
                                                                                      [importateur, date_d, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4610,7 +4613,7 @@ prefix="1_2")
                                     AND c.dateheurecargaison = %s \
                                     ORDER BY c.dateheurecargaison DESC', [importateur, entrepot, date_f, ]), prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4636,7 +4639,7 @@ prefix="1_2")
                                                                                      [importateur, entrepot, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4663,7 +4666,7 @@ prefix="1_2")
                                                                                       date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4687,7 +4690,7 @@ prefix="1_2")
                                                                                      [produit, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4712,7 +4715,7 @@ prefix="1_2")
                                                                                      [produit, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4737,7 +4740,7 @@ prefix="1_2")
                                                                                      [produit, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4762,7 +4765,7 @@ prefix="1_2")
                                                                                      [produit, date_d, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4787,7 +4790,7 @@ prefix="1_2")
                                                                                      [produit, entrepot, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4813,7 +4816,7 @@ prefix="1_2")
                                                                                      [produit, entrepot, date_f]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4839,7 +4842,7 @@ prefix="1_2")
                                                                                      [produit, entrepot, date_d]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4865,7 +4868,7 @@ prefix="1_2")
                                                                                      [produit, entrepot, date_d, date_f]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4890,7 +4893,7 @@ prefix="1_2")
                                                                                      [produit, importateur, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4916,7 +4919,7 @@ prefix="1_2")
                                                                                      [produit, importateur, date_f]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4970,7 +4973,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -4997,7 +5000,7 @@ prefix="1_2")
                                                                                       entrepot, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5024,7 +5027,7 @@ prefix="1_2")
                                                                                      [produit, importateur,entrepot, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5052,7 +5055,7 @@ prefix="1_2")
                                                                                       date_d, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5081,7 +5084,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5105,7 +5108,7 @@ prefix="1_2")
                                                                                      [frontiere, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5131,7 +5134,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5156,7 +5159,7 @@ prefix="1_2")
                                                                                      [frontiere, date_d, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5182,7 +5185,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5208,7 +5211,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5235,7 +5238,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5262,7 +5265,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5290,7 +5293,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5314,7 +5317,7 @@ prefix="1_2")
                                                                                      [frontiere, importateur, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5342,7 +5345,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5370,7 +5373,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5397,7 +5400,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5425,7 +5428,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5454,7 +5457,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5483,7 +5486,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5512,7 +5515,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5538,7 +5541,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5565,7 +5568,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5592,7 +5595,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5618,9 +5621,8 @@ prefix="1_2")
                                                                                      [frontiere, produit, date_d, date_f,]),
                                                             prefix="1_2")
 
-
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5647,7 +5649,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5674,7 +5676,7 @@ prefix="1_2")
                                                                                      [frontiere, produit, entrepot, date_f, ]),
                                                             prefix="1_2")
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5702,7 +5704,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5730,7 +5732,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5758,7 +5760,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5787,7 +5789,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5816,7 +5818,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5844,9 +5846,8 @@ prefix="1_2")
                                                                                       importateur, date_d, date_f, ]),
                                                             prefix="1_2")
 
-
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5875,7 +5876,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5905,7 +5906,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5935,7 +5936,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
                                         exporter = TableExport(export_format, table)
@@ -5963,7 +5964,7 @@ prefix="1_2")
                                                             prefix="1_2")
 
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                     "per_page": 15}).configure(table)
+                                                                     "per_page": 20}).configure(table)
 
                                     export_format = request.GET.get('_export', None)
                                     if TableExport.is_valid_format(export_format):
@@ -5976,8 +5977,8 @@ prefix="1_2")
         else:
             return redirect('logout')
 
-
 #Stats encaissement
+@login_required(login_url='login')
 def statencaissement(request):
     template = 'statsprod.html'
     user = request.user
@@ -6012,7 +6013,7 @@ AND l.datebl = p.date_liq \
 AND c.importateur_id = i.idimportateur'), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 #R2
@@ -6032,7 +6033,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
             AND l.datebl = %s',[date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 # R3
@@ -6052,7 +6053,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [date_d, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 # R4
@@ -6072,7 +6073,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [date_d,date_f, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 # R5
@@ -6092,7 +6093,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND p.bank_nam = %s ', [banque, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 # R6
@@ -6113,7 +6114,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [banque,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 # R7
@@ -6134,7 +6135,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [banque,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6156,7 +6157,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6177,7 +6178,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND c.importateur_id = %s', [importateur,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R10
@@ -6198,7 +6199,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6220,7 +6221,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6242,7 +6243,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [importateur,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R13
@@ -6263,7 +6264,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND p.bnk_nam = %s', [importateur,banque,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6286,7 +6287,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,banque,date_f]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R15
@@ -6308,7 +6309,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,banque,date_d]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R16
@@ -6330,7 +6331,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s and %s', [importateur,banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R17
@@ -6350,7 +6351,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND c.frontiere_id = %s', [frontiere,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6372,7 +6373,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R19
@@ -6393,7 +6394,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R20
@@ -6414,7 +6415,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s and %s', [frontiere,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6436,7 +6437,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND p.bnk_nam = %s', [frontiere,banque,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R22
@@ -6458,7 +6459,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,banque,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R23
@@ -6480,7 +6481,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,banque,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R24
@@ -6502,7 +6503,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [frontiere,banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R25
@@ -6523,7 +6524,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND c.importateur_id = %s', [frontiere,importateur,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R26
@@ -6545,7 +6546,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl=%s', [frontiere,importateur,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R27
@@ -6567,7 +6568,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl=%s', [frontiere,importateur,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6590,7 +6591,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [frontiere,importateur,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R29
@@ -6612,7 +6613,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND p.bnk_nam = %s', [frontiere,importateur,banque,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
 
@@ -6636,7 +6637,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,importateur,banque,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R31
@@ -6659,7 +6660,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,importateur,banque,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
     # R32
@@ -6682,7 +6683,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [frontiere,importateur,banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
                                 return render(request, 'stats.html', {'cargaison': table})
 
         if request.method == 'GET':
@@ -6706,7 +6707,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
             AND l.datebl = p.date_liq \
             AND c.importateur_id = i.idimportateur'), prefix="1_2")
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6733,7 +6734,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                     AND l.datebl = %s', [date_f, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6760,7 +6761,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                             AND l.datebl = %s', [date_d, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6776,7 +6777,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                     if banque == '':
                         if date_d != '':
                             if date_f != '':
-                                table = EncaissementTable(Liquidation.objects.raw('SELECT DISTINCT (l.idliquidation), l.idcargaison_id , b.idbureau , p.code_bur, i.nomimportateur, p.nom_decl, l.numerobl, l.datebl, p.date_pay, p.mont_enc, p.qte_stat, p.bnk_nam \
+                                table = EncaissementTable(Liquidation.objects.raw('SELECT DISTINCT (l.idliquidation), l.idcargaison_id , b.idbureau , p.code_bur, p.bureau, i.nomimportateur, p.nom_decl, l.numerobl, l.datebl, p.date_pay, p.mont_enc, p.qte_stat, p.bnk_nam \
                             FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_liquidation l, hydro_occ.enreg_bureaudgda b, hydro_occ.enreg_paiement p, hydro_occ.enreg_importateur i \
                             WHERE c.idcargaison = l.idcargaison_id \
                             AND p.code_bur = b.codebureau \
@@ -6786,8 +6787,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                             AND c.importateur_id = i.idimportateur \
                             AND l.datebl BETWEEN %s AND %s', [date_d, date_f, ]), prefix="1_2")
 
-                                RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                RequestConfig(request, paginate={"paginator_class": LazyPaginator}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6814,7 +6814,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                                 AND p.bank_nam = %s ', [banque, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6842,7 +6842,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                                                     AND l.datebl = %s', [banque, date_f, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6870,7 +6870,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [banque,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6900,7 +6900,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6928,7 +6928,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND c.importateur_id = %s', [importateur,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6958,7 +6958,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -6988,7 +6988,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7017,7 +7017,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [importateur,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7045,7 +7045,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND p.bnk_nam = %s', [importateur,banque,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7074,7 +7074,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,banque,date_f]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7105,7 +7105,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [importateur,banque,date_d]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7136,7 +7136,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s and %s', [importateur,banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7163,7 +7163,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND c.frontiere_id = %s', [frontiere,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7192,7 +7192,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7221,7 +7221,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7250,7 +7250,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s and %s', [frontiere,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7279,7 +7279,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND p.bnk_nam = %s', [frontiere,banque,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7309,7 +7309,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,banque,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7339,7 +7339,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,banque,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7369,7 +7369,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [frontiere,banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7398,7 +7398,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND c.importateur_id = %s', [frontiere,importateur,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7428,7 +7428,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl=%s', [frontiere,importateur,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7457,7 +7457,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl=%s', [frontiere,importateur,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7486,7 +7486,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [frontiere,importateur,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7518,7 +7518,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                                                     AND p.bnk_nam = %s', [frontiere, importateur, banque, ]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7550,7 +7550,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,importateur,banque,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7583,7 +7583,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl = %s', [frontiere,importateur,banque,date_d,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7616,7 +7616,7 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                         AND l.datebl BETWEEN %s AND %s', [frontiere,importateur,banque,date_d,date_f,]), prefix="1_2")
 
                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                 "per_page": 15}).configure(table)
+                                                                 "per_page": 20}).configure(table)
 
                                 export_format = request.GET.get('_export', None)
                                 if TableExport.is_valid_format(export_format):
@@ -7629,3 +7629,15 @@ AND c.importateur_id = i.idimportateur'), prefix="1_2")
                                 return render(request, 'stats.html', {'cargaison': table})
     else:
         return redirect('logout')
+
+
+# Affichage des stat de la journee
+@login_required(login_url='login')
+def statj(request):
+    table = StatistiquesJour(Cargaison.objects.raw('SELECT idcargaison, dateheurecargaison, fournisseur, importateur_id, frontiere_id, entrepot_id,produit_id, volume,immatriculation ,t1e ,t1d ,numbtfh ,numdeclaration, manifestdgda \
+                                                    FROM hydro_occ.enreg_cargaison \
+                                                    WHERE DATE(dateheurecargaison) = CURRENT_DATE()'))
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                     "per_page": 20}).configure(table)
+
+    return render(request, 'stats.html', {'cargaison': table})

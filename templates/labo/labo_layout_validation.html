@@ -181,26 +181,34 @@
 
         <li class="header">CERTIFICATION</li>
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-flask"></i>
-            <span>Laboratoire</span>
-            <span class="pull-right-container">
+            <li class="treeview">
+                <a href="#">
+                    <i class="fa fa-flask"></i>
+                    <span>Laboratoire</span>
+                    <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
+                </a>
+                <ul class="treeview-menu">
+                    {% if user.role_id == 6 or user.role_id == 1 %}
+                        <li class="nav-item">
+                            <a href="{% url 'labodashboard' %}" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard LABO</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.role_id == 4 or user.role_id == 1 %}
+                        <li><a href="{% url 'labo' %}"><i class="fa fa-circle-o"></i>Réception d'échantillons</a></li>
+                    {% endif %}
 
-            {% if user.role_id == 4 or user.role_id == 1%}
-            <li><a href="{%url 'labo'%}"><i class="fa fa-circle-o"></i>Réception d'échantillons</a></li>
-            {% endif %}
+                    {% if user.role_id == 5 or user.role_id == 1 %}
+                        <li><a href="{% url 'analyse' %}"><i class="fa fa-circle-o"></i>Encodage des résultats</a></li>
+                    {% endif %}
 
-            {% if user.role_id == 5 or user.role_id == 1%}
-            <li><a href="{%url 'analyse'%}"><i class="fa fa-circle-o"></i>Encodage des résultats</a></li>
-            {% endif %}
-
-            {% if user.role_id == 6 or user.role_id == 1%}
-            <li><a href="{%url 'validation1'%}"><i class="fa fa-circle-o"></i>Service PP Validation</a></li>
+                    {% if user.role_id == 6 or user.role_id == 1 %}
+                        <li><a href="{% url 'validation1' %}"><i class="fa fa-circle-o"></i>Service PP Validation</a>
+                        </li>
             {% endif %}
 
            {% comment %} {% if user.role == 'v2' or user.role == 'ad'%}

@@ -173,165 +173,117 @@
 {% block reception %}
 
     <!-- /.col -->
-            <div class="progress-group">
-                <span class="progress-text">{{ i1 }}</span>
-                <span class="progress-number"><b>{{ v1 }}</b><b> m<sup>3</sup></b></span>
+    <div class="progress-group">
+    <span class="progress-text">{{ i1 }}</span>
+    <span class="progress-number"><b>{{ v1 }}</b><b> m<sup>3</sup></b></span>
+    <div class="progress mb-3">
+        <div class="progress-bar bg-success" role="progressbar" aria-valuenow="40" aria-valuemin="0"
+             aria-valuemax="100" style="width:{{ p1 }}%">
+        </div>
+    </div>
 
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p1 }}%"></div>
-                </div>
+    <div class="progress-group">
+        <span class="progress-text">{{ i2 }}</span>
+        <span class="progress-number"><b>{{ v2 }}</b><b> m<sup>3</sup></b></span>
+        <div class="progress mb-3">
+            <div class="progress-bar bg-info" role="progressbar" aria-valuenow="20" aria-valuemin="0"
+                 aria-valuemax="100" style="width: {{ p2 }}%">
             </div>
+        </div>
+    </div>
 
-            <div class="progress-group">
-                <span class="progress-text">{{ i2 }}</span>
-                <span class="progress-number"><b>{{ v2 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p2 }}%"></div>
-                </div>
+    <div class="progress-group">
+        <span class="progress-text">{{ i3 }}</span>
+        <span class="progress-number"><b>{{ v3 }}</b><b> m<sup>3</sup></b></span>
+        <div class="progress mb-3">
+            <div class="progress-bar bg-warning" role="progressbar" aria-valuenow="60" aria-valuemin="0"
+                 aria-valuemax="100" style="width: {{ p3 }}%">
             </div>
+        </div>
+    </div>
 
-            <div class="progress-group">
-                <span class="progress-text">{{ i3 }}</span>
-                <span class="progress-number"><b>{{ v3 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p3 }}%"></div>
-                </div>
+    <div class="progress-group">
+        <span class="progress-text">{{ i4 }}</span>
+        <span class="progress-number"><b>{{ v4 }}</b><b> m<sup>3</sup></b></span>
+        <div class="progress mb-3">
+            <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="80" aria-valuemin="0"
+                 aria-valuemax="100" style="width: {{ p4 }}%">
             </div>
+        </div>
+    </div>
 
-            <div class="progress-group">
-                <span class="progress-text">{{ i4 }}</span>
-                <span class="progress-number"><b>{{ v4 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p4 }}%"></div>
-                </div>
+    <div class="progress-group">
+        <span class="progress-text">{{ i5 }}</span>
+        <span class="progress-number"><b>{{ v5 }}</b><b> m<sup>3</sup></b></span>
+        <div class="progress mb-3">
+            <div class="progress-bar bg-info" role="progressbar" aria-valuenow="20" aria-valuemin="0"
+                 aria-valuemax="100" style="width: {{ p5 }}%">
             </div>
-
-            <div class="progress-group">
-                <span class="progress-text">{{ i5 }}</span>
-                <span class="progress-number"><b>{{ v5 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p5 }}%"></div>
-                </div>
-            </div>
-
-            <div class="progress-group">
-                <span class="progress-text">{{ i6 }}</span>
-                <span class="progress-number"><b>{{ v6 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p6 }}%"></div>
-                </div>
-            </div>
-
-            <div class="progress-group">
-                <span class="progress-text">{{ i7 }}</span>
-                <span class="progress-number"><b>{{ v7 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p7 }}%"></div>
-                </div>
-            </div>
-
-            <div class="progress-group">
-                <span class="progress-text">{{ i8 }}</span>
-                <span class="progress-number"><b>{{ v8 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p8 }}%"></div>
-                </div>
-            </div>
-
-            <div class="progress-group">
-                <span class="progress-text">{{ i9 }}</span>
-                <span class="progress-number"><b>{{ v9 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p9 }}%"></div>
-                </div>
-            </div>
-
-            <div class="progress-group">
-                <span class="progress-text">{{ i10 }}</span>
-                <span class="progress-number"><b>{{ v10 }}</b><b> m<sup>3</sup></b></span>
-
-                <div class="progress mb-3">
-                    <div class="progress-bar progress-bar-aqua" style="width:{{ p10 }}%"></div>
-                </div>
-            </div>
-
+        </div>
+    </div>
 {% endblock %}
 
 
 
 {% block pie %}
-
-
-<div class="row ">
-        <div class="col-md-12">
+    <div class="row">
+        <div class="col-lg-3 col-6">
             <!-- small box -->
             <div class="small-box bg-info">
                 <div class="inner">
                     <h3>{{ n.0 }}</h3>
-                    <p>Total des cargaisons enregistrées</p>
+                    <p><b>Total des cargaisons enregistrées aujourd'hui</b></p>
                 </div>
                 <div class="icon">
                     <i class="ion ion-truck"></i>
                 </div>
-                <a href="#" class="small-box-footer"><i class="fa fa-arrow-circle-right"></i></a>
+                <a href="{% url 'statj' %}" class="small-box-footer"><i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <!-- ./col -->
-         <div class="col-md-12">
+        <div class="col-lg-3 col-6">
             <!-- small box -->
-            <div class="small-box bg-green">
+            <div class="small-box bg-success">
                 <div class="inner">
-                    <h3>{{ e.0 }}<sup style="font-size: 20px"></sup></h3>
-
-                    <p>Total des cargaisons échantillonées</p>
+                    <h3>{{ e.0 }}</h3>
+                    <p><b>Total des cargaisons échantillonées aujourd'hui</b></p>
                 </div>
                 <div class="icon">
-                    <i class=""></i>
+                    <i></i>
                 </div>
-                <a href="#" class="small-box-footer"> <i class="fa fa-arrow-circle-right"></i></a>
+                <a href="#" class="small-box-footer"><i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <!-- ./col -->
-        <div class="col-md-12">
+        <div class="col-lg-3 col-6">
             <!-- small box -->
-            <div class="small-box bg-yellow">
+            <div class="small-box bg-warning">
                 <div class="inner">
                     <h3>{{ l.0 }}</h3>
-
-                    <p>Total des cargaisons en cours d'analyses</p>
+                    <p><b>Total des cargaisons en cours d'analyses aujourd'hui</b></p>
                 </div>
                 <div class="icon">
-                    <i class=""></i>
+                    <i</i>
                 </div>
-                <a href="#" class="small-box-footer"> <i class="fa fa-arrow-circle-right"></i></a>
+                <a href="#" class="small-box-footer"><i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <!-- ./col -->
-         <div class="col-md-12">
+        <div class="col-lg-3 col-6">
             <!-- small box -->
-            <div class="small-box bg-red">
+            <div class="small-box bg-danger">
                 <div class="inner">
                     <h3>{{ d.0 }}</h3>
-
-                    <p>Total des cargaisons déchargées</p>
+                    <p><b>Total des cargaisons déchargées aujourd'hui</b></p>
                 </div>
                 <div class="icon">
-                    <i class=""></i>
+                    <i></i>
                 </div>
-                <a href="#" class="small-box-footer"> <i class="fa fa-arrow-circle-right"></i></a>
+                <a href="#" class="small-box-footer"><i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
         <!-- ./col -->
-
-</div>
+    </div>
 {% endblock %}
 
 

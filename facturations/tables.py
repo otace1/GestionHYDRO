@@ -64,8 +64,10 @@ class Appuration(tables.Table):
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = Liquidation
-        sequence = ['datebl','numerobl','vol_liq','importateur','declarant','entrepot','immatriculation','manifestdgda','t1e','t1d']
-        exclude = ['idliquidation', 'idcargaison','vol_liquide','vol_liquide','numbtfh','type_appurement']
+        sequence = ['datebl', 'numerobl', 'vol_liq', 'importateur', 'declarant', 'immatriculation', 'manifestdgda',
+                    't1e', 't1d']
+        exclude = ['idliquidation', 'idcargaison', 'vol_liquide', 'vol_liquide', 'numbtfh', 'type_appurement',
+                   'entrepot']
 
 
 class Detailsappuration(tables.Table):

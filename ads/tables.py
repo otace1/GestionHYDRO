@@ -70,22 +70,43 @@ class StatistiquesTable(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         sequence = ['dateheurecargaison', 'fournisseur', 'importateur', 'frontiere', 'entrepot', 'produit', 'volume',
-                    'poids', 'immatriculation', 't1e', 't1d', 'numbtfh', 'numdeclaration', 'manifestdgda']
+                    'immatriculation', 't1e', 't1d', 'numbtfh', 'numdeclaration', 'manifestdgda']
         exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo',
                    'dateanalyse', 'numcertificatqualite', 'valeurfacture',
                    'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
                    'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
                    'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
-                   'l_control']
+                   'l_control', 'poids']
+
+
+class StatistiquesJour(tables.Table):
+    export_formats = ['csv', 'xls', 'xlsx']
+    dateheurecargaison = tables.Column(verbose_name='Date & Heure')
+    volume = tables.Column(verbose_name='Vol. Décl.')
+    densitecargaison = tables.Column(verbose_name='Dens.')
+
+    class Meta:
+        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        template_name = "django_tables2/bootstrap4.html"
+        model = Cargaison
+        sequence = ['dateheurecargaison', 'fournisseur', 'importateur', 'frontiere', 'entrepot', 'produit', 'volume',
+                    'immatriculation', 't1e', 't1d', 'numbtfh', 'numdeclaration', 'manifestdgda']
+        exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo',
+                   'dateanalyse', 'numcertificatqualite', 'valeurfacture',
+                   'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
+                   'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
+                   'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
+                   'l_control', 'poids']
 
 
 class DerniersEnregistrements(tables.Table):
     dateheurecargaison = tables.Column(verbose_name='Date & Heure')
     volume = tables.Column(verbose_name='Vol. Décl.')
     importateur = tables.Column(verbose_name='Import.')
+
     class Meta:
         model = Cargaison
-        sequence = ['dateheurecargaison','frontiere','importateur','produit','volume']
+        sequence = ['dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume']
         exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo', 'poids','immatriculation','valeurfacture','numbtfh','numdeclaration','manifestdgda','t1e', 't1d',
                    'dateanalyse', 'numcertificatqualite','fournisseur', 'entrepot',
                    'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
@@ -118,19 +139,32 @@ class ProductionTable(tables.Table):
 class EncaissementTable(tables.Table):
     export_formats = ['csv', 'xls', 'xlsx']
     nomimportateur = tables.Column(verbose_name='Importateur')
-    nom_decl = tables.Column(verbose_name='Declarant')
+    nif = tables.Column(verbose_name='NIF')
+    nom_decl = tables.Column(verbose_name='Déclarant')
+    dateheurecargaison = tables.Column(verbose_name="Date d'Entrée")
+    immatriculation = tables.Column(verbose_name='Immatr.')
+    bureau = tables.Column(verbose_name='Bureau')
+    modele = tables.Column(verbose_name='Modèle')
     numerobl = tables.Column(verbose_name='Num.BL')
-    datebl = tables.Column(verbose_name='datebl')
-    date_pay = tables.Column(verbose_name='date_pay')
-    mont_enc = tables.Column(verbose_name='montant_enc')
-    qte_stat = tables.Column(verbose_name='Vol_Paye')
+    datebl = tables.Column(verbose_name='Date BL')
+    ide_nbr = tables.Column(verbose_name='N.Quitt.')
+    date_pay = tables.Column(verbose_name='Date Paiement')
+    mont_enc = tables.Column(verbose_name='Q.CGW')
+    mont_enc_occ = tables.Column(verbose_name='Q.OCC')
+    libelle = tables.Column(verbose_name='Libellé')
+    ref_pay = tables.Column(verbose_name='Ref.Paiement')
+    qte_stat = tables.Column(verbose_name='Vol.Payé')
+    taux = tables.Column(verbose_name='Taux du J.')
     bnk_nam = tables.Column(verbose_name='Banque')
-    codebureau = tables.Column(verbose_name='Cod_BUR')
+    gsv = tables.Column(verbose_name='Vol.Jaugé')
+    diff = tables.Column(verbose_name='Diff.Vol')
+    codebureau = tables.Column(verbose_name='Cod.BUR')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        attrs = {"id": "myTable"}
         template_name = "django_tables2/bootstrap4.html"
         model = Liquidation
-        sequence = ['codebureau','nomimportateur','nom_decl','numerobl','datebl','date_pay','mont_enc','qte_stat','bnk_nam']
-        exclude = ['idliquidation','idcargaison_id','vol_liq','type_appurement','idcargaison']
-
+        sequence = ['codebureau', 'bureau', 'nomimportateur', 'nif', 'nom_decl', 'dateheurecargaison',
+                    'immatriculation', 'modele', 'numerobl', 'datebl', 'ide_nbr', 'date_pay', 'bnk_nam', 'libelle',
+                    'ref_pay', 'gsv', 'qte_stat', 'diff', 'taux', 'mont_enc', 'mont_enc_occ']
+        exclude = ['idliquidation', 'idcargaison_id', 'vol_liq', 'type_appurement', 'idcargaison']
