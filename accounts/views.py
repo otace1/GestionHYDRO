@@ -11,6 +11,7 @@ from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrep
 from .tables import ListeUtilisateurs, DetailsAffectation
 
 
+
 # Fonction pour authemntifier les utilisateurs
 def login_user(request):
     template = 'accounts/login.html'
@@ -67,6 +68,7 @@ def login_user(request):
     return render(request, template, context)
 
 
+@login_required(login_url='login')
 # Fontion pour logout les utilisateurs
 def logout_user(request):
     logout(request)

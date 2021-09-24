@@ -84,7 +84,7 @@
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
             {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
-            <span class="brand-text font-weight-light"><b>CGW</b>||<b>HYDRO</b></span>
+            <span class="brand-text font-weight-light"><b>GESTION</b>DES<b>HYDROS</b></span>
         </a>
 
         <!-- Sidebar -->
@@ -458,34 +458,43 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>Productions</b></h1>
+                        <h1 class="m-0 text-dark"><b>Encaissements</b></h1>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Productions</li>
+                            <li class="breadcrumb-item active">Encaissements</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
             </div><!-- /.container-fluid -->
         </div>
-    <!-- /.content-header -->
+        <!-- /.content-header -->
 
-    <!-- Main content -->
-    <section class="content">
-    <div class="container-fluid">
-    <div class="row col-6">
-        {% block extra %}
-    {% endblock %}
-    </div>
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row col-3">
+                    {% block extra %}
+                        <form method="get" action="{% url 'filtret1' %}">
+                            <div class="input-group">
+                                <input type="text" name="q" class="form-control rounded"
+                                       placeholder="Recherche par T1E ou t1D" aria-label="Search"
+                                       aria-describedby="search-addon"/>
+                                {#  <button type="button" class="btn btn-outline-danger">Rechercher</button>#}
+                            </div>
+                        </form>
+                        <br>
+                    {% endblock %}
+                </div>
 
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card bg-gradient-dark">
-                    <div class="card-header"><h4><b>Importations en attente de paiement</b></h4></div>
-                    <div class="card-body table-responsive p-0">
-                        {% block content %}
-          {% endblock%}
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card bg-gradient-dark">
+                            <div class="card-header"><h4><b>Importations en attente de paiement</b></h4></div>
+                            <div class="card-body table-responsive p-0">
+                                {% block content %}
+                                {% endblock %}
                     </div>
                 </div>
             </div>
@@ -576,42 +585,46 @@
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/af-2.3.5/b-1.6.3/b-colvis-1.6.3/b-html5-1.6.3/cr-1.5.2/fc-3.3.1/fh-3.1.7/kt-2.5.2/r-2.2.5/rg-1.1.2/rr-1.2.7/sc-2.0.2/sp-1.1.1/sl-1.3.1/datatables.min.js"></script>
+<script type="text/javascript"
+        src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/af-2.3.5/b-1.6.3/b-colvis-1.6.3/b-html5-1.6.3/cr-1.5.2/fc-3.3.1/fh-3.1.7/kt-2.5.2/r-2.2.5/rg-1.1.2/rr-1.2.7/sc-2.0.2/sp-1.1.1/sl-1.3.1/datatables.min.js"></script>
 <script>
 
-var Id;
+    var Id;
 
-$(document).ready(function () {
+    $(document).ready(function () {
 
-    $('#facturations').DataTable({
-        "paging":false,
-        "ordering":false,
-        "info":false,
+        {#$('#facturations').DataTable({#}
+        {#    "paging":false,#}
+        {#    "ordering":false,#}
+        {#    "info":false,#}
+        {##}
+        {#responsive:{#}
+        {#    details:{#}
+        {#        renderer: function (api, rowIdx, columns){#}
+        {#            var data = $.map(columns, function (col,i){#}
+        {#                return col.hidden?#}
+        {#                    '<tr data-dt-row="'+col.rowIndex+'" data-dt-column="'+col.columnIndex+'">'+#}
+        {#                        '<td>'+col.title+':'+'</td> '+#}
+        {#                        '<td>'+col.data+'</td>'+#}
+        {#                    '</tr>' :#}
+        {#                    '';#}
+        {#            }).join('');#}
+        {#            return data ?#}
+        {#                $('<table/>').append(data):#}
+        {#                false;#}
+        {#        }#}
+        {#    }#}
+        {#}#}
+            {#})
+                ;
+                #}
 
-        responsive:{
-            details:{
-                renderer: function (api, rowIdx, columns){
-                    var data = $.map(columns, function (col,i){
-                        return col.hidden?
-                            '<tr data-dt-row="'+col.rowIndex+'" data-dt-column="'+col.columnIndex+'">'+
-                                '<td>'+col.title+':'+'</td> '+
-                                '<td>'+col.data+'</td>'+
-                            '</tr>' :
-                            '';
-                    }).join('');
-                    return data ?
-                        $('<table/>').append(data):
-                        false;
-                }
+                {% block javascript %}
+
+                {% endblock %}
+
             }
-        }
-    });
-
-    {% block javascript %}
-
-    {% endblock %}
-
-})
+        )
 </script>
 
 </body>

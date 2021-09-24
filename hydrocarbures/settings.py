@@ -54,12 +54,13 @@ INSTALLED_APPS = [
     # 'widget_tweaks',
     'django_countries',
     'crispy_forms',
-    'crispy_forms_foundation',
+    # 'crispy_forms_foundation',
     'qr_code',
     'django_tables2',
     # 'bootstrap3',
     'bootstrap4',
     'bootstrap_datepicker_plus',
+    # 'django-pandas',
     # 'jquery',
     # 'django_filters',
     # 'import_export',
@@ -175,10 +176,10 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'fr-FR'
 
 # TIME_ZONE = 'Africa/Lubumbashi'
-#
+# #
 # USE_I18N = True
 #
-# USE_L10N = True
+USE_L10N = True
 #
 # USE_TZ = True
 

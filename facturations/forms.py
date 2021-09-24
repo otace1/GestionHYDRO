@@ -14,8 +14,8 @@ paiement = [
 
 class SaisieBL(forms.Form):
     datebl = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de liquidattion :")
-    numerobl = forms.CharField(label="Numéro de BL :", widget=forms.TextInput(attrs={'data-mask': "*-****"}))
-    codebureau = forms.ModelChoiceField(queryset=BureauDGDA.objects.all(),label='Code Bureau DGDA')
+    numerobl = forms.IntegerField(label="Numéro de BL :")
+    codebureau = forms.ModelChoiceField(queryset=BureauDGDA.objects.all(), label='Code Bureau DGDA')
     vol_liq = forms.DecimalField(max_digits=32, label='Volume liquidé :')
     paiement = forms.CharField(widget=forms.Select(choices=paiement),label="type de paiement :", required=False)
 

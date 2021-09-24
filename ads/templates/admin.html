@@ -227,11 +227,11 @@
 
 {% block pie %}
     <div class="row">
-        <div class="col-lg-3 col-6">
+        <div class="col-lg-2 col-6">
             <!-- small box -->
             <div class="small-box bg-info">
                 <div class="inner">
-                    <h3>{{ n.0 }}</h3>
+                    <h3>{{ n }}</h3>
                     <p><b>Total des cargaisons enregistrées aujourd'hui</b></p>
                 </div>
                 <div class="icon">
@@ -241,11 +241,11 @@
             </div>
         </div>
         <!-- ./col -->
-        <div class="col-lg-3 col-6">
+        <div class="col-lg-2 col-6">
             <!-- small box -->
             <div class="small-box bg-success">
                 <div class="inner">
-                    <h3>{{ e.0 }}</h3>
+                    <h3>{{ e }}</h3>
                     <p><b>Total des cargaisons échantillonées aujourd'hui</b></p>
                 </div>
                 <div class="icon">
@@ -255,12 +255,12 @@
             </div>
         </div>
         <!-- ./col -->
-        <div class="col-lg-3 col-6">
+        <div class="col-lg-2 col-6">
             <!-- small box -->
             <div class="small-box bg-warning">
                 <div class="inner">
-                    <h3>{{ l.0 }}</h3>
-                    <p><b>Total des cargaisons en cours d'analyses aujourd'hui</b></p>
+                    <h3>{{ l }}</h3>
+                    <p><b>Total des cargaisons au Labo aujourd'hui</b></p>
                 </div>
                 <div class="icon">
                     <i></i>
@@ -269,12 +269,42 @@
             </div>
         </div>
         <!-- ./col -->
-        <div class="col-lg-3 col-6">
+        <div class="col-lg-2 col-6">
             <!-- small box -->
             <div class="small-box bg-danger">
                 <div class="inner">
-                    <h3>{{ d.0 }}</h3>
-                    <p><b>Total des cargaisons déchargées aujourd'hui</b></p>
+                    <h3>{{ v }} m<sup>3</sup></h3>
+                    <p><b>Total du volume annuel</b></p>
+                </div>
+                <div class="icon">
+                    <i></i>
+                </div>
+                <a href="#" class="small-box-footer"><i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <!-- ./col -->
+        <!-- ./col -->
+        <div class="col-lg-2 col-6">
+            <!-- small box -->
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ r }} m<sup>3</sup></h3>
+                    <p><b>Volume Total retracé dans le système</b></p>
+                </div>
+                <div class="icon">
+                    <i></i>
+                </div>
+                <a href="#" class="small-box-footer"><i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        <!-- ./col -->
+        <!-- ./col -->
+        <div class="col-lg-2 col-6">
+            <!-- small box -->
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>{{ d }}</h3>
+                    <p><b>Total des cargaisons retracées dans le système</b></p>
                 </div>
                 <div class="icon">
                     <i></i>

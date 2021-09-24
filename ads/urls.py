@@ -9,7 +9,12 @@ urlpatterns = [
     path('statj/', views.statj, name='statj'),
     path('statProduct/', views.statproduction, name='statProd'),
     path('statEncaissement/', views.statencaissement, name='statencaissement'),
-    # path('export/', views.export_import, name='export_import'),
+    path('export_import/', views.export_excel, name='export_import'),
+    path('export_prod/', views.export_excel_prod, name='export_excel_prod'),
+    path('export_enc/', views.export_excel_encaiss, name='export_excel_encaiss'),
+    path('syntimpor/', views.synthese_importation, name='synthese_importation'),
+    path('syntprod/', views.synthese_production, name='synthese_production'),
+    path('syntencai/', views.synthese_encaissement, name='synthese_encaissement'),
 
     path('entrepot/', views.gestionentrepot, name='gest_entrepot'),
     path('entrepot/add/', views.addentrepot, name='add_entrepot'),

@@ -27,7 +27,7 @@ class GestionLaboratoire():
         form = ReceptionEchantillon()
         form1 = ModificationEchantillon()
         if role == 4 or role == 1:
-            table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
+            table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
                                                                           FROM hydro_occ.enreg_cargaison c  \
                                                                           LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
                                                                           WHERE c.etat = "Echantillonner" \
@@ -159,7 +159,7 @@ class GestionLaboratoire():
                 return redirect('labo')
             else:
                 a = '%' + q + '%'
-                table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
+                table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison,DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
                                                                     FROM hydro_occ.enreg_cargaison c  \
                                                                     LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
                                                                     WHERE c.qrcode LIKE %s \
@@ -204,7 +204,7 @@ class GestionLaboratoire():
                 return redirect('labo')
             else:
 
-                table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
+                table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison,DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
                                                                           FROM hydro_occ.enreg_cargaison c  \
                                                                           LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
                                                                           WHERE c.etat = "Echantillonner" \

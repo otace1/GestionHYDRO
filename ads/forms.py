@@ -65,7 +65,8 @@ class ProduitEditForm(forms.ModelForm):
 
 # Formulaire de recherche statistique
 class RechercheStat(forms.Form):
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Frontiere d'entree :", required=False)
+    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Entité de prise en charge :",
+                                       required=False)
     produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="Nature du produit :", required=False)
     importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="Nom de l'importateur :",
                                          required=False)
@@ -78,17 +79,21 @@ class RechercheStat(forms.Form):
 
 # Formulaire de recherche statistique
 class RechercheEncaissement(forms.Form):
+    query = Paiement.objects.raw('SELECT p.bnk_nam, p.id FROM hydro_occ.enreg_paiement p group by p.bnk_nam')
+    bank = []
+    for d in query:
+        bank.append(d.bnk_nam)
+    choix = [(data, data) for data in bank]
+    choix.insert(0, ('', ''))
+    # bank = [i['bnk_nam'] for i in query]
 
-    query = Paiement.objects.values('bnk_nam').distinct()
-
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Frontiere d'entree :", required=False)
+    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Entité de prise en charge :",
+                                       required=False)
     importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="Nom de l'importateur :",
                                          required=False)
-    banque = forms.ModelChoiceField(queryset=query, label="Banques", required=False)
+    banque = forms.ChoiceField(choices=choix, label="Banques", required=False)
     date_d = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de début :")
     date_f = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de fin :")
-
-
 
 
 # Formulaire importation

@@ -6,12 +6,13 @@
 {% block extra %}
     <div class="col-md-2">
         <a href="{% url 'dashboard' %}">
-            <button class="btn btn-danger"><i class="fa fa-backward"></i>Retour</button>
+            <button class="btn btn-danger"><i class="fa fa-backward"></i> Retour</button>
         </a>
     </div>
+
     <div class="col-md-2">
-        <a href="{% querystring '_export'='xlsx' %}">
-            <button class="btn btn-success"><i class="fa fa-download"></i>Telech.</button>
+        <a href="{% url 'synthese_importation' %}">
+            <button class="btn btn-success"><i class="fa fa-file"></i> Afficher la Synthèse</button>
         </a>
     </div>
     <br>
@@ -22,7 +23,6 @@
 
 {% block dashboard %}
     {% render_table cargaison %}
-
 {% endblock %}
 
 

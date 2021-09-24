@@ -97,6 +97,7 @@ GO = """
 
 class LaboratoireReception(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
+    dateheurecargaison = tables.Column(verbose_name="Date d'Entrée.")
     immatriculation = tables.Column(verbose_name='Immatriculation')
     numdossier = tables.Column(verbose_name="# Dossier")
     codecargaison = tables.Column(verbose_name='# Hydro')
@@ -108,7 +109,7 @@ class LaboratoireReception(tables.Table):
                  "id":"table1"}
         template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon
-        sequence = ['numrappech', 'numdossier', 'codecargaison', 'produit', 'immatriculation']
+        sequence = ['dateheurecargaison', 'numrappech', 'numdossier', 'codecargaison', 'produit', 'immatriculation']
         exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique',
                    'qte', 'conformite', 'idcargaison', 'dateechantillonage']
 
