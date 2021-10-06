@@ -477,13 +477,20 @@
                 <div class="row col-3">
                     {% block extra %}
                         <form method="get" action="{% url 'filtret1' %}">
-                            <div class="input-group">
-                                <input type="text" name="q" class="form-control rounded"
-                                       placeholder="Recherche par T1E ou t1D" aria-label="Search"
-                                       aria-describedby="search-addon"/>
-                                {#  <button type="button" class="btn btn-outline-danger">Rechercher</button>#}
+                            <div class="input-group input-group-sm" style="width: 300px;">
+                                <input type="text" name="q" class="form-control float-right"
+                                       placeholder="Recherche par T1E">
+
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
+                                </div>
                             </div>
                         </form>
+                        {#                        <div>#}
+                        {#                        <button type="button"  href="{% url 'facturations' %}"  class="btn btn-danger">Retour</button>#}
+                        {#                        </div>#}
+
+
                         <br>
                     {% endblock %}
                 </div>
@@ -615,16 +622,16 @@
         {#        }#}
         {#    }#}
         {#}#}
-            {#})
-                ;
-                #}
+            {#    })#}
+            ;
 
-                {% block javascript %}
 
-                {% endblock %}
+            {% block javascript %}
 
-            }
-        )
+            {% endblock %}
+
+        }
+    )
 </script>
 
 </body>

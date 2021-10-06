@@ -302,7 +302,7 @@ class GestionDecharger():
                 'gsv':gsv,
                 'numerore':numerore,
                 'datecert':datecert,
-                'diffvolume':diffvolume,
+                # 'diffvolume':diffvolume,
                 'printactdate':printactdate
                     }
 

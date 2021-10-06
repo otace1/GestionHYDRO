@@ -7,9 +7,11 @@ from django_tables2 import RequestConfig
 from django_tables2.paginators import LazyPaginator
 from enreg.models import *
 from .forms import SaisieBL
+from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
+@login_required(login_url='login')
 def facturations(request):
     request.session['url'] = request.get_full_path()
     user = request.user
@@ -57,6 +59,8 @@ def facturations(request):
                                                  'form': form,
                                                  })
 
+
+@login_required(login_url='login')
 def saisiebl(request):
     user = request.user
     url = request.session['url']
@@ -105,6 +109,8 @@ def saisiebl(request):
                                               'context': context})
     return render(request, template, {'form': form})
 
+
+@login_required(login_url='login')
 def appureration(request):
     user = request.user
     id = user.id
@@ -119,6 +125,7 @@ def appureration(request):
     return render(request, 'appuration.html', {'appuration': table})
 
 
+@login_required(login_url='login')
 def detailsappuration(request, pk):
     template = 'detailsappuration.html'
     c = Liquidation.objects.get(idliquidation=pk)
@@ -130,22 +137,21 @@ def detailsappuration(request, pk):
     return render(request, template, {'detailsappuration': table})
 
 
+@login_required(login_url='login')
 def filtret1(request):
-    request.session['url'] = request.get_full_path()
     user = request.user
     id = user.id
-    form = SaisieBL()
     q = request.GET.get('q')
+    form = SaisieBL()
     table = Facturations(Cargaison.objects.raw('SELECT c.idcargaison, c.dateheurecargaison, c.frontiere_id, c.importateur_id, c.declarant, c.immatriculation, c.t1e, c.t1d, c.numdeclaration, c.valeurfacture, c.produit_id, c.entrepot_id, c.fournisseur, c.volume, d.datedechargement, d.gsv \
                                                     FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_dechargement d,hydro_occ.accounts_affectationville a \
                                                     WHERE c.idcargaison = e.idcargaison_id \
                                                     AND e.idcargaison_id = d.idcargaison_id \
                                                     AND c.frontiere_id = a.ville_id \
                                                     AND a.username_id = %s \
-                                                    AND c.t1e = %s \
-                                                    OR c.t1d = %s \
                                                     AND c.l_control is NULL \
-                                                    ORDER BY c.dateheurecargaison DESC', [id, q, q, ]), prefix='1_')
+                                                    AND c.t1e = %s \
+                                                    ORDER BY c.dateheurecargaison DESC', [id, q, ]), prefix='1_')
 
     table1 = Facturations1(Cargaison.objects.raw('SELECT l.idliquidation,c.idcargaison,l.datebl, l.numerobl ,l.codebureau_id , l.vol_liq , c.importateur_id , c.declarant ,c.immatriculation , c.entrepot_id \
                                                       FROM hydro_occ.enreg_liquidation l, hydro_occ.enreg_cargaison c, hydro_occ.accounts_affectationville a \

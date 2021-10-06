@@ -13,8 +13,13 @@ def numeroactcurrent(pk):
     d = d.year
 
     c = Cargaison.objects.filter(dateheurecargaison__year=d).aggregate(Max('numact'))
-    numact = c.get('numact__max')
-    numact = numact + 1
+
+    if c.get('numact__max') == None:
+        numact = 1
+    else:
+        numact = c.get('numact__max')
+        numact = numact + 1
+
     return numact
 
 
