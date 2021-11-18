@@ -1,0 +1,17 @@
+/accounts/
+/ads/
+/assets/
+/enreg/
+/entrepot/
+/facturations/
+/hydrocarbures/
+/labo/
+/media/
+/online/
+/shydro/
+/templates/
+/venv/
+/db.sqlite3
+/manage.py
+/requirements.txt
+/test.png
