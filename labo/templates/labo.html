@@ -7,18 +7,22 @@
 {% endblock %}
 
 
- {% block dashboard%}
+{% block dashboard %}
     {% render_table labo %}
+    {#     Automatic sample reception at the lab bypass previous manual method #}
+    <form method="post" action="" id="post-auto">
+        {% csrf_token %}
+    </form>
 
-     <div class="modal fade" id="modal-default">
-         <div class="modal-dialog">
-             <div class="modal-content bg-gradient-dark">
-                 <div class="modal-header">
-                     <h4 class="modal-title"><b>Enregistrement de l'échantillon</b></h4>
-                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                         <span aria-hidden="true">&times;</span>
-                     </button>
-                 </div>
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+            <div class="modal-content bg-gradient-dark">
+                <div class="modal-header">
+                    <h4 class="modal-title"><b>Enregistrement de l'échantillon</b></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
                  <form method="post" action="" id="post-form">
                      <div id="success-change">
                          <div class="modal-body">
@@ -117,18 +121,36 @@ function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
 }
-$.ajaxSetup({
-    beforeSend: function(xhr, settings) {
-        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
         }
-    }
-});
+    });
 
     //script for submitting data in ajax posting echantillon
-    $('.btn.btn-success').click(function () {
+    $('.btn.btn-danger').click(function (e) {
+        e.preventDefault()
+        //Disable submit button
         Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
         console.log(Id); //Sanity Check
+        var pk = Id;
+        var APIurl = "{% url 'reception' %}";
+        $input = $('<input type="hidden" name="pk">').val(pk);
+        $('#post-auto').append($input);
+        var SerializedData = $("#post-auto").serialize();
+        console.log(SerializedData); //sanity check
+        $.ajax({
+            url: APIurl,
+            type: "POST",
+            data: SerializedData,
+            dateType: 'json',
+            success: function () {
+                location.reload();
+            }
+        })
+
     });
 
     $('.btn.btn-primary').click(function (e) {
@@ -137,7 +159,7 @@ $.ajaxSetup({
         $('.btn.btn-primary').attr("disabled", true);
         var pk = Id;
         var APIurl = "{% url 'reception' %}";
-     $input = $('<input type="hidden" name="pk">').val(pk);
+        $input = $('<input type="hidden" name="pk">').val(pk);
      $('#post-form').append($input);
      var SerializedData = $("#post-form").serialize();
      console.log(SerializedData);

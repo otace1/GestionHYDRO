@@ -14,6 +14,7 @@ from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from datetime import datetime
 from django.http import JsonResponse
+from .codeLabo import codeLabo
 
 
 # Class de gestion pouir le laboratoire
@@ -23,25 +24,48 @@ class GestionLaboratoire():
     def affichageenchantillon(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
         role = user.role_id
         form = ReceptionEchantillon()
         form1 = ModificationEchantillon()
         if role == 4 or role == 1:
-            table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
-                                                                          FROM hydro_occ.enreg_cargaison c  \
-                                                                          LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
-                                                                          WHERE c.etat = "Echantillonner" \
-                                                                          OR c.etat ="En attente d\'echantillonage" \
-                                                                          ORDER BY dateechantillonage DESC'),
-                                         prefix="1_")
+            # table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
+            #                                                               FROM hydro_occ.enreg_cargaison c  \
+            #                                                               LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
+            #                                                               WHERE c.etat = "Echantillonner" \
+            #                                                               OR c.etat ="En attente d\'echantillonage" \
+            #                                                               ORDER BY dateechantillonage DESC'), prefix="1_")
 
-            table1 = TableauEchantillonRecu(Entrepot_echantillon.objects.raw('SELECT e.idcargaison_id, l.datereceptionlabo, l.codelabo ,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
-                                                                          FROM hydro_occ.enreg_entrepot_echantillon e \
-                                                                          LEFT JOIN hydro_occ.enreg_cargaison c ON e.idcargaison_id = c.idcargaison \
-                                                                          LEFT JOIN  hydro_occ.enreg_laboreception l ON l.idcargaison_id = e.idcargaison_id \
-                                                                          WHERE c.etat = "Analyse Labo en cours" \
-                                                                          ORDER BY l.datereceptionlabo DESC'),
-                                            prefix="2_")
+            table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, DATE(c.dateheurecargaison), x.numrappech, c.numdossier, c.codecargaison, c.immatriculation \
+FROM enreg_laboreception l, enreg_entrepot_echantillon x, enreg_cargaison c, enreg_entrepot e, enreg_ville v \
+WHERE c.etat = "Echantillonner" \
+AND l.idcargaison_id = x.idcargaison_id \
+AND x.idcargaison_id = c.idcargaison \
+AND c.entrepot_id = e.identrepot \
+AND e.ville_id = v.idville \
+AND v.idville = %s \
+ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
+
+            # qs = Entrepot_echantillon.objects.values('idcargaison__idcargaison','idcargaison__dateheurecargaison','dateechantillonage','numrappech', 'idcargaison__numdossier', 'idcargaison__codecargaison', 'idcargaison__immatriculation','idcargaison__produit__nomproduit').filter(idcargaison__etat="Echantillonner", idcargaison__entrepot__ville=ville).order_by('-dateechantillonage')
+            # table = LaboratoireReception(qs)
+
+            qs1 = LaboReception.objects.values('codelabo', 'idcargaison__numrappech',
+                                               'idcargaison__idcargaison__numdossier',
+                                               'idcargaison__idcargaison__codecargaison',
+                                               'idcargaison__idcargaison__immatriculation',
+                                               'idcargaison__idcargaison__produit__nomproduit').filter(
+                idcargaison__idcargaison__etat="Analyse Labo en cours",
+                idcargaison__idcargaison__entrepot__ville=ville).order_by('idcargaison__dateechantillonage')
+            table1 = TableauEchantillonRecu(qs1)
+
+            # table1 = TableauEchantillonRecu(Entrepot_echantillon.objects.raw('SELECT e.idcargaison_id, l.datereceptionlabo, l.codelabo ,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
+            #                                                               FROM hydro_occ.enreg_entrepot_echantillon e \
+            #                                                               LEFT JOIN hydro_occ.enreg_cargaison c ON e.idcargaison_id = c.idcargaison \
+            #                                                               LEFT JOIN  hydro_occ.enreg_laboreception l ON l.idcargaison_id = e.idcargaison_id \
+            #                                                               WHERE c.etat = "Analyse Labo en cours" \
+            #                                                               ORDER BY l.datereceptionlabo DESC'),
+            #                                 prefix="2_")
 
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
@@ -59,63 +83,67 @@ class GestionLaboratoire():
     def receptionechantillon(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        v = ville.ville_id
         role = user.role_id
         if role == 4 or role == 1:
             # Getting current Year & Month
             now = datetime.today()
+            date_today = now.date()
             month = now.month
             year = now.year
 
             if request.is_ajax():
                 pk = request.POST.get('pk', None)
-                codelabo = request.POST.get('codelabo', None)
-                datereception = request.POST.get('datereception', None)
-                dateechantillon = request.POST.get('dateprelevement', None)
+                # codelabo = request.POST.get('codelabo', None)
+                # datereception = request.POST.get('datereception', None)
+                # dateechantillon = request.POST.get('dateprelevement', None)
                 # numrappech = request.POST.get('numerore',None)
 
-                # Test de conformite des donnees saisies
-                if pk == '' or codelabo == '' or datereception == '' or dateechantillon == '':
-                    return JsonResponse(status=400)
+                # # Test de conformite des donnees saisies
+                # if pk == '' or codelabo == '' or datereception == '' or dateechantillon == '':
+                #     return JsonResponse(status=400)
 
                 # Test pour voir si il y'a déjà eu enregistrement
-                if Entrepot_echantillon.objects.filter(idcargaison_id=pk).exists():
-                    t = Entrepot_echantillon.objects.get(idcargaison_id=pk)
-                    pk1 = t.idcargaison_id
+                # if Entrepot_echantillon.objects.filter(idcargaison_id=pk).exists():
+                t = Entrepot_echantillon.objects.get(idcargaison_id=pk)
+                # pk1 = t.idcargaison_id
 
-                    # t.numrappech = numrappech
-                    t.dateechantillonage = dateechantillon
-                    t.save(update_fields=['numrappech', 'dateechantillonage'])
+                #     # t.numrappech = numrappech
+                # t.dateechantillonage = dateechantillon
+                # t.save(update_fields=['numrappech', 'dateechantillonage'])
 
-                    # Changement de l'etat de la cargaison
-                    d = Cargaison.objects.get(idcargaison=pk)
-                    d.etat = "Analyse Labo en cours"
-                    d.save(update_fields=['etat'])
+                # Changement de l'etat de la cargaison
+                d = Cargaison.objects.get(idcargaison=pk)
+                d.etat = "Analyse Labo en cours"
+                d.save(update_fields=['etat'])
 
-                    # Sauvegarde de l'instruction dans la Table LaboReception
-                    p = LaboReception(idcargaison_id=pk1, datereceptionlabo=datereception, codelabo=codelabo)
-                    p.save()
-                    response = {'valid': True}
-                    return JsonResponse(response, status=200)
+                # Sauvegarde de l'instruction dans la Table LaboReception
+                codelabo = codeLabo(v, pk)
+                p = LaboReception(idcargaison_id=pk, datereceptionlabo=date_today, codelabo=codelabo)
+                p.save()
+                response = {'valid': True}
+                return JsonResponse(response, status=200)
+                #
+                # else:
 
-                else:
-
-                    e = Entrepot_echantillon(idcargaison_id=pk, dateechantillonage=dateechantillon)
-                    e.save()
-
-                    e = Entrepot_echantillon.objects.get(idcargaison_id=pk)
-                    pk1 = e.idcargaison_id
-
-                    # Changement de l'etat de la cargaison
-                    d = Cargaison.objects.get(idcargaison=pk)
-                    d.etat = "Analyse Labo en cours"
-                    d.tampon = "0"
-                    d.save(update_fields=['etat', 'tampon'])
-
-                    # Sauvegarde de l'instruction dans la Table LaboReception
-                    p = LaboReception(idcargaison_id=pk1, datereceptionlabo=datereception, codelabo=codelabo)
-                    p.save()
-                    response = {'valid': True}
-                    return JsonResponse(response, status=200)
+                # e = Entrepot_echantillon(idcargaison_id=pk, dateechantillonage=dateechantillon)
+                # e.save()
+                #
+                # e = Entrepot_echantillon.objects.get(idcargaison_id=pk)
+                # pk1 = e.idcargaison_id
+                #
+                # # Changement de l'etat de la cargaison
+                # d = Cargaison.objects.get(idcargaison=pk)
+                # d.etat = "Analyse Labo en cours"
+                # d.tampon = "0"
+                # d.save(update_fields=['etat', 'tampon'])
+                #
+                # # Sauvegarde de l'instruction dans la Table LaboReception
+                # p = LaboReception(idcargaison_id=pk1, datereceptionlabo=datereception, codelabo=codelabo)
+                # p.save()
+                # response = {'valid': True}
+                # return JsonResponse(response, status=200)
             else:
                 return redirect('labo')
         else:

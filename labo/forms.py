@@ -7,7 +7,7 @@ from bootstrap_datepicker_plus import DatePickerInput
 
 
 class ReceptionEchantillon(forms.Form):
-    codelabo = forms.CharField(label="Code du Labo :")
+    codelabo = forms.IntegerField(label="Code du Labo :")
     # numerore= forms.CharField(label="Numero RE :")
     datereception = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de réception :")
     dateprelevement = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de prélèvement :")

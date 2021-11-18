@@ -2,16 +2,21 @@ import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, LaboReception, Resultat
 
 TEMPLATE = """
-            <button type="button" class="btn btn-success" data-id={{record.pk}} data-toggle="modal" data-target="#modal-default">
+            <button type="button" class="btn btn-danger" data-id="{{record.pk}}">
                   Réception
-                </button>
-           """
+            </button>
+            """
+#
+# <button type="button" class="btn btn-success" data-id={{record.pk}} data-toggle="modal" data-target="#modal-default">
+#                   Réception
+#                 </button>
+
 
 RECEPTIONNER = """
-                <button type="button" class="btn btn-success" data-id={{record.pk}} data-toggle="modal" data-target="#modal-modifier">
+                <button type="button" class="btn btn-warning" data-id={{record.pk}} data-toggle="modal" data-target="#modal-modifier">
                   Modifier
                 </button>
-           """
+                """
 
 date = """
  <form method=post action="{% url 'codecq' record.pk%}">
@@ -101,7 +106,7 @@ class LaboratoireReception(tables.Table):
     immatriculation = tables.Column(verbose_name='Immatriculation')
     numdossier = tables.Column(verbose_name="# Dossier")
     codecargaison = tables.Column(verbose_name='# Hydro')
-    produit = tables.Column(verbose_name='Produit')
+    nomproduit = tables.Column(verbose_name='Produit')
     numrappech = tables.Column(verbose_name='# RE')
 
     class Meta:
@@ -109,28 +114,31 @@ class LaboratoireReception(tables.Table):
                  "id":"table1"}
         template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon
-        sequence = ['dateheurecargaison', 'numrappech', 'numdossier', 'codecargaison', 'produit', 'immatriculation']
+        sequence = ['dateheurecargaison', 'numrappech', 'numdossier', 'codecargaison', 'immatriculation']
         exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique',
-                   'qte', 'conformite', 'idcargaison', 'dateechantillonage']
+                   'qte', 'conformite', 'nomproduit', 'idcargaison', 'dateechantillonage']
 
 
 class TableauEchantillonRecu(tables.Table):
     actions = tables.TemplateColumn(RECEPTIONNER, verbose_name='')
-    immatriculation = tables.Column(verbose_name='Immatriculation ')
-    numdossier = tables.Column(verbose_name='# Dossier')
-    codecargaison = tables.Column(verbose_name='# Hydro')
+    idcargaison__idcargaison__immatriculation = tables.Column(verbose_name='Immatriculation ')
+    idcargaison__idcargaison__numdossier = tables.Column(verbose_name='# Dossier')
+    idcargaison__idcargaison__codecargaison = tables.Column(verbose_name='# Hydro')
     codelabo = tables.Column(verbose_name='Code Labo')
     datereceptionlabo = tables.Column(verbose_name='Date de réception Labo')
-    produit = tables.Column(verbose_name='Produit')
-    numrappech = tables.Column(verbose_name='# RE')
+    idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name='Produit')
+    idcargaison__numrappech = tables.Column(verbose_name='# RE')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon
-        sequence = ['codelabo', 'numrappech', 'codecargaison', 'immatriculation']
-        exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique', 'idcargaison','numdossier',
-                   'qte', 'produit', 'conformite', 'dateechantillonage', 'datereceptionlabo']
+        sequence = ['codelabo', 'idcargaison__numrappech', 'idcargaison__idcargaison__codecargaison',
+                    'idcargaison__idcargaison__immatriculation']
+        exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique', 'idcargaison',
+                   'idcargaison__idcargaison__numdossier',
+                   'qte', 'produit', 'conformite', 'dateechantillonage', 'datereceptionlabo',
+                   'idcargaison__idcargaison__produit__nomproduit']
 
 
 class AffichageAnalyse(tables.Table):

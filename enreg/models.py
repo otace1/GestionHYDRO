@@ -176,7 +176,8 @@ class Entrepot_echantillon(models.Model):
 class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.CASCADE, primary_key=True)
     numcertificatqualite = models.CharField(max_length=256, verbose_name="Numero du Certificat de Qualite ", blank=True)
-    codelabo = models.CharField(max_length=256, verbose_name="Code Labo ")
+    # codelabo = models.CharField(max_length=256, verbose_name="Code Labo ")
+    codelabo = models.IntegerField(default=0, verbose_name="Code Labo ")
     datereceptionlabo = models.DateField(verbose_name="Date reception")
 
     def get_absolute_url(self):
@@ -291,8 +292,9 @@ class Paiement(models.Model):
     qte_stat = models.DecimalField(max_digits=32, decimal_places=4, verbose_name='Qte payee')
     qp_cgw = models.DecimalField(max_digits=32, decimal_places=4, verbose_name='QP CGW')
     qp_occ = models.DecimalField(max_digits=32, decimal_places=4, verbose_name='QP OCC')
-    num_enreg = models.IntegerField(verbose_name='N. Decl.', null=True)
-    date_enreg = models.DateField(verbose_name='Date Decl.')
+
+    # num_enreg = models.IntegerField(verbose_name='N. Decl.', null=True)
+    # date_enreg = models.DateField(verbose_name='Date Decl.')
 
     def __str__(self):
         return self.bnk_nam
