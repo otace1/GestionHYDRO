@@ -33,8 +33,20 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 # DEBUG = True
 
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-# ALLOWED_HOSTS = ['*']
+#ALLOWED HOST
+ENV_ALLOWED_HOST = os.environ.get('DJANGO_ALLOWED_HOST') or None
+ALLOWED_HOSTS = []
+if ENV_ALLOWED_HOST is not None:
+    ALLOWED_HOSTS = [ ENV_ALLOWED_HOST ]
+    
+    
+ 
+# Random Key = fac2k*ytpgy7ve77hvw7hs(kh713bvmhn*onw_gs5jswu2a+=u
+    
+
+
+# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+# # ALLOWED_HOSTS = ['*']
 
 INTERNAL_IPS = [
     '127.0.0.1',
