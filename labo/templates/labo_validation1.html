@@ -6,7 +6,7 @@
 
 {% block modal1 %}
     {% csrf_token %}
-    {{ form | crispy }}
+    {% crispy form %}
     <script>
         $(function () {
             $("#id_date").datepicker({

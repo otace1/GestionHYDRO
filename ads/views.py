@@ -44,6 +44,8 @@ class Dashboard():
             year = d.year
             day = d.day
 
+            dt = d.today()
+
             template = 'admin.html'
             # Gasoil
             gvolume = Cargaison.objects.filter(produit=2, dateheurecargaison__month=month,
@@ -163,7 +165,7 @@ class Dashboard():
             n = Cargaison.objects.filter(dateheurecargaison__date=d, etat="En attente requisition").count()
             e = Entrepot_echantillon.objects.filter(dateechantillonage=d).count()
             d = Cargaison.objects.all().count()
-            l = LaboReception.objects.filter(datereceptionlabo__startswith=d).count()
+            l = LaboReception.objects.filter(datereceptionlabo=dt).count()
             r = Cargaison.objects.all().aggregate(Sum('volume'))
             r = r['volume__sum']
             v = Cargaison.objects.filter(dateheurecargaison__year=year).aggregate(Sum('volume'))

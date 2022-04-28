@@ -4,9 +4,9 @@ from enreg.models import Cargaison,Dechargement
 
 
 A1 = """
- <form method=post action="{% url 'numdoss' record.pk%}">
+ <form method=post action="{% url 'numreq' record.pk%}">
     {% csrf_token %}
-     <input type="text" name="numdossier">
+     <input type="text" name="numreq">
  </form>
 """
 
@@ -20,10 +20,10 @@ A2 = """
 """
 
 B1 = """
- <form method=post action="{% url 'numdoss' record.pk%}">
+ <form method=post action="{% url 'numreq' record.pk%}">
     {% csrf_token %}
     <div class="col-sm-5">
-     <input type="text" name="numdossier">
+     <input type="text" name="numreq">
      </div>
  </form>
 """
@@ -37,9 +37,9 @@ B2 = """
 
 """
 
-A3 ="""
+A3 = """
     
-    <a href="{%url 'update' record.pk%}" class="btn btn-success">Envoyer</a>
+    <a href="{%url 'update' record.pk%}" class="btn btn-success">AUTORISE POUR LE CONTROLE</a>
     
 """
 
@@ -60,29 +60,40 @@ E = """<a href="{%url 'reprintact' record.pk%}" class="btn btn-success">Ré-Impr
 
 
 class CodificationTable(tables.Table):
-    numdossiers = tables.TemplateColumn(A1, verbose_name='# Dos')
-    codecargaisons = tables.TemplateColumn(A2, verbose_name='# Camion')
+    numreqi = tables.TemplateColumn(A1, verbose_name='Saisie Ref.Requisition')
+    numreq = tables.Column(verbose_name='Ref.Requisition')
+    numdos = tables.Column(verbose_name='Num. de dossier')
     buttons = tables.TemplateColumn(A3, verbose_name='')
+
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
-        model= Cargaison
-        sequence =['dateheurecargaison','entrepot','immatriculation','t1d','t1e']
-        exclude = ['idcargaison','declarant', 'tempcargaison', 'densitecargaison', 'idchauffeur', 'nationalite', 'nomchauffeur'
-                   , 'qrcode', 'poids', 'transporteur','impression','voie','numact', 'conformite',
-                   'provenance','tampon','etat','numdeclaration','numdossier','codecargaison','manifestdgda','fournisseur','numbtfh','valeurfacture','user','volume','volume_decl15','frontiere','printactdate','produit','importateur','l_control']
+        model = Cargaison
+        sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'immatriculation', 't1d', 't1e',
+                    'numreq']
+        exclude = ['numdos', 'requisitiondackdate', 'requisitionack', 'origine', 'idcargaison', 'declarant',
+                   'tempcargaison', 'densitecargaison', 'idchauffeur', 'nationalite', 'nomchauffeur', 'qrcode', 'poids',
+                   'transporteur', 'impression', 'voie', 'numact', 'conformite', 'provenance', 'tampon', 'etat',
+                   'numdeclaration', 'numdossier', 'codecargaison', 'manifestdgda', 'fournisseur', 'numbtfh',
+                   'valeurfacture', 'user', 'volume', 'volume_decl15', 'frontiere', 'printactdate', 'l_control',
+                   'rapechctrl']
+
 
 class ModificationCodification(tables.Table):
     numdossiers = tables.TemplateColumn(B1)
     codecargaisons = tables.TemplateColumn(B2)
+
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
-        model= Cargaison
-        sequence = ['immatriculation','t1d','t1e','numdossier','codecargaison']
-        exclude = ['dateheurecargaison','importateur','entrepot','idcargaison','declarant', 'tempcargaison', 'densitecargaison', 'idchauffeur', 'nationalite', 'nomchauffeur'
-                   , 'qrcode', 'poids', 'transporteur','impression','voie','numact', 'conformite',
-                   'provenance','tampon','l_control','etat','numdeclaration','manifestdgda','fournisseur','numbtfh','valeurfacture','user','volume','volume_decl15','frontiere','printactdate','produit']
+        model = Cargaison
+        sequence = ['immatriculation', 't1d', 't1e', 'numdossier', 'codecargaison']
+        exclude = ['dateheurecargaison', 'importateur', 'entrepot', 'idcargaison', 'declarant', 'tempcargaison',
+                   'densitecargaison', 'idchauffeur', 'nationalite', 'nomchauffeur'
+            , 'qrcode', 'poids', 'transporteur', 'impression', 'voie', 'numact', 'conformite',
+                   'provenance', 'tampon', 'l_control', 'etat', 'numdeclaration', 'manifestdgda', 'fournisseur',
+                   'numbtfh', 'valeurfacture', 'user', 'volume', 'volume_decl15', 'frontiere', 'printactdate',
+                   'produit']
 
 class ResultatGoLabo(tables.Table):
     actions = tables.TemplateColumn(B, verbose_name='')

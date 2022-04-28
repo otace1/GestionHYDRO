@@ -93,20 +93,11 @@ class GestionCargaison():
                 # Get Form DATA
                 form = Ajoutcargaison(request.POST)
 
-                #     if form.is_valid():
-                #         instance=form.save()
-                #         ser_instance = serializers.serialize('json',[instance,])
-                #         return JsonResponse({'instance':ser_instance},status=200)
-                #     else:
-                #         return JsonResponse({'error':form.errors}, status=400)
-                #         # some error occured
-                # return JsonResponse({"error": ""}, status=400)
                 voie = request.POST['voie']
                 fournisseur = request.POST['fournisseur']
                 manifestdgda = request.POST['manifestdgda']
                 numbtfh = request.POST['numbtfh']
                 numdeclaration = request.POST['numdeclaration']
-                valeurfacture = request.POST['valeurfacture']
                 importateur = request.POST['importateur']
                 produit = request.POST['produit']
                 frontiere = request.POST['frontiere']
@@ -116,80 +107,21 @@ class GestionCargaison():
                 declarant = request.POST['declarant']
                 poids = request.POST['poids']
                 volume = request.POST['volume']
-                densite = request.POST['densitecargaison']
                 t1d = request.POST['t1d']
                 t1e = request.POST['t1e']
-                idchauffeur = request.POST['idchauffeur']
-                nationalite = request.POST['nationalite']
-                nomchauffeur = request.POST['nomchauffeur']
                 immatriculation = request.POST['immatriculation']
-                tempcargaison = 20.00
+                origine = request.POST['origine']
 
-                if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or transporteur == '' or declarant == '' or produit == '' or poids == '' or volume == '' or nationalite == '' or nomchauffeur == '' or immatriculation == '':
+                if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or transporteur == '' or declarant == '' or produit == '' or poids == '' or volume == '' or immatriculation == '':
                     vide = 0
-                    return JsonResponse({'error': form.errors,
-                                         'vide': vide}, status=400)
+                    return JsonResponse({'error': form.errors, 'vide': vide}, status=400)
 
                 # verification de la quantite saisie
                 volume = float(volume)
                 if volume > 500:
                     vol = 0
-                    return JsonResponse({'error': form.errors,
-                                         'vol': vol},
+                    return JsonResponse({'error': form.errors, 'vol': vol},
                                         status=400)
-
-                if densite == '':
-                    densite = 1
-
-                if valeurfacture == '':
-                    valeurfacture = 0
-
-                #     # caste des variables
-                # densite = float(densite)
-                # tempcargaison = float(tempcargaison)
-                # volume = float(volume)
-                #
-                #     # Calcul du volume declare a 15 degre
-                #    if densite >= float(839):
-                #        a = 186.9696
-                #        b = 0.4862
-                #        delta = tempcargaison - 15
-                #        alpha = (a / densite) / densite + (b / densite)
-                #        vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                #        gsv = round((vcf * volume), 5)
-                #        mtv = gsv * (densite) / 1000
-                #        mta = ((densite) - 1.1) * (gsv / 1000)
-                #    else:
-                #     if (densite >= float(788)) & (densite < float(839)):
-                #             a = 594.5418
-                #             delta = tempcargaison - 15
-                #             alpha = (a / densite) / densite
-                #             vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                #             gsv = round((vcf * volume), 5)
-                #             mtv = gsv * (densite) / 1000
-                #             mta = ((densite) - 1.1) * (gsv / 1000)
-                #         else:
-                #             if (densite > float(770)) & (densite < float(788)):
-                #                 a = 0.00336312
-                #                 b = 2680.3206
-                #                 delta = tempcargaison - 15
-                #                 alpha = ((-a) + (b)) / densite / densite
-                #                 vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                #                 gsv = round((vcf * volume), 5)
-                #                 mtv = gsv * densite / 1000
-                #                 mta = ((densite) - 1.1) * (gsv / 1000)
-                #             else:
-                #                 a = 346.4228
-                #                 b = 0.4388
-                #                 d = densite
-                #                 delta = tempcargaison - 15
-                #                 alpha = (((a) / (d)) / (d)) + (b / d)
-                #                 vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                #                 gsv = round((vcf * volume), 5)
-                #                 mtv = gsv * densite / 1000
-                #                 mta = ((densite) - 1.1) * (gsv / 1000)
-
-                volume_decl15 = 0
 
                 # Gestion des cles etrangeres
                 v = Voie.objects.get(pk=voie)
@@ -197,7 +129,7 @@ class GestionCargaison():
                 p = Produit.objects.get(pk=produit)
                 f = Ville.objects.get(pk=frontiere)
                 e = Entrepot.objects.get(pk=entrepot)
-                n = Nationalites.objects.get(pk=nationalite)
+                # n = Nationalites.objects.get(pk=nationalite)
 
                 # Assignation de l'etat de l'enregistrenment
                 etat = ("En attente requisition")
@@ -206,11 +138,9 @@ class GestionCargaison():
                 code = str(uuid.uuid4())
                 p = Cargaison(voie=v, importateur=i, produit=p, frontiere=f, provenance=provenance, entrepot=e,
                               fournisseur=fournisseur, manifestdgda=manifestdgda, numbtfh=numbtfh,
-                              numdeclaration=numdeclaration, valeurfacture=valeurfacture, transporteur=transporteur,
-                              declarant=declarant, poids=poids, volume=volume,
-                              tempcargaison=tempcargaison, densitecargaison=densite, volume_decl15=volume_decl15,
-                              t1d=t1d, t1e=t1e, idchauffeur=idchauffeur,
-                              nationalite=n, nomchauffeur=nomchauffeur, immatriculation=immatriculation,
+                              numdeclaration=numdeclaration, transporteur=transporteur,
+                              declarant=declarant, poids=poids, volume=volume, origine=origine,
+                              t1d=t1d, t1e=t1e, immatriculation=immatriculation,
                               qrcode=code, etat=etat, user=u)
                 p.save()
                 return JsonResponse(code, safe=False, status=200)

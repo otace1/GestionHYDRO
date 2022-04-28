@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from jsignature.forms import JSignatureField
+from jsignature.widgets import JSignatureWidget
 
 from enreg.models import *
 from .models import MyUser, Roles
@@ -31,12 +33,17 @@ class UserLoginForm(forms.Form):
 
 # Form pour l'enregistrement de nouvel utilisateurs
 class UserRegisterForm(forms.ModelForm):
+    # first_name = forms.CharField(label='Prénom')
+    # last_name = forms.CharField(label='Nom')
+    # role = forms.ModelChoiceField(label='Rôle', queryset=Roles.objects.all())
+    # fonction = forms.CharField(label='Fonction')
+    # username = forms.CharField(label="Nom d'utilisateur")
     password1 = forms.CharField(label='Mot de passe', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Confirmation mot de passe', widget=forms.PasswordInput)
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'role']
+        fields = ['first_name', 'last_name', 'username', 'role']
         # , 'ville', 'entrepot', 'extras''
 
     def clean_password(self):
@@ -60,20 +67,18 @@ class UserRegisterForm(forms.ModelForm):
 class UserEdit(forms.ModelForm):
     class Meta:
         model = MyUser
-        fields = ['first_name', 'last_name', 'username', 'password', 'role']
-
-
+        fields = ['first_name', 'last_name', 'username', 'password', 'role', 'fonction']
 #         ,'entrepot','ville','extras'
 
 # Affectation des utilisateurs aux entrepots
 class Affectation_Entrepot(forms.Form):
-    username = forms.ModelChoiceField(queryset=MyUser.objects.all(), label='Utilisateur')
+    # username = forms.ModelChoiceField(queryset=MyUser.objects.all(), label='Utilisateur')
     entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all(), label="Entrepot d'affectation")
 
 
 # Affectation des utilisateurs aux villes
 class Affectation_Ville(forms.Form):
-    username = forms.ModelChoiceField(queryset=MyUser.objects.all(), label='Utilisateur')
+    # username = forms.ModelChoiceField(queryset=MyUser.objects.all(), label='Utilisateur')
     ville = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Ville d'affectation")
 
 
@@ -81,3 +86,8 @@ class Affectation_Ville(forms.Form):
 class Affectation_Role(forms.Form):
     username = forms.ModelChoiceField(queryset=MyUser.objects.all(), label='Utilisateur')
     role = forms.ModelChoiceField(queryset=Roles.objects.all(), label="Role d'utilisateur")
+
+
+# Formulaire pour l'enregistrement des signatures electroniques
+class SignatureForm(forms.Form):
+    signature = JSignatureField(widget=JSignatureWidget(jsignature_attrs={'color': '#CCC'}))

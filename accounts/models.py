@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
+from jsignature.fields import JSignatureField
+from jsignature.mixins import JSignatureFieldsMixin
 
 from enreg.models import Entrepot, Ville
 
@@ -58,6 +60,8 @@ class MyUser(AbstractBaseUser):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     role = models.ForeignKey(Roles, on_delete=models.CASCADE)
+    fonction = models.CharField(max_length=256, null=True, blank=True)
+    # signature = JSignatureField(blank=True, null=True)
 
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -103,6 +107,11 @@ class AffectationVille(models.Model):
     idaffectation_ville = models.AutoField(primary_key=True, auto_created=True)
     username = models.ForeignKey(MyUser, on_delete=models.CASCADE)
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE)
+
+
+# Gestion des signatures electroniques
+class SignatureModel(JSignatureFieldsMixin):
+    username = models.IntegerField(null=True, blank=True)
 
 # #Tables des affectations des Roles des utilisateurs
 # class AffectationRoles(models.Model):

@@ -14,11 +14,11 @@
 
     {% render_table cargaison %}
 
-    <div class="modal fade" id="modal-lg">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="modal-xl">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content bg-gradient-dark">
                 <div class="modal-header bg-gradient-dark">
-                    <h4 class="modal-title">Enregistrement de cargaison</h4>
+                    <h4 class="modal-title">FORMULAIRE D'ENREGISTREMENT</h4>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -29,8 +29,8 @@
                         {% crispy form %}
                     </div>
                     <div id="submit-control" class="modal-footer justify-content-between">
-                        <button type="reset" id="closemodal" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-                        <button id="submitButton" class="btn btn-success">Enregistrer</button>
+                        <button type="reset" id="closemodal" class="btn btn-danger" data-dismiss="modal">FERMER</button>
+                        <button id="submitButton" class="btn btn-success">ENREGISTRER</button>
                     </div>
                 </form>
             </div>
@@ -123,7 +123,7 @@
                         correctLevel: QRCode.CorrectLevel.H
                     });
 
-                    $('#modal-lg').modal('hide');
+                    $('#modal-xl').modal('hide');
                     alert("Données sauvegardées");
 
                     $('#modal_qrcode').modal('show');

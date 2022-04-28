@@ -85,304 +85,433 @@
                   <div class="col-xs-4 text-center">
                     <a href="#">Followers</a>
                   </div>
-                  <div class="col-xs-4 text-center">
-                    <a href="#">Sales</a>
-                  </div>
-                  <div class="col-xs-4 text-center">
-                    <a href="#">Friends</a>
-                  </div>
+                    <div class="col-xs-4 text-center">
+                        <a href="#">Sales</a>
+                    </div>
+                    <div class="col-xs-4 text-center">
+                        <a href="#">Friends</a>
+                    </div>
                 </div>
-                <!-- /.row -->
+                  <!-- /.row -->
               </li>
-              <!-- Menu Footer-->
-              <li class="user-footer">
-                <div class="pull-left">
-                  <a href="#" class="btn btn-default btn-flat">Profile</a>
-                </div>
-                <div class="pull-right">
-                  <a href="#" class="btn btn-default btn-flat">Sign out</a>
-                </div>
-              </li>
+                <!-- Menu Footer-->
+                <li class="user-footer">
+                    <div class="pull-left">
+                        <a href="#" class="btn btn-default btn-flat">Profile</a>
+                    </div>
+                    <div class="pull-right">
+                        <a href="#" class="btn btn-default btn-flat">Sign out</a>
+                    </div>
+                </li>
             </ul>
           </li>
-          <!-- Control Sidebar Toggle Button -->
-          <!--<li>
-            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-          </li>-->
+            <!-- Control Sidebar Toggle Button -->
+            <!--<li>
+              <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+            </li>-->
         </ul>
       </div>
     </nav>
-  </header>
-
+    </header>
 
     <!-- Left side column. contains the logo and sidebar -->
-  <aside class="main-sidebar">
-    <!-- sidebar: style can be found in sidebar.less -->
-     <section class="sidebar">
-      <!-- sidebar menu: : style can be found in sidebar.less -->
-      <ul class="sidebar-menu" data-widget="tree">
-        <li class="header">MENU PRINCIPAL</li>
+    <aside class="main-sidebar sidebar-dark-secondary elevation-4">
+        <!-- Brand Logo -->
+        <a href="#" class="brand-link">
+            {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
+            <span class="brand-text font-weight-light"><b>GESTION</b>DES<b>HYDROS</b></span>
+        </a>
 
-        {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 'st'%}
-
-        <li><a href="{%url 'dashboard'%}"><i class="fa fa-pie-chart"></i> <span>Dashboard</span></a></li>
-
-        {% endif %}
-
-        {% if user.role_id == 2 or user.role_id == 1 or user.role_id == 7 %}
-
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-truck"></i>
-            <span>Enregistrement Cargaisons</span>
-            <span class="pull-right-container">
-              <span class="fa fa-angle-left pull-right"></span>
-            </span>
-          </a>
-
-          <ul class="treeview-menu">
-            {% if user.role_id == 2 or user.role_id == 1 or user.role_id == 7  %}
-            <li><a href="{% url 'nouvelle'%}"><i class="fa fa-circle-o"></i> Nouvelle cargaison</a></li>
-            {% endif %}
-
-            {% if user.role_id == 2 or user.role_id == 1 %}
-            <li><a href="{% url 'cargaison'%}"><i class="fa fa-circle-o"></i> Listes des enregistrements</a></li>
-{#            <li><a href="pages/layout/fixed.html"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
-            {% endif %}
-
-          </ul>
-        </li>
-
-        {% endif %}
-
-        {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
-
-        <li class="header">ENTREPOT</li>
-
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-industry"></i>
-            <span>Entrepot</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{% url 'entrepot'%}"><i class="fa fa-circle-o"></i> Echantillonage</a></li>
-            <li><a href="{% url 'dechargement'%}"><i class="fa fa-circle-o"></i> Déchargement</a></li>
-{#            <li><a href="{% url 'rapport'%}"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
-
-          </ul>
-        </li>
-
-        {% endif %}
-
-        {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1%}
-
-        <li class="header">CERTIFICATION</li>
-
-            <li class="treeview">
-                <a href="#">
-                    <i class="fa fa-flask"></i>
-                    <span>Laboratoire</span>
-                    <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-                </a>
-                <ul class="treeview-menu">
-                    {% if user.role_id == 6 or user.role_id == 1 %}
-                        <li class="nav-item">
-                            <a href="{% url 'labodashboard' %}" class="nav-link">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="image">
+                    <img src="/media/images.png" class="img-circle elevation-2" alt="User Image">
+                </div>
+                <div class="info">
+                    <a href="#" class="d-block">{{ request.user.first_name }} {{ request.user.last_name }}</a>
+                </div>
+            </div>
+            <!-- sidebar: style can be found in sidebar.less -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    <!-- Add icons to the links using the .nav-icon class
+                         with font-awesome or any other icon font library -->
+                    {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 8 %}
+                        <li class="nav-item has-treeview menu-open">
+                            <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>Dashboard LABO</p>
+                                <p>DASHBOARD & KPIs</p>
                             </a>
+                        </li>
+
+                    {% endif %}
+
+                    {% if user.role_id == 2 or user.role_id == 1 %}
+                        <li class="nav-item has-treeview">
+                            <a href="{% url 'cargaison' %}" class="nav-link">
+                                <i class="nav-icon fas fa-truck-moving"></i>
+                                <p>
+                                    ENREGISTREMENT
+
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+
                         </li>
                     {% endif %}
 
-                    {% if user.role_id == 4 or user.role_id == 1 %}
-                        <li><a href="{% url 'labo' %}"><i class="fa fa-circle-o"></i>Réception d'échantillons</a></li>
+
+                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
+                        <li class="header">ENTREPOT</li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa fa-industry"></i>
+                                <p>
+                                    ENTREPOT
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'entrepot' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>ECHANTILLONAGE</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'dechargement' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>DECHARGEMENT</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     {% endif %}
 
-                    {% if user.role_id == 5 or user.role_id == 1 %}
-                        <li><a href="{% url 'analyse' %}"><i class="fa fa-circle-o"></i>Encodage des résultats</a></li>
+                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1 %}
+
+                        <li class="header">CERTIFICATION</li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-flask"></i>
+                                <p>
+                                    LABORATOIRE
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                {% if user.role_id == 6 or user.role_id == 1 %}
+
+                                {% endif %}
+                                {% if user.role_id == 4 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'labo' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RECEPTION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 5 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'analyse' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>ENCODAGE & IMPR.</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 6 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation1' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION SCE HYDRO</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 10 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation2' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION CHEF LABO</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'impression' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>IMPRESSION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </li>
                     {% endif %}
 
-                    {% if user.role_id == 6 or user.role_id == 1 %}
-            <li><a href="{%url 'validation1'%}"><i class="fa fa-circle-o"></i>Service PP Validation</a></li>
-            {% endif %}
 
-           {% comment %} {% if user.role == 'v2' or user.role == 'ad'%}
-            <li><a href="{%url 'validation2'%}"><i class="fa fa-circle-o"></i>Validation Labo</a></li>
-            {% endif %}{% endcomment %}
+                    {% if user.role_id == 7 or user.role_id == 1 %}
+                        <li class="header">HYDRO OCC</li>
 
-            {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5%}
-            <li><a href="{%url 'impression'%}"><i class="fa fa-circle-o"></i> Gestion Documentaire</a></li>
-            {% endif %}
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>
+                                    HYDRO OCC
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
 
-          </ul>
-        </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REQUISITIONS</p>
+                                    </a>
+                                </li>
 
-        {% endif %}
+                                {#                <li class="nav-item">#}
+                                {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
+                                {#                  <i class="far fa-circle nav-icon"></i>#}
+                                {#                  <p>GO</p>#}
+                                {#                </a>#}
+                                {#              </li>#}
+                                <li class="nav-item">
+                                    <a href="{% url 'gestionact' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>ACTs</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'avarie' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AVARIES</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-file-archive"></i>
+                                <p>
+                                    FACTURATIONS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'facturations' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LIQUIDATION</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'appuration' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>APPURATION</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 1 %}
+                        <li class="nav-item has-treeview">ADMINISTRATION</li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>
+                                    USERS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                {#              <li class="nav-item">#}
+                                {#                <a href="{%url 'usersadd'%}" class="nav-link">#}
+                                {#                  <i class="far fa-circle nav-icon"></i>#}
+                                {#                  <p>AJOUT UTILISATEUR</p>#}
+                                {#                </a>#}
+                                {#              </li>#}
+                                <li class="nav-item">
+                                    <a href="{% url 'userslist' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE D'UTILISATEURS</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'affectationville' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AFFECTATION V.</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>
+                                    ENTREPOTS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_entrepot' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT ENTREPOT</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_entrepot' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE D'ENTREPOTS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-user-circle"></i>
+                                <p>
+                                    IMPORTATEURS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_importateur' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT IMPORTATEUR</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_importateur' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTES D'IMPORTATEURS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
 
-        {% if user.role_id == 7 or user.role_id == 1%}
-        <li class="header">EXPLOITATION</li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-border"></i>
+                                <p>
+                                    POINTS D'ENTREES
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_frontiere' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT FRONTIERE</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_frontiere' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE DES FRONTIERES</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-building-o"></i> <span>Hydro OCC</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'laboresult'%}"><i class="fa fa-circle-o"></i> Gestion des Go</a></li>
-            <li><a href="{%url 'gestionact'%}"><i class="fa fa-circle-o"></i> Gestion des ACT</a></li>
-            <li><a href="{%url 'avarie'%}"><i class="fa fa-circle-o"></i> Gestion des Avariés</a></li>
-{#            <li><a href="pages/forms/editors.html"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
-          </ul>
-        </li>
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-files-o"></i> <span>Facturations</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-product-hunt"></i>
+                                <p>
+                                    PRODUITS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_produit' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT PRODUITS</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_produit' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTES PRODUITS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
-          <ul class="treeview-menu">
-            <li><a href="{% url 'facturations' %}"><i class="fa fa-circle-o"></i> Gestion Liquidation</a></li>
-            <li><a href="{% url 'appuration' %}"><i class="fa fa-circle-o"></i> Details Appuration</a></li>
-          </ul>
-        </li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-cloud"></i>
+                                <p>
+                                    MONITORING ADMIN
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>IMPORTATION SYDONIA</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
 
-        {% endif %}
+                    <li class="nav-item has-treeview">
+                        <a href="" class="nav-link">
+                            <i class="nav-icon fas fa-hands-helping"></i>
+                            <p>
+                                AIDE
+                            </p>
+                        </a>
+                    </li>
 
-
-        {% if user.role_id == 1%}
-
-<li class="header">ADMINISTRATION</li>
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-share"></i> <span>Utilisateurs</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'usersadd'%}"><i class="fa fa-circle-o"></i> Ajout d'utilisateurs</a></li>
-            <li><a href="{%url 'userslist'%}"><i class="fa fa-circle-o"></i> Liste d'utilisateurs</a></li>
-            <li><a href="{%url 'affectationentreprot'%}"><i class="fa fa-circle-o"></i> Affectation Entrepots</a></li>
-            <li><a href="{%url 'affectationville'%}"><i class="fa fa-circle-o"></i> Affectation Villes</a></li>
-          </ul>
-          </li>
-
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Entrepots</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_entrepot'%}"><i class="fa fa-circle-o"></i> Ajout d'entrepots</a></li>
-            <li><a href="{%url 'gest_entrepot'%}"><i class="fa fa-circle-o"></i> Listes d'entrepots</a></li>
-          </ul>
-          </li>
-
-
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Importateurs</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_importateur'%}"><i class="fa fa-circle-o"></i> Ajout d'importateurs</a></li>
-            <li><a href="{%url 'gest_importateur'%}"><i class="fa fa-circle-o"></i> Listes d'importateurs</a></li>
-          </ul>
-          </li>
-
-
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Points d'entrée</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_frontiere'%}"><i class="fa fa-circle-o"></i> Ajout Frontière</a></li>
-            <li><a href="{%url 'gest_frontiere'%}"><i class="fa fa-circle-o"></i> Listes Frontière</a></li>
-          </ul>
-          </li>
-
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Produits</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_produit'%}"><i class="fa fa-circle-o"></i> Ajout Produits</a></li>
-            <li><a href="{%url 'gest_produit'%}"><i class="fa fa-circle-o"></i> Listes Produits</a></li>
-          </ul>
-          </li>
-
-
-        <li><a href=""><i class="fa fa-book"></i> <span>Monitoring Admin</span></a></li>
-        <li><a href="{% url 'upload_sydonia' %}"><i class="fa fa-book"></i> <span>Importation SYDONIA</span></a></li>
-
-
-        {% endif %}
-
-        <li><a href=""><i class="fa fa-book"></i> <span>Documentation</span></a></li>
-
-{% comment %}
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Upload des données</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'upload_entrepot'%}"><i class="fa fa-circle-o"></i>Entrepot</a></li>
-            <li><a href="{%url 'upload_importateur'%}"><i class="fa fa-circle-o"></i>Importateur</a></li>
-            <li><a href="{%url 'upload_ville'%}"><i class="fa fa-circle-o"></i>Ville</a></li>
-            <li><a href="{%url 'upload_cargaison'%}"><i class="fa fa-circle-o"></i>Cargaison</a></li>
-          </ul>
-          </li>{% endcomment %}
-
-
-      </ul>
-    </section>
-    <!-- /.sidebar -->
-  </aside>
+                </ul>
+            </nav>
+            <!-- /.sidebar -->
+        </div>
+    </aside>
 
     <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-      <h1>
-        Liste des echantillons en attente de verification et validation
-        <small></small>
-      </h1>
-      <ol class="breadcrumb">
-        <li><a href="{%url 'labo'%}"><i class="fa fa-dashboard"></i> Home</a></li>
-        <li><a href="#">Labo</a></li>
-        <li class="active">Echantillons en attente de verfication</li>
-      </ol>
-    </section>
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <section class="content-header">
+            <h1>
+                Liste des echantillons en attente de verification et validation
+                <small></small>
+            </h1>
+            <ol class="breadcrumb">
+                <li><a href="{% url 'labo' %}"><i class="fa fa-dashboard"></i> Home</a></li>
+                <li><a href="#">Labo</a></li>
+                <li class="active">Echantillons en attente de verfication</li>
+            </ol>
+        </section>
 
-    <!-- Main content -->
-    <section class="content">
-      <div class="row">
-        <div class="col-md-10">
+        <!-- Main content -->
+        <section class="content">
+            <div class="row">
+                <div class="col-md-10">
 
-          <div class="box">
+                    <div class="box">
             <!-- /.box-header -->
             <div class="box-body">
               {% block content %}

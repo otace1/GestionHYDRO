@@ -1,10 +1,8 @@
 from django.shortcuts import render, redirect
-from enreg.models import Entrepot_echantillon, LaboReception, Cargaison, Resultat, Produit
+from enreg.models import *
 from accounts.models import AffectationVille, AffectationEntrepot
-from .tables import LaboratoireReception, AffichageAnalyse, AffichageValidation1, AffichageValidation2, \
-    AffichageTableauImpression, TableEnvoiGo, AffichageValidation2Go, TableauEchantillonRecu, \
-    AffichageTableauReImpression, AffichageAnalyseRefaire, RapportLaboTable
-from .forms import ReceptionEchantillon, Mogas, Gasoil, JetA1, PetroleLampant, ModificationEchantillon, RapportLabo
+from .tables import *
+from .forms import *
 from django.contrib.auth.decorators import login_required
 from labo.utils import render_to_pdf
 from django.http import HttpResponse
@@ -15,6 +13,7 @@ from django_tables2.export.export import TableExport
 from datetime import datetime
 from django.http import JsonResponse
 from .codeLabo import codeLabo
+from .numCq import numCq
 
 
 # Class de gestion pouir le laboratoire
@@ -27,60 +26,32 @@ class GestionLaboratoire():
         ville = AffectationVille.objects.get(username_id=id)
         ville = ville.ville_id
         role = user.role_id
-        form = ReceptionEchantillon()
-        form1 = ModificationEchantillon()
+        # form = ReceptionEchantillon()
+        # form1 = ModificationEchantillon()
         if role == 4 or role == 1:
-            # table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
-            #                                                               FROM hydro_occ.enreg_cargaison c  \
-            #                                                               LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
-            #                                                               WHERE c.etat = "Echantillonner" \
-            #                                                               OR c.etat ="En attente d\'echantillonage" \
-            #                                                               ORDER BY dateechantillonage DESC'), prefix="1_")
+            qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
+                                                     idcargaison__entrepot__ville=ville).order_by('-dateechantillonage')
+            table = LaboratoireReception(qs)
 
-            table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison, DATE(c.dateheurecargaison), x.numrappech, c.numdossier, c.codecargaison, c.immatriculation \
-FROM enreg_laboreception l, enreg_entrepot_echantillon x, enreg_cargaison c, enreg_entrepot e, enreg_ville v \
-WHERE c.etat = "Echantillonner" \
-AND l.idcargaison_id = x.idcargaison_id \
-AND x.idcargaison_id = c.idcargaison \
-AND c.entrepot_id = e.identrepot \
-AND e.ville_id = v.idville \
-AND v.idville = %s \
-ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
-
-            # qs = Entrepot_echantillon.objects.values('idcargaison__idcargaison','idcargaison__dateheurecargaison','dateechantillonage','numrappech', 'idcargaison__numdossier', 'idcargaison__codecargaison', 'idcargaison__immatriculation','idcargaison__produit__nomproduit').filter(idcargaison__etat="Echantillonner", idcargaison__entrepot__ville=ville).order_by('-dateechantillonage')
-            # table = LaboratoireReception(qs)
-
-            qs1 = LaboReception.objects.values('codelabo', 'idcargaison__numrappech',
-                                               'idcargaison__idcargaison__numdossier',
-                                               'idcargaison__idcargaison__codecargaison',
-                                               'idcargaison__idcargaison__immatriculation',
-                                               'idcargaison__idcargaison__produit__nomproduit').filter(
-                idcargaison__idcargaison__etat="Analyse Labo en cours",
-                idcargaison__idcargaison__entrepot__ville=ville).order_by('idcargaison__dateechantillonage')
-            table1 = TableauEchantillonRecu(qs1)
-
-            # table1 = TableauEchantillonRecu(Entrepot_echantillon.objects.raw('SELECT e.idcargaison_id, l.datereceptionlabo, l.codelabo ,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
-            #                                                               FROM hydro_occ.enreg_entrepot_echantillon e \
-            #                                                               LEFT JOIN hydro_occ.enreg_cargaison c ON e.idcargaison_id = c.idcargaison \
-            #                                                               LEFT JOIN  hydro_occ.enreg_laboreception l ON l.idcargaison_id = e.idcargaison_id \
-            #                                                               WHERE c.etat = "Analyse Labo en cours" \
-            #                                                               ORDER BY l.datereceptionlabo DESC'),
-            #                                 prefix="2_")
+            qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                               idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                '-datereceptionlabo')
+            table1 = TableauEchantillonRecu(qs1, prefix='2_')
 
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
             return render(request, 'labo.html', {
                 'labo': table,
                 'labo1': table1,
-                'form': form,
-                'form1': form1,
+                # 'form': form,
+                # 'form1': form1,
             })
         else:
             return redirect('logout')
 
     # Methode pour receptionner l'echantillon
     @login_required(login_url='login')
-    def receptionechantillon(request):
+    def receptionechantillon(request, pk):
         user = request.user
         id = user.id
         ville = AffectationVille.objects.get(username_id=id)
@@ -93,59 +64,22 @@ ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
             month = now.month
             year = now.year
 
-            if request.is_ajax():
-                pk = request.POST.get('pk', None)
-                # codelabo = request.POST.get('codelabo', None)
-                # datereception = request.POST.get('datereception', None)
-                # dateechantillon = request.POST.get('dateprelevement', None)
-                # numrappech = request.POST.get('numerore',None)
+            # if request.method == 'POST':
+            #     pk = request.POST.get('pk', None)
 
-                # # Test de conformite des donnees saisies
-                # if pk == '' or codelabo == '' or datereception == '' or dateechantillon == '':
-                #     return JsonResponse(status=400)
+            numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
 
-                # Test pour voir si il y'a déjà eu enregistrement
-                # if Entrepot_echantillon.objects.filter(idcargaison_id=pk).exists():
-                t = Entrepot_echantillon.objects.get(idcargaison_id=pk)
-                # pk1 = t.idcargaison_id
+            # Changement de l'etat de la cargaison
+            d = Cargaison.objects.get(idcargaison=pk)
+            d.etat = "Analyse Labo en cours"
+            d.save(update_fields=['etat'])
 
-                #     # t.numrappech = numrappech
-                # t.dateechantillonage = dateechantillon
-                # t.save(update_fields=['numrappech', 'dateechantillonage'])
-
-                # Changement de l'etat de la cargaison
-                d = Cargaison.objects.get(idcargaison=pk)
-                d.etat = "Analyse Labo en cours"
-                d.save(update_fields=['etat'])
-
-                # Sauvegarde de l'instruction dans la Table LaboReception
-                codelabo = codeLabo(v, pk)
-                p = LaboReception(idcargaison_id=pk, datereceptionlabo=date_today, codelabo=codelabo)
-                p.save()
-                response = {'valid': True}
-                return JsonResponse(response, status=200)
-                #
-                # else:
-
-                # e = Entrepot_echantillon(idcargaison_id=pk, dateechantillonage=dateechantillon)
-                # e.save()
-                #
-                # e = Entrepot_echantillon.objects.get(idcargaison_id=pk)
-                # pk1 = e.idcargaison_id
-                #
-                # # Changement de l'etat de la cargaison
-                # d = Cargaison.objects.get(idcargaison=pk)
-                # d.etat = "Analyse Labo en cours"
-                # d.tampon = "0"
-                # d.save(update_fields=['etat', 'tampon'])
-                #
-                # # Sauvegarde de l'instruction dans la Table LaboReception
-                # p = LaboReception(idcargaison_id=pk1, datereceptionlabo=datereception, codelabo=codelabo)
-                # p.save()
-                # response = {'valid': True}
-                # return JsonResponse(response, status=200)
-            else:
-                return redirect('labo')
+            # Sauvegarde de l'instruction dans la Table LaboReception
+            codelabo = codeLabo(v, pk)
+            p = LaboReception(idcargaison_id=pk, datereceptionlabo=date_today, codelabo=codelabo,
+                              numcertificatqualite=numcertificatqualite)
+            p.save()
+            return redirect('labo')
         else:
             return redirect('logout')
 
@@ -178,6 +112,8 @@ ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
     def rechercheqrcode(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
         role = user.role_id
         form = ReceptionEchantillon()
         form1 = ModificationEchantillon()
@@ -187,26 +123,17 @@ ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
                 return redirect('labo')
             else:
                 a = '%' + q + '%'
-                table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison,DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
-                                                                    FROM hydro_occ.enreg_cargaison c  \
-                                                                    LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
-                                                                    WHERE c.qrcode LIKE %s \
-                                                                    OR e.numrappech LIKE %s \
-                                                                    OR c.immatriculation LIKE %s \
-                                                                    OR c.codecargaison LIKE %s \
-                                                                    ORDER BY dateechantillonage DESC', [q, a, a, q, ]),
-                                             prefix="1_")
+                qs1 = Entrepot_echantillon.objects.filter(idcargaison__qrcode=q, idcargaison__etat="Echantillonner",
+                                                          idcargaison__entrepot__ville=ville)
+                table = LaboratoireReception(qs1, prefix='1_')
 
-                table1 = TableauEchantillonRecu(Entrepot_echantillon.objects.raw('SELECT e.idcargaison_id, l.datereceptionlabo, l.codelabo ,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
-                                                                          FROM hydro_occ.enreg_entrepot_echantillon e \
-                                                                          LEFT JOIN hydro_occ.enreg_cargaison c ON e.idcargaison_id = c.idcargaison \
-                                                                          LEFT JOIN  hydro_occ.enreg_laboreception l ON l.idcargaison_id = e.idcargaison_id \
-                                                                          WHERE c.etat = "Analyse Labo en cours" \
-                                                                          ORDER BY l.datereceptionlabo DESC'),
-                                                prefix="2_")
+                qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                                  idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                    '-datereceptionlabo')
+                table1 = TableauEchantillonRecu(qs, prefix='2_')
 
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
 
                 return render(request, 'labo.html', {
                     'labo': table,
@@ -223,6 +150,8 @@ ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
     def recherchecode(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
         role = user.role_id
         form1 = ModificationEchantillon()
         form = ReceptionEchantillon()
@@ -231,25 +160,19 @@ ORDER BY c.dateheurecargaison DESC', [ville, ]), prefix="1_")
             if q == "":
                 return redirect('labo')
             else:
+                qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
+                                                         idcargaison__entrepot__ville=ville).order_by(
+                    '-dateechantillonage')
+                table = LaboratoireReception(qs)
 
-                table = LaboratoireReception(Cargaison.objects.raw('SELECT c.idcargaison,DATE(c.dateheurecargaison), e.dateechantillonage,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation \
-                                                                          FROM hydro_occ.enreg_cargaison c  \
-                                                                          LEFT JOIN hydro_occ.enreg_entrepot_echantillon e ON e.idcargaison_id = c.idcargaison \
-                                                                          WHERE c.etat = "Echantillonner" \
-                                                                          OR c.etat ="En attente d\'echantillonage" \
-                                                                          ORDER BY dateechantillonage DESC'),
-                                             prefix="1_")
+                qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                                   idcargaison__idcargaison__entrepot__ville=ville,
+                                                   codelabo=q).order_by(
+                    '-datereceptionlabo')
+                table1 = TableauEchantillonRecu(qs1, prefix='2_')
 
-                table1 = TableauEchantillonRecu(Entrepot_echantillon.objects.raw('SELECT e.idcargaison_id, l.datereceptionlabo, l.codelabo ,e.numrappech,c.numdossier, c.codecargaison , c.immatriculation, c.produit_id \
-                                                                                        FROM hydro_occ.enreg_entrepot_echantillon e \
-                                                                                        LEFT JOIN hydro_occ.enreg_cargaison c ON e.idcargaison_id = c.idcargaison \
-                                                                                        LEFT JOIN  hydro_occ.enreg_laboreception l ON l.idcargaison_id = e.idcargaison_id \
-                                                                                        WHERE c.etat = "Analyse Labo en cours" \
-                                                                                        AND l.codelabo = %s \
-                                                                                        ORDER BY l.datereceptionlabo DESC',
-                                                                                 [q, ]), prefix="2_")
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
                 return render(request, 'labo.html', {
                     'labo': table,
                     'labo1': table1,
@@ -268,25 +191,22 @@ class GestionAnalyse():
     def affichageanalyse(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        v = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1:
-            table1 = AffichageAnalyse(LaboReception.objects.raw('SELECT l.idcargaison_id, l.datereceptionlabo, e.numrappech, l.numcertificatqualite, l.codelabo \
-                                                                    FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                    WHERE l.idcargaison_id = c.idcargaison \
-                                                                    AND c.idcargaison = e.idcargaison_id \
-                                                                    AND c.etat = "Analyse Labo en cours" \
-                                                                    ORDER BY l.datereceptionlabo DESC'), prefix="1_")
+            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat='Analyse Labo en cours',
+                                              idcargaison__idcargaison__entrepot__ville=v).order_by(
+                '-datereceptionlabo')
+            table1 = AffichageAnalyse(qs, prefix='1_')
+            qs2 = LaboReception.objects.filter(idcargaison__idcargaison__etat='Refaire',
+                                               idcargaison__idcargaison__entrepot__ville=v).order_by(
+                '-datereceptionlabo')
+            table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
-            table2 = AffichageAnalyseRefaire(LaboReception.objects.raw('SELECT l.idcargaison_id, l.datereceptionlabo, e.numrappech, l.numcertificatqualite, l.codelabo \
-                                                                    FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                    WHERE l.idcargaison_id = c.idcargaison \
-                                                                    AND c.idcargaison = e.idcargaison_id \
-                                                                    AND c.etat = "Refaire" \
-                                                                    ORDER BY l.datereceptionlabo DESC'), prefix="2_")
-
-            RequestConfig(request, paginate={"per_page": 17}).configure(table1)
-            RequestConfig(request, paginate={"per_page": 17}).configure(table2)
+            RequestConfig(request, paginate={"per_page": 16}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 16}).configure(table2)
             return render(request, 'labo_analyse.html', {
                 'analyse': table1,
                 'refaire': table2,
@@ -300,28 +220,22 @@ class GestionAnalyse():
         user = request.user
         id = user.id
         role = user.role_id
+        ville = AffectationVille.objects.get(username_id=id)
+        v = ville.ville_id
 
         if role == 5 or role == 1:
             q = request.GET.get('codelabo')
-
             if q == "":
                 return redirect('analyse')
             else:
-                table1 = AffichageAnalyse(LaboReception.objects.raw('SELECT l.idcargaison_id, l.datereceptionlabo, e.numrappech, l.numcertificatqualite, l.codelabo \
-                                                                                                            FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                                                            WHERE l.idcargaison_id = c.idcargaison \
-                                                                                                            AND c.idcargaison = e.idcargaison_id \
-                                                                                                            AND c.etat = "Analyse Labo en cours" \
-                                                                                                            AND l.codelabo = %s',
-                                                                    [q, ]), prefix="1_")
-
-                table2 = AffichageAnalyseRefaire(LaboReception.objects.raw('SELECT l.idcargaison_id, l.datereceptionlabo, e.numrappech, l.numcertificatqualite, l.codelabo \
-                                                                                                        FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                                                        WHERE l.idcargaison_id = c.idcargaison \
-                                                                                                        AND c.idcargaison = e.idcargaison_id \
-                                                                                                        AND c.etat = "Refaire" \
-                                                                                                        ORDER BY l.datereceptionlabo DESC'),
-                                                 prefix="2_")
+                qs = LaboReception.objects.filter(idcargaison__idcargaison__etat='Analyse Labo en cours',
+                                                  idcargaison__idcargaison__entrepot__ville=v, codelabo=q).order_by(
+                    '-datereceptionlabo')
+                table1 = AffichageAnalyse(qs, prefix='1_')
+                qs2 = LaboReception.objects.filter(idcargaison__idcargaison__etat='Refaire',
+                                                   idcargaison__idcargaison__entrepot__ville=v).order_by(
+                    '-datereceptionlabo')
+                table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
                 RequestConfig(request, paginate={"per_page": 15}).configure(
                     table1)
@@ -340,27 +254,22 @@ class GestionAnalyse():
         user = request.user
         id = user.id
         role = user.role_id
+        ville = AffectationVille.objects.get(username_id=id)
+        v = ville.ville_id
 
         if role == 5 or role == 1:
-            q = request.GET.get('codelabo1')
-
+            q = request.GET.get('codelabo')
             if q == "":
                 return redirect('analyse')
             else:
-                table1 = AffichageAnalyse(LaboReception.objects.raw('SELECT l.idcargaison_id, l.datereceptionlabo, e.numrappech, l.numcertificatqualite, l.codelabo \
-                                                                                                            FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                                                            WHERE l.idcargaison_id = c.idcargaison \
-                                                                                                            AND c.idcargaison = e.idcargaison_id \
-                                                                                                            AND c.etat = "Analyse Labo en cours" \
-                                                                                                            ORDER BY l.datereceptionlabo DESC'),
-                                          prefix="1_")
-
-                table2 = AffichageAnalyseRefaire(LaboReception.objects.raw('SELECT l.idcargaison_id, l.datereceptionlabo, e.numrappech, l.numcertificatqualite, l.codelabo \
-                                                                                                        FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                                                        WHERE l.idcargaison_id = c.idcargaison \
-                                                                                                        AND c.idcargaison = e.idcargaison_id \
-                                                                                                        AND l.codelabo = %s',
-                                                                           [q, ]), prefix="2_")
+                qs = LaboReception.objects.filter(idcargaison__idcargaison__etat='Analyse Labo en cours',
+                                                  idcargaison__idcargaison__entrepot__ville=v).order_by(
+                    '-datereceptionlabo')
+                table1 = AffichageAnalyse(qs, prefix='1_')
+                qs2 = LaboReception.objects.filter(idcargaison__idcargaison__etat='Refaire',
+                                                   idcargaison__idcargaison__entrepot__ville=v, codelabo=q).order_by(
+                    '-datereceptionlabo')
+                table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
                 RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(
                     table1)
@@ -1071,23 +980,41 @@ class GestionValidation():
     def affichagetableauvalidation1(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
+        d = datetime.today()
+        da = d.day
+        mo = d.month
+        yr = d.year
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
-            table = AffichageValidation1(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, c.importateur_id, c.produit_id, e.numrappech, l.codelabo, l.numcertificatqualite \
-                                                                FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                WHERE  r.idcargaison_id = l.idcargaison_id \
-                                                                AND c.idcargaison = l.idcargaison_id \
-                                                                AND e.idcargaison_id = c.idcargaison \
-                                                                AND c.etat = "Validation en cours 1" \
-                                                                ORDER BY r.dateanalyse DESC'))
+            qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Validation en cours 1",
+                                         idcargaison__idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                'dateanalyse')
+            table = AffichageValidation1(qs, prefix='1_')
+
+            # Compteur Chef Laboratoire
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville=ville,
+                                                                dateechantillonage__day=da,
+                                                                dateechantillonage__month=mo,
+                                                                dateechantillonage__year=yr).count()
+            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
+                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
+                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
 
             RequestConfig(request, paginate={"per_page": 14}).configure(table)
             return render(request, 'labo_validation1.html', {'labo': table,
-                                                             'form': form, })
+                                                             'form': form,
+                                                             'laboreception': laboreception,
+                                                             'enanalyse': enanalyse,
+                                                             'enattente': enattente,
+                                                             })
         else:
             return redirect('logout')
+
 
     # Fonction encodage du code Labo
     @login_required(login_url='login')
@@ -1095,7 +1022,6 @@ class GestionValidation():
         user = request.user
         id = user.id
         role = user.role_id
-
         url = request.session['url']
         if role == 5 or role == 1 or role == 6:
             if request.method == 'POST':
@@ -1115,6 +1041,11 @@ class GestionValidation():
     def affichagerapportpdf(request, pk):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
+        province = Ville.objects.get(idville=ville)
+        province = province.province
+        province = province.upper()
         role = user.role_id
 
         if role == 5 or role == 1 or role == 6 or role == "v2":
@@ -1134,7 +1065,7 @@ class GestionValidation():
             a = Cargaison.objects.get(idcargaison=pk)
             b = Entrepot_echantillon.objects.get(idcargaison=pk)
             c = LaboReception.objects.get(idcargaison=pk)
-            d = Resultat.objects.get(idcargaison=pk)
+            d = Resultat.objects.get(idcargaison_id=pk)
 
             # Fetching into DBS general results
             numcertificatqualite = c.numcertificatqualite
@@ -1144,11 +1075,11 @@ class GestionValidation():
             declarant = a.declarant
             dateechantillonage = b.dateechantillonage
             entrepot = a.entrepot
-            provenance = a.provenance
+            provenance = a.provenance.name
             qte = b.qte
             datereceptionlabo = c.datereceptionlabo
             codelabo = c.codelabo
-            numdossier = a.numdossier
+            numdossier = a.numdos
             immatriculation = a.immatriculation
             numrappech = b.numrappech
 
@@ -1218,7 +1149,8 @@ class GestionValidation():
                     'numrappech': numrappech,
                     'produit': produit,
                     'mois': mois,
-                    'annee': annee
+                    'annee': annee,
+                    'province': province,
                 }
 
                 # Rendered PDF report
@@ -1282,7 +1214,8 @@ class GestionValidation():
                         'massevolumique15': massevolumique15,
                         'produit': produit,
                         'mois': mois,
-                        'annee': annee
+                        'annee': annee,
+                        'province': province,
                     }
 
                     # Rendered PDF report
@@ -1368,7 +1301,8 @@ class GestionValidation():
                             'vol90': vol90,
                             'produit': produit,
                             'mois': mois,
-                            'annee': annee
+                            'annee': annee,
+                            'province': province,
                         }
                         # Rendered PDF report
                         pdf = render_to_pdf(template, data)
@@ -1454,7 +1388,8 @@ class GestionValidation():
                                 'vol90': vol90,
                                 'produit': produit,
                                 'mois': mois,
-                                'annee': annee
+                                'annee': annee,
+                                'province': province,
                             }
 
                             # Rendered PDF report
@@ -1508,8 +1443,10 @@ class GestionValidation():
             if cq == "":
                 return redirect('validation1')
             else:
-                c.etat = "Conforme aux exigences"
+                c.etat = "Validation en cours 2"
                 c.conformite = "Conforme aux exigences"
+                # c.etat = "Conforme aux exigences"
+                # c.conformite = "Conforme aux exigences"
                 c.impression = "0"
                 c.save(update_fields=['etat', 'conformite', 'impression'])
                 return redirect(url)
@@ -1546,23 +1483,14 @@ class GestionValidation():
         if role == 1 or role == "ad":
             c = Cargaison.objects.get(idcargaison=pk)
             a = LaboReception.objects.get(idcargaison=pk)
-            aspect = 0
-            odeur = 0
-            couleursaybolt = 0
-            couleurastm = 0
             c.etat = "Conforme aux exigences"
             c.conformite = "Conforme aux exigences"
             c.impression = "0"
             c.save(update_fields=['etat', 'impression', 'conformite'])
-
-            p = Resultat(idcargaison=a, aspect=aspect, odeur=odeur, couleursaybolt=couleursaybolt,
-                         couleurastm=couleurastm
-                         )
-            p.save()
-
             return redirect('validation2')
         else:
             return redirect('logout')
+
 
     @login_required(login_url='login')
     def nonconforme2(request, pk):
@@ -1572,52 +1500,51 @@ class GestionValidation():
         if role == 1 or role == "ad":
             c = Cargaison.objects.get(idcargaison=pk)
             a = LaboReception.objects.get(idcargaison=pk)
-
-            aspect = 0
-            odeur = 0
-            couleursaybolt = 0
-            couleurastm = 0
-
             c.etat = "Non conforme aux exigences"
             c.impression = "0"
             c.save(update_fields=['etat', 'impression'])
-
-            p = Resultat(idcargaison=a, aspect=aspect, odeur=odeur, couleursaybolt=couleursaybolt,
-                         couleurastm=couleurastm
-                         )
-            p.save()
-
             return redirect('validation2')
         else:
             return redirect('logout')
+
 
     # Fonction affichage des resultats sur Validation 1
     @login_required(login_url='login')
     def affichagetableauvalidation2(request):
         user = request.user
         id = user.id
-        role = user.role_idole
-        if role == "v2" or role == 1:
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
+        role = user.role_id
+        request.session['url'] = request.get_full_path()
+        d = datetime.today()
+        da = d.day
+        mo = d.month
+        yr = d.year
+        form = RapportLabo()
+        if role == 5 or role == 1 or role == 6:
+            qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Validation en cours 2",
+                                         idcargaison__idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                'dateanalyse')
+            table = AffichageValidation2(qs, prefix='1_')
 
-            table1 = AffichageValidation2(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, c.importateur_id, c.produit_id, e.numrappech, l.codelabo, l.numcertificatqualite \
-                                                                FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_laboreception l, hydro_occ.enreg_cargaison c, hydro_occ.enreg_entrepot_echantillon e \
-                                                                WHERE  r.idcargaison_id = l.idcargaison_id \
-                                                                AND c.idcargaison = l.idcargaison_id \
-                                                                AND e.idcargaison_id = c.idcargaison \
-                                                                ORDER BY r.dateanalyse DESC'))
+            # Compteur Chef Laboratoire
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville=ville,
+                                                                dateechantillonage__day=da,
+                                                                dateechantillonage__month=mo,
+                                                                dateechantillonage__year=yr).count()
+            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
+                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
+                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
 
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
-
-            table2 = AffichageValidation2Go(LaboReception.objects.order_by('-datereceptionlabo').filter(Q(
-                idcargaison__idcargaison__etat="En attente validation 2") | Q(
-                idcargaison__idcargaison__etat="Analyse Labo en cours"),
-                                                                                                        idcargaison__idcargaison__entrepot_id__ville_id=user.ville))
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table2)
-
-            return render(request, 'labo_validation2.html', {
-                'labo': table1,
-                'labo1': table2
-            })
+            RequestConfig(request, paginate={"per_page": 14}).configure(table)
+            return render(request, 'labo_validation2.html', {'labo': table,
+                                                             'form': form,
+                                                             'laboreception': laboreception,
+                                                             'enanalyse': enanalyse,
+                                                             'enattente': enattente,
+                                                             })
         else:
             return redirect('logout')
 
@@ -1630,17 +1557,16 @@ class GestionImpressionLabo():
     def affichagetableauimpression(request):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        v = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
-        if role == 5 or role == 1 or role == "v1" or role == "v2":
-            table = AffichageTableauImpression(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, l.numcertificatqualite, c.produit_id, l.codelabo, e.numrappech, c.importateur_id \
-                                                FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_cargaison c, hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e \
-                                                WHERE r.idcargaison_id = c.idcargaison \
-                                                AND c.idcargaison = l.idcargaison_id \
-                                                AND l.idcargaison_id = e.idcargaison_id \
-                                                AND c.conformite = "Conforme aux exigences" \
-                                                AND c.impression = 0 \
-                                                ORDER BY r.dateanalyse DESC'), prefix='2_')
+        if role == 5 or role == 1:
+            qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__impression=0,
+                                         idcargaison__idcargaison__idcargaison__etat='Conforme aux exigences',
+                                         idcargaison__idcargaison__idcargaison__entrepot__ville=v).order_by(
+                'dateanalyse')
+            table = AffichageTableauImpression(qs, prefix='2_')
 
             table1 = AffichageTableauReImpression(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, l.numcertificatqualite, c.produit_id, l.codelabo, e.numrappech, c.importateur_id \
                                                 FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_cargaison c, hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e \
@@ -1681,13 +1607,6 @@ class GestionImpressionLabo():
                                                                 AND l.codelabo = %s \
                                                                 ORDER BY r.dateanalyse DESC', [numcode, ]), prefix='2_')
 
-                # table1 = AffichageTableauReImpression(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, l.numcertificatqualite, c.produit_id, l.codelabo, e.numrappech, c.importateur_id \
-                #                                                 FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_cargaison c, hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e \
-                #                                                 WHERE r.idcargaison_id = c.idcargaison \
-                #                                                 AND c.idcargaison = l.idcargaison_id \
-                #                                                 AND l.idcargaison_id = e.idcargaison_id \
-                #                                                 AND c.impression = 1 \
-                #                                                 ORDER BY r.dateanalyse DESC'), prefix='3_')
 
                 RequestConfig(request, paginate={"per_page": 10}).configure(table)
                 # RequestConfig(request, paginate={"per_page": 10}).configure(table1)
@@ -1723,22 +1642,12 @@ class GestionImpressionLabo():
                                                                                 ORDER BY r.dateanalyse DESC',
                                                                         [numcode, ]), prefix='2_')
 
-                # table1 = AffichageTableauReImpression(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, l.numcertificatqualite, c.produit_id, l.codelabo, e.numrappech, c.importateur_id \
-                #                                                 FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_cargaison c, hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e \
-                #                                                 WHERE r.idcargaison_id = c.idcargaison \
-                #                                                 AND c.idcargaison = l.idcargaison_id \
-                #                                                 AND l.idcargaison_id = e.idcargaison_id \
-                #                                                 AND c.impression = 1 \
-                #                                                 AND l.codelabo=%s \
-                #                                                 ORDER BY r.dateanalyse DESC', [numcode, ]), prefix='3_')
-
                 RequestConfig(request, paginate={"per_page": 10}).configure(table)
                 # RequestConfig(request, paginate={"per_page": 10}).configure(table1)
 
                 return render(request, 'labo_impression.html',
                               {
                                   'labo': table,
-                                  # 'labo1': table1
                               })
             else:
                 return redirect('impression')
@@ -1750,6 +1659,11 @@ class GestionImpressionLabo():
     def impressioncertificat(request, pk):
         user = request.user
         id = user.id
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
+        province = Ville.objects.get(idville=ville)
+        province = province.province
+        province = province.upper()
         role = user.role_id
         url = request.session['url']
         if role == 5 or role == 1 or role == "v1" or role == "v2":
@@ -1783,11 +1697,11 @@ class GestionImpressionLabo():
             declarant = a.declarant
             dateechantillonage = b.dateechantillonage
             entrepot = a.entrepot
-            provenance = a.provenance
+            provenance = a.provenance.name
             qte = b.qte
             datereceptionlabo = c.datereceptionlabo
             codelabo = c.codelabo
-            numdossier = a.numdossier
+            numdossier = a.numdos
             immatriculation = a.immatriculation
             numrappech = b.numrappech
 
@@ -1802,7 +1716,7 @@ class GestionImpressionLabo():
 
             # Test pour afficher les differents rapports
             if produit == 'GASOIL':
-                template = 'report/rapportvalide/gasoilreport.html'
+                template = 'report/Report1/gasoilreport.html'
 
                 # Resultat Gasoil Fetching data into Database
                 couleurastm = d.couleurastm
@@ -1867,7 +1781,8 @@ class GestionImpressionLabo():
                     'numrappech': numrappech,
                     'produit': produit,
                     'mois': mois,
-                    'annee': annee
+                    'annee': annee,
+                    'province': province,
                 }
 
                 # Rendered PDF report
@@ -1876,7 +1791,7 @@ class GestionImpressionLabo():
 
             else:
                 if produit == 'MOGAS':
-                    template = 'report/rapportvalide/mogasreport.html'
+                    template = 'report/Report1/mogasreport.html'
                     # Resultat Gasoil Fetching data into Database
                     aspect = d.aspect
                     odeur = d.odeur
@@ -1932,7 +1847,8 @@ class GestionImpressionLabo():
                         'massevolumique15': massevolumique15,
                         'produit': produit,
                         'mois': mois,
-                        'annee': annee
+                        'annee': annee,
+                        'province': province,
                     }
 
                     # Rendered PDF report
@@ -1940,7 +1856,7 @@ class GestionImpressionLabo():
                     return HttpResponse(pdf, content_type='application/pdf')
                 else:
                     if produit == 'JET A1':
-                        template = 'report/rapportvalide/jeta1report.html'
+                        template = 'report/Report1/jeta1report.html'
 
                         # Resultat Gasoil Fetching data into Database
                         aspect = d.aspect
@@ -2019,7 +1935,8 @@ class GestionImpressionLabo():
                             'vol90': vol90,
                             'produit': produit,
                             'mois': mois,
-                            'annee': annee
+                            'annee': annee,
+                            'province': province,
                         }
                         # Rendered PDF report
                         pdf = render_to_pdf(template, data)
@@ -2027,7 +1944,7 @@ class GestionImpressionLabo():
 
                     else:
                         if produit == 'PETROLE LAMPANT':
-                            template = 'report/rapportvalide/petrolereport.html'
+                            template = 'report/Report1/petrolereport.html'
 
                             # Resultat Gasoil Fetching data into Database
                             aspect = d.aspect
@@ -2106,7 +2023,8 @@ class GestionImpressionLabo():
                                 'vol90': vol90,
                                 'produit': produit,
                                 'mois': mois,
-                                'annee': annee
+                                'annee': annee,
+                                'province': province,
                             }
 
                             # Rendered PDF report
@@ -2123,7 +2041,7 @@ class GestionImpressionLabo():
         id = user.id
         role = user.role_id
         url = request.session['url']
-        if role == 5 or role == 1 or role == "v1" or role == "v2":
+        if role == 5 or role == 1:
             td = datetime.today()
             today = td.date()
 
@@ -2154,7 +2072,7 @@ class GestionImpressionLabo():
             declarant = a.declarant
             dateechantillonage = b.dateechantillonage
             entrepot = a.entrepot
-            provenance = a.provenance
+            provenance = a.provenance.name
             qte = b.qte
             datereceptionlabo = c.datereceptionlabo
             codelabo = c.codelabo
@@ -2522,7 +2440,7 @@ class GestionImpressionLabo():
             declarant = a.declarant
             dateechantillonage = b.dateechantillonage
             entrepot = a.entrepot
-            provenance = a.provenance
+            provenance = a.provenance.name
             qte = b.qte
             datereceptionlabo = c.datereceptionlabo
             codelabo = c.codelabo
@@ -2929,3 +2847,40 @@ def labdashboardrapport(request):
             exporter = TableExport(export_format, table1)
             return exporter.response('table.{}'.format(export_format))
         return render(request, template, {'table': table1})
+
+
+@login_required(login_url='login')
+def echantCount(request):
+    user = request.user
+    role = user.role_id
+    id = user.id
+    u = user.username
+    username = user.username
+    ville = AffectationVille.objects.get(username=id)
+    ville = ville.ville_id
+    template = 'validationCompteur.html'
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
+                                      idcargaison__idcargaison__etat='Echantillonner').order_by('-datereceptionlabo')
+    table = EchantReception(qs, prefix='1_')
+    RequestConfig(request, paginate={"per_page": 20}).configure(table)
+    context = {'table': table}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def echantAnalyse(request):
+    user = request.user
+    role = user.role_id
+    id = user.id
+    u = user.username
+    username = user.username
+    ville = AffectationVille.objects.get(username=id)
+    ville = ville.ville_id
+    template = 'AnalyseCompteur.html'
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
+                                      idcargaison__idcargaison__etat='Analyse Labo en cours').order_by(
+        '-datereceptionlabo')
+    table = EchantReception(qs, prefix='1_')
+    RequestConfig(request, paginate={"per_page": 20}).configure(table)
+    context = {'table': table}
+    return render(request, template, context)

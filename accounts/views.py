@@ -5,11 +5,11 @@ from django.contrib.auth import (
 )
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from jsignature.utils import draw_signature
 
 from accounts.models import *
-from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville
-from .tables import ListeUtilisateurs, DetailsAffectation
-
+from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm
+from .tables import ListeUtilisateurs, DetailsAffectation, DetailsVille, SignatureTable
 
 
 # Fonction pour authemntifier les utilisateurs
@@ -83,7 +83,7 @@ def listeutilisateurs(request):
     if role == 1:
         template = 'accounts/userslist.html'
         table = ListeUtilisateurs(MyUser.objects.all())
-        table.paginate(page=request.GET.get('page', 1), per_page=15)
+        table.paginate(page=request.GET.get('page', 1), per_page=10)
         return render(request, template, {'users': table})
     else:
         return redirect('logout')
@@ -129,12 +129,17 @@ def editionutilisateurs(request, pk):
     role = user.role_id
     if role == 1:
         request.session['url'] = request.get_full_path()
+        request.session['pk'] = pk
         template = 'accounts/profile.html'
         instance = get_object_or_404(MyUser, id=pk)
         table = DetailsAffectation(AffectationEntrepot.objects.filter(username_id=pk))
+        table1 = DetailsVille(AffectationVille.objects.filter(username__id=pk))
         table.paginate(page=request.GET.get('page', 1), per_page=15)
+        table1.paginate(page=request.GET.get('page', 1), per_page=15)
         form = UserEdit(request.POST or None, instance=instance, prefix='user')
         form1 = Affectation_Entrepot()
+        form2 = Affectation_Ville()
+        # form3 = SignatureForm(request.POST or None)
         url = request.session['url']
 
         if form.is_valid():
@@ -145,7 +150,10 @@ def editionutilisateurs(request, pk):
         args = {
             'form': form,
             'form1': form1,
-            'table': table
+            'table': table,
+            'table1': table1,
+            'form2': form2,
+            # 'form3':form3,
         }
         return render(request, template, args)
     else:
@@ -172,10 +180,11 @@ def affectationentreprot(request):
     role = user.role_id
     if role == 1:
         url = request.session['url']
+        pk = request.session['pk']
         template = 'accounts/profile.html'
         form = Affectation_Entrepot()
         if request.method == 'POST':
-            username = request.POST['username']
+            username = pk
             entrepot = request.POST['entrepot']
             p = AffectationEntrepot(username_id=username, entrepot_id=entrepot)
             p.save()
@@ -194,12 +203,13 @@ def affectationville(request):
     if role == 1:
         template = 'accounts/profileville.html'
         form = Affectation_Ville()
+        url = request.session['url']
         if request.method == 'POST':
-            username = request.POST['username']
+            username = request.session['pk']
             ville = request.POST['ville']
             p = AffectationVille(username_id=username, ville_id=ville)
             p.save()
-            return redirect('affectationville')
+            return redirect(url)
         else:
             return render(request, template, {'form': form})
     else:
@@ -220,3 +230,42 @@ def retireraffectation(request, pk):
         return redirect('logout')
 
 
+@login_required(login_url='login')
+# Retrait des affectations entrepots
+def retireraffectationville(request, pk):
+    user = request.user
+    role = user.role_id
+    if role == 1:
+        url = request.session['url']
+        object = AffectationVille.objects.get(idaffectation_ville=pk)
+        object.delete()
+        return redirect(url)
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+# Affectation des signatures
+def affectation_signature(request):
+    template = 'accounts/profileville.html'
+    table = SignatureTable(MyUser.objects.all())
+    table.paginate(page=request.GET.get('page', 1), per_page=12)
+
+    context = {
+        'table': table,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def sign_it(request, pk):
+    template = 'accounts/signit.html'
+    form = SignatureForm()
+    if form.is_valid():
+        signature = form.cleaned_data.get('signature')
+        if signature:
+            # as an image
+            signature_picture = draw_signature(signature)
+
+    context = {'form': form}
+    return render(request, template, context)

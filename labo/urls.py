@@ -1,11 +1,11 @@
 from django.urls import path
-from django.conf.urls import url
+# from django.conf.urls import url
 from . import views
 
 urlpatterns = [
 
     path('', views.GestionLaboratoire.affichageenchantillon, name='labo'),
-    path('reception/', views.GestionLaboratoire.receptionechantillon, name='reception'),
+    path('reception/<int:pk>', views.GestionLaboratoire.receptionechantillon, name='reception'),
     path('modification/', views.GestionLaboratoire.modification, name='modification'),
     path('rechercheqr/', views.GestionLaboratoire.rechercheqrcode, name='rechercheqr'),
     path('recherchecode/', views.GestionLaboratoire.recherchecode, name='recherchecode'),
@@ -50,5 +50,7 @@ urlpatterns = [
     # Dashboard Laboratoire
     path('labdash/', views.labdashboard, name='labodashboard'),
     path('labdashrap/', views.labdashboardrapport, name='labodashboardrapport'),
+    path('echantCount/', views.echantCount, name='echantCount'),
+    path('echantAnalyse/', views.echantAnalyse, name='echantAnalyse'),
 
 ]

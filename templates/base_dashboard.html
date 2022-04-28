@@ -63,7 +63,7 @@
             <!-- Navbar Search -->
             <li class="nav-item">
                 <div class="navbar-search-block">
-                    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b></a>
+                    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>DECONNEXION</b></a>
                 </div>
             </li>
         </ul>
@@ -98,7 +98,7 @@
                         <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>Dashboard & KPIs</p>
+                                <p>DASHBOARD & KPIs</p>
                             </a>
                         </li>
 
@@ -107,331 +107,345 @@
            {% if user.role_id == 2 or user.role_id == 1 %}
         <li class="nav-item has-treeview">
             <a href="{% url 'cargaison'%}" class="nav-link">
-              <i class="nav-icon fas fa-truck-moving"></i>
-              <p>
-                Cargaisons
+                <i class="nav-icon fas fa-truck-moving"></i>
+                <p>
+                    ENREGISTREMENT
 
-                <span class="badge badge-info right"></span>
-              </p>
+                    <span class="badge badge-info right"></span>
+                </p>
             </a>
 
         </li>
-        {% endif %}
+           {% endif %}
 
 
-        {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
-        <li class="header">ENTREPOT</li>
+                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
+                        <li class="header">ENTREPOT</li>
 
-        <li class="nav-item has-treeview">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa fa-industry"></i>
-              <p>
-                Entrepot
-                <i class="right fas fa-angle-left"></i>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{% url 'entrepot'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Echantillonage</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{% url 'dechargement'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Déchargement</p>
-                </a>
-              </li>
-            </ul>
-          </li>
-        {% endif %}
-
-        {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1%}
-
-        <li class="header">CERTIFICATION</li>
-
-            <li class="nav-item has-treeview">
-                <a href="#" class="nav-link">
-                    <i class="nav-icon fas fa-flask"></i>
-                    <p>
-                        Laboratoire
-                        <i class="fas fa-angle-left right"></i>
-                    </p>
-                </a>
-                <ul class="nav nav-treeview">
-                    {% if user.role_id == 6 or user.role_id == 1 %}
-
-                    {% endif %}
-                    {% if user.role_id == 4 or user.role_id == 1 %}
-                        <li class="nav-item">
-                            <a href="{% url 'labo' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Réception d'échantillons</p>
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa fa-industry"></i>
+                                <p>
+                                    ENTREPOT
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
                             </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'entrepot' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>ECHANTILLONAGE</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'dechargement' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>DECHARGEMENT</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     {% endif %}
-                    {% if user.role_id == 5 or user.role_id == 1 %}
-                        <li class="nav-item">
-                <a href="{%url 'analyse'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Encodage des résultats</p>
-                </a>
-              </li>
-                {% endif %}
-                {% if user.role_id == 6 or user.role_id == 1%}
-              <li class="nav-item">
-                <a href="{%url 'validation1'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Service PP Validation</p>
-                </a>
-              </li>
-                 {% endif %}
-            {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5%}
-              <li class="nav-item">
-                <a href="{%url 'impression'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion Documentaire</p>
-                </a>
-              </li>
-                {% endif %}
-            </ul>
-          </li>
-        {% endif %}
+
+                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1 %}
+
+                        <li class="header">CERTIFICATION</li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-flask"></i>
+                                <p>
+                                    LABORATOIRE
+                                    <i class="fas fa-angle-left right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                {% if user.role_id == 6 or user.role_id == 1 %}
+
+                                {% endif %}
+                                {% if user.role_id == 4 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'labo' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RECEPTION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 5 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'analyse' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>ENCODAGE & IMPR.</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 6 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation1' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION SCE HYDRO</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 10 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation2' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION CHEF LABO</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'impression' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>IMPRESSION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
 
 
-        {% if user.role_id == 7 or user.role_id == 1%}
-        <li class="header">Hydro OCC</li>
+                    {% if user.role_id == 7 or user.role_id == 1 %}
+                        <li class="header">HYDRO OCC</li>
 
-        <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-building"></i>
-              <p>
-                HYDRO OCC
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>
+                                    HYDRO OCC
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
 
-              <li class="nav-item">
-                <a href="{%url 'laboresult'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion des Go</p>
-                </a>
-              </li>
-               <li class="nav-item">
-                <a href="{%url 'gestionact'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion des ACT</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{%url 'avarie'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion des Avariés</p>
-                </a>
-              </li>
-            </ul>
-        </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REQUISITIONS</p>
+                                    </a>
+                                </li>
 
-        <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-file-archive"></i>
-              <p>
-                Facturations
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{% url 'facturations' %}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion Liquidation</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{% url 'appuration' %}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Détails Appuration</p>
-                </a>
-              </li>
-            </ul>
-        </li>
-        {% endif %}
+                                {#                <li class="nav-item">#}
+                                {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
+                                {#                  <i class="far fa-circle nav-icon"></i>#}
+                                {#                  <p>GO</p>#}
+                                {#                </a>#}
+                                {#              </li>#}
+                                <li class="nav-item">
+                                    <a href="{% url 'gestionact' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>ACTs</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'avarie' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AVARIES</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-file-archive"></i>
+                                <p>
+                                    FACTURATIONS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'facturations' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LIQUIDATION</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'appuration' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>APPURATION</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 1 %}
+                        <li class="nav-item has-treeview">ADMINISTRATION</li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>
+                                    USERS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                {#              <li class="nav-item">#}
+                                {#                <a href="{%url 'usersadd'%}" class="nav-link">#}
+                                {#                  <i class="far fa-circle nav-icon"></i>#}
+                                {#                  <p>AJOUT UTILISATEUR</p>#}
+                                {#                </a>#}
+                                {#              </li>#}
+                                <li class="nav-item">
+                                    <a href="{% url 'userslist' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE D'UTILISATEURS</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'affectation_signature' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AFFECTATION V.</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-warehouse"></i>
+                                <p>
+                                    ENTREPOTS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_entrepot' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT ENTREPOT</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_entrepot' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE D'ENTREPOTS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-user-circle"></i>
+                                <p>
+                                    IMPORTATEURS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_importateur' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT IMPORTATEUR</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_importateur' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTES D'IMPORTATEURS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
 
-        {% if user.role_id == 1%}
-<li class="nav-item has-treeview">ADMINISTRATION</li>
-            <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-user"></i>
-              <p>
-                Utilisateurs
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{%url 'usersadd'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Ajout d'utilisateurs</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{%url 'userslist'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Liste d'utilisateurs</p>
-                </a>
-              </li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-border"></i>
+                                <p>
+                                    POINTS D'ENTREES
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_frontiere' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT FRONTIERE</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_frontiere' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE DES FRONTIERES</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
-              <li class="nav-item">
-                <a href="{%url 'affectationville'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Affectation Villes</p>
-                </a>
-              </li>
-            </ul>
-        </li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-product-hunt"></i>
+                                <p>
+                                    PRODUITS
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'add_produit' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT PRODUITS</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'gest_produit' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTES PRODUITS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
-          <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-warehouse"></i>
-              <p>
-                Entrepots
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{%url 'add_entrepot'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Ajout d'entrepots</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{%url 'gest_entrepot'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Liste d'utilisateurs</p>
-                </a>
-              </li>
-            </ul>
-        </li>
+                        <li class="nav-item has-treeview">
+                            <a href="" class="nav-link">
+                                <i class="nav-icon fas fa-cloud"></i>
+                                <p>
+                                    MONITORING ADMIN
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right"></span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>IMPORTATION SYDONIA</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
 
-        <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-user-circle"></i>
-              <p>
-                Importateurs
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{%url 'add_importateur'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Ajout d'importateurs</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{%url 'gest_importateur'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Listes d'importateurs</p>
-                </a>
-              </li>
-            </ul>
-        </li>
+                    <li class="nav-item has-treeview">
+                        <a href="" class="nav-link">
+                            <i class="nav-icon fas fa-hands-helping"></i>
+                            <p>
+                                AIDE
+                            </p>
+                        </a>
+                    </li>
 
-
-         <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-border"></i>
-              <p>
-                Points d'entrées
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{%url 'add_frontiere'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Ajout Frontière</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{%url 'gest_frontiere'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Listes Frontières</p>
-                </a>
-              </li>
-            </ul>
-        </li>
-
-         <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-product-hunt"></i>
-              <p>
-                Produits
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{%url 'add_produit'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Ajout Produits</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{%url 'gest_produit'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Listes Produit</p>
-                </a>
-              </li>
-            </ul>
-        </li>
-
-        <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-cloud"></i>
-              <p>
-                Monitoring Admin
-                <i class="fas fa-angle-left right"></i>
-                <span class="badge badge-info right"></span>
-              </p>
-            </a>
-            <ul class="nav nav-treeview">
-              <li class="nav-item">
-                <a href="{% url 'upload_sydonia' %}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Importation SYDONIA</p>
-                </a>
-              </li>
-            </ul>
-        </li>
-        {% endif %}
-
-        <li class="nav-item has-treeview">
-            <a href="" class="nav-link">
-              <i class="nav-icon fas fa-hands-helping"></i>
-              <p>
-                Aide
-
-              </p>
-            </a>
-        </li>
-
-      </ul>
-    </nav>
-    <!-- /.sidebar -->
+                </ul>
+            </nav>
+            <!-- /.sidebar -->
         </div>
     </aside>
+
 
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
@@ -554,54 +568,55 @@
     </div>
 
 
-    <!-- jQuery -->
-    <script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
-    <!-- jQuery UI 1.11.4 -->
-    <script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
-    <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-    <script>
-      $.widget.bridge('uibutton', $.ui.button)
-    </script>
-    <!-- Bootstrap 4 -->
-    <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <!-- ChartJS -->
-    <script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
-    <!-- Sparkline -->
-    <script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
-    <!-- JQVMap -->
-    <script src="{% static 'plugins/jqvmap/jquery.vmap.min.js' %}"></script>
-    <script src="{% static 'plugins/jqvmap/maps/jquery.vmap.usa.js' %}"></script>
-    <!-- jQuery Knob Chart -->
-    <script src="{% static 'plugins/jquery-knob/jquery.knob.min.js' %}"></script>
-    <!-- daterangepicker -->
-    <script src="{% static 'plugins/moment/moment.min.js' %}"></script>
-    <script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
-    <!-- Tempusdominus Bootstrap 4 -->
-    <script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
-    <!-- Summernote -->
-    <script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
-    <!-- overlayScrollbars -->
-    <script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
-    <!-- AdminLTE App -->
-    <script src="{% static 'dist/js/adminlte.js' %}"></script>
-    <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-    <script src="{% static 'dist/js/pages/dashboard.js' %}"></script>
-    <!-- AdminLTE for demo purposes -->
-    <script src="{% static 'dist/js/demo.js' %}"></script>
+<!-- jQuery -->
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<!-- jQuery UI 1.11.4 -->
+<script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+<script>
+    $.widget.bridge('uibutton', $.ui.button)
+</script>
+<!-- Bootstrap 4 -->
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- ChartJS -->
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<!-- Sparkline -->
+<script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
+<!-- JQVMap -->
+<script src="{% static 'plugins/jqvmap/jquery.vmap.min.js' %}"></script>
+<script src="{% static 'plugins/jqvmap/maps/jquery.vmap.usa.js' %}"></script>
+<!-- jQuery Knob Chart -->
+<script src="{% static 'plugins/jquery-knob/jquery.knob.min.js' %}"></script>
+<!-- daterangepicker -->
+<script src="{% static 'plugins/moment/moment.min.js' %}"></script>
+<script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
+<!-- Tempusdominus Bootstrap 4 -->
+<script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+<!-- Summernote -->
+<script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
+<!-- overlayScrollbars -->
+<script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
+<!-- AdminLTE App -->
+<script src="{% static 'dist/js/adminlte.js' %}"></script>
+{#    <!-- AdminLTE dashboard demo (This is only for demo purposes) -->#}
+{#    <script src="{% static 'dist/js/pages/dashboard.js' %}"></script>#}
+{#    <!-- AdminLTE for demo purposes -->#}
+{#    <script src="{% static 'dist/js/demo.js' %}"></script>#}
 
-      <!-- /.JS script for modal -->
-       <!-- jQuery 3 -->
-    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+<!-- /.JS script for modal -->
+<!-- jQuery 3 -->
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
 
-    <!-- Bootstrap 4 -->
-    <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <!-- DataTables -->
-    <script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
-    <script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
-    <script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+<!-- Bootstrap 4 -->
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- DataTables -->
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
 
-    <script>
+<script>
 
     var Id;
 

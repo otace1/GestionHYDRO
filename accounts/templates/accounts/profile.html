@@ -12,6 +12,7 @@
     </form>
 {% endblock %}
 
+
 {% block content2 %}
     <form method="post" action="{% url 'affectationentreprot' %}">
         {% csrf_token %}
@@ -20,6 +21,21 @@
     </form>
 {% endblock %}
 
+
+{% block affectationville %}
+    <form method="post" action="{% url 'affectationville' %}">
+        {% csrf_token %}
+        {{ form2 | crispy }}
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </form>
+{% endblock %}
+
+
+{% block affectationvilletable %}
+    {% render_table table1 %}
+{% endblock %}
+
+
 {% block content1 %}
-        {% render_table table %}
+    {% render_table table %}
 {% endblock %}

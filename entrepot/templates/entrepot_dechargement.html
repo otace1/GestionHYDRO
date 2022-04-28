@@ -4,121 +4,118 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-{%render_table cargaison%}
+    {% render_table cargaison %}
 {% endblock %}
-
 
 {% block content1 %}
-
     {% render_table rapport %}
-
-    <div class="modal fade" id="modal-lg">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-gradient-dark">
-                <div class="modal-header">
-                    <h4 class="modal-title">Informations de déchargement</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div id="success-change">
-                    <form method="post" action="" id="post-form">
-                        <div class="modal-body">
-
-                            {% csrf_token %}
-                {% crispy form %}
-            </div>
-            <div id="submit-control" class="modal-footer justify-content-between">
-              <button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>
-              <button type="button" class="btn btn-success">Enregistrer</button>
-            </div>
-              </form>
-                  </div>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
-
-
 {% endblock %}
 
 
-<script>
-  {% block javascript %}
-          // using jQuery
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
+{#    <div class="modal fade" id="modal-lg">#}
+{#        <div class="modal-dialog modal-lg">#}
+{#            <div class="modal-content bg-gradient-dark">#}
+{#                <div class="modal-header">#}
+{#                    <h4 class="modal-title">Informations de déchargement</h4>#}
+{#                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">#}
+{#                        <span aria-hidden="true">&times;</span>#}
+{#                    </button>#}
+{#                </div>#}
+{#                <div id="success-change">#}
+{#                    <form method="post" action="" id="post-form">#}
+{#                        <div class="modal-body">#}
+{##}
+{#                            {% csrf_token %}#}
+{#                {% crispy form %}#}
+{#            </div>#}
+{#            <div id="submit-control" class="modal-footer justify-content-between">#}
+{#              <button type="button" class="btn btn-danger" data-dismiss="modal">Annuler</button>#}
+{#              <button type="button" class="btn btn-success">Enregistrer</button>#}
+{#            </div>#}
+{#              </form>#}
+{#                  </div>#}
+{#          </div>#}
+{#          <!-- /.modal-content -->#}
+{#        </div>#}
+{#        <!-- /.modal-dialog -->#}
+{#      </div>#}
+{#      <!-- /.modal -->#}
 
-var csrftoken = getCookie('csrftoken');
 
-function csrfSafeMethod(method) {
-    // these HTTP methods do not require CSRF protection
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-}
-      $.ajaxSetup({
-          beforeSend: function (xhr, settings) {
-              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                  xhr.setRequestHeader("X-CSRFToken", csrftoken);
-              }
-          }
-      });
-
-      //script for submitting data in ajax
-      //      $('.btn.btn-primary').click(function () {
-      $('.fas.fa-arrow-alt-circle-down').click(function () {
-//      $('#idechant').click(function () {
-          Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
-          console.log(Id); //Sanity check
-      });
-
-      $('.btn.btn-danger').click(function () {
-          console.log('refresh');
-      })
-
-      $('.btn.btn-success').click(function (e) {
-          e.preventDefault()
-          //Disable Submit button
-          $('.btn.btn-success').attr("disabled", true);
-          var pk = Id;
-          var APIurl = "{% url 'decharger' %}";
-          $input = $('<input type="hidden" name="pk">').val(pk);
-          $('#post-form').append($input);
-          var SerializedData = $("#post-form").serialize();
-          console.log(SerializedData);
-          $.ajax({
-              url: APIurl,
-              type: "POST",
-              data: SerializedData,
-              success: function () {
-                  alert('Données sauvegardées')
-                  console.log('Data Saved');
-                  window.location.reload();
-                  {#$('#DechargementTable #id').remove();#}
-              },
-              error: function () {
-                  alert("Erreur de données! Veuillez completer tous les champs obligatoires !");
-                  console.log('Data Not Saved');
-                  $('.btn.btn-success').attr("disabled", false);
-                  location.reload();
-              }
-          });
-      })
-
-  {% endblock %}
-</script>
+{#<script>#}
+{#  {% block javascript %}#}
+{#          // using jQuery#}
+{#function getCookie(name) {#}
+{#    var cookieValue = null;#}
+{#    if (document.cookie && document.cookie !== '') {#}
+{#        var cookies = document.cookie.split(';');#}
+{#        for (var i = 0; i < cookies.length; i++) {#}
+{#            var cookie = jQuery.trim(cookies[i]);#}
+{#            // Does this cookie string begin with the name we want?#}
+{#            if (cookie.substring(0, name.length + 1) === (name + '=')) {#}
+{#                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));#}
+{#                break;#}
+{#            }#}
+{#        }#}
+{#    }#}
+{#    return cookieValue;#}
+{#}#}
+{##}
+{#var csrftoken = getCookie('csrftoken');#}
+{##}
+{#function csrfSafeMethod(method) {#}
+{#    // these HTTP methods do not require CSRF protection#}
+{#    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));#}
+{#}#}
+{#      $.ajaxSetup({#}
+{#          beforeSend: function (xhr, settings) {#}
+{#              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {#}
+{#                  xhr.setRequestHeader("X-CSRFToken", csrftoken);#}
+{#              }#}
+{#          }#}
+{#      });#}
+{##}
+{#      //script for submitting data in ajax#}
+{#      //      $('.btn.btn-primary').click(function () {#}
+{#      $('.fas.fa-arrow-alt-circle-down').click(function () {#}
+{#//      $('#idechant').click(function () {#}
+{#          Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database#}
+{#          console.log(Id); //Sanity check#}
+{#      });#}
+{##}
+{#      $('.btn.btn-danger').click(function () {#}
+{#          console.log('refresh');#}
+{#      })#}
+{##}
+{#      $('.btn.btn-success').click(function (e) {#}
+{#          e.preventDefault()#}
+{#          //Disable Submit button#}
+{#          $('.btn.btn-success').attr("disabled", true);#}
+{#          var pk = Id;#}
+{#          var APIurl = "{% url 'decharger' %}";#}
+{#          $input = $('<input type="hidden" name="pk">').val(pk);#}
+{#          $('#post-form').append($input);#}
+{#          var SerializedData = $("#post-form").serialize();#}
+{#          console.log(SerializedData);#}
+{#          $.ajax({#}
+{#              url: APIurl,#}
+{#              type: "POST",#}
+{#              data: SerializedData,#}
+{#              success: function () {#}
+{#                  alert('Données sauvegardées')#}
+{#                  console.log('Data Saved');#}
+{#                  window.location.reload();#}
+{#$('#DechargementTable #id').remove();#}
+{#              },#}
+{#              error: function () {#}
+{#                  alert("Erreur de données! Veuillez completer tous les champs obligatoires !");#}
+{#                  console.log('Data Not Saved');#}
+{#                  $('.btn.btn-success').attr("disabled", false);#}
+{#                  location.reload();#}
+{#              }#}
+{#          });#}
+{#      })#}
+{##}
+{#  {% endblock %}#}
+{#</script>#}
 

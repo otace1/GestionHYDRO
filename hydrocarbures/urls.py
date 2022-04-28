@@ -14,20 +14,18 @@ from accounts.views import login_user
 if settings.DEBUG:
     import debug_toolbar
 
-    urlpatterns = [
-                      path('__debug__/', include(debug_toolbar.urls)),
-                      # path('sentry-debug/', trigger_error),
+urlpatterns = [
+                  path('__debug__/', include(debug_toolbar.urls)),
+                  # path('sentry-debug/', trigger_error),
 
-                      # path('adloc/', admin.site.urls),
-                      path('ads/', include('ads.urls')),
-                      path('cargaison/', include('enreg.urls')),
-                      path('shydro/', include('shydro.urls')),
-                      path('entrepot/', include('entrepot.urls')),
-                      path('labo/', include('labo.urls')),
-                      path('accounts/', include('accounts.urls')),
-                      path('facturations/', include('facturations.urls')),
-                      path('', login_user)
+                  # path('adloc/', admin.site.urls),
+                  path('ads/', include('ads.urls')),
+                  path('cargaison/', include('enreg.urls')),
+                  path('shydro/', include('shydro.urls')),
+                  path('entrepot/', include('entrepot.urls')),
+                  path('labo/', include('labo.urls')),
+                  path('accounts/', include('accounts.urls')),
+                  path('facturations/', include('facturations.urls')),
+                  path('', login_user)
 
-                  ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
+              ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

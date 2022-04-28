@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, HttpResponse
-from enreg.models import Cargaison, Ville, Voie, Entrepot, Importateur, Produit, Dechargement, Entrepot_echantillon, Resultat, LaboReception
-from accounts.models import AffectationVille, AffectationEntrepot
-from .tables import CodificationTable, ResultatGoLabo,Avarie, Act, Act2, ModificationCodification
+from enreg.models import Cargaison, Ville, Voie, Entrepot, Importateur, Produit, Dechargement, Entrepot_echantillon, \
+    Resultat, LaboReception
+from accounts.models import *
+from .tables import CodificationTable, ResultatGoLabo, Avarie, Act, Act2, ModificationCodification
 from .forms import CodificationHydro
 from django.contrib.auth.decorators import login_required
 from shydro.utils import render_to_pdf
@@ -11,28 +12,29 @@ from django.db.models import Q
 from datetime import date
 import datetime
 from .numact import numeroactcurrent
-
+from .numdossier import numDossier
 
 
 #Class de gestion des codifacations des cargaisons
 class GestionCodification():
-
 #Methode d'affichage du tableau pour la codification (Cargaison en attente de requisition)
     @login_required(login_url='login')
     def affichageTableau(request):
         user = request.user
-        id=user.id
+        id = user.id
         role = user.role_id
-        ville = AffectationVille.objects.filter(username_id=id)
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
 
         if role == 7 or role == 1:
             if 'search' in request.GET:
                 qs = request.GET['search']
                 if qs == "":
                     request.session['url'] = request.get_full_path()
-                    table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition").filter(frontiere__affectationville__username_id=id) \
-                                             .order_by('-dateheurecargaison'),prefix="1_")
-                    data = Entrepot.objects.all()
+                    table = CodificationTable(
+                        Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville=ville) \
+                            .order_by('-dateheurecargaison'), prefix="1_")
+                    data = Entrepot.objects.filter(ville__idville=ville)
                     RequestConfig(request, paginate={"per_page": 20}).configure(table)
                     return render(request, 'shydro.html', {
                         'cargaison': table,
@@ -42,63 +44,65 @@ class GestionCodification():
                     request.session['url'] = request.get_full_path()
                     qs_temp = Entrepot.objects.get(nomentrepot=qs)
                     id_ent = qs_temp.identrepot
-                    table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent, frontiere__affectationville__username_id=id) \
-                                              .order_by('-dateheurecargaison'),prefix="3_")
-                    data = Entrepot.objects.all()
+                    table = CodificationTable(
+                        Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent, entrepot__ville=ville) \
+                            .order_by('-dateheurecargaison'), prefix="3_")
+                    data = Entrepot.objects.filter(ville__idville=ville)
                     RequestConfig(request, paginate={"per_page": 20}).configure(table)
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
                     })
-
             else:
                 request.session['url'] = request.get_full_path()
-                table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", frontiere__affectationville__username_id=id) \
-                                                  .order_by('-dateheurecargaison'),prefix="5_")
-                data = Entrepot.objects.all()
+                table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville=ville) \
+                                          .order_by('-dateheurecargaison'), prefix="5_")
+                data = Entrepot.objects.filter(ville__idville=ville)
                 RequestConfig(request, paginate={"per_page": 20}).configure(table)
                 return render(request, 'shydro.html', {
-                            'cargaison': table,
-                            'filter': data,
-                        })
+                    'cargaison': table,
+                    'filter': data,
+                })
         else:
             return redirect('logout')
 
 
-#Fonction numdossier
-    @login_required(login_url='login')
-    def numdoss(request,pk):
-        url = request.session['url']
-        user = request.user
-        id = user.id
-        role = user.role_ide
-        if role == 7 or role == 1:
-            if request.method == 'POST':
-                numdossier = request.POST['numdossier']
-                c= Cargaison.objects.get(pk=pk)
-                c.numdossier = numdossier
-                c.save(update_fields=['numdossier'])
-                return redirect(url)
+# Fonction numrequisition
+@login_required(login_url='login')
+def numreq(request, pk):
+    url = request.session['url']
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if role == 7 or role == 1:
+        if request.method == 'POST':
+            numreq = request.POST['numreq']
+            c = Cargaison.objects.get(pk=pk)
+            numreq = numreq.upper()
+            c.numreq = numreq
+            c.save(update_fields=['numreq'])
+            return redirect(url)
             else:
-                return redirect(url)
-        else:
-            return redirect('logout')
+            return redirect(url)
+    else:
+        return redirect('logout')
 
-#Fonction codecam
-    @login_required(login_url='login')
-    def codecam(request,pk):
-        user = request.user
-        id = user.id
-        role = user.role_id
-        url = request.session['url']
-        if role == 7 or role == 1:
-            if request.method == 'POST':
-                codecargaison = request.POST['codecargaison']
-                c = Cargaison.objects.get(pk=pk)
-                c.codecargaison = codecargaison
-                c.save(update_fields=['codecargaison'])
-                return redirect(url)
-            else:
+
+# Fonction codecam
+@login_required(login_url='login')
+def codecam(request, pk):
+    user = request.user
+    id = user.id
+    role = user.role_id
+    url = request.session['url']
+    if role == 7 or role == 1:
+        if request.method == 'POST':
+            codecargaison = request.POST['codecargaison']
+            c = Cargaison.objects.get(pk=pk)
+            c.codecargaison = codecargaison
+            c.save(update_fields=['codecargaison'])
+            return redirect(url)
+        else:
                 return redirect(url)
         else:
             return redirect('logout')
@@ -110,11 +114,19 @@ class GestionCodification():
         url = request.session['url']
         user = request.user
         id = user.id
+        name = MyUser.objects.get(id=id)
+        name = name.username
+        ville = AffectationVille.objects.get(username_id=id)
+        ville = ville.ville_id
         role = user.role_id
+        td = datetime.datetime.now()
         if role == 7 or role == 1:
-            c=Cargaison.objects.get(idcargaison=pk)
+            c = Cargaison.objects.get(idcargaison=pk)
+            c.numdos = numDossier(pk, ville)
+            c.requisitiondackdate = td
+            c.requisitionack = name
             c.etat = "En attente d'echantillonage"
-            c.save(update_fields=['etat'])
+            c.save(update_fields=['requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
             return redirect(url)
         else:
             return redirect('logout')

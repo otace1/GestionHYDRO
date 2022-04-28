@@ -1,16 +1,14 @@
-from django.urls import path
-from django.conf.urls import url
+from django.urls import path, re_path
+# from django.conf.urls import re_
 from . import views
-
 
 urlpatterns = [
 
-    # path('', views.GestionCodification.affichageTableau, name='codification'),
+    path('', views.GestionCodification.affichageTableau, name='codification'),
     path('details/<int:pk>', views.GestionCodification.linedetails, name='details'),
-
     path('update/<int:pk>', views.GestionCodification.lineupdate, name='update'),
 
-    path('numdoss/<int:pk>', views.GestionCodification.numdoss, name='numdoss'),
+    path('numdoss/<int:pk>', views.GestionCodification.numreq, name='numreq'),
     path('codecam/<int:pk>', views.GestionCodification.codecam, name='codecam'),
 
     path('', views.GestionResultatLabo.affichagetableauresultat, name='laboresult'),

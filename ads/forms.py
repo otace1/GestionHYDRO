@@ -1,6 +1,6 @@
 from django import forms
 from enreg.models import Entrepot, Importateur, Ville, Produit, Cargaison, Paiement, Liquidation
-from bootstrap_datepicker_plus import DatePickerInput
+from bootstrap_datepicker_plus.widgets import DatePickerInput
 from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
 from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
@@ -79,21 +79,22 @@ class RechercheStat(forms.Form):
 
 # Formulaire de recherche statistique
 class RechercheEncaissement(forms.Form):
-    query = Paiement.objects.raw('SELECT p.bnk_nam, p.id FROM hydro_occ.enreg_paiement p group by p.bnk_nam')
-    bank = []
-    for d in query:
-        bank.append(d.bnk_nam)
-    choix = [(data, data) for data in bank]
-    choix.insert(0, ('', ''))
-    # bank = [i['bnk_nam'] for i in query]
-
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Entité de prise en charge :",
-                                       required=False)
-    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="Nom de l'importateur :",
-                                         required=False)
-    banque = forms.ChoiceField(choices=choix, label="Banques", required=False)
-    date_d = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de début :")
-    date_f = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de fin :")
+    pass
+    # query = Paiement.objects.raw('SELECT p.bnk_nam, p.id FROM hydro_occ.enreg_paiement p group by p.bnk_nam')
+    # bank = []
+    # for d in query:
+    #     bank.append(d.bnk_nam)
+    # choix = [(data, data) for data in bank]
+    # choix.insert(0, ('', ''))
+    # # bank = [i['bnk_nam'] for i in query]
+    #
+    # frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Entité de prise en charge :",
+    #                                    required=False)
+    # importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="Nom de l'importateur :",
+    #                                      required=False)
+    # banque = forms.ChoiceField(choices=choix, label="Banques", required=False)
+    # date_d = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de début :")
+    # date_f = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de fin :")
 
 
 # Formulaire importation
