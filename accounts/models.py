@@ -61,6 +61,7 @@ class MyUser(AbstractBaseUser):
     last_name = models.CharField(max_length=30)
     role = models.ForeignKey(Roles, on_delete=models.CASCADE)
     fonction = models.CharField(max_length=256, null=True, blank=True)
+    # fonctions = models.CharField(max_length=256, null=True, blank=True)
     # signature = JSignatureField(blank=True, null=True)
 
     is_admin = models.BooleanField(default=False)

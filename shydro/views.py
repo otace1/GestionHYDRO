@@ -66,7 +66,6 @@ class GestionCodification():
         else:
             return redirect('logout')
 
-
 # Fonction numrequisition
 @login_required(login_url='login')
 def numreq(request, pk):
@@ -82,11 +81,10 @@ def numreq(request, pk):
             c.numreq = numreq
             c.save(update_fields=['numreq'])
             return redirect(url)
-            else:
+        else:
             return redirect(url)
     else:
         return redirect('logout')
-
 
 # Fonction codecam
 @login_required(login_url='login')
@@ -103,16 +101,15 @@ def codecam(request, pk):
             c.save(update_fields=['codecargaison'])
             return redirect(url)
         else:
-                return redirect(url)
-        else:
-            return redirect('logout')
+            return redirect(url)
+    else:
+        return redirect('logout')
 
-
-#Methode pour la codification d'une cargaison
-    @login_required(login_url='login')
-    def lineupdate(request, pk):
-        url = request.session['url']
-        user = request.user
+# Methode pour la codification d'une cargaison
+@login_required(login_url='login')
+def lineupdate(request, pk):
+    url = request.session['url']
+    user = request.user
         id = user.id
         name = MyUser.objects.get(id=id)
         name = name.username

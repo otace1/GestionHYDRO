@@ -150,7 +150,7 @@ class Cargaison(models.Model):
     user = models.CharField(max_length=200, default='NULL', blank=True, verbose_name='User')
     tampon = models.CharField(max_length=2, default="1")
 
-    #
+    # A ajouter en migration apres
     requisitionack = models.CharField(max_length=200, blank=True, null=True)
     requisitiondackdate = models.DateTimeField(blank=True, null=True)
 
@@ -174,6 +174,7 @@ class Cargaison(models.Model):
 class Entrepot_echantillon(models.Model):
     idcargaison = models.OneToOneField(Cargaison, on_delete=models.CASCADE, primary_key=True)
     numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage")
+    # A migrer
     numrappechauto = models.IntegerField(blank=True, null=True, verbose_name="Num. RE")
     numplombh = models.CharField(max_length=256, verbose_name="Numero Plomb H")
     numplombb = models.CharField(max_length=256)
@@ -184,6 +185,7 @@ class Entrepot_echantillon(models.Model):
     conformite = models.CharField(max_length=256)
     # dateechantillonage = models.DateField(verbose_name="Date d'Echantillonage")
     dateechantillonage = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    #A Migrer
     useredit = models.CharField(max_length=256, null=True, blank=True)
 
 
@@ -256,15 +258,15 @@ class Resultat(models.Model):
     cendre = models.FloatField(max_length=20, blank=True)
     massevolumique15 = models.FloatField(max_length=20, blank=True)
 
-    dateanalyse = models.DateTimeField(auto_now_add=True, verbose_name="Date d'analyse", blank=True, null=True)
-    dateimpression = models.DateField(blank=True, null=True)
+    dateanalyse = models.DateTimeField(auto_now_add=True, verbose_name="Date d'analyse", blank=True)
+    dateimpression = models.DateField(blank=True)
 
 
 class Dechargement(models.Model):
     idcargaison = models.OneToOneField(Resultat, on_delete=models.CASCADE, primary_key=True)
-    densite15 = models.DecimalField(max_digits=20, decimal_places=3)
+    densite15 = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
     temperature = models.DecimalField(max_digits=20, decimal_places=3)
-    gov = models.DecimalField(max_digits=20, decimal_places=3)
+    gov = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
     gsv = models.DecimalField(max_digits=20, decimal_places=3)
     mta = models.DecimalField(max_digits=20, decimal_places=3)
     mtv = models.DecimalField(max_digits=20, decimal_places=3)

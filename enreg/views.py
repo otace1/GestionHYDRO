@@ -91,7 +91,7 @@ class GestionCargaison():
             # if request.is_ajax and request.method == "POST":
             if request.method == "POST":
                 # Get Form DATA
-                form = Ajoutcargaison(request.POST)
+                formSave = Ajoutcargaison(request.POST)
 
                 voie = request.POST['voie']
                 fournisseur = request.POST['fournisseur']

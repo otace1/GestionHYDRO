@@ -63,12 +63,12 @@ class Echantilloner(forms.Form):
         )
 
 class Decharger(forms.Form):
-    densite15 = forms.DecimalField(label="Densité du produit a 15 degré :", required=True, min_value=1)
+    # densite15 = forms.DecimalField(label="Densité du produit a 15 degré :", required=True, min_value=1)
     types = forms.CharField(widget=forms.Select(choices=types), label="Types :", required=True)
-    indexinit = forms.DecimalField(label="Index Initial (si applicable):", required=False)
-    indexfin = forms.DecimalField(label="Index Fin (si applicable):", required=False)
-    temperature = forms.DecimalField(label="Température du produit en degré Celsius:", required=True, min_value=1)
-    gov = forms.DecimalField(label="Gross Observed Volume (GOV) en Mètre cube:", required=False, min_value=1)
+    indexinit = forms.FloatField(label="Index Initial (si applicable):", required=False)
+    indexfin = forms.FloatField(label="Index Fin (si applicable):", required=False)
+    temperature = forms.FloatField(label="Température du produit en degré Celsius:", required=True, min_value=1)
+    gov = forms.FloatField(label="Gross Observed Volume (GOV) en Mètre cube:", required=False, min_value=1)
 
     def __init__(self, *args, **kwargs):
         super(Decharger, self).__init__(*args, **kwargs)

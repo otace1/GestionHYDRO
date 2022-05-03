@@ -384,50 +384,52 @@ class GestionAnalyse():
         id = user.id
         role = user.role_id
         url = request.session['url']
-
-
         td = datetime.today()
         today = td.date()
 
         if role == 5 or role == 1:
             form = Mogas()
             if request.method == 'POST':
-                aspect = request.POST['aspect']
-                odeur = request.POST['odeur']
-                couleursaybolt = request.POST['couleursaybolt']
-                soufre = request.POST['soufre']
-                distillation = request.POST['distillation']
-                pointfinal = request.POST['pointfinal']
-                residu = request.POST['residu']
-                corrosion = request.POST['corrosion']
-                pourcent10 = request.POST['pourcent10']
-                pourcent20 = request.POST['pourcent20']
-                pourcent50 = request.POST['pourcent50']
-                pourcent70 = request.POST['pourcent70']
-                pourcent90 = request.POST['pourcent90']
-                tensionvapeur = request.POST['tensionvapeur']
-                difftemperature = request.POST['difftemperature']
-                plomb = request.POST['plomb']
-                indiceoctane = request.POST['indiceoctane']
-                massevolumique15 = request.POST['massevolumique15']
-                dateimpression = today
+                formSave = Mogas(request.POST)
+                if formSave.is_valid():
+                    aspect = formSave.cleaned_data['aspect']
+                    odeur = formSave.cleaned_data['odeur']
+                    couleursaybolt = formSave.cleaned_data['couleursaybolt']
+                    soufre = formSave.cleaned_data['soufre']
+                    distillation = formSave.cleaned_data['distillation']
+                    pointfinal = formSave.cleaned_data['pointfinal']
+                    residu = formSave.cleaned_data['residu']
+                    corrosion = formSave.cleaned_data['corrosion']
+                    pourcent10 = formSave.cleaned_data['pourcent10']
+                    pourcent20 = formSave.cleaned_data['pourcent20']
+                    pourcent50 = formSave.cleaned_data['pourcent50']
+                    pourcent70 = formSave.cleaned_data['pourcent70']
+                    pourcent90 = formSave.cleaned_data['pourcent90']
+                    tensionvapeur = formSave.cleaned_data['tensionvapeur']
+                    difftemperature = formSave.cleaned_data['difftemperature']
+                    plomb = formSave.cleaned_data['plomb']
+                    indiceoctane = formSave.cleaned_data['indiceoctane']
+                    massevolumique15 = formSave.cleaned_data['massevolumique15']
+                    dateimpression = today
 
-                # Gestion des cles etrangeres
-                a = LaboReception.objects.get(idcargaison=pk)
+                    # Gestion des cles etrangeres
+                    a = LaboReception.objects.get(idcargaison=pk)
 
-                b = Cargaison.objects.get(idcargaison=pk)
-                b.produit_id = 1
-                b.etat = "Validation en cours 1"
-                b.save(update_fields=['etat', 'produit_id'])
+                    b = Cargaison.objects.get(idcargaison=pk)
+                    b.produit_id = 1
+                    b.etat = "Validation en cours 1"
+                    b.save(update_fields=['etat', 'produit_id'])
 
-                p = Resultat(idcargaison=a, aspect=aspect, odeur=odeur, couleursaybolt=couleursaybolt, soufre=soufre,
-                             distillation=distillation, pointfinal=pointfinal,
-                             residu=residu, corrosion=corrosion, pourcent10=pourcent10, pourcent20=pourcent20,
-                             pourcent50=pourcent50, pourcent70=pourcent70, pourcent90=pourcent90,
-                             tensionvapeur=tensionvapeur, difftemperature=difftemperature, plomb=plomb,
-                             indiceoctane=indiceoctane, massevolumique15=massevolumique15,
-                             dateimpression=dateimpression)
-                p.save()
+                    p = Resultat(idcargaison=a, aspect=aspect, odeur=odeur, couleursaybolt=couleursaybolt,
+                                 soufre=soufre,
+                                 distillation=distillation, pointfinal=pointfinal,
+                                 residu=residu, corrosion=corrosion, pourcent10=pourcent10, pourcent20=pourcent20,
+                                 pourcent50=pourcent50, pourcent70=pourcent70, pourcent90=pourcent90,
+                                 tensionvapeur=tensionvapeur, difftemperature=difftemperature, plomb=plomb,
+                                 indiceoctane=indiceoctane, massevolumique15=massevolumique15,
+                                 dateimpression=dateimpression)
+                    p.save()
+                    return redirect(url)
                 return redirect(url)
             else:
                 form = Mogas()
@@ -456,6 +458,7 @@ class GestionAnalyse():
             now = datetime.today()
             today = now.date()
             if request.method == 'POST':
+                formSave = Mogas(request.POST)
                 aspect = request.POST['aspect']
                 odeur = request.POST['odeur']
                 couleursaybolt = request.POST['couleursaybolt']
@@ -536,47 +539,49 @@ class GestionAnalyse():
 
         if role == 5 or role == 1:
             if request.method == 'POST':
-                couleurastm = request.POST['couleurastm']
-                aciditetotal = request.POST['aciditetotal']
-                soufre = request.POST['soufre']
-                massevolumique = request.POST['massevolumique']
-                massevolumique15 = request.POST['massevolumique15']
-                pointinitial = request.POST['pointinitial']
-                distillation10 = request.POST['distillation10']
-                distillation20 = request.POST['distillation20']
-                distillation50 = request.POST['distillation50']
-                distillation90 = request.POST['distillation90']
-                pointfinal = request.POST['pointfinal']
-                pointeclair = request.POST['pointeclair']
-                viscosite = request.POST['viscosite']
-                pointecoulement = request.POST['pointecoulement']
-                teneureau = request.POST['teneureau']
-                sediment = request.POST['sediment']
-                corrosion = request.POST['corrosion']
-                indicecetane = request.POST['indicecetane']
+                formSave = Gasoil(request.POST)
+                if formSave.is_valid():
+                    couleurastm = formSave.cleaned_data['couleurastm']
+                    aciditetotal = formSave.cleaned_data['aciditetotal']
+                    soufre = formSave.cleaned_data['soufre']
+                    massevolumique = formSave.cleaned_data['massevolumique']
+                    massevolumique15 = formSave.cleaned_data['massevolumique15']
+                    pointinitial = formSave.cleaned_data['pointinitial']
+                    distillation10 = formSave.cleaned_data['distillation10']
+                    distillation20 = formSave.cleaned_data['distillation20']
+                    distillation50 = formSave.cleaned_data['distillation50']
+                    distillation90 = formSave.cleaned_data['distillation90']
+                    pointfinal = formSave.cleaned_data['pointfinal']
+                    pointeclair = formSave.cleaned_data['pointeclair']
+                    viscosite = formSave.cleaned_data['viscosite']
+                    pointecoulement = formSave.cleaned_data['pointecoulement']
+                    teneureau = formSave.cleaned_data['teneureau']
+                    sediment = formSave.cleaned_data['sediment']
+                    corrosion = formSave.cleaned_data['corrosion']
+                    indicecetane = formSave.cleaned_data['indicecetane']
 
-                recuperation362 = request.POST['recuperation362']
-                cendre = request.POST['cendre']
-                dateimpression = today
+                    recuperation362 = formSave.cleaned_data['recuperation362']
+                    cendre = formSave.cleaned_data['cendre']
+                    dateimpression = today
 
-                # Gestion des cles etrangeres
-                a = LaboReception.objects.get(idcargaison=pk)
-                b = Cargaison.objects.get(idcargaison=pk)
-                b.produit_id = 2
-                b.etat = "Validation en cours 1"
-                b.save(update_fields=['etat', 'produit_id'])
+                    # Gestion des cles etrangeres
+                    a = LaboReception.objects.get(idcargaison=pk)
+                    b = Cargaison.objects.get(idcargaison=pk)
+                    b.produit_id = 2
+                    b.etat = "Validation en cours 1"
+                    b.save(update_fields=['etat', 'produit_id'])
 
-                p = Resultat(idcargaison=a, couleurastm=couleurastm, aciditetotal=aciditetotal, soufre=soufre,
-                             pointinitial=pointinitial,
-                             massevolumique=massevolumique, massevolumique15=massevolumique15,
-                             distillation10=distillation10, distillation20=distillation20,
-                             distillation50=distillation50, distillation90=distillation90,
-                             pointfinal=pointfinal, pointeclair=pointeclair, viscosite=viscosite,
-                             pointecoulement=pointecoulement, teneureau=teneureau,
-                             sediment=sediment, corrosion=corrosion, indicecetane=indicecetane,
-                             recuperation362=recuperation362, cendre=cendre, dateimpression=dateimpression)
-                p.save()
-
+                    p = Resultat(idcargaison=a, couleurastm=couleurastm, aciditetotal=aciditetotal, soufre=soufre,
+                                 pointinitial=pointinitial,
+                                 massevolumique=massevolumique, massevolumique15=massevolumique15,
+                                 distillation10=distillation10, distillation20=distillation20,
+                                 distillation50=distillation50, distillation90=distillation90,
+                                 pointfinal=pointfinal, pointeclair=pointeclair, viscosite=viscosite,
+                                 pointecoulement=pointecoulement, teneureau=teneureau,
+                                 sediment=sediment, corrosion=corrosion, indicecetane=indicecetane,
+                                 recuperation362=recuperation362, cendre=cendre, dateimpression=dateimpression)
+                    p.save()
+                    return redirect(url)
                 return redirect(url)
             else:
                 form = Gasoil()
@@ -685,47 +690,50 @@ class GestionAnalyse():
 
         if role == 5 or role == 1:
             if request.method == 'POST':
-                aspect = request.POST['aspect']
-                couleursaybolt = request.POST['couleursaybolt']
-                aciditetotal = request.POST['aciditetotal']
-                soufre = request.POST['soufre']
-                soufremercaptan = request.POST['soufremercaptan']
-                docteurtest = request.POST['docteurtest']
-                # distillation = request.POST['distillation']
-                pointinitial = request.POST['pointinitial']
-                pointfinal = request.POST['pointfinal']
-                pointfumee = request.POST['pointfumee']
-                pointeclair = request.POST['pointeclair']
-                freezingpoint = request.POST['freezingpoint']
-                residu = request.POST['residu']
-                perte = request.POST['perte']
-                massevolumique15 = request.POST['massevolumique15']
-                viscosite = request.POST['viscosite']
-                pointinflammabilite = request.POST['pointinflammabilite']
-                teneureau = request.POST['teneureau']
-                corrosion = request.POST['corrosion']
-                conductivite = request.POST['conductivite']
-                vol10 = request.POST['vol10']
-                vol90 = request.POST['vol90']
-                dateimpression = today
+                formSave = JetA1(request.POST)
+                if formSave.is_valid():
+                    aspect = formSave.cleaned_data['aspect']
+                    couleursaybolt = formSave.cleaned_data['couleursaybolt']
+                    aciditetotal = formSave.cleaned_data['aciditetotal']
+                    soufre = formSave.cleaned_data['soufre']
+                    soufremercaptan = formSave.cleaned_data['soufremercaptan']
+                    docteurtest = formSave.cleaned_data['docteurtest']
+                    # distillation = formSave.cleaned_data['distillation']
+                    pointinitial = formSave.cleaned_data['pointinitial']
+                    pointfinal = formSave.cleaned_data['pointfinal']
+                    pointfumee = formSave.cleaned_data['pointfumee']
+                    pointeclair = formSave.cleaned_data['pointeclair']
+                    freezingpoint = formSave.cleaned_data['freezingpoint']
+                    residu = formSave.cleaned_data['residu']
+                    perte = formSave.cleaned_data['perte']
+                    massevolumique15 = formSave.cleaned_data['massevolumique15']
+                    viscosite = formSave.cleaned_data['viscosite']
+                    pointinflammabilite = formSave.cleaned_data['pointinflammabilite']
+                    teneureau = formSave.cleaned_data['teneureau']
+                    corrosion = formSave.cleaned_data['corrosion']
+                    conductivite = formSave.cleaned_data['conductivite']
+                    vol10 = formSave.cleaned_data['vol10']
+                    vol90 = formSave.cleaned_data['vol90']
+                    dateimpression = today
 
-                # Gestion des cles etrangeres
-                a = LaboReception.objects.get(idcargaison=pk)
-                b = Cargaison.objects.get(idcargaison=pk)
-                b.produit_id = 3
-                b.etat = "Validation en cours 1"
-                b.save(update_fields=['etat', 'produit_id'])
+                    # Gestion des cles etrangeres
+                    a = LaboReception.objects.get(idcargaison=pk)
+                    b = Cargaison.objects.get(idcargaison=pk)
+                    b.produit_id = 3
+                    b.etat = "Validation en cours 1"
+                    b.save(update_fields=['etat', 'produit_id'])
 
-                p = Resultat(idcargaison=a, aspect=aspect, couleursaybolt=couleursaybolt, aciditetotal=aciditetotal,
-                             soufre=soufre, soufremercaptan=soufremercaptan, docteurtest=docteurtest,
-                             pointfinal=pointfinal, pointinitial=pointinitial, pointeclair=pointeclair,
-                             pointfumee=pointfumee, freezingpoint=freezingpoint, residu=residu, perte=perte,
-                             massevolumique15=massevolumique15, viscosite=viscosite,
-                             pointinflammabilite=pointinflammabilite, teneureau=teneureau, corrosion=corrosion,
-                             conductivite=conductivite,
-                             vol10=vol10, vol90=vol90, dateimpression=dateimpression
-                             )
-                p.save()
+                    p = Resultat(idcargaison=a, aspect=aspect, couleursaybolt=couleursaybolt, aciditetotal=aciditetotal,
+                                 soufre=soufre, soufremercaptan=soufremercaptan, docteurtest=docteurtest,
+                                 pointfinal=pointfinal, pointinitial=pointinitial, pointeclair=pointeclair,
+                                 pointfumee=pointfumee, freezingpoint=freezingpoint, residu=residu, perte=perte,
+                                 massevolumique15=massevolumique15, viscosite=viscosite,
+                                 pointinflammabilite=pointinflammabilite, teneureau=teneureau, corrosion=corrosion,
+                                 conductivite=conductivite,
+                                 vol10=vol10, vol90=vol90, dateimpression=dateimpression
+                                 )
+                    p.save()
+                    return redirect(url)
                 return redirect(url)
             else:
                 form = JetA1()
@@ -835,47 +843,50 @@ class GestionAnalyse():
 
         if role == 5 or role == 1:
             if request.method == 'POST':
-                aspect = request.POST['aspect']
-                couleursaybolt = request.POST['couleursaybolt']
-                aciditetotal = request.POST['aciditetotal']
-                soufre = request.POST['soufre']
-                soufremercaptan = request.POST['soufremercaptan']
-                docteurtest = request.POST['docteurtest']
-                # distillation = request.POST['distillation']
-                pointinitial = request.POST['pointinitial']
-                pointfinal = request.POST['pointfinal']
-                pointfumee = request.POST['pointfumee']
-                pointeclair = request.POST['pointeclair']
-                freezingpoint = request.POST['freezingpoint']
-                residu = request.POST['residu']
-                perte = request.POST['perte']
-                massevolumique15 = request.POST['massevolumique15']
-                viscosite = request.POST['viscosite']
-                pointinflammabilite = request.POST['pointinflammabilite']
-                teneureau = request.POST['teneureau']
-                corrosion = request.POST['corrosion']
-                conductivite = request.POST['conductivite']
-                vol10 = request.POST['vol10']
-                vol90 = request.POST['vol90']
-                dateimpression = today
+                formSave = PetroleLampant(request.POST)
+                if formSave.is_valid():
+                    aspect = request.POST['aspect']
+                    couleursaybolt = request.POST['couleursaybolt']
+                    aciditetotal = request.POST['aciditetotal']
+                    soufre = request.POST['soufre']
+                    soufremercaptan = request.POST['soufremercaptan']
+                    docteurtest = request.POST['docteurtest']
+                    # distillation = request.POST['distillation']
+                    pointinitial = request.POST['pointinitial']
+                    pointfinal = request.POST['pointfinal']
+                    pointfumee = request.POST['pointfumee']
+                    pointeclair = request.POST['pointeclair']
+                    freezingpoint = request.POST['freezingpoint']
+                    residu = request.POST['residu']
+                    perte = request.POST['perte']
+                    massevolumique15 = request.POST['massevolumique15']
+                    viscosite = request.POST['viscosite']
+                    pointinflammabilite = request.POST['pointinflammabilite']
+                    teneureau = request.POST['teneureau']
+                    corrosion = request.POST['corrosion']
+                    conductivite = request.POST['conductivite']
+                    vol10 = request.POST['vol10']
+                    vol90 = request.POST['vol90']
+                    dateimpression = today
 
-                # Gestion des cles etrangeres
-                a = LaboReception.objects.get(idcargaison=pk)
-                b = Cargaison.objects.get(idcargaison=pk)
-                b.etat = "Validation en cours 1"
-                b.produit_id = 4
-                b.save(update_fields=['etat', 'produit_id'])
+                    # Gestion des cles etrangeres
+                    a = LaboReception.objects.get(idcargaison=pk)
+                    b = Cargaison.objects.get(idcargaison=pk)
+                    b.etat = "Validation en cours 1"
+                    b.produit_id = 4
+                    b.save(update_fields=['etat', 'produit_id'])
 
-                p = Resultat(idcargaison=a, aspect=aspect, couleursaybolt=couleursaybolt, aciditetotal=aciditetotal,
-                             soufre=soufre, soufremercaptan=soufremercaptan, docteurtest=docteurtest,
-                             pointfinal=pointfinal, pointinitial=pointinitial, pointeclair=pointeclair,
-                             pointfumee=pointfumee, freezingpoint=freezingpoint, residu=residu, perte=perte,
-                             massevolumique15=massevolumique15, viscosite=viscosite,
-                             pointinflammabilite=pointinflammabilite, teneureau=teneureau, corrosion=corrosion,
-                             conductivite=conductivite,
-                             vol10=vol10, vol90=vol90, dateimpression=dateimpression
-                             )
-                p.save()
+                    p = Resultat(idcargaison=a, aspect=aspect, couleursaybolt=couleursaybolt, aciditetotal=aciditetotal,
+                                 soufre=soufre, soufremercaptan=soufremercaptan, docteurtest=docteurtest,
+                                 pointfinal=pointfinal, pointinitial=pointinitial, pointeclair=pointeclair,
+                                 pointfumee=pointfumee, freezingpoint=freezingpoint, residu=residu, perte=perte,
+                                 massevolumique15=massevolumique15, viscosite=viscosite,
+                                 pointinflammabilite=pointinflammabilite, teneureau=teneureau, corrosion=corrosion,
+                                 conductivite=conductivite,
+                                 vol10=vol10, vol90=vol90, dateimpression=dateimpression
+                                 )
+                    p.save()
+                    return redirect(url)
                 return redirect(url)
             else:
                 form = PetroleLampant()

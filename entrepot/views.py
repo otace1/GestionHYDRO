@@ -526,6 +526,8 @@ def ImpressionRapport(request, pk):
     cargaison_data = Cargaison.objects.get(idcargaison=pk)
     echantillon_data = Entrepot_echantillon.objects.get(idcargaison=pk)
     dechargement_data = Dechargement.objects.get(idcargaison=pk)
+    if Resultat.objects.filter(idcargaison_id=pk).exists():
+        resultat_data = Resultat.objects.get(idcargaison_id=pk)
 
     immatriculation = cargaison_data.immatriculation
     entrance = cargaison_data.frontiere
@@ -542,7 +544,7 @@ def ImpressionRapport(request, pk):
     vcf = dechargement_data.vcf
     gsv = dechargement_data.gsv
     mta = dechargement_data.mta
-    dens15 = densite / 1000
+    dens15 = resultat_data.densite
     frais = gsv * 11
 
     # Getting data from laboratory
@@ -650,7 +652,7 @@ def rapportechantillonage(request, pk):
 
     entrepot = c.entrepot
     dateechantillonage = e.dateechantillonage
-    dateech = dateechantillonage.date()
+    dateech = dateechantillonage
     numdos = c.numdos
     importateur = c.importateur
     adresseimportateur = c.importateur_id
@@ -694,76 +696,94 @@ def dechargement(request, pk):
     pk = pk
     request.session['url'] = request.get_full_path()  # Getting URL full path
 
+    # Changement d'etat de la cargaison
+    carg = Cargaison.objects.get(idcargaison=pk)
+    carg.etat = "Cargaison dechargee"
+
     # Getting current Year & Month
     today = date.today()
     month = today.month
     year = today.year
-    pass
+
     if request.method == 'POST':
-        types = request.POST['types']
-        indexinit = request.POST['indexinit']
-        indexfin = request.POST['indexfin']
-        temperature = request.POST['temperature']
-        gov = request.POST['gov']
+        formSave = Decharger(request.POST)
+        if formSave.is_valid():
+            types = formSave.cleaned_data['types']
+            indexinit = formSave.cleaned_data['indexinit']
+            indexfin = formSave.cleaned_data['indexfin']
+            temperature = formSave.cleaned_data['temperature']
+            gov = formSave.cleaned_data['gov']
 
-        # Checking if there is value into index to get GOV by calculation of index values
-        if indexinit is not None:
-            if indexfin is not None:
-                gov = int(indexfin) - int(indexinit)
-                # print(gov)
+            # temperature = float(temperature)
+            # gov = float(gov)
+            # indexinit = float(indexinit)
+            # indexfin = float(indexfin)
 
-        if Resultat.objects.filter(idcargaison_id=pk).exists():
-            r = Resultat.objects.get(idcargaison_id=pk)
-            # p = Cargaison.objects.get(idcargaison=pk)
-            # # # Getting the product type of this record for further test
-            # # p = p.produit.id
-            # Retrieve densite of the product from the LAB
-            densite = r.massevolumique15
-            densite = float(densite * 1000)
+            # Checking if there is value into index to get GOV by calculation of index values
+            if indexinit is not None:
+                if indexfin is not None:
+                    gov = indexfin - indexinit
+                    # print(gov)
 
-            if densite >= float(839):
-                a = 186.9696
-                b = 0.4862
-                delta = temperature - 15
-                alpha = (a / densite) / densite + (b / densite)
-                vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                gsv = round((vcf * gov), 5)
-                mtv = gsv * (densite) / 1000
-                mta = ((densite) - 1.1) * (gsv / 1000)
-            else:
-                if (densite >= float(788)) & (densite < float(839)):
-                    a = 594.5418
+            if Resultat.objects.filter(idcargaison_id=pk).exists():
+                r = Resultat.objects.get(idcargaison_id=pk)
+                key = r.idcargaison_id
+                # p = Cargaison.objects.get(idcargaison=pk)
+                # # # Getting the product type of this record for further test
+                # # p = p.produit.id
+                # Retrieve densite of the product from the LAB
+                densite = float(r.massevolumique15)
+                densite = densite * 1000
+
+                if densite >= float(839):
+                    a = 186.9696
+                    b = 0.4862
                     delta = temperature - 15
-                    alpha = (a / densite) / densite
-                    vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                    alpha = (a / densite) / densite + (b / densite)
+                    vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
                     gsv = round((vcf * gov), 5)
                     mtv = gsv * (densite) / 1000
                     mta = ((densite) - 1.1) * (gsv / 1000)
                 else:
-                    if (densite > float(770)) & (densite < float(788)):
-                        a = 0.00336312
-                        b = 2680.3206
+                    if (densite >= float(788)) & (densite < float(839)):
+                        a = 594.5418
                         delta = temperature - 15
-                        alpha = ((-a) + (b)) / densite / densite
+                        alpha = (a / densite) / densite
                         vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
                         gsv = round((vcf * gov), 5)
-                        mtv = gsv * densite / 1000
+                        mtv = gsv * (densite) / 1000
                         mta = ((densite) - 1.1) * (gsv / 1000)
                     else:
-                        a = 346.4228
-                        b = 0.4388
-                        d = densite
-                        delta = temperature - 15
-                        alpha = (((a) / (d)) / (d)) + (b / d)
-                        vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                        gsv = round((vcf * gov), 5)
-                        mtv = gsv * densite / 1000
-                        mta = ((densite) - 1.1) * (gsv / 1000)
+                        if (densite > float(770)) & (densite < float(788)):
+                            a = 0.00336312
+                            b = 2680.3206
+                            delta = temperature - 15
+                            alpha = ((-a) + (b)) / densite / densite
+                            vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                            gsv = round((vcf * gov), 5)
+                            mtv = gsv * densite / 1000
+                            mta = ((densite) - 1.1) * (gsv / 1000)
+                        else:
+                            a = 346.4228
+                            b = 0.4388
+                            d = densite
+                            delta = temperature - 15
+                            alpha = (((a) / (d)) / (d)) + (b / d)
+                            vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+                            gsv = round((vcf * gov), 5)
+                            mtv = gsv * densite / 1000
+                            mta = ((densite) - 1.1) * (gsv / 1000)
 
-            e = Dechargement(idcargaison=pk, typescontainer=types, indexinitial=indexinit, indexfinal=indexfin,
-                             temperature=temperature, gov=gov)
-            e.save()
-        return redirect('entrepot')
+                # Sauvegarde des infos dans la table Dechargement
+                e = Dechargement(idcargaison_id=key, typescontainer=types, indexinitial=indexinit, indexfinal=indexfin,
+                                 temperature=temperature, gov=gov, gsv=gsv, mtv=mtv, mta=mta, vcf=vcf)
+
+                # Mise a jour du statut de la cargaison
+                carg.save(update_fields=['etat'])
+
+                e.save()
+            return redirect('dechargement')
+        return redirect('dechargement')
     else:
         return render(request, template, {'form': form})
 
@@ -901,7 +921,6 @@ def impressionCert(request, pk):
             # Rendered PDF report
             pdf = render_to_pdf(template, data)
             return HttpResponse(pdf, content_type='application/pdf')
-
         else:
             if produit == 'MOGAS':
                 template = 'report/rapportvalide/mogasreport.html'
@@ -1054,7 +1073,6 @@ def impressionCert(request, pk):
                     # Rendered PDF report
                     pdf = render_to_pdf(template, data)
                     return HttpResponse(pdf, content_type='application/pdf')
-
                 else:
                     if produit == 'PETROLE LAMPANT':
                         template = 'report/rapportvalide/petrolereport.html'
@@ -1143,6 +1161,8 @@ def impressionCert(request, pk):
                         # Rendered PDF report
                         pdf = render_to_pdf(template, data)
                         return HttpResponse(pdf, content_type='application/pdf')
-                return redirect('logout')
-        else:
+                    else:
+                        return redirect('logout')
+
+    else:
         return redirect('logout')

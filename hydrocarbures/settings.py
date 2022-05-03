@@ -29,20 +29,17 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 # SECRET_KEY = '%t(w0ix8nx()z01fq@fjbm3w+59ij53qp%h%3g2a4k3cm+)ls)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
-# DEBUG = True
+# DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = True
+
+# ALLOWED HOST
+# ENV_ALLOWED_HOST = os.environ.get('DJANGO_ALLOWED_HOST') or None
+ALLOWED_HOSTS = ['*']
+# if ENV_ALLOWED_HOST is not None:
+#     ALLOWED_HOSTS = [ ENV_ALLOWED_HOST ]
 
 
-#ALLOWED HOST
-ENV_ALLOWED_HOST = os.environ.get('DJANGO_ALLOWED_HOST') or None
-ALLOWED_HOSTS = []
-if ENV_ALLOWED_HOST is not None:
-    ALLOWED_HOSTS = [ ENV_ALLOWED_HOST ]
-    
-    
- 
 # Random Key = fac2k*ytpgy7ve77hvw7hs(kh713bvmhn*onw_gs5jswu2a+=u
-    
 
 
 # ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
@@ -156,8 +153,8 @@ DATABASES = {
         'NAME': 'hydro_occ',
         'ENGINE': 'django.db.backends.mysql',
         # 'ENGINE': 'django.db.backends.mysql',
-        'USER': 'cgw',
-        'PASSWORD': 'P@55w0rd!',
+        'USER': 'root',
+        'PASSWORD': '',
         'OPTIONS': {
             'autocommit': True,
         },
