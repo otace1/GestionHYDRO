@@ -4,6 +4,7 @@ from django.urls import reverse
 from django_countries.fields import CountryField
 
 
+
 # Create your models here.
 class Nationalites(models.Model):
     idnationalite = models.AutoField(primary_key=True, auto_created=True)
@@ -193,7 +194,7 @@ class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.CASCADE, primary_key=True)
     numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True)
     # codelabo = models.CharField(max_length=256, verbose_name="Code Labo ")
-    codelabo = models.IntegerField(default=0, verbose_name="Code Labo ")
+    codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ")
     datereceptionlabo = models.DateField(verbose_name="Date reception")
 
     def get_absolute_url(self):
@@ -264,17 +265,23 @@ class Resultat(models.Model):
 
 class Dechargement(models.Model):
     idcargaison = models.OneToOneField(Resultat, on_delete=models.CASCADE, primary_key=True)
-    densite15 = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
-    temperature = models.DecimalField(max_digits=20, decimal_places=3)
-    gov = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
-    gsv = models.DecimalField(max_digits=20, decimal_places=3)
-    mta = models.DecimalField(max_digits=20, decimal_places=3)
-    mtv = models.DecimalField(max_digits=20, decimal_places=3)
-    vcf = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
-    indexinitial = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
-    indexfinal = models.DecimalField(max_digits=20, decimal_places=3, null=True, blank=True)
+    densite = models.FloatField(null=True, blank=True)
+    temperature = models.FloatField(null=True, blank=True)
+    govmeter = models.FloatField(null=True, blank=True)
+    gsvjaugee = models.FloatField(blank=True, null=True)
+    gsvmeter = models.FloatField(blank=True, null=True)
+    mta = models.FloatField()
+    mtv = models.FloatField()
+    vcf = models.FloatField(null=True, blank=True)
+    indexinitial = models.FloatField(null=True, blank=True)
+    indexfinal = models.FloatField(null=True, blank=True)
     typescontainer = models.CharField(max_length=32, blank=True, null=True)
     datedechargement = models.DateField(auto_now=True)
+    user = models.CharField(max_length=256, blank=True)
+    mtameter = models.FloatField(blank=True, null=True)
+    mtvmeter = models.FloatField(blank=True, null=True)
+    vcfmeter = models.FloatField(blank=True, null=True)
+    govjaugee = models.FloatField(blank=True, null=True)
 
 
 class BureauDGDA(models.Model):

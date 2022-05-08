@@ -38,8 +38,8 @@ class GestionLaboratoire():
                 '-datereceptionlabo')
             table1 = TableauEchantillonRecu(qs1, prefix='2_')
 
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 21}).configure(table1)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
             return render(request, 'labo.html', {
                 'labo': table,
                 'labo1': table1,

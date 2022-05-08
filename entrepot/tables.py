@@ -2,11 +2,11 @@ import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, Dechargement
 
 TEMPLATE = """
-            <a href="{%url 'echantillonage' record.pk%}" class="btn btn-primary">ECHANTILLONNAGE</a>
+            <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>
            """
 
 TEMPLATE1 = """
-            <a href="{%url 'decharger' record.pk%}" class="btn btn-primary">DECHARGER</a>
+            <a href="{%url 'decharger' record.pk%}" target="_blank" class="btn btn-primary">DECHARGER</a>
            """
 
 TEMPLATE2 = """
@@ -91,12 +91,12 @@ class CargaisonDechargement(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
     # numdossier = tables.Column(verbose_name='Num. Dossier')
     # codecargaison = tables.Column(verbose_name='#Camion/Wagon/Navire')
-    idcargaison__idcargaison__idcargaison__produit = tables.Column(verbose_name='Produit')
+    produit = tables.Column(verbose_name='Produit')
     massevolumique15 = tables.Column(verbose_name='Densité a 15°')
-    idcargaison__idcargaison__idcargaison__immatriculation = tables.Column(verbose_name='Immatriculation')
-    idcargaison__idcargaison__idcargaison__importateur = tables.Column(verbose_name='Importateur')
+    immatriculation = tables.Column(verbose_name='Immatriculation')
+    importateur = tables.Column(verbose_name='Importateur')
     # idcargaison__idcargaison__idcargaison__numreq = tables.Column(verbose_name='Ref. requisition Client')
-    idcargaison__idcargaison__idcargaison__numdos = tables.Column(verbose_name='Num. Dossier')
+    numdos = tables.Column(verbose_name='Num. Dossier')
 
     class Meta:
         attrs = {
@@ -108,17 +108,17 @@ class CargaisonDechargement(tables.Table):
         row_attrs = {
             "id": lambda record: record.pk
         }
-        sequence = ['idcargaison__idcargaison__idcargaison__importateur',
-                    'idcargaison__idcargaison__idcargaison__numdos',
-                    'idcargaison__idcargaison__idcargaison__immatriculation',
-                    'idcargaison__idcargaison__idcargaison__produit', 'massevolumique15']
+        sequence = ['importateur',
+                    'numdos',
+                    'immatriculation',
+                    'produit']
         exclude = ['idcargaison', 'declarant', 'voie', 'tempcargaison', 'densitecargaison', 'idchauffeur', 't1d', 't1e',
-                   'numreq', 'importateur', 'numdos', 'immatriculation', 'immatriculation', 'produit', 'nationalite',
+                   'numreq', 'immatriculation', 'nationalite',
                    'dateheurecargaison', 'numdeclaration', 'manifestdgda', 'fournisseur',
                    'numbtfh', 'valeurfacture', 'qrcode', 'poids', 'transporteur', 'etat', 'frontiere',
                    'entrepot', 'conformite', 'impression', 'volume', 'volume_decl15', 'provenance', 'nomchauffeur',
                    'numact', 'user', 'tampon', 'codecargaison', 'printactdate', 'l_control', 'numdossier', 'rapechctrl',
-                   'requisitiondackdate', 'requisitionack', 'origine']
+                   'requisitiondackdate', 'requisitionack', 'origine', 'massevolumique15']
 
 
 class EchantillonEnregistrer(tables.Table):
@@ -150,7 +150,6 @@ class CargaisonDechargee(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
         model = Dechargement
         sequence = ['datedechargement', 'idcargaison__idcargaison__idcargaison__idcargaison__numdos',
-                    'idcargaison__idcargaison__idcargaison__idcargaison__numreq',
                     'idcargaison__idcargaison__idcargaison__idcargaison__immatriculation', 'mta', 'mtv', 'gov', 'gsv']
         exclude = ['idcargaison_id', 'temperature', 'densite15', 'idcargaison', 'vcf', 'indexinitial', 'indexfinal',
-                   'typescontainer']
+                   'typescontainer', 'idcargaison__idcargaison__idcargaison__idcargaison__numreq']

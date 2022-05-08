@@ -110,35 +110,35 @@ def codecam(request, pk):
 def lineupdate(request, pk):
     url = request.session['url']
     user = request.user
-        id = user.id
-        name = MyUser.objects.get(id=id)
-        name = name.username
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
-        role = user.role_id
-        td = datetime.datetime.now()
-        if role == 7 or role == 1:
-            c = Cargaison.objects.get(idcargaison=pk)
-            c.numdos = numDossier(pk, ville)
-            c.requisitiondackdate = td
-            c.requisitionack = name
-            c.etat = "En attente d'echantillonage"
-            c.save(update_fields=['requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
-            return redirect(url)
-        else:
-            return redirect('logout')
+    id = user.id
+    name = MyUser.objects.get(id=id)
+    name = name.username
+    ville = AffectationVille.objects.get(username_id=id)
+    ville = ville.ville_id
+    role = user.role_id
+    td = datetime.datetime.now()
+    if role == 7 or role == 1:
+        c = Cargaison.objects.get(idcargaison=pk)
+        c.numdos = numDossier(pk, ville)
+        c.requisitiondackdate = td
+        c.requisitionack = name
+        c.etat = "En attente d'echantillonage"
+        c.save(update_fields=['requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
+        return redirect(url)
+    else:
+        return redirect('logout')
 
 #Methode pour l'affichage des details d'un ligne
-    @login_required(login_url='login')
-    def linedetails(request,pk):
-        user = request.user
-        id = user.id
-        role = user.role_id
-        if role == 7 or role == 1:
-            a=Cargaison.objects.get(pk=pk)
-            return render(request, 'shydroview.html')
-        else:
-            return redirect('logout')
+@login_required(login_url='login')
+def linedetails(request, pk):
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if role == 7 or role == 1:
+        a = Cargaison.objects.get(pk=pk)
+        return render(request, 'shydroview.html')
+    else:
+        return redirect('logout')
 
 #Gestion des Go apres avoir obtenu le statut de la cargaison
 class GestionResultatLabo():

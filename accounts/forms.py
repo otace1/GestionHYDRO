@@ -73,7 +73,8 @@ class UserEdit(forms.ModelForm):
 # Affectation des utilisateurs aux entrepots
 class Affectation_Entrepot(forms.Form):
     # username = forms.ModelChoiceField(queryset=MyUser.objects.all(), label='Utilisateur')
-    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all(), label="Entrepot d'affectation")
+    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'),
+                                      label="Entrepot d'affectation")
 
 
 # Affectation des utilisateurs aux villes

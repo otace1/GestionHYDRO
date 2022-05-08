@@ -63,12 +63,12 @@ class Echantilloner(forms.Form):
         )
 
 class Decharger(forms.Form):
-    # densite15 = forms.DecimalField(label="Densité du produit a 15 degré :", required=True, min_value=1)
+    densite = forms.FloatField(label="Densité:", required=True)
     types = forms.CharField(widget=forms.Select(choices=types), label="Types :", required=True)
-    indexinit = forms.FloatField(label="Index Initial (si applicable):", required=False)
-    indexfin = forms.FloatField(label="Index Fin (si applicable):", required=False)
-    temperature = forms.FloatField(label="Température du produit en degré Celsius:", required=True, min_value=1)
-    gov = forms.FloatField(label="Gross Observed Volume (GOV) en Mètre cube:", required=False, min_value=1)
+    indexinit = forms.FloatField(label="Index Compteur Initial (si applicable):", required=False)
+    indexfin = forms.FloatField(label="Index Compteur Fin (si applicable):", required=False)
+    temperature = forms.FloatField(label="Température °C:", required=True, min_value=1)
+    gov = forms.FloatField(label="GOV jaugé en Mètre cube:", required=False, min_value=1)
 
     def __init__(self, *args, **kwargs):
         super(Decharger, self).__init__(*args, **kwargs)
@@ -83,9 +83,12 @@ class Decharger(forms.Form):
                 Column('indexfin', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
-            Field('gov', placeholder="A completer qu'en absence de compteur"),
-            'temperature',
-
+            Field('gov', placeholder=""),
+            Row(
+                Column('densite', css_class='form-group col-md-6 mb-0'),
+                Column('temperature', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),
                 Reset('annuler', 'annuler', css_class='btn btn-danger'),

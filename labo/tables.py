@@ -104,7 +104,6 @@ GO = """
     <a href="{%url 'nonconforme2' record.pk%}" class="btn btn-danger">Non Conforme</a>
              """
 
-
 class LaboratoireReception(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
     idcargaison__dateheurecargaison = tables.Column(verbose_name="Date d'Entrée")
@@ -160,8 +159,8 @@ class AffichageAnalyse(tables.Table):
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['datereceptionlabo', 'codelabo', 'numcertificatqualite', 'numrappech', 'produit']
-        exclude = ['idcargaison']
+        sequence = ['datereceptionlabo', 'codelabo', 'numrappech', 'produit']
+        exclude = ['numcertificatqualite', 'idcargaison']
 
 
 class AffichageAnalyseRefaire(tables.Table):

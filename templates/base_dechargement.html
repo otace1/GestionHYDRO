@@ -130,7 +130,7 @@
                     {% endif %}
 
 
-                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
+                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
                         <li class="header">ENTREPOT</li>
 
                         <li class="nav-item has-treeview">
@@ -481,7 +481,7 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-5">
+                    <div class="col-6">
                         <div class="card bg-gradient-dark">
                             <div class="card-header">
                                 <h1 class="card-title"><b>CONFORME AUX EXIGENCES ET EN ATTENTE DE DECHARGEMENT</b></h1>
@@ -491,33 +491,33 @@
                             <div class="card-body table-responsive p-0">
                                 {% block content %}
 
-              {% endblock %}
+                                {% endblock %}
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-7">
-                        <div class="card bg-gradient-green">
-                            <div class="card-header">
-                                <h1 class="card-title"><b>CARGAISONS DECHARGEES</b></h1>
-                                <div class="card-tools">
-                                </div>
-                            </div>
-                            <div class="card-body table-responsive p-0">
-                                {% block content1 %}{% endblock %}
-              </div>
-          </div>
-    </div>
+                    {#                    <div class="col-7">#}
+                    {#                        <div class="card bg-gradient-green">#}
+                    {#                            <div class="card-header">#}
+                    {#                                <h1 class="card-title"><b>CARGAISONS DECHARGEES</b></h1>#}
+                    {#                                <div class="card-tools">#}
+                    {#                                </div>#}
+                    {#                            </div>#}
+                    {#                            <div class="card-body table-responsive p-0">#}
+                    {#                                {% block content1 %}{% endblock %}#}
+                    {#              </div>#}
+                    {#          </div>#}
+                    {#    </div>#}
 
 
-</div>
-      <!-- /.row -->
-      </div>
-    </section>
-    <!-- /.content -->
+                </div>
+                <!-- /.row -->
+            </div>
+        </section>
+        <!-- /.content -->
     </div>
-  <!-- /.content-wrapper -->
-   <!-- /.content-wrapper -->
+    <!-- /.content-wrapper -->
+    <!-- /.content-wrapper -->
    <!-- /.content-wrapper -->
 <footer class="main-footer">
     <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>

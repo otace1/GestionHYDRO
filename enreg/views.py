@@ -1,4 +1,4 @@
-import math
+# import math
 import uuid
 from datetime import date
 
@@ -6,8 +6,8 @@ import pyqrcode
 from PIL import Image
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.core import serializers
-import json
+# from django.core import serializers
+# import json
 from django.shortcuts import render, HttpResponse, redirect
 from django_tables2 import RequestConfig
 from django_tables2.paginators import LazyPaginator

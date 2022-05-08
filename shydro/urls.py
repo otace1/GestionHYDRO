@@ -5,11 +5,11 @@ from . import views
 urlpatterns = [
 
     path('', views.GestionCodification.affichageTableau, name='codification'),
-    path('details/<int:pk>', views.GestionCodification.linedetails, name='details'),
-    path('update/<int:pk>', views.GestionCodification.lineupdate, name='update'),
+    path('details/<int:pk>', views.linedetails, name='details'),
+    path('update/<int:pk>', views.lineupdate, name='update'),
     #
-    path('numdoss/<int:pk>', views.GestionCodification.numreq, name='numreq'),
-    path('codecam/<int:pk>', views.GestionCodification.codecam, name='codecam'),
+    path('numdoss/<int:pk>', views.numreq, name='numreq'),
+    path('codecam/<int:pk>', views.codecam, name='codecam'),
 
     path('', views.GestionResultatLabo.affichagetableauresultat, name='laboresult'),
     path('avaries/', views.GestionResultatLabo.affichagetableauavarie, name='avarie'),
