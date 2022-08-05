@@ -20,14 +20,14 @@
       var lang = options.langInfo;
 
       var KEY = {
-        UP: 38,
-        DOWN: 40,
-        LEFT: 37,
-        RIGHT: 39,
-        ENTER: 13,
+          UP: 38,
+          DOWN: 40,
+          LEFT: 37,
+          RIGHT: 39,
+          ENTER: 13,
       };
-      var COLUMN_LENGTH = 15;
-      var COLUMN_WIDTH = 35;
+        var COLUMN_LENGTH = 12;
+        var COLUMN_WIDTH = 35;
 
       var currentColumn = 0;
       var currentRow = 0;
@@ -65,11 +65,11 @@
 
       context.memo('button.specialchars', function() {
         return ui.button({
-          contents: '<i class="fa fa-font fa-flip-vertical">',
-          tooltip: lang.specialChar.specialChar,
-          click: function() {
-            self.show();
-          },
+            contents: '<i class="fa fa-font fa-flip-vertical"></i>',
+            tooltip: lang.specialChar.specialChar,
+            click: function () {
+                self.show();
+            },
         }).render();
       });
 
@@ -81,20 +81,20 @@
        * @return {jQuery}
        */
       this.makeSpecialCharSetTable = function() {
-        var $table = $('<table/>');
+          var $table = $('<table></table>');
         $.each(specialCharDataSet, function(idx, text) {
-          var $td = $('<td/>').addClass('note-specialchar-node');
-          var $tr = (idx % COLUMN_LENGTH === 0) ? $('<tr/>') : $table.find('tr').last();
+            var $td = $('<td></td>').addClass('note-specialchar-node');
+            var $tr = (idx % COLUMN_LENGTH === 0) ? $('<tr></tr>') : $table.find('tr').last();
 
-          var $button = ui.button({
-            callback: function($node) {
-              $node.html(text);
-              $node.attr('title', text);
-              $node.attr('data-value', encodeURIComponent(text));
-              $node.css({
-                width: COLUMN_WIDTH,
-                'margin-right': '2px',
-                'margin-bottom': '2px',
+            var $button = ui.button({
+                callback: function ($node) {
+                    $node.html(text);
+                    $node.attr('title', text);
+                    $node.attr('data-value', encodeURIComponent(text));
+                    $node.css({
+                        width: COLUMN_WIDTH,
+                        'margin-right': '2px',
+                        'margin-bottom': '2px',
               });
             },
           }).render();
@@ -294,7 +294,7 @@
           ui.onDialogHidden(self.$dialog, function() {
             $specialCharNode.off('click');
 
-            self.$dialog.find('button').tooltip('destroy');
+              self.$dialog.find('button').tooltip();
 
             $(document).off('keydown', keyDownEventHandler);
 

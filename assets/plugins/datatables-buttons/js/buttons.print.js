@@ -127,25 +127,36 @@ DataTable.ext.buttons.print = {
 		html += '<tbody>';
 		for ( var i=0, ien=data.body.length ; i<ien ; i++ ) {
 			html += addRow( data.body[i], 'td' );
-		}
-		html += '</tbody>';
+        }
+        html += '</tbody>';
 
-		if ( config.footer && data.footer ) {
-			html += '<tfoot>'+ addRow( data.footer, 'th' ) +'</tfoot>';
-		}
-		html += '</table>';
+        if (config.footer && data.footer) {
+            html += '<tfoot>' + addRow(data.footer, 'th') + '</tfoot>';
+        }
+        html += '</table>';
 
-		// Open a new window for the printable table
-		var win = window.open( '', '' );
-		win.document.close();
+        // Open a new window for the printable table
+        var win = window.open('', '');
 
-		// Inject the title and also a copy of the style and link tags from this
-		// document so the table can retain its base styling. Note that we have
-		// to use string manipulation as IE won't allow elements to be created
-		// in the host document and then appended to the new window.
-		var head = '<title>'+exportInfo.title+'</title>';
-		$('style, link').each( function () {
-			head += _styleToAbs( this );
+        if (!win) {
+            dt.buttons.info(
+                dt.i18n('buttons.printErrorTitle', 'Unable to open print view'),
+                dt.i18n('buttons.printErrorMsg', 'Please allow popups in your browser for this site to be able to view the print view.'),
+                5000
+            );
+
+            return;
+        }
+
+        win.document.close();
+
+        // Inject the title and also a copy of the style and link tags from this
+        // document so the table can retain its base styling. Note that we have
+        // to use string manipulation as IE won't allow elements to be created
+        // in the host document and then appended to the new window.
+        var head = '<title>' + exportInfo.title + '</title>';
+        $('style, link').each(function () {
+            head += _styleToAbs(this);
 		} );
 
 		try {

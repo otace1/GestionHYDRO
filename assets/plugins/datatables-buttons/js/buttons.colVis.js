@@ -40,19 +40,37 @@ var DataTable = $.fn.dataTable;
 $.extend( DataTable.ext.buttons, {
 	// A collection of column visibility buttons
 	colvis: function ( dt, conf ) {
-		return {
-			extend: 'collection',
-			text: function ( dt ) {
-				return dt.i18n( 'buttons.colvis', 'Column visibility' );
-			},
-			className: 'buttons-colvis',
-			buttons: [ {
-				extend: 'columnsToggle',
-				columns: conf.columns,
-				columnText: conf.columnText
-			} ]
-		};
-	},
+        var node = null;
+        var buttonConf = {
+            extend: 'collection',
+            init: function (dt, n) {
+                node = n;
+            },
+            text: function (dt) {
+                return dt.i18n('buttons.colvis', 'Column visibility');
+            },
+            className: 'buttons-colvis',
+            closeButton: false,
+            buttons: [{
+                extend: 'columnsToggle',
+                columns: conf.columns,
+                columnText: conf.columnText
+            }]
+        };
+
+        // Rebuild the collection with the new column structure if columns are reordered
+        dt.on('column-reorder.dt' + conf.namespace, function (e, settings, details) {
+            // console.log(node);
+            // console.log('node', dt.button(null, node).node());
+            dt.button(null, dt.button(null, node).node()).collectionRebuild([{
+                extend: 'columnsToggle',
+                columns: conf.columns,
+                columnText: conf.columnText
+            }]);
+        });
+
+        return buttonConf;
+    },
 
 	// Selected columns with individual buttons - toggle column visibility
 	columnsToggle: function ( dt, conf ) {
@@ -117,15 +135,20 @@ $.extend( DataTable.ext.buttons, {
 					}
 				} )
 				.on( 'column-reorder.dt'+conf.namespace, function (e, settings, details) {
-					if ( dt.columns( conf.columns ).count() !== 1 ) {
-						return;
-					}
+                    // Button has been removed from the DOM
+                    if (conf.destroying) {
+                        return;
+                    }
 
-					// This button controls the same column index but the text for the column has
-					// changed
-					button.text( conf._columnText( dt, conf ) );
+                    if (dt.columns(conf.columns).count() !== 1) {
+                        return;
+                    }
 
-					// Since its a different column, we need to check its visibility
+                    // This button controls the same column index but the text for the column has
+                    // changed
+                    that.text(conf._columnText(dt, conf));
+
+                    // Since its a different column, we need to check its visibility
 					that.active( dt.column( conf.columns ).visible() );
 				} );
 
@@ -138,22 +161,28 @@ $.extend( DataTable.ext.buttons, {
 		},
 
 		_columnText: function ( dt, conf ) {
-			// Use DataTables' internal data structure until this is presented
-			// is a public API. The other option is to use
-			// `$( column(col).node() ).text()` but the node might not have been
-			// populated when Buttons is constructed.
-			var idx = dt.column( conf.columns ).index();
-			var title = dt.settings()[0].aoColumns[ idx ].sTitle
-				.replace(/\n/g," ")        // remove new lines
-				.replace(/<br\s*\/?>/gi, " ")  // replace line breaks with spaces
-				.replace(/<select(.*?)<\/select>/g, "") // remove select tags, including options text
-				.replace(/<!\-\-.*?\-\->/g, "") // strip HTML comments
-				.replace(/<.*?>/g, "")   // strip HTML
-				.replace(/^\s+|\s+$/g,""); // trim
+            // Use DataTables' internal data structure until this is presented
+            // is a public API. The other option is to use
+            // `$( column(col).node() ).text()` but the node might not have been
+            // populated when Buttons is constructed.
+            var idx = dt.column(conf.columns).index();
+            var title = dt.settings()[0].aoColumns[idx].sTitle;
 
-			return conf.columnText ?
-				conf.columnText( dt, idx, title ) :
-				title;
+            if (!title) {
+                title = dt.column(idx).header().innerHTML;
+            }
+
+            title = title
+                .replace(/\n/g, " ")        // remove new lines
+                .replace(/<br\s*\/?>/gi, " ")  // replace line breaks with spaces
+                .replace(/<select(.*?)<\/select>/g, "") // remove select tags, including options text
+                .replace(/<!\-\-.*?\-\->/g, "") // strip HTML comments
+                .replace(/<.*?>/g, "")   // strip HTML
+                .replace(/^\s+|\s+$/g, ""); // trim
+
+            return conf.columnText ?
+                conf.columnText(dt, idx, title) :
+                title;
 		}
 	},
 

@@ -1,15 +1,15 @@
-/*! ColReorder 1.5.2
- * ©2010-2019 SpryMedia Ltd - datatables.net/license
+/*! ColReorder 1.5.4
+ * ©2010-2021 SpryMedia Ltd - datatables.net/license
  */
 
 /**
  * @summary     ColReorder
  * @description Provide the ability to reorder columns in a DataTable
- * @version     1.5.2
+ * @version     1.5.4
  * @file        dataTables.colReorder.js
  * @author      SpryMedia Ltd (www.sprymedia.co.uk)
  * @contact     www.sprymedia.co.uk/contact
- * @copyright   Copyright 2010-2019 SpryMedia Ltd.
+ * @copyright   Copyright 2010-2021 SpryMedia Ltd.
  *
  * This source file is free software, available under the following license:
  *   MIT license - http://datatables.net/license/mit
@@ -310,9 +310,9 @@ $.fn.dataTableExt.oApi.fnColReorder = function ( oSettings, iFrom, iTo, drop, in
 		// For DOM sourced data, the invalidate will reread the cell into
 		// the data array, but for data sources as an array, they need to
 		// be flipped
-		if ( data.src !== 'dom' && $.isArray( data._aData ) ) {
-			fnArraySwitch( data._aData, iFrom, iTo );
-		}
+        if (data.src !== 'dom' && Array.isArray(data._aData)) {
+            fnArraySwitch(data._aData, iFrom, iTo);
+        }
 	}
 
 	/* Reposition the header elements in the header layout array */
@@ -650,19 +650,19 @@ $.extend( ColReorder.prototype, {
 
 		if ( dir === 'toCurrent' ) {
 			// Given an original index, want the current
-			return ! $.isArray( idx ) ?
-				$.inArray( idx, order ) :
-				$.map( idx, function ( index ) {
-					return $.inArray( index, order );
-				} );
+            return !Array.isArray(idx) ?
+                $.inArray(idx, order) :
+                $.map(idx, function (index) {
+                    return $.inArray(index, order);
+                });
 		}
 		else {
 			// Given a current index, want the original
-			return ! $.isArray( idx ) ?
-				columns[idx]._ColReorder_iOrigCol :
-				$.map( idx, function ( index ) {
-					return columns[index]._ColReorder_iOrigCol;
-				} );
+            return !Array.isArray(idx) ?
+                columns[idx]._ColReorder_iOrigCol :
+                $.map(idx, function (index) {
+                    return columns[index]._ColReorder_iOrigCol;
+                });
 		}
 	},
 
@@ -1368,13 +1368,13 @@ ColReorder.defaults = {
  * Constants
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-/**
- * ColReorder version
- *  @constant  version
- *  @type      String
- *  @default   As code
- */
-ColReorder.version = "1.5.2";
+    /**
+     * ColReorder version
+     *  @constant  version
+     *  @type      String
+     *  @default   As code
+     */
+    ColReorder.version = "1.5.4";
 
 
 

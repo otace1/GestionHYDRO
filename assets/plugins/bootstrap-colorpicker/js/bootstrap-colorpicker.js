@@ -1,7 +1,7 @@
 /*!
  * Bootstrap Colorpicker - Bootstrap Colorpicker is a modular color picker plugin for Bootstrap 4.
  * @package bootstrap-colorpicker
- * @version v3.2.0
+ * @version v3.4.0
  * @license MIT
  * @link https://itsjavi.com/bootstrap-colorpicker/
  * @link https://github.com/itsjavi/bootstrap-colorpicker.git
@@ -423,10 +423,11 @@ var ColorItem = function () {
       return this._original;
     }
 
-    /**
-     * @param {ColorItem|HSVAColor|QixColor|String|*|null} color Color data
-     * @param {String|null} format Color model to convert to by default. Supported: 'rgb', 'hsl', 'hex'.
-     */
+      /**
+       * @param {ColorItem|HSVAColor|QixColor|String|*|null} color Color data
+       * @param {String|null} format Color model to convert to by default. Supported: 'rgb', 'hsl', 'hex'.
+       * @param {boolean} disableHexInputFallback Disable fixing hex3 format
+       */
 
   }], [{
     key: 'HSVAColor',
@@ -446,28 +447,31 @@ var ColorItem = function () {
 
   function ColorItem() {
     var color = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-    var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var disableHexInputFallback = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
     _classCallCheck(this, ColorItem);
 
-    this.replace(color, format);
+      this.replace(color, format, disableHexInputFallback);
   }
 
-  /**
-   * Replaces the internal QixColor object with a new one.
-   * This also replaces the internal original color data.
-   *
-   * @param {ColorItem|HSVAColor|QixColor|String|*|null} color Color data to be parsed (if needed)
-   * @param {String|null} format Color model to convert to by default. Supported: 'rgb', 'hsl', 'hex'.
-   * @example color.replace('rgb(255,0,0)', 'hsl');
-   * @example color.replace(hsvaColorData);
-   */
+    /**
+     * Replaces the internal QixColor object with a new one.
+     * This also replaces the internal original color data.
+     *
+     * @param {ColorItem|HSVAColor|QixColor|String|*|null} color Color data to be parsed (if needed)
+     * @param {String|null} format Color model to convert to by default. Supported: 'rgb', 'hsl', 'hex'.
+     * @param {boolean} disableHexInputFallback Disable fixing hex3 format
+     * @example color.replace('rgb(255,0,0)', 'hsl');
+     * @example color.replace(hsvaColorData);
+     */
 
 
   _createClass(ColorItem, [{
     key: 'replace',
     value: function replace(color) {
-      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+        var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+        var disableHexInputFallback = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
       format = ColorItem.sanitizeFormat(format);
 
@@ -476,15 +480,15 @@ var ColorItem = function () {
        * @private
        */
       this._original = {
-        color: color,
-        format: format,
-        valid: true
+          color: color,
+          format: format,
+          valid: true
       };
-      /**
-       * @type {QixColor}
-       * @private
-       */
-      this._color = ColorItem.parse(color);
+        /**
+         * @type {QixColor}
+         * @private
+         */
+        this._color = ColorItem.parse(color, disableHexInputFallback);
 
       if (this._color === null) {
         this._color = (0, _color2.default)();
@@ -499,15 +503,16 @@ var ColorItem = function () {
       this._format = format ? format : ColorItem.isHex(color) ? 'hex' : this._color.model;
     }
 
-    /**
-     * Parses the color returning a Qix Color object or null if cannot be
-     * parsed.
-     *
-     * @param {ColorItem|HSVAColor|QixColor|String|*|null} color Color data
-     * @example let qColor = ColorItem.parse('rgb(255,0,0)');
-     * @static
-     * @returns {QixColor|null}
-     */
+      /**
+       * Parses the color returning a Qix Color object or null if cannot be
+       * parsed.
+       *
+       * @param {ColorItem|HSVAColor|QixColor|String|*|null} color Color data
+       * @param {boolean} disableHexInputFallback Disable fixing hex3 format
+       * @example let qColor = ColorItem.parse('rgb(255,0,0)');
+       * @static
+       * @returns {QixColor|null}
+       */
 
   }, {
     key: 'isValid',
@@ -973,15 +978,17 @@ var ColorItem = function () {
   }], [{
     key: 'parse',
     value: function parse(color) {
-      if (color instanceof _color2.default) {
-        return color;
-      }
+        var disableHexInputFallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-      if (color instanceof ColorItem) {
-        return color._color;
-      }
+        if (color instanceof _color2.default) {
+            return color;
+        }
 
-      var format = null;
+        if (color instanceof ColorItem) {
+            return color._color;
+        }
+
+        var format = null;
 
       if (color instanceof HSVAColor) {
         color = [color.h, color.s, color.v, isNaN(color.a) ? 1 : color.a];
@@ -989,19 +996,23 @@ var ColorItem = function () {
         color = ColorItem.sanitizeString(color);
       }
 
-      if (color === null) {
-        return null;
-      }
+        if (color === null) {
+            return null;
+        }
 
-      if (Array.isArray(color)) {
-        format = 'hsv';
-      }
+        if (Array.isArray(color)) {
+            format = 'hsv';
+        }
 
-      try {
-        return (0, _color2.default)(color, format);
-      } catch (e) {
-        return null;
-      }
+        if (ColorItem.isHex(color) && color.length !== 6 && color.length !== 7 && disableHexInputFallback) {
+            return null;
+        }
+
+        try {
+            return (0, _color2.default)(color, format);
+        } catch (e) {
+            return null;
+        }
     }
 
     /**
@@ -1239,26 +1250,38 @@ exports.default = {
    * @default '.colorpicker-trigger, .colorpicker-input-addon'
    */
   addon: '.colorpicker-input-addon',
-  /**
-   * If true, the input content will be replaced always with a valid color,
-   * if false, the invalid color will be left in the input,
-   *   while the internal color object will still resolve into a valid one.
-   *
-   * @type {boolean}
-   * @default true
-   */
-  autoInputFallback: true,
-  /**
-   * If true a hash will be prepended to hexadecimal colors.
-   * If false, the hash will be removed.
-   * This only affects the input values in hexadecimal format.
-   *
-   * @type {boolean}
-   * @default true
-   */
-  useHashPrefix: true,
-  /**
-   * If true, the alpha channel bar will be displayed no matter what.
+    /**
+     * If true, the input content will be replaced always with a valid color,
+     * if false, the invalid color will be left in the input,
+     *   while the internal color object will still resolve into a valid one.
+     *
+     * @type {boolean}
+     * @default true
+     */
+    autoInputFallback: true,
+    /**
+     * If true, valid HEX3 colors will be converted to HEX6, even with
+     *    autoInputFallback set to false
+     * if false, HEX3 colors will not be converted to HEX6, when autoInputFallback is false
+     *    (this has been an issue, when using HEX6 colors with
+     *    autoInputFallback set to false, HEX3 colors were
+     *    automatically converting to HEX6)
+     *
+     * @type {boolean}
+     * @default false
+     */
+    autoHexInputFallback: true,
+    /**
+     * If true a hash will be prepended to hexadecimal colors.
+     * If false, the hash will be removed.
+     * This only affects the input values in hexadecimal format.
+     *
+     * @type {boolean}
+     * @default true
+     */
+    useHashPrefix: true,
+    /**
+     * If true, the alpha channel bar will be displayed no matter what.
    *
    * If false, it will be always hidden and alpha channel will be disabled also programmatically, meaning that
    * the selected or typed color will be always opaque.
@@ -3013,7 +3036,7 @@ var Colorpicker = function () {
       this.addonHandler.unbind();
       this.pickerHandler.unbind();
 
-      this.element.removeClass('colorpicker-element').removeData('colorpicker', 'color').off('.colorpicker');
+        this.element.removeClass('colorpicker-element').removeData('colorpicker').removeData('color').off('.colorpicker');
 
       /**
        * (Colorpicker) When the instance is destroyed with all events unbound.
@@ -3107,7 +3130,7 @@ var Colorpicker = function () {
         return;
       }
 
-      ch.color = val ? ch.createColor(val, this.options.autoInputFallback) : null;
+        ch.color = val ? ch.createColor(val, this.options.autoInputFallback, this.options.autoHexInputFallback) : null;
 
       /**
        * (Colorpicker) When the color is set programmatically with setValue().
@@ -4156,19 +4179,28 @@ var PopupHandler = function () {
   }, {
     key: 'createPopover',
     value: function createPopover() {
-      var cp = this.colorpicker;
+        var cp = this.colorpicker;
 
-      this.popoverTarget = this.hasAddon ? this.addon : this.input;
+        this.popoverTarget = this.hasAddon ? this.addon : this.input;
 
-      cp.picker.addClass('colorpicker-bs-popover-content');
+        cp.picker.addClass('colorpicker-bs-popover-content');
 
-      this.popoverTarget.popover(_jquery2.default.extend(true, {}, _options2.default.popover, cp.options.popover, { trigger: 'manual', content: cp.picker, html: true }));
+        this.popoverTarget.popover(_jquery2.default.extend(true, {}, _options2.default.popover, cp.options.popover, {
+            trigger: 'manual',
+            content: cp.picker,
+            html: true
+        }));
 
-      this.popoverTip = (0, _jquery2.default)(this.popoverTarget.popover('getTipElement').data('bs.popover').tip);
-      this.popoverTip.addClass('colorpicker-bs-popover');
+        /* Bootstrap 5 added an official method to get the popover instance */
+        /* global bootstrap */
+        var useGetInstance = window.bootstrap && window.bootstrap.Popover && window.bootstrap.Popover.getInstance;
 
-      this.popoverTarget.on('shown.bs.popover', _jquery2.default.proxy(this.fireShow, this));
-      this.popoverTarget.on('hidden.bs.popover', _jquery2.default.proxy(this.fireHide, this));
+        this.popoverTip = useGetInstance ? (0, _jquery2.default)(bootstrap.Popover.getInstance(this.popoverTarget[0]).getTipElement()) : (0, _jquery2.default)(this.popoverTarget.popover('getTipElement').data('bs.popover').tip);
+
+        this.popoverTip.addClass('colorpicker-bs-popover');
+
+        this.popoverTarget.on('shown.bs.popover', _jquery2.default.proxy(this.fireShow, this));
+        this.popoverTarget.on('hidden.bs.popover', _jquery2.default.proxy(this.fireHide, this));
     }
 
     /**
@@ -5808,31 +5840,35 @@ var ColorHandler = function () {
       this.color = color ? color : null;
     }
 
-    /**
-     * Creates a new color using the widget instance options (fallbackColor, format).
-     *
-     * @fires Colorpicker#colorpickerInvalid
-     * @param {*} val
-     * @param {boolean} fallbackOnInvalid
-     * @returns {ColorItem}
-     */
+      /**
+       * Creates a new color using the widget instance options (fallbackColor, format).
+       *
+       * @fires Colorpicker#colorpickerInvalid
+       * @param {*} val
+       * @param {boolean} fallbackOnInvalid
+       * @param {boolean} autoHexInputFallback
+       * @returns {ColorItem}
+       */
 
   }, {
     key: 'createColor',
     value: function createColor(val) {
-      var fallbackOnInvalid = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        var fallbackOnInvalid = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        var autoHexInputFallback = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-      var color = new _ColorItem2.default(this.resolveColorDelegate(val), this.format);
+        var disableHexInputFallback = !fallbackOnInvalid && !autoHexInputFallback;
 
-      if (!color.isValid()) {
-        if (fallbackOnInvalid) {
-          color = this.getFallbackColor();
-        }
+        var color = new _ColorItem2.default(this.resolveColorDelegate(val), this.format, disableHexInputFallback);
 
-        /**
-         * (Colorpicker) Fired when the color is invalid and the fallback color is going to be used.
-         *
-         * @event Colorpicker#colorpickerInvalid
+        if (!color.isValid()) {
+            if (fallbackOnInvalid) {
+                color = this.getFallbackColor();
+            }
+
+            /**
+             * (Colorpicker) Fired when the color is invalid and the fallback color is going to be used.
+             *
+             * @event Colorpicker#colorpickerInvalid
          */
         this.colorpicker.trigger('colorpickerInvalid', color, val);
       }

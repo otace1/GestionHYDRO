@@ -1,1405 +1,1793 @@
-(function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (global = global || self, global.FullCalendarLocalesAll = factory());
-}(this, function () { 'use strict';
+[].push.apply(FullCalendar.globalLocales, function () {
+    'use strict';
 
-    var _m0 = {
-        code: "af",
+    var l0 = {
+        code: 'af',
         week: {
-            dow: 1,
-            doy: 4 // Die week wat die 4de Januarie bevat is die eerste week van die jaar.
+            dow: 1, // Maandag is die eerste dag van die week.
+            doy: 4, // Die week wat die 4de Januarie bevat is die eerste week van die jaar.
         },
         buttonText: {
-            prev: "Vorige",
-            next: "Volgende",
-            today: "Vandag",
-            year: "Jaar",
-            month: "Maand",
-            week: "Week",
-            day: "Dag",
-            list: "Agenda"
+            prev: 'Vorige',
+            next: 'Volgende',
+            today: 'Vandag',
+            year: 'Jaar',
+            month: 'Maand',
+            week: 'Week',
+            day: 'Dag',
+            list: 'Agenda',
         },
-        allDayHtml: "Heeldag",
-        eventLimitText: "Addisionele",
-        noEventsMessage: "Daar is geen gebeurtenisse nie"
+        allDayText: 'Heeldag',
+        moreLinkText: 'Addisionele',
+        noEventsText: 'Daar is geen gebeurtenisse nie',
     };
 
-    var _m1 = {
-        code: "ar-dz",
+    var l1 = {
+        code: 'ar-dz',
         week: {
-            dow: 0,
-            doy: 4 // The week that contains Jan 1st is the first week of the year.
+            dow: 0, // Sunday is the first day of the week.
+            doy: 4, // The week that contains Jan 1st is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m2 = {
-        code: "ar-kw",
+    var l2 = {
+        code: 'ar-kw',
         week: {
-            dow: 0,
-            doy: 12 // The week that contains Jan 1st is the first week of the year.
+            dow: 0, // Sunday is the first day of the week.
+            doy: 12, // The week that contains Jan 1st is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m3 = {
-        code: "ar-ly",
+    var l3 = {
+        code: 'ar-ly',
         week: {
-            dow: 6,
-            doy: 12 // The week that contains Jan 1st is the first week of the year.
+            dow: 6, // Saturday is the first day of the week.
+            doy: 12, // The week that contains Jan 1st is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m4 = {
-        code: "ar-ma",
+    var l4 = {
+        code: 'ar-ma',
         week: {
-            dow: 6,
-            doy: 12 // The week that contains Jan 1st is the first week of the year.
+            dow: 6, // Saturday is the first day of the week.
+            doy: 12, // The week that contains Jan 1st is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m5 = {
-        code: "ar-sa",
+    var l5 = {
+        code: 'ar-sa',
         week: {
-            dow: 0,
-            doy: 6 // The week that contains Jan 1st is the first week of the year.
+            dow: 0, // Sunday is the first day of the week.
+            doy: 6, // The week that contains Jan 1st is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m6 = {
-        code: "ar-tn",
+    var l6 = {
+        code: 'ar-tn',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m7 = {
-        code: "ar",
+    var l7 = {
+        code: 'ar',
         week: {
-            dow: 6,
-            doy: 12 // The week that contains Jan 1st is the first week of the year.
+            dow: 6, // Saturday is the first day of the week.
+            doy: 12, // The week that contains Jan 1st is the first week of the year.
         },
-        dir: 'rtl',
+        direction: 'rtl',
         buttonText: {
-            prev: "السابق",
-            next: "التالي",
-            today: "اليوم",
-            month: "شهر",
-            week: "أسبوع",
-            day: "يوم",
-            list: "أجندة"
+            prev: 'السابق',
+            next: 'التالي',
+            today: 'اليوم',
+            month: 'شهر',
+            week: 'أسبوع',
+            day: 'يوم',
+            list: 'أجندة',
         },
-        weekLabel: "أسبوع",
-        allDayText: "اليوم كله",
-        eventLimitText: "أخرى",
-        noEventsMessage: "أي أحداث لعرض"
+        weekText: 'أسبوع',
+        allDayText: 'اليوم كله',
+        moreLinkText: 'أخرى',
+        noEventsText: 'أي أحداث لعرض',
     };
 
-    var _m8 = {
-        code: "az",
+    var l8 = {
+        code: 'az',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
-        },
-        buttonText: {
-            prev: "Əvvəl",
-            next: "Sonra",
-            today: "Bu Gün",
-            month: "Ay",
-            week: "Həftə",
-            day: "Gün",
-            list: "Gündəm"
-        },
-        weekLabel: "Həftə",
-        allDayText: "Bütün Gün",
-        eventLimitText: function (n) {
-            return "+ daha çox " + n;
-        },
-        noEventsMessage: "Göstərmək üçün hadisə yoxdur"
-    };
-
-    var _m9 = {
-        code: "bg",
-        week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "назад",
-            next: "напред",
-            today: "днес",
-            month: "Месец",
-            week: "Седмица",
-            day: "Ден",
-            list: "График"
+            prev: 'Əvvəl',
+            next: 'Sonra',
+            today: 'Bu Gün',
+            month: 'Ay',
+            week: 'Həftə',
+            day: 'Gün',
+            list: 'Gündəm',
         },
-        allDayText: "Цял ден",
-        eventLimitText: function (n) {
-            return "+още " + n;
+        weekText: 'Həftə',
+        allDayText: 'Bütün Gün',
+        moreLinkText: function (n) {
+            return '+ daha çox ' + n
         },
-        noEventsMessage: "Няма събития за показване"
+        noEventsText: 'Göstərmək üçün hadisə yoxdur',
     };
 
-    var _m10 = {
-        code: "bs",
+    var l9 = {
+        code: 'bg',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Prošli",
-            next: "Sljedeći",
-            today: "Danas",
-            month: "Mjesec",
-            week: "Sedmica",
-            day: "Dan",
-            list: "Raspored"
+            prev: 'назад',
+            next: 'напред',
+            today: 'днес',
+            month: 'Месец',
+            week: 'Седмица',
+            day: 'Ден',
+            list: 'График',
         },
-        weekLabel: "Sed",
-        allDayText: "Cijeli dan",
-        eventLimitText: function (n) {
-            return "+ još " + n;
+        allDayText: 'Цял ден',
+        moreLinkText: function (n) {
+            return '+още ' + n
         },
-        noEventsMessage: "Nema događaja za prikazivanje"
+        noEventsText: 'Няма събития за показване',
     };
 
-    var _m11 = {
-        code: "ca",
+    var l10 = {
+        code: 'bn',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 0, // Sunday is the first day of the week.
+            doy: 6, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Anterior",
-            next: "Següent",
-            today: "Avui",
-            month: "Mes",
-            week: "Setmana",
-            day: "Dia",
-            list: "Agenda"
+            prev: 'পেছনে',
+            next: 'সামনে',
+            today: 'আজ',
+            month: 'মাস',
+            week: 'সপ্তাহ',
+            day: 'দিন',
+            list: 'তালিকা',
         },
-        weekLabel: "Set",
-        allDayText: "Tot el dia",
-        eventLimitText: "més",
-        noEventsMessage: "No hi ha esdeveniments per mostrar"
+        weekText: 'সপ্তাহ',
+        allDayText: 'সারাদিন',
+        moreLinkText: function (n) {
+            return '+অন্যান্য ' + n
+        },
+        noEventsText: 'কোনো ইভেন্ট নেই',
     };
 
-    var _m12 = {
-        code: "cs",
+    var l11 = {
+        code: 'bs',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Dříve",
-            next: "Později",
-            today: "Nyní",
-            month: "Měsíc",
-            week: "Týden",
-            day: "Den",
-            list: "Agenda"
+            prev: 'Prošli',
+            next: 'Sljedeći',
+            today: 'Danas',
+            month: 'Mjesec',
+            week: 'Sedmica',
+            day: 'Dan',
+            list: 'Raspored',
         },
-        weekLabel: "Týd",
-        allDayText: "Celý den",
-        eventLimitText: function (n) {
-            return "+další: " + n;
+        weekText: 'Sed',
+        allDayText: 'Cijeli dan',
+        moreLinkText: function (n) {
+            return '+ još ' + n
         },
-        noEventsMessage: "Žádné akce k zobrazení"
+        noEventsText: 'Nema događaja za prikazivanje',
     };
 
-    var _m13 = {
-        code: "da",
+    var l12 = {
+        code: 'ca',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Forrige",
-            next: "Næste",
-            today: "I dag",
-            month: "Måned",
-            week: "Uge",
-            day: "Dag",
-            list: "Agenda"
+            prev: 'Anterior',
+            next: 'Següent',
+            today: 'Avui',
+            month: 'Mes',
+            week: 'Setmana',
+            day: 'Dia',
+            list: 'Agenda',
         },
-        weekLabel: "Uge",
-        allDayText: "Hele dagen",
-        eventLimitText: "flere",
-        noEventsMessage: "Ingen arrangementer at vise"
+        weekText: 'Set',
+        allDayText: 'Tot el dia',
+        moreLinkText: 'més',
+        noEventsText: 'No hi ha esdeveniments per mostrar',
     };
 
-    var _m14 = {
-        code: "de",
+    var l13 = {
+        code: 'cs',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Zurück",
-            next: "Vor",
-            today: "Heute",
-            year: "Jahr",
-            month: "Monat",
-            week: "Woche",
-            day: "Tag",
-            list: "Terminübersicht"
+            prev: 'Dříve',
+            next: 'Později',
+            today: 'Nyní',
+            month: 'Měsíc',
+            week: 'Týden',
+            day: 'Den',
+            list: 'Agenda',
         },
-        weekLabel: "KW",
-        allDayText: "Ganztägig",
-        eventLimitText: function (n) {
-            return "+ weitere " + n;
+        weekText: 'Týd',
+        allDayText: 'Celý den',
+        moreLinkText: function (n) {
+            return '+další: ' + n
         },
-        noEventsMessage: "Keine Ereignisse anzuzeigen"
+        noEventsText: 'Žádné akce k zobrazení',
     };
 
-    var _m15 = {
-        code: "el",
+    var l14 = {
+        code: 'cy',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Προηγούμενος",
-            next: "Επόμενος",
-            today: "Σήμερα",
-            month: "Μήνας",
-            week: "Εβδομάδα",
-            day: "Ημέρα",
-            list: "Ατζέντα"
+            prev: 'Blaenorol',
+            next: 'Nesaf',
+            today: 'Heddiw',
+            year: 'Blwyddyn',
+            month: 'Mis',
+            week: 'Wythnos',
+            day: 'Dydd',
+            list: 'Rhestr',
         },
-        weekLabel: "Εβδ",
-        allDayText: "Ολοήμερο",
-        eventLimitText: "περισσότερα",
-        noEventsMessage: "Δεν υπάρχουν γεγονότα προς εμφάνιση"
+        weekText: 'Wythnos',
+        allDayText: 'Trwy\'r dydd',
+        moreLinkText: 'Mwy',
+        noEventsText: 'Dim digwyddiadau',
     };
 
-    var _m16 = {
-        code: "en-au",
+    var l15 = {
+        code: 'da',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
-        }
-    };
-
-    var _m17 = {
-        code: "en-gb",
-        week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
-        }
-    };
-
-    var _m18 = {
-        code: "en-nz",
-        week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
-        }
-    };
-
-    var _m19 = {
-        code: "es",
-        week: {
-            dow: 0,
-            doy: 6 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Ant",
-            next: "Sig",
-            today: "Hoy",
-            month: "Mes",
-            week: "Semana",
-            day: "Día",
-            list: "Agenda"
+            prev: 'Forrige',
+            next: 'Næste',
+            today: 'I dag',
+            month: 'Måned',
+            week: 'Uge',
+            day: 'Dag',
+            list: 'Agenda',
         },
-        weekLabel: "Sm",
-        allDayHtml: "Todo<br/>el día",
-        eventLimitText: "más",
-        noEventsMessage: "No hay eventos para mostrar"
+        weekText: 'Uge',
+        allDayText: 'Hele dagen',
+        moreLinkText: 'flere',
+        noEventsText: 'Ingen arrangementer at vise',
     };
 
-    var _m20 = {
-        code: "es",
+    function affix$1(buttonText) {
+        return (buttonText === 'Tag' || buttonText === 'Monat') ? 'r' :
+            buttonText === 'Jahr' ? 's' : ''
+    }
+
+    var l16 = {
+        code: 'de-at',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Ant",
-            next: "Sig",
-            today: "Hoy",
-            month: "Mes",
-            week: "Semana",
-            day: "Día",
-            list: "Agenda"
+            prev: 'Zurück',
+            next: 'Vor',
+            today: 'Heute',
+            year: 'Jahr',
+            month: 'Monat',
+            week: 'Woche',
+            day: 'Tag',
+            list: 'Terminübersicht',
         },
-        weekLabel: "Sm",
-        allDayHtml: "Todo<br/>el día",
-        eventLimitText: "más",
-        noEventsMessage: "No hay eventos para mostrar"
+        weekText: 'KW',
+        weekTextLong: 'Woche',
+        allDayText: 'Ganztägig',
+        moreLinkText: function (n) {
+            return '+ weitere ' + n
+        },
+        noEventsText: 'Keine Ereignisse anzuzeigen',
+        buttonHints: {
+            prev(buttonText) {
+                return `Vorherige${affix$1(buttonText)} ${buttonText}`
+            },
+            next(buttonText) {
+                return `Nächste${affix$1(buttonText)} ${buttonText}`
+            },
+            today(buttonText) {
+                // → Heute, Diese Woche, Dieser Monat, Dieses Jahr
+                if (buttonText === 'Tag') {
+                    return 'Heute'
+                }
+                return `Diese${affix$1(buttonText)} ${buttonText}`
+            },
+        },
+        viewHint(buttonText) {
+            // → Tagesansicht, Wochenansicht, Monatsansicht, Jahresansicht
+            const glue = buttonText === 'Woche' ? 'n' : buttonText === 'Monat' ? 's' : 'es';
+            return buttonText + glue + 'ansicht'
+        },
+        navLinkHint: 'Gehe zu $0',
+        moreLinkHint(eventCnt) {
+            return 'Zeige ' + (eventCnt === 1 ?
+                'ein weiteres Ereignis' :
+                eventCnt + ' weitere Ereignisse')
+        },
+        closeHint: 'Schließen',
+        timeHint: 'Uhrzeit',
+        eventHint: 'Ereignis',
     };
 
-    var _m21 = {
-        code: "et",
+    function affix(buttonText) {
+        return (buttonText === 'Tag' || buttonText === 'Monat') ? 'r' :
+            buttonText === 'Jahr' ? 's' : ''
+    }
+
+    var l17 = {
+        code: 'de',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Eelnev",
-            next: "Järgnev",
-            today: "Täna",
-            month: "Kuu",
-            week: "Nädal",
-            day: "Päev",
-            list: "Päevakord"
+            prev: 'Zurück',
+            next: 'Vor',
+            today: 'Heute',
+            year: 'Jahr',
+            month: 'Monat',
+            week: 'Woche',
+            day: 'Tag',
+            list: 'Terminübersicht',
         },
-        weekLabel: "näd",
-        allDayText: "Kogu päev",
-        eventLimitText: function (n) {
-            return "+ veel " + n;
+        weekText: 'KW',
+        weekTextLong: 'Woche',
+        allDayText: 'Ganztägig',
+        moreLinkText: function (n) {
+            return '+ weitere ' + n
         },
-        noEventsMessage: "Kuvamiseks puuduvad sündmused"
+        noEventsText: 'Keine Ereignisse anzuzeigen',
+        buttonHints: {
+            prev(buttonText) {
+                return `Vorherige${affix(buttonText)} ${buttonText}`
+            },
+            next(buttonText) {
+                return `Nächste${affix(buttonText)} ${buttonText}`
+            },
+            today(buttonText) {
+                // → Heute, Diese Woche, Dieser Monat, Dieses Jahr
+                if (buttonText === 'Tag') {
+                    return 'Heute'
+                }
+                return `Diese${affix(buttonText)} ${buttonText}`
+            },
+        },
+        viewHint(buttonText) {
+            // → Tagesansicht, Wochenansicht, Monatsansicht, Jahresansicht
+            const glue = buttonText === 'Woche' ? 'n' : buttonText === 'Monat' ? 's' : 'es';
+            return buttonText + glue + 'ansicht'
+        },
+        navLinkHint: 'Gehe zu $0',
+        moreLinkHint(eventCnt) {
+            return 'Zeige ' + (eventCnt === 1 ?
+                'ein weiteres Ereignis' :
+                eventCnt + ' weitere Ereignisse')
+        },
+        closeHint: 'Schließen',
+        timeHint: 'Uhrzeit',
+        eventHint: 'Ereignis',
     };
 
-    var _m22 = {
-        code: "eu",
+    var l18 = {
+        code: 'el',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4st is the first week of the year.
         },
         buttonText: {
-            prev: "Aur",
-            next: "Hur",
-            today: "Gaur",
-            month: "Hilabetea",
-            week: "Astea",
-            day: "Eguna",
-            list: "Agenda"
+            prev: 'Προηγούμενος',
+            next: 'Επόμενος',
+            today: 'Σήμερα',
+            month: 'Μήνας',
+            week: 'Εβδομάδα',
+            day: 'Ημέρα',
+            list: 'Ατζέντα',
         },
-        weekLabel: "As",
-        allDayHtml: "Egun<br/>osoa",
-        eventLimitText: "gehiago",
-        noEventsMessage: "Ez dago ekitaldirik erakusteko"
+        weekText: 'Εβδ',
+        allDayText: 'Ολοήμερο',
+        moreLinkText: 'περισσότερα',
+        noEventsText: 'Δεν υπάρχουν γεγονότα προς εμφάνιση',
     };
 
-    var _m23 = {
-        code: "fa",
+    var l19 = {
+        code: 'en-au',
         week: {
-            dow: 6,
-            doy: 12 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
-        dir: 'rtl',
-        buttonText: {
-            prev: "قبلی",
-            next: "بعدی",
-            today: "امروز",
-            month: "ماه",
-            week: "هفته",
-            day: "روز",
-            list: "برنامه"
+        buttonHints: {
+            prev: 'Previous $0',
+            next: 'Next $0',
+            today: 'This $0',
         },
-        weekLabel: "هف",
-        allDayText: "تمام روز",
-        eventLimitText: function (n) {
-            return "بیش از " + n;
+        viewHint: '$0 view',
+        navLinkHint: 'Go to $0',
+        moreLinkHint(eventCnt) {
+            return `Show ${eventCnt} more event${eventCnt === 1 ? '' : 's'}`
         },
-        noEventsMessage: "هیچ رویدادی به نمایش"
     };
 
-    var _m24 = {
-        code: "fi",
+    var l20 = {
+        code: 'en-gb',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
-        buttonText: {
-            prev: "Edellinen",
-            next: "Seuraava",
-            today: "Tänään",
-            month: "Kuukausi",
-            week: "Viikko",
-            day: "Päivä",
-            list: "Tapahtumat"
+        buttonHints: {
+            prev: 'Previous $0',
+            next: 'Next $0',
+            today: 'This $0',
         },
-        weekLabel: "Vk",
-        allDayText: "Koko päivä",
-        eventLimitText: "lisää",
-        noEventsMessage: "Ei näytettäviä tapahtumia"
+        viewHint: '$0 view',
+        navLinkHint: 'Go to $0',
+        moreLinkHint(eventCnt) {
+            return `Show ${eventCnt} more event${eventCnt === 1 ? '' : 's'}`
+        },
     };
 
-    var _m25 = {
-        code: "fr",
+    var l21 = {
+        code: 'en-nz',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonHints: {
+            prev: 'Previous $0',
+            next: 'Next $0',
+            today: 'This $0',
+        },
+        viewHint: '$0 view',
+        navLinkHint: 'Go to $0',
+        moreLinkHint(eventCnt) {
+            return `Show ${eventCnt} more event${eventCnt === 1 ? '' : 's'}`
+        },
+    };
+
+    var l22 = {
+        code: 'eo',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
         buttonText: {
-            prev: "Précédent",
-            next: "Suivant",
+            prev: 'Antaŭa',
+            next: 'Sekva',
+            today: 'Hodiaŭ',
+            month: 'Monato',
+            week: 'Semajno',
+            day: 'Tago',
+            list: 'Tagordo',
+        },
+        weekText: 'Sm',
+        allDayText: 'Tuta tago',
+        moreLinkText: 'pli',
+        noEventsText: 'Neniuj eventoj por montri',
+    };
+
+    var l23 = {
+        code: 'es',
+        week: {
+            dow: 0, // Sunday is the first day of the week.
+            doy: 6, // The week that contains Jan 1st is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Ant',
+            next: 'Sig',
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día',
+            list: 'Agenda',
+        },
+        weekText: 'Sm',
+        allDayText: 'Todo el día',
+        moreLinkText: 'más',
+        noEventsText: 'No hay eventos para mostrar',
+    };
+
+    var l24 = {
+        code: 'es',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Ant',
+            next: 'Sig',
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día',
+            list: 'Agenda',
+        },
+        buttonHints: {
+            prev: '$0 antes',
+            next: '$0 siguiente',
+            today(buttonText) {
+                return (buttonText === 'Día') ? 'Hoy' :
+                    ((buttonText === 'Semana') ? 'Esta' : 'Este') + ' ' + buttonText.toLocaleLowerCase()
+            },
+        },
+        viewHint(buttonText) {
+            return 'Vista ' + (buttonText === 'Semana' ? 'de la' : 'del') + ' ' + buttonText.toLocaleLowerCase()
+        },
+        weekText: 'Sm',
+        weekTextLong: 'Semana',
+        allDayText: 'Todo el día',
+        moreLinkText: 'más',
+        moreLinkHint(eventCnt) {
+            return `Mostrar ${eventCnt} eventos más`
+        },
+        noEventsText: 'No hay eventos para mostrar',
+        navLinkHint: 'Ir al $0',
+        closeHint: 'Cerrar',
+        timeHint: 'La hora',
+        eventHint: 'Evento',
+    };
+
+    var l25 = {
+        code: 'et',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Eelnev',
+            next: 'Järgnev',
+            today: 'Täna',
+            month: 'Kuu',
+            week: 'Nädal',
+            day: 'Päev',
+            list: 'Päevakord',
+        },
+        weekText: 'näd',
+        allDayText: 'Kogu päev',
+        moreLinkText: function (n) {
+            return '+ veel ' + n
+        },
+        noEventsText: 'Kuvamiseks puuduvad sündmused',
+    };
+
+    var l26 = {
+        code: 'eu',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Aur',
+            next: 'Hur',
+            today: 'Gaur',
+            month: 'Hilabetea',
+            week: 'Astea',
+            day: 'Eguna',
+            list: 'Agenda',
+        },
+        weekText: 'As',
+        allDayText: 'Egun osoa',
+        moreLinkText: 'gehiago',
+        noEventsText: 'Ez dago ekitaldirik erakusteko',
+    };
+
+    var l27 = {
+        code: 'fa',
+        week: {
+            dow: 6, // Saturday is the first day of the week.
+            doy: 12, // The week that contains Jan 1st is the first week of the year.
+        },
+        direction: 'rtl',
+        buttonText: {
+            prev: 'قبلی',
+            next: 'بعدی',
+            today: 'امروز',
+            month: 'ماه',
+            week: 'هفته',
+            day: 'روز',
+            list: 'برنامه',
+        },
+        weekText: 'هف',
+        allDayText: 'تمام روز',
+        moreLinkText: function (n) {
+            return 'بیش از ' + n
+        },
+        noEventsText: 'هیچ رویدادی به نمایش',
+    };
+
+    var l28 = {
+        code: 'fi',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Edellinen',
+            next: 'Seuraava',
+            today: 'Tänään',
+            month: 'Kuukausi',
+            week: 'Viikko',
+            day: 'Päivä',
+            list: 'Tapahtumat',
+        },
+        weekText: 'Vk',
+        allDayText: 'Koko päivä',
+        moreLinkText: 'lisää',
+        noEventsText: 'Ei näytettäviä tapahtumia',
+    };
+
+    var l29 = {
+        code: 'fr',
+        buttonText: {
+            prev: 'Précédent',
+            next: 'Suivant',
             today: "Aujourd'hui",
-            year: "Année",
-            month: "Mois",
-            week: "Semaine",
-            day: "Jour",
-            list: "Mon planning"
+            year: 'Année',
+            month: 'Mois',
+            week: 'Semaine',
+            day: 'Jour',
+            list: 'Mon planning',
         },
-        weekLabel: "Sem.",
-        allDayHtml: "Toute la<br/>journée",
-        eventLimitText: "en plus",
-        noEventsMessage: "Aucun événement à afficher"
+        weekText: 'Sem.',
+        allDayText: 'Toute la journée',
+        moreLinkText: 'en plus',
+        noEventsText: 'Aucun événement à afficher',
     };
 
-    var _m26 = {
-        code: "fr-ch",
+    var l30 = {
+        code: 'fr-ch',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Précédent",
-            next: "Suivant",
-            today: "Courant",
-            year: "Année",
-            month: "Mois",
-            week: "Semaine",
-            day: "Jour",
-            list: "Mon planning"
+            prev: 'Précédent',
+            next: 'Suivant',
+            today: 'Courant',
+            year: 'Année',
+            month: 'Mois',
+            week: 'Semaine',
+            day: 'Jour',
+            list: 'Mon planning',
         },
-        weekLabel: "Sm",
-        allDayHtml: "Toute la<br/>journée",
-        eventLimitText: "en plus",
-        noEventsMessage: "Aucun événement à afficher"
+        weekText: 'Sm',
+        allDayText: 'Toute la journée',
+        moreLinkText: 'en plus',
+        noEventsText: 'Aucun événement à afficher',
     };
 
-    var _m27 = {
-        code: "fr",
+    var l31 = {
+        code: 'fr',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Précédent",
-            next: "Suivant",
+            prev: 'Précédent',
+            next: 'Suivant',
             today: "Aujourd'hui",
-            year: "Année",
-            month: "Mois",
-            week: "Semaine",
-            day: "Jour",
-            list: "Planning"
+            year: 'Année',
+            month: 'Mois',
+            week: 'Semaine',
+            day: 'Jour',
+            list: 'Planning',
         },
-        weekLabel: "Sem.",
-        allDayHtml: "Toute la<br/>journée",
-        eventLimitText: "en plus",
-        noEventsMessage: "Aucun événement à afficher"
+        weekText: 'Sem.',
+        allDayText: 'Toute la journée',
+        moreLinkText: 'en plus',
+        noEventsText: 'Aucun événement à afficher',
     };
 
-    var _m28 = {
-        code: "gl",
+    var l32 = {
+        code: 'gl',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Ant',
+            next: 'Seg',
+            today: 'Hoxe',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día',
+            list: 'Axenda',
+        },
+        weekText: 'Sm',
+        allDayText: 'Todo o día',
+        moreLinkText: 'máis',
+        noEventsText: 'Non hai eventos para amosar',
+    };
+
+    var l33 = {
+        code: 'he',
+        direction: 'rtl',
+        buttonText: {
+            prev: 'הקודם',
+            next: 'הבא',
+            today: 'היום',
+            month: 'חודש',
+            week: 'שבוע',
+            day: 'יום',
+            list: 'סדר יום',
+        },
+        allDayText: 'כל היום',
+        moreLinkText: 'אחר',
+        noEventsText: 'אין אירועים להצגה',
+        weekText: 'שבוע',
+    };
+
+    var l34 = {
+        code: 'hi',
+        week: {
+            dow: 0, // Sunday is the first day of the week.
+            doy: 6, // The week that contains Jan 1st is the first week of the year.
+        },
+        buttonText: {
+            prev: 'पिछला',
+            next: 'अगला',
+            today: 'आज',
+            month: 'महीना',
+            week: 'सप्ताह',
+            day: 'दिन',
+            list: 'कार्यसूची',
+        },
+        weekText: 'हफ्ता',
+        allDayText: 'सभी दिन',
+        moreLinkText: function (n) {
+            return '+अधिक ' + n
+        },
+        noEventsText: 'कोई घटनाओं को प्रदर्शित करने के लिए',
+    };
+
+    var l35 = {
+        code: 'hr',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Prijašnji',
+            next: 'Sljedeći',
+            today: 'Danas',
+            month: 'Mjesec',
+            week: 'Tjedan',
+            day: 'Dan',
+            list: 'Raspored',
+        },
+        weekText: 'Tje',
+        allDayText: 'Cijeli dan',
+        moreLinkText: function (n) {
+            return '+ još ' + n
+        },
+        noEventsText: 'Nema događaja za prikaz',
+    };
+
+    var l36 = {
+        code: 'hu',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'vissza',
+            next: 'előre',
+            today: 'ma',
+            month: 'Hónap',
+            week: 'Hét',
+            day: 'Nap',
+            list: 'Lista',
+        },
+        weekText: 'Hét',
+        allDayText: 'Egész nap',
+        moreLinkText: 'további',
+        noEventsText: 'Nincs megjeleníthető esemény',
+    };
+
+    var l37 = {
+        code: 'hy-am',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Նախորդ',
+            next: 'Հաջորդ',
+            today: 'Այսօր',
+            month: 'Ամիս',
+            week: 'Շաբաթ',
+            day: 'Օր',
+            list: 'Օրվա ցուցակ',
+        },
+        weekText: 'Շաբ',
+        allDayText: 'Ամբողջ օր',
+        moreLinkText: function (n) {
+            return '+ ևս ' + n
+        },
+        noEventsText: 'Բացակայում է իրադարձությունը ցուցադրելու',
+    };
+
+    var l38 = {
+        code: 'id',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
+        },
+        buttonText: {
+            prev: 'mundur',
+            next: 'maju',
+            today: 'hari ini',
+            month: 'Bulan',
+            week: 'Minggu',
+            day: 'Hari',
+            list: 'Agenda',
+        },
+        weekText: 'Mg',
+        allDayText: 'Sehari penuh',
+        moreLinkText: 'lebih',
+        noEventsText: 'Tidak ada acara untuk ditampilkan',
+    };
+
+    var l39 = {
+        code: 'is',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Fyrri',
+            next: 'Næsti',
+            today: 'Í dag',
+            month: 'Mánuður',
+            week: 'Vika',
+            day: 'Dagur',
+            list: 'Dagskrá',
+        },
+        weekText: 'Vika',
+        allDayText: 'Allan daginn',
+        moreLinkText: 'meira',
+        noEventsText: 'Engir viðburðir til að sýna',
+    };
+
+    var l40 = {
+        code: 'it',
+        week: {
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
+        },
+        buttonText: {
+            prev: 'Prec',
+            next: 'Succ',
+            today: 'Oggi',
+            month: 'Mese',
+            week: 'Settimana',
+            day: 'Giorno',
+            list: 'Agenda',
+        },
+        weekText: 'Sm',
+        allDayText: 'Tutto il giorno',
+        moreLinkText: function (n) {
+            return '+altri ' + n
+        },
+        noEventsText: 'Non ci sono eventi da visualizzare',
+    };
+
+    var l41 = {
+        code: 'ja',
+        buttonText: {
+            prev: '前',
+            next: '次',
+            today: '今日',
+            month: '月',
+            week: '週',
+            day: '日',
+            list: '予定リスト',
+        },
+        weekText: '週',
+        allDayText: '終日',
+        moreLinkText: function (n) {
+            return '他 ' + n + ' 件'
+        },
+        noEventsText: '表示する予定はありません',
+    };
+
+    var l42 = {
+        code: 'ka',
         week: {
             dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            doy: 7,
         },
         buttonText: {
-            prev: "Ant",
-            next: "Seg",
-            today: "Hoxe",
-            month: "Mes",
-            week: "Semana",
-            day: "Día",
-            list: "Axenda"
+            prev: 'წინა',
+            next: 'შემდეგი',
+            today: 'დღეს',
+            month: 'თვე',
+            week: 'კვირა',
+            day: 'დღე',
+            list: 'დღის წესრიგი',
         },
-        weekLabel: "Sm",
-        allDayHtml: "Todo<br/>o día",
-        eventLimitText: "máis",
-        noEventsMessage: "Non hai eventos para amosar"
+        weekText: 'კვ',
+        allDayText: 'მთელი დღე',
+        moreLinkText: function (n) {
+            return '+ კიდევ ' + n
+        },
+        noEventsText: 'ღონისძიებები არ არის',
     };
 
-    var _m29 = {
-        code: "he",
-        dir: 'rtl',
-        buttonText: {
-            prev: "הקודם",
-            next: "הבא",
-            today: "היום",
-            month: "חודש",
-            week: "שבוע",
-            day: "יום",
-            list: "סדר יום"
-        },
-        allDayText: "כל היום",
-        eventLimitText: "אחר",
-        noEventsMessage: "אין אירועים להצגה",
-        weekLabel: "שבוע"
-    };
-
-    var _m30 = {
-        code: "hi",
+    var l43 = {
+        code: 'kk',
         week: {
-            dow: 0,
-            doy: 6 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "पिछला",
-            next: "अगला",
-            today: "आज",
-            month: "महीना",
-            week: "सप्ताह",
-            day: "दिन",
-            list: "कार्यसूची"
+            prev: 'Алдыңғы',
+            next: 'Келесі',
+            today: 'Бүгін',
+            month: 'Ай',
+            week: 'Апта',
+            day: 'Күн',
+            list: 'Күн тәртібі',
         },
-        weekLabel: "हफ्ता",
-        allDayText: "सभी दिन",
-        eventLimitText: function (n) {
-            return "+अधिक " + n;
+        weekText: 'Не',
+        allDayText: 'Күні бойы',
+        moreLinkText: function (n) {
+            return '+ тағы ' + n
         },
-        noEventsMessage: "कोई घटनाओं को प्रदर्शित करने के लिए"
+        noEventsText: 'Көрсету үшін оқиғалар жоқ',
     };
 
-    var _m31 = {
-        code: "hr",
+    var l44 = {
+        code: 'km',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Prijašnji",
-            next: "Sljedeći",
-            today: "Danas",
-            month: "Mjesec",
-            week: "Tjedan",
-            day: "Dan",
-            list: "Raspored"
+            prev: 'មុន',
+            next: 'បន្ទាប់',
+            today: 'ថ្ងៃនេះ',
+            year: 'ឆ្នាំ',
+            month: 'ខែ',
+            week: 'សប្តាហ៍',
+            day: 'ថ្ងៃ',
+            list: 'បញ្ជី',
         },
-        weekLabel: "Tje",
-        allDayText: "Cijeli dan",
-        eventLimitText: function (n) {
-            return "+ još " + n;
-        },
-        noEventsMessage: "Nema događaja za prikaz"
+        weekText: 'សប្តាហ៍',
+        allDayText: 'ពេញមួយថ្ងៃ',
+        moreLinkText: 'ច្រើនទៀត',
+        noEventsText: 'គ្មានព្រឹត្តិការណ៍ត្រូវបង្ហាញ',
     };
 
-    var _m32 = {
-        code: "hu",
+    var l45 = {
+        code: 'ko',
+        buttonText: {
+            prev: '이전달',
+            next: '다음달',
+            today: '오늘',
+            month: '월',
+            week: '주',
+            day: '일',
+            list: '일정목록',
+        },
+        weekText: '주',
+        allDayText: '종일',
+        moreLinkText: '개',
+        noEventsText: '일정이 없습니다',
+    };
+
+    var l46 = {
+        code: 'ku',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 6, // Saturday is the first day of the week.
+            doy: 12, // The week that contains Jan 1st is the first week of the year.
         },
+        direction: 'rtl',
         buttonText: {
-            prev: "vissza",
-            next: "előre",
-            today: "ma",
-            month: "Hónap",
-            week: "Hét",
-            day: "Nap",
-            list: "Napló"
+            prev: 'پێشتر',
+            next: 'دواتر',
+            today: 'ئەمڕو',
+            month: 'مانگ',
+            week: 'هەفتە',
+            day: 'ڕۆژ',
+            list: 'بەرنامە',
         },
-        weekLabel: "Hét",
-        allDayText: "Egész nap",
-        eventLimitText: "további",
-        noEventsMessage: "Nincs megjeleníthető esemény"
+        weekText: 'هەفتە',
+        allDayText: 'هەموو ڕۆژەکە',
+        moreLinkText: 'زیاتر',
+        noEventsText: 'هیچ ڕووداوێك نیە',
     };
 
-    var _m33 = {
-        code: "id",
+    var l47 = {
+        code: 'lb',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "mundur",
-            next: "maju",
-            today: "hari ini",
-            month: "Bulan",
-            week: "Minggu",
-            day: "Hari",
-            list: "Agenda"
+            prev: 'Zréck',
+            next: 'Weider',
+            today: 'Haut',
+            month: 'Mount',
+            week: 'Woch',
+            day: 'Dag',
+            list: 'Terminiwwersiicht',
         },
-        weekLabel: "Mg",
-        allDayHtml: "Sehari<br/>penuh",
-        eventLimitText: "lebih",
-        noEventsMessage: "Tidak ada acara untuk ditampilkan"
+        weekText: 'W',
+        allDayText: 'Ganzen Dag',
+        moreLinkText: 'méi',
+        noEventsText: 'Nee Evenementer ze affichéieren',
     };
 
-    var _m34 = {
-        code: "is",
+    var l48 = {
+        code: 'lt',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Fyrri",
-            next: "Næsti",
-            today: "Í dag",
-            month: "Mánuður",
-            week: "Vika",
-            day: "Dagur",
-            list: "Dagskrá"
+            prev: 'Atgal',
+            next: 'Pirmyn',
+            today: 'Šiandien',
+            month: 'Mėnuo',
+            week: 'Savaitė',
+            day: 'Diena',
+            list: 'Darbotvarkė',
         },
-        weekLabel: "Vika",
-        allDayHtml: "Allan<br/>daginn",
-        eventLimitText: "meira",
-        noEventsMessage: "Engir viðburðir til að sýna"
+        weekText: 'SAV',
+        allDayText: 'Visą dieną',
+        moreLinkText: 'daugiau',
+        noEventsText: 'Nėra įvykių rodyti',
     };
 
-    var _m35 = {
-        code: "it",
+    var l49 = {
+        code: 'lv',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Prec",
-            next: "Succ",
-            today: "Oggi",
-            month: "Mese",
-            week: "Settimana",
-            day: "Giorno",
-            list: "Agenda"
+            prev: 'Iepr.',
+            next: 'Nāk.',
+            today: 'Šodien',
+            month: 'Mēnesis',
+            week: 'Nedēļa',
+            day: 'Diena',
+            list: 'Dienas kārtība',
         },
-        weekLabel: "Sm",
-        allDayHtml: "Tutto il<br/>giorno",
-        eventLimitText: function (n) {
-            return "+altri " + n;
+        weekText: 'Ned.',
+        allDayText: 'Visu dienu',
+        moreLinkText: function (n) {
+            return '+vēl ' + n
         },
-        noEventsMessage: "Non ci sono eventi da visualizzare"
+        noEventsText: 'Nav notikumu',
     };
 
-    var _m36 = {
-        code: "ja",
+    var l50 = {
+        code: 'mk',
         buttonText: {
-            prev: "前",
-            next: "次",
-            today: "今日",
-            month: "月",
-            week: "週",
-            day: "日",
-            list: "予定リスト"
+            prev: 'претходно',
+            next: 'следно',
+            today: 'Денес',
+            month: 'Месец',
+            week: 'Недела',
+            day: 'Ден',
+            list: 'График',
         },
-        weekLabel: "週",
-        allDayText: "終日",
-        eventLimitText: function (n) {
-            return "他 " + n + " 件";
+        weekText: 'Сед',
+        allDayText: 'Цел ден',
+        moreLinkText: function (n) {
+            return '+повеќе ' + n
         },
-        noEventsMessage: "表示する予定はありません"
+        noEventsText: 'Нема настани за прикажување',
     };
 
-    var _m37 = {
-        code: "ka",
+    var l51 = {
+        code: 'ms',
         week: {
-            dow: 1,
-            doy: 7
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "წინა",
-            next: "შემდეგი",
-            today: "დღეს",
-            month: "თვე",
-            week: "კვირა",
-            day: "დღე",
-            list: "დღის წესრიგი"
+            prev: 'Sebelum',
+            next: 'Selepas',
+            today: 'hari ini',
+            month: 'Bulan',
+            week: 'Minggu',
+            day: 'Hari',
+            list: 'Agenda',
         },
-        weekLabel: "კვ",
-        allDayText: "მთელი დღე",
-        eventLimitText: function (n) {
-            return "+ კიდევ " + n;
+        weekText: 'Mg',
+        allDayText: 'Sepanjang hari',
+        moreLinkText: function (n) {
+            return 'masih ada ' + n + ' acara'
         },
-        noEventsMessage: "ღონისძიებები არ არის"
+        noEventsText: 'Tiada peristiwa untuk dipaparkan',
     };
 
-    var _m38 = {
-        code: "kk",
+    var l52 = {
+        code: 'nb',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Алдыңғы",
-            next: "Келесі",
-            today: "Бүгін",
-            month: "Ай",
-            week: "Апта",
-            day: "Күн",
-            list: "Күн тәртібі"
+            prev: 'Forrige',
+            next: 'Neste',
+            today: 'I dag',
+            month: 'Måned',
+            week: 'Uke',
+            day: 'Dag',
+            list: 'Agenda',
         },
-        weekLabel: "Не",
-        allDayText: "Күні бойы",
-        eventLimitText: function (n) {
-            return "+ тағы " + n;
+        weekText: 'Uke',
+        weekTextLong: 'Uke',
+        allDayText: 'Hele dagen',
+        moreLinkText: 'til',
+        noEventsText: 'Ingen hendelser å vise',
+        buttonHints: {
+            prev: 'Forrige $0',
+            next: 'Neste $0',
+            today: 'Nåværende $0',
         },
-        noEventsMessage: "Көрсету үшін оқиғалар жоқ"
+        viewHint: '$0 visning',
+        navLinkHint: 'Gå til $0',
+        moreLinkHint(eventCnt) {
+            return `Vis ${eventCnt} flere hendelse${eventCnt === 1 ? '' : 'r'}`
+        },
     };
 
-    var _m39 = {
-        code: "ko",
-        buttonText: {
-            prev: "이전달",
-            next: "다음달",
-            today: "오늘",
-            month: "월",
-            week: "주",
-            day: "일",
-            list: "일정목록"
-        },
-        weekLabel: "주",
-        allDayText: "종일",
-        eventLimitText: "개",
-        noEventsMessage: "일정이 없습니다"
-    };
-
-    var _m40 = {
-        code: "lb",
+    var l53 = {
+        code: 'ne', // code for nepal
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 7, // Sunday is the first day of the week.
+            doy: 1, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Zréck",
-            next: "Weider",
-            today: "Haut",
-            month: "Mount",
-            week: "Woch",
-            day: "Dag",
-            list: "Terminiwwersiicht"
+            prev: 'अघिल्लो',
+            next: 'अर्को',
+            today: 'आज',
+            month: 'महिना',
+            week: 'हप्ता',
+            day: 'दिन',
+            list: 'सूची',
         },
-        weekLabel: "W",
-        allDayText: "Ganzen Dag",
-        eventLimitText: "méi",
-        noEventsMessage: "Nee Evenementer ze affichéieren"
+        weekText: 'हप्ता',
+        allDayText: 'दिनभरि',
+        moreLinkText: 'थप लिंक',
+        noEventsText: 'देखाउनको लागि कुनै घटनाहरू छैनन्',
     };
 
-    var _m41 = {
-        code: "lt",
+    var l54 = {
+        code: 'nl',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Atgal",
-            next: "Pirmyn",
-            today: "Šiandien",
-            month: "Mėnuo",
-            week: "Savaitė",
-            day: "Diena",
-            list: "Darbotvarkė"
+            prev: 'Vorige',
+            next: 'Volgende',
+            today: 'Vandaag',
+            year: 'Jaar',
+            month: 'Maand',
+            week: 'Week',
+            day: 'Dag',
+            list: 'Agenda',
         },
-        weekLabel: "SAV",
-        allDayText: "Visą dieną",
-        eventLimitText: "daugiau",
-        noEventsMessage: "Nėra įvykių rodyti"
+        allDayText: 'Hele dag',
+        moreLinkText: 'extra',
+        noEventsText: 'Geen evenementen om te laten zien',
     };
 
-    var _m42 = {
-        code: "lv",
+    var l55 = {
+        code: 'nn',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Iepr.",
-            next: "Nāk.",
-            today: "Šodien",
-            month: "Mēnesis",
-            week: "Nedēļa",
-            day: "Diena",
-            list: "Dienas kārtība"
+            prev: 'Førre',
+            next: 'Neste',
+            today: 'I dag',
+            month: 'Månad',
+            week: 'Veke',
+            day: 'Dag',
+            list: 'Agenda',
         },
-        weekLabel: "Ned.",
-        allDayText: "Visu dienu",
-        eventLimitText: function (n) {
-            return "+vēl " + n;
-        },
-        noEventsMessage: "Nav notikumu"
+        weekText: 'Veke',
+        allDayText: 'Heile dagen',
+        moreLinkText: 'til',
+        noEventsText: 'Ingen hendelser å vise',
     };
 
-    var _m43 = {
-        code: "mk",
-        buttonText: {
-            prev: "претходно",
-            next: "следно",
-            today: "Денес",
-            month: "Месец",
-            week: "Недела",
-            day: "Ден",
-            list: "График"
-        },
-        weekLabel: "Сед",
-        allDayText: "Цел ден",
-        eventLimitText: function (n) {
-            return "+повеќе " + n;
-        },
-        noEventsMessage: "Нема настани за прикажување"
-    };
-
-    var _m44 = {
-        code: "ms",
+    var l56 = {
+        code: 'pl',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Sebelum",
-            next: "Selepas",
-            today: "hari ini",
-            month: "Bulan",
-            week: "Minggu",
-            day: "Hari",
-            list: "Agenda"
+            prev: 'Poprzedni',
+            next: 'Następny',
+            today: 'Dziś',
+            month: 'Miesiąc',
+            week: 'Tydzień',
+            day: 'Dzień',
+            list: 'Plan dnia',
         },
-        weekLabel: "Mg",
-        allDayText: "Sepanjang hari",
-        eventLimitText: function (n) {
-            return "masih ada " + n + " acara";
-        },
-        noEventsMessage: "Tiada peristiwa untuk dipaparkan"
+        weekText: 'Tydz',
+        allDayText: 'Cały dzień',
+        moreLinkText: 'więcej',
+        noEventsText: 'Brak wydarzeń do wyświetlenia',
     };
 
-    var _m45 = {
-        code: "nb",
+    var l57 = {
+        code: 'pt-br',
+        buttonText: {
+            prev: 'Anterior',
+            next: 'Próximo',
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia',
+            list: 'Lista',
+        },
+        weekText: 'Sm',
+        allDayText: 'dia inteiro',
+        moreLinkText: function (n) {
+            return 'mais +' + n
+        },
+        noEventsText: 'Não há eventos para mostrar',
+    };
+
+    var l58 = {
+        code: 'pt',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Forrige",
-            next: "Neste",
-            today: "I dag",
-            month: "Måned",
-            week: "Uke",
-            day: "Dag",
-            list: "Agenda"
+            prev: 'Anterior',
+            next: 'Seguinte',
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia',
+            list: 'Agenda',
         },
-        weekLabel: "Uke",
-        allDayText: "Hele dagen",
-        eventLimitText: "til",
-        noEventsMessage: "Ingen hendelser å vise"
+        weekText: 'Sem',
+        allDayText: 'Todo o dia',
+        moreLinkText: 'mais',
+        noEventsText: 'Não há eventos para mostrar',
     };
 
-    var _m46 = {
-        code: "nl",
+    var l59 = {
+        code: 'ro',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Voorgaand",
-            next: "Volgende",
-            today: "Vandaag",
-            year: "Jaar",
-            month: "Maand",
-            week: "Week",
-            day: "Dag",
-            list: "Agenda"
+            prev: 'precedentă',
+            next: 'următoare',
+            today: 'Azi',
+            month: 'Lună',
+            week: 'Săptămână',
+            day: 'Zi',
+            list: 'Agendă',
         },
-        allDayText: "Hele dag",
-        eventLimitText: "extra",
-        noEventsMessage: "Geen evenementen om te laten zien"
+        weekText: 'Săpt',
+        allDayText: 'Toată ziua',
+        moreLinkText: function (n) {
+            return '+alte ' + n
+        },
+        noEventsText: 'Nu există evenimente de afișat',
     };
 
-    var _m47 = {
-        code: "nn",
+    var l60 = {
+        code: 'ru',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Førre",
-            next: "Neste",
-            today: "I dag",
-            month: "Månad",
-            week: "Veke",
-            day: "Dag",
-            list: "Agenda"
+            prev: 'Пред',
+            next: 'След',
+            today: 'Сегодня',
+            month: 'Месяц',
+            week: 'Неделя',
+            day: 'День',
+            list: 'Повестка дня',
         },
-        weekLabel: "Veke",
-        allDayText: "Heile dagen",
-        eventLimitText: "til",
-        noEventsMessage: "Ingen hendelser å vise"
+        weekText: 'Нед',
+        allDayText: 'Весь день',
+        moreLinkText: function (n) {
+            return '+ ещё ' + n
+        },
+        noEventsText: 'Нет событий для отображения',
     };
 
-    var _m48 = {
-        code: "pl",
+    var l61 = {
+        code: 'si-lk',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Poprzedni",
-            next: "Następny",
-            today: "Dziś",
-            month: "Miesiąc",
-            week: "Tydzień",
-            day: "Dzień",
-            list: "Plan dnia"
+            prev: 'පෙර',
+            next: 'පසු',
+            today: 'අද',
+            month: 'මාසය',
+            week: 'සතිය',
+            day: 'දවස',
+            list: 'ලැයිස්තුව',
         },
-        weekLabel: "Tydz",
-        allDayText: "Cały dzień",
-        eventLimitText: "więcej",
-        noEventsMessage: "Brak wydarzeń do wyświetlenia"
+        weekText: 'සති',
+        allDayText: 'සියලු',
+        moreLinkText: 'තවත්',
+        noEventsText: 'මුකුත් නැත',
     };
 
-    var _m49 = {
-        code: "pt-br",
-        buttonText: {
-            prev: "Anterior",
-            next: "Próximo",
-            today: "Hoje",
-            month: "Mês",
-            week: "Semana",
-            day: "Dia",
-            list: "Lista"
-        },
-        weekLabel: "Sm",
-        allDayText: "dia inteiro",
-        eventLimitText: function (n) {
-            return "mais +" + n;
-        },
-        noEventsMessage: "Não há eventos para mostrar"
-    };
-
-    var _m50 = {
-        code: "pt",
+    var l62 = {
+        code: 'sk',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Anterior",
-            next: "Seguinte",
-            today: "Hoje",
-            month: "Mês",
-            week: "Semana",
-            day: "Dia",
-            list: "Agenda"
+            prev: 'Predchádzajúci',
+            next: 'Nasledujúci',
+            today: 'Dnes',
+            month: 'Mesiac',
+            week: 'Týždeň',
+            day: 'Deň',
+            list: 'Rozvrh',
         },
-        weekLabel: "Sem",
-        allDayText: "Todo o dia",
-        eventLimitText: "mais",
-        noEventsMessage: "Não há eventos para mostrar"
+        weekText: 'Ty',
+        allDayText: 'Celý deň',
+        moreLinkText: function (n) {
+            return '+ďalšie: ' + n
+        },
+        noEventsText: 'Žiadne akcie na zobrazenie',
     };
 
-    var _m51 = {
-        code: "ro",
+    var l63 = {
+        code: 'sl',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "precedentă",
-            next: "următoare",
-            today: "Azi",
-            month: "Lună",
-            week: "Săptămână",
-            day: "Zi",
-            list: "Agendă"
+            prev: 'Prejšnji',
+            next: 'Naslednji',
+            today: 'Trenutni',
+            month: 'Mesec',
+            week: 'Teden',
+            day: 'Dan',
+            list: 'Dnevni red',
         },
-        weekLabel: "Săpt",
-        allDayText: "Toată ziua",
-        eventLimitText: function (n) {
-            return "+alte " + n;
-        },
-        noEventsMessage: "Nu există evenimente de afișat"
+        weekText: 'Teden',
+        allDayText: 'Ves dan',
+        moreLinkText: 'več',
+        noEventsText: 'Ni dogodkov za prikaz',
     };
 
-    var _m52 = {
-        code: "ru",
-        week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
-        },
+    var l64 = {
+        code: 'sm',
         buttonText: {
-            prev: "Пред",
-            next: "След",
-            today: "Сегодня",
-            month: "Месяц",
-            week: "Неделя",
-            day: "День",
-            list: "Повестка дня"
+            prev: 'Talu ai',
+            next: 'Mulimuli atu',
+            today: 'Aso nei',
+            month: 'Masina',
+            week: 'Vaiaso',
+            day: 'Aso',
+            list: 'Faasologa',
         },
-        weekLabel: "Нед",
-        allDayText: "Весь день",
-        eventLimitText: function (n) {
-            return "+ ещё " + n;
-        },
-        noEventsMessage: "Нет событий для отображения"
+        weekText: 'Vaiaso',
+        allDayText: 'Aso atoa',
+        moreLinkText: 'sili atu',
+        noEventsText: 'Leai ni mea na tutupu',
     };
 
-    var _m53 = {
-        code: "sk",
+    var l65 = {
+        code: 'sq',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Predchádzajúci",
-            next: "Nasledujúci",
-            today: "Dnes",
-            month: "Mesiac",
-            week: "Týždeň",
-            day: "Deň",
-            list: "Rozvrh"
+            prev: 'mbrapa',
+            next: 'Përpara',
+            today: 'sot',
+            month: 'Muaj',
+            week: 'Javë',
+            day: 'Ditë',
+            list: 'Listë',
         },
-        weekLabel: "Ty",
-        allDayText: "Celý deň",
-        eventLimitText: function (n) {
-            return "+ďalšie: " + n;
+        weekText: 'Ja',
+        allDayText: 'Gjithë ditën',
+        moreLinkText: function (n) {
+            return '+më tepër ' + n
         },
-        noEventsMessage: "Žiadne akcie na zobrazenie"
+        noEventsText: 'Nuk ka evente për të shfaqur',
     };
 
-    var _m54 = {
-        code: "sl",
+    var l66 = {
+        code: 'sr-cyrl',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Prejšnji",
-            next: "Naslednji",
-            today: "Trenutni",
-            month: "Mesec",
-            week: "Teden",
-            day: "Dan",
-            list: "Dnevni red"
+            prev: 'Претходна',
+            next: 'следећи',
+            today: 'Данас',
+            month: 'Месец',
+            week: 'Недеља',
+            day: 'Дан',
+            list: 'Планер',
         },
-        weekLabel: "Teden",
-        allDayText: "Ves dan",
-        eventLimitText: "več",
-        noEventsMessage: "Ni dogodkov za prikaz"
+        weekText: 'Сед',
+        allDayText: 'Цео дан',
+        moreLinkText: function (n) {
+            return '+ још ' + n
+        },
+        noEventsText: 'Нема догађаја за приказ',
     };
 
-    var _m55 = {
-        code: "sq",
+    var l67 = {
+        code: 'sr',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "mbrapa",
-            next: "Përpara",
-            today: "sot",
-            month: "Muaj",
-            week: "Javë",
-            day: "Ditë",
-            list: "Listë"
+            prev: 'Prethodna',
+            next: 'Sledeći',
+            today: 'Danas',
+            month: 'Mеsеc',
+            week: 'Nеdеlja',
+            day: 'Dan',
+            list: 'Planеr',
         },
-        weekLabel: "Ja",
-        allDayHtml: "Gjithë<br/>ditën",
-        eventLimitText: function (n) {
-            return "+më tepër " + n;
+        weekText: 'Sed',
+        allDayText: 'Cеo dan',
+        moreLinkText: function (n) {
+            return '+ još ' + n
         },
-        noEventsMessage: "Nuk ka evente për të shfaqur"
+        noEventsText: 'Nеma događaja za prikaz',
     };
 
-    var _m56 = {
-        code: "sr-cyrl",
+    var l68 = {
+        code: 'sv',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Претходна",
-            next: "следећи",
-            today: "Данас",
-            month: "Месец",
-            week: "Недеља",
-            day: "Дан",
-            list: "Планер"
+            prev: 'Förra',
+            next: 'Nästa',
+            today: 'Idag',
+            month: 'Månad',
+            week: 'Vecka',
+            day: 'Dag',
+            list: 'Program',
         },
-        weekLabel: "Сед",
-        allDayText: "Цео дан",
-        eventLimitText: function (n) {
-            return "+ још " + n;
+        buttonHints: {
+            prev(buttonText) {
+                return `Föregående ${buttonText.toLocaleLowerCase()}`
+            },
+            next(buttonText) {
+                return `Nästa ${buttonText.toLocaleLowerCase()}`
+            },
+            today(buttonText) {
+                return (buttonText === 'Program' ? 'Detta' : 'Denna') + ' ' + buttonText.toLocaleLowerCase()
+            },
         },
-        noEventsMessage: "Нема догађаја за приказ"
+        viewHint: '$0 vy',
+        navLinkHint: 'Gå till $0',
+        moreLinkHint(eventCnt) {
+            return `Visa ytterligare ${eventCnt} händelse${eventCnt === 1 ? '' : 'r'}`
+        },
+        weekText: 'v.',
+        weekTextLong: 'Vecka',
+        allDayText: 'Heldag',
+        moreLinkText: 'till',
+        noEventsText: 'Inga händelser att visa',
+        closeHint: 'Stäng',
+        timeHint: 'Klockan',
+        eventHint: 'Händelse',
     };
 
-    var _m57 = {
-        code: "sr",
+    var l69 = {
+        code: 'ta-in',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Prethodna",
-            next: "Sledeći",
-            today: "Danas",
-            month: "Mеsеc",
-            week: "Nеdеlja",
-            day: "Dan",
-            list: "Planеr"
+            prev: 'முந்தைய',
+            next: 'அடுத்தது',
+            today: 'இன்று',
+            month: 'மாதம்',
+            week: 'வாரம்',
+            day: 'நாள்',
+            list: 'தினசரி அட்டவணை',
         },
-        weekLabel: "Sed",
-        allDayText: "Cеo dan",
-        eventLimitText: function (n) {
-            return "+ još " + n;
+        weekText: 'வாரம்',
+        allDayText: 'நாள் முழுவதும்',
+        moreLinkText: function (n) {
+            return '+ மேலும் ' + n
         },
-        noEventsMessage: "Nеma događaja za prikaz"
+        noEventsText: 'காண்பிக்க நிகழ்வுகள் இல்லை',
     };
 
-    var _m58 = {
-        code: "sv",
+    var l70 = {
+        code: 'th',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Förra",
-            next: "Nästa",
-            today: "Idag",
-            month: "Månad",
-            week: "Vecka",
-            day: "Dag",
-            list: "Program"
-        },
-        weekLabel: "v.",
-        allDayText: "Heldag",
-        eventLimitText: "till",
-        noEventsMessage: "Inga händelser att visa"
-    };
-
-    var _m59 = {
-        code: "th",
-        week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
-        },
-        buttonText: {
-            prev: "ก่อนหน้า",
-            next: "ถัดไป",
+            prev: 'ก่อนหน้า',
+            next: 'ถัดไป',
             prevYear: 'ปีก่อนหน้า',
             nextYear: 'ปีถัดไป',
             year: 'ปี',
-            today: "วันนี้",
-            month: "เดือน",
-            week: "สัปดาห์",
-            day: "วัน",
-            list: "กำหนดการ"
+            today: 'วันนี้',
+            month: 'เดือน',
+            week: 'สัปดาห์',
+            day: 'วัน',
+            list: 'กำหนดการ',
         },
-        weekLabel: "สัปดาห์",
-        allDayText: "ตลอดวัน",
-        eventLimitText: "เพิ่มเติม",
-        noEventsMessage: "ไม่มีกิจกรรมที่จะแสดง"
+        weekText: 'สัปดาห์',
+        allDayText: 'ตลอดวัน',
+        moreLinkText: 'เพิ่มเติม',
+        noEventsText: 'ไม่มีกิจกรรมที่จะแสดง',
     };
 
-    var _m60 = {
-        code: "tr",
+    var l71 = {
+        code: 'tr',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "geri",
-            next: "ileri",
-            today: "bugün",
-            month: "Ay",
-            week: "Hafta",
-            day: "Gün",
-            list: "Ajanda"
+            prev: 'geri',
+            next: 'ileri',
+            today: 'bugün',
+            month: 'Ay',
+            week: 'Hafta',
+            day: 'Gün',
+            list: 'Ajanda',
         },
-        weekLabel: "Hf",
-        allDayText: "Tüm gün",
-        eventLimitText: "daha fazla",
-        noEventsMessage: "Gösterilecek etkinlik yok"
+        weekText: 'Hf',
+        allDayText: 'Tüm gün',
+        moreLinkText: 'daha fazla',
+        noEventsText: 'Gösterilecek etkinlik yok',
     };
 
-    var _m61 = {
-        code: "ug",
+    var l72 = {
+        code: 'ug',
         buttonText: {
-            month: "ئاي",
-            week: "ھەپتە",
-            day: "كۈن",
-            list: "كۈنتەرتىپ"
+            month: 'ئاي',
+            week: 'ھەپتە',
+            day: 'كۈن',
+            list: 'كۈنتەرتىپ',
         },
-        allDayText: "پۈتۈن كۈن"
+        allDayText: 'پۈتۈن كۈن',
     };
 
-    var _m62 = {
-        code: "uk",
+    var l73 = {
+        code: 'uk',
         week: {
-            dow: 1,
-            doy: 7 // The week that contains Jan 1st is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 7, // The week that contains Jan 1st is the first week of the year.
         },
         buttonText: {
-            prev: "Попередній",
-            next: "далі",
-            today: "Сьогодні",
-            month: "Місяць",
-            week: "Тиждень",
-            day: "День",
-            list: "Порядок денний"
+            prev: 'Попередній',
+            next: 'далі',
+            today: 'Сьогодні',
+            month: 'Місяць',
+            week: 'Тиждень',
+            day: 'День',
+            list: 'Порядок денний',
         },
-        weekLabel: "Тиж",
-        allDayText: "Увесь день",
-        eventLimitText: function (n) {
-            return "+ще " + n + "...";
+        weekText: 'Тиж',
+        allDayText: 'Увесь день',
+        moreLinkText: function (n) {
+            return '+ще ' + n + '...'
         },
-        noEventsMessage: "Немає подій для відображення"
+        noEventsText: 'Немає подій для відображення',
     };
 
-    var _m63 = {
-        code: "uz",
+    var l74 = {
+        code: 'uz',
         buttonText: {
-            month: "Oy",
-            week: "Xafta",
-            day: "Kun",
-            list: "Kun tartibi"
+            month: 'Oy',
+            week: 'Xafta',
+            day: 'Kun',
+            list: 'Kun tartibi',
         },
         allDayText: "Kun bo'yi",
-        eventLimitText: function (n) {
-            return "+ yana " + n;
+        moreLinkText: function (n) {
+            return '+ yana ' + n
         },
-        noEventsMessage: "Ko'rsatish uchun voqealar yo'q"
+        noEventsText: "Ko'rsatish uchun voqealar yo'q",
     };
 
-    var _m64 = {
-        code: "vi",
+    var l75 = {
+        code: 'vi',
         week: {
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "Trước",
-            next: "Tiếp",
-            today: "Hôm nay",
-            month: "Tháng",
-            week: "Tuần",
-            day: "Ngày",
-            list: "Lịch biểu"
+            prev: 'Trước',
+            next: 'Tiếp',
+            today: 'Hôm nay',
+            month: 'Tháng',
+            week: 'Tuần',
+            day: 'Ngày',
+            list: 'Lịch biểu',
         },
-        weekLabel: "Tu",
-        allDayText: "Cả ngày",
-        eventLimitText: function (n) {
-            return "+ thêm " + n;
+        weekText: 'Tu',
+        allDayText: 'Cả ngày',
+        moreLinkText: function (n) {
+            return '+ thêm ' + n
         },
-        noEventsMessage: "Không có sự kiện để hiển thị"
+        noEventsText: 'Không có sự kiện để hiển thị',
     };
 
-    var _m65 = {
-        code: "zh-cn",
+    var l76 = {
+        code: 'zh-cn',
         week: {
             // GB/T 7408-1994《数据元和交换格式·信息交换·日期和时间表示法》与ISO 8601:1988等效
-            dow: 1,
-            doy: 4 // The week that contains Jan 4th is the first week of the year.
+            dow: 1, // Monday is the first day of the week.
+            doy: 4, // The week that contains Jan 4th is the first week of the year.
         },
         buttonText: {
-            prev: "上月",
-            next: "下月",
-            today: "今天",
-            month: "月",
-            week: "周",
-            day: "日",
-            list: "日程"
+            prev: '上月',
+            next: '下月',
+            today: '今天',
+            month: '月',
+            week: '周',
+            day: '日',
+            list: '日程',
         },
-        weekLabel: "周",
-        allDayText: "全天",
-        eventLimitText: function (n) {
-            return "另外 " + n + " 个";
+        weekText: '周',
+        allDayText: '全天',
+        moreLinkText: function (n) {
+            return '另外 ' + n + ' 个'
         },
-        noEventsMessage: "没有事件显示"
+        noEventsText: '没有事件显示',
     };
 
-    var _m66 = {
-        code: "zh-tw",
+    var l77 = {
+        code: 'zh-tw',
         buttonText: {
-            prev: "上月",
-            next: "下月",
-            today: "今天",
-            month: "月",
-            week: "週",
-            day: "天",
-            list: "活動列表"
+            prev: '上月',
+            next: '下月',
+            today: '今天',
+            month: '月',
+            week: '週',
+            day: '天',
+            list: '活動列表',
         },
-        weekLabel: "周",
-        allDayText: "整天",
-        eventLimitText: '顯示更多',
-        noEventsMessage: "没有任何活動"
+        weekText: '周',
+        allDayText: '整天',
+        moreLinkText: '顯示更多',
+        noEventsText: '没有任何活動',
     };
 
-    var _rollupPluginMultiEntry_entryPoint = [
-    _m0, _m1, _m2, _m3, _m4, _m5, _m6, _m7, _m8, _m9, _m10, _m11, _m12, _m13, _m14, _m15, _m16, _m17, _m18, _m19, _m20, _m21, _m22, _m23, _m24, _m25, _m26, _m27, _m28, _m29, _m30, _m31, _m32, _m33, _m34, _m35, _m36, _m37, _m38, _m39, _m40, _m41, _m42, _m43, _m44, _m45, _m46, _m47, _m48, _m49, _m50, _m51, _m52, _m53, _m54, _m55, _m56, _m57, _m58, _m59, _m60, _m61, _m62, _m63, _m64, _m65, _m66
+    /* eslint max-len: off */
+
+    var localesAll = [
+        l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25, l26, l27, l28, l29, l30, l31, l32, l33, l34, l35, l36, l37, l38, l39, l40, l41, l42, l43, l44, l45, l46, l47, l48, l49, l50, l51, l52, l53, l54, l55, l56, l57, l58, l59, l60, l61, l62, l63, l64, l65, l66, l67, l68, l69, l70, l71, l72, l73, l74, l75, l76, l77,
     ];
 
-    return _rollupPluginMultiEntry_entryPoint;
+    return localesAll;
 
-}));
+}());

@@ -52,7 +52,7 @@ DataTable.Buttons.pdfMake = function (_) {
 	if ( ! _ ) {
 		return _pdfMake();
 	}
-	pdfmake = m_ake;
+	pdfmake = _;
 }
 
 DataTable.Buttons.jszip = function (_) {
@@ -386,7 +386,7 @@ function _addToZip( zip, obj ) {
 		// drop attributes
 		_ieExcel = _serialiser
 			.serializeToString(
-				$.parseXML( excelStrings['xl/worksheets/sheet1.xml'] )
+                (new window.DOMParser()).parseFromString(excelStrings['xl/worksheets/sheet1.xml'], 'text/xml')
 			)
 			.indexOf( 'xmlns:r' ) === -1;
 	}
@@ -665,18 +665,18 @@ var excelStrings = {
 					'</right>'+
 					'<top style="thin">'+
 						'<color auto="1" />'+
-					'</top>'+
-					'<bottom style="thin">'+
-						'<color auto="1" />'+
-					'</bottom>'+
-					'<diagonal />'+
-				'</border>'+
-			'</borders>'+
-			'<cellStyleXfs count="1">'+
-				'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" />'+
-			'</cellStyleXfs>'+
-			'<cellXfs count="67">'+
-				'<xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1"/>'+
+        '</top>' +
+        '<bottom style="thin">' +
+        '<color auto="1" />' +
+        '</bottom>' +
+        '<diagonal />' +
+        '</border>' +
+        '</borders>' +
+        '<cellStyleXfs count="1">' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" />' +
+        '</cellStyleXfs>' +
+        '<cellXfs count="68">' +
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1"/>'+
 				'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1"/>'+
 				'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1"/>'+
 				'<xf numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1"/>'+
@@ -745,23 +745,24 @@ var excelStrings = {
 					'<alignment wrapText="1"/>'+
 				'</xf>'+
 				'<xf numFmtId="9"   fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="165" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="166" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="167" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="168" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="169" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="3" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="4" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="1" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-				'<xf numFmtId="2" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>'+
-			'</cellXfs>'+
-			'<cellStyles count="1">'+
-				'<cellStyle name="Normal" xfId="0" builtinId="0" />'+
-			'</cellStyles>'+
-			'<dxfs count="0" />'+
-			'<tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4" />'+
-		'</styleSheet>'
+        '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="166" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="167" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="168" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="169" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="3" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="4" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="1" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="2" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="14" fontId="0" fillId="0" borderId="0" applyFont="1" applyFill="1" applyBorder="1" xfId="0" applyNumberFormat="1"/>' +
+        '</cellXfs>' +
+        '<cellStyles count="1">' +
+        '<cellStyle name="Normal" xfId="0" builtinId="0" />' +
+        '</cellStyles>' +
+        '<dxfs count="0" />' +
+        '<tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4" />' +
+        '</styleSheet>'
 };
 // Note we could use 3 `for` loops for the styles, but when gzipped there is
 // virtually no difference in size, since the above can be easily compressed
@@ -771,17 +772,38 @@ var excelStrings = {
 // Ref: section 3.8.30 - built in formatters in open spreadsheet
 //   https://www.ecma-international.org/news/TC45_current_work/Office%20Open%20XML%20Part%204%20-%20Markup%20Language%20Reference.pdf
 var _excelSpecials = [
-	{ match: /^\-?\d+\.\d%$/,       style: 60, fmt: function (d) { return d/100; } }, // Precent with d.p.
-	{ match: /^\-?\d+\.?\d*%$/,     style: 56, fmt: function (d) { return d/100; } }, // Percent
-	{ match: /^\-?\$[\d,]+.?\d*$/,  style: 57 }, // Dollars
-	{ match: /^\-?£[\d,]+.?\d*$/,   style: 58 }, // Pounds
-	{ match: /^\-?€[\d,]+.?\d*$/,   style: 59 }, // Euros
-	{ match: /^\-?\d+$/,            style: 65 }, // Numbers without thousand separators
-	{ match: /^\-?\d+\.\d{2}$/,     style: 66 }, // Numbers 2 d.p. without thousands separators
-	{ match: /^\([\d,]+\)$/,        style: 61, fmt: function (d) { return -1 * d.replace(/[\(\)]/g, ''); } },  // Negative numbers indicated by brackets
-	{ match: /^\([\d,]+\.\d{2}\)$/, style: 62, fmt: function (d) { return -1 * d.replace(/[\(\)]/g, ''); } },  // Negative numbers indicated by brackets - 2d.p.
-	{ match: /^\-?[\d,]+$/,         style: 63 }, // Numbers with thousand separators
-	{ match: /^\-?[\d,]+\.\d{2}$/,  style: 64 }  // Numbers with 2 d.p. and thousands separators
+    {
+        match: /^\-?\d+\.\d%$/, style: 60, fmt: function (d) {
+            return d / 100;
+        }
+    }, // Percent with d.p.
+    {
+        match: /^\-?\d+\.?\d*%$/, style: 56, fmt: function (d) {
+            return d / 100;
+        }
+    }, // Percent
+    {match: /^\-?\$[\d,]+.?\d*$/, style: 57}, // Dollars
+    {match: /^\-?£[\d,]+.?\d*$/, style: 58}, // Pounds
+    {match: /^\-?€[\d,]+.?\d*$/, style: 59}, // Euros
+    {match: /^\-?\d+$/, style: 65}, // Numbers without thousand separators
+    {match: /^\-?\d+\.\d{2}$/, style: 66}, // Numbers 2 d.p. without thousands separators
+    {
+        match: /^\([\d,]+\)$/, style: 61, fmt: function (d) {
+            return -1 * d.replace(/[\(\)]/g, '');
+        }
+    },  // Negative numbers indicated by brackets
+    {
+        match: /^\([\d,]+\.\d{2}\)$/, style: 62, fmt: function (d) {
+            return -1 * d.replace(/[\(\)]/g, '');
+        }
+    },  // Negative numbers indicated by brackets - 2d.p.
+    {match: /^\-?[\d,]+$/, style: 63}, // Numbers with thousand separators
+    {match: /^\-?[\d,]+\.\d{2}$/, style: 64},
+    {
+        match: /^[\d]{4}\-[\d]{2}\-[\d]{2}$/, style: 67, fmt: function (d) {
+            return Math.round(25569 + (Date.parse(d) / (86400 * 1000)));
+        }
+    } //Date yyyy-mm-dd
 ];
 
 
@@ -960,7 +982,7 @@ DataTable.ext.buttons.csvHtml5 = {
 		}
 
 		if ( config.bom ) {
-			output = '\ufeff' + output;
+            output = String.fromCharCode(0xFEFF) + output;
 		}
 
 		_saveAs(
@@ -1051,27 +1073,28 @@ DataTable.ext.buttons.excelHtml5 = {
 				var cell = null;
 
 				// For null, undefined of blank cell, continue so it doesn't create the _createNode
-				if ( row[i] === null || row[i] === undefined || row[i] === '' ) {
-					if ( config.createEmptyCells === true ) {
-						row[i] = '';
-					}
-					else {
-						continue;
-					}
-				}
+                if (row[i] === null || row[i] === undefined || row[i] === '') {
+                    if (config.createEmptyCells === true) {
+                        row[i] = '';
+                    } else {
+                        continue;
+                    }
+                }
 
-				var originalContent = row[i];
-				row[i] = $.trim( row[i] );
+                var originalContent = row[i];
+                row[i] = typeof row[i].trim === 'function'
+                    ? row[i].trim()
+                    : row[i];
 
-				// Special number formatting options
-				for ( var j=0, jen=_excelSpecials.length ; j<jen ; j++ ) {
-					var special = _excelSpecials[j];
+                // Special number formatting options
+                for (var j = 0, jen = _excelSpecials.length; j < jen; j++) {
+                    var special = _excelSpecials[j];
 
-					// TODO Need to provide the ability for the specials to say
-					// if they are returning a string, since at the moment it is
-					// assumed to be a number
-					if ( row[i].match && ! row[i].match(/^0\d+/) && row[i].match( special.match ) ) {
-						var val = row[i].replace(/[^\d\.\-]/g, '');
+                    // TODO Need to provide the ability for the specials to say
+                    // if they are returning a string, since at the moment it is
+                    // assumed to be a number
+                    if (row[i].match && !row[i].match(/^0\d+/) && row[i].match(special.match)) {
+                        var val = row[i].replace(/[^\d\.\-]/g, '');
 
 						if ( special.fmt ) {
 							val = special.fmt( val );
@@ -1093,9 +1116,9 @@ DataTable.ext.buttons.excelHtml5 = {
 
 				if ( ! cell ) {
 					if ( typeof row[i] === 'number' || (
-						row[i].match &&
-						row[i].match(/^-?\d+(\.\d+)?$/) &&
-						! row[i].match(/^0\d+/) )
+                        row[i].match &&
+                        row[i].match(/^-?\d+(\.\d+)?([eE]\-?\d+)?$/) && // Includes exponential format
+                        !row[i].match(/^0\d+/) )
 					) {
 						// Detect numbers - don't match numbers with leading zeros
 						// or a negative anywhere but the start

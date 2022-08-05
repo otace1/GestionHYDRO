@@ -1,6 +1,6 @@
 /*!
  * Flash export buttons for Buttons and DataTables.
- * 2015-2017 SpryMedia Ltd - datatables.net/license
+ * 2015 SpryMedia Ltd - datatables.net/license
  *
  * ZeroClipbaord - MIT license
  * Copyright (c) 2012 Joseph Huckaby
@@ -481,41 +481,84 @@ var _glue = function ( flash, node )
 {
 	var id = node.attr('id');
 
-	if ( node.parents('html').length ) {
-		flash.glue( node[0], '' );
-	}
-	else {
-		setTimeout( function () {
-			_glue( flash, node );
-		}, 500 );
-	}
+    if (node.parents('html').length) {
+        flash.glue(node[0], '');
+    } else {
+        setTimeout(function () {
+            _glue(flash, node);
+        }, 500);
+    }
 };
 
-/**
- * Get the sheet name for Excel exports.
- *
- * @param {object}  config       Button configuration
- */
-var _sheetname = function ( config )
-{
-	var sheetName = 'Sheet1';
+    /**
+     * Get the file name for an exported file.
+     *
+     * @param {object}  config       Button configuration
+     * @param {boolean} incExtension Include the file name extension
+     */
+    var _filename = function (config, incExtension) {
+        // Backwards compatibility
+        var filename = config.filename === '*' && config.title !== '*' && config.title !== undefined ?
+            config.title :
+            config.filename;
 
-	if ( config.sheetName ) {
-		sheetName = config.sheetName.replace(/[\[\]\*\/\\\?\:]/g, '');
-	}
+        if (typeof filename === 'function') {
+            filename = filename();
+        }
 
-	return sheetName;
-};
+        if (filename.indexOf('*') !== -1) {
+            filename = $.trim(filename.replace('*', $('title').text()));
+        }
 
-/**
- * Set the flash text. This has to be broken up into chunks as the Javascript /
- * Flash bridge has a size limit. There is no indication in the Flash
- * documentation what this is, and it probably depends upon the browser.
- * Experimentation shows that the point is around 50k when data starts to get
- * lost, so an 8K limit used here is safe.
- *
- * @param {ZeroClipboard} flash ZeroClipboard instance
- * @param {string}        data  Data to send to Flash
+        // Strip characters which the OS will object to
+        filename = filename.replace(/[^a-zA-Z0-9_\u00A1-\uFFFF\.,\-_ !\(\)]/g, "");
+
+        return incExtension === undefined || incExtension === true ?
+            filename + config.extension :
+            filename;
+    };
+
+    /**
+     * Get the sheet name for Excel exports.
+     *
+     * @param {object}  config       Button configuration
+     */
+    var _sheetname = function (config) {
+        var sheetName = 'Sheet1';
+
+        if (config.sheetName) {
+            sheetName = config.sheetName.replace(/[\[\]\*\/\\\?\:]/g, '');
+        }
+
+        return sheetName;
+    };
+
+    /**
+     * Get the title for an exported file.
+     *
+     * @param {object}  config  Button configuration
+     */
+    var _title = function (config) {
+        var title = config.title;
+
+        if (typeof title === 'function') {
+            title = title();
+        }
+
+        return title.indexOf('*') !== -1 ?
+            title.replace('*', $('title').text() || 'Exported data') :
+            title;
+    };
+
+    /**
+     * Set the flash text. This has to be broken up into chunks as the Javascript /
+     * Flash bridge has a size limit. There is no indication in the Flash
+     * documentation what this is, and it probably depends upon the browser.
+     * Experimentation shows that the point is around 50k when data starts to get
+     * lost, so an 8K limit used here is safe.
+     *
+     * @param {ZeroClipboard} flash ZeroClipboard instance
+     * @param {string}        data  Data to send to Flash
  */
 var _setText = function ( flash, data )
 {
@@ -629,10 +672,6 @@ var flashButton = {
 
 	title: '*',
 
-	messageTop: '*',
-
-	messageBottom: '*',
-
 	filename: '*',
 
 	extension: '.csv',
@@ -680,15 +719,15 @@ function _createNode( doc, nodeName, opts ){
 			$(tempNode).attr( opts.attr );
 		}
 
-		if ( opts.children ) {
-			$.each( opts.children, function ( key, value ) {
-				tempNode.appendChild( value );
-			} );
-		}
+        if (opts.children) {
+            $.each(opts.children, function (key, value) {
+                tempNode.appendChild(value);
+            });
+        }
 
-		if ( opts.text !== null && opts.text !== undefined ) {
-			tempNode.appendChild( doc.createTextNode( opts.text ) );
-		}
+        if (opts.text) {
+            tempNode.appendChild(doc.createTextNode(opts.text));
+        }
 	}
 
 	return tempNode;
@@ -871,7 +910,6 @@ var excelStrings = {
 		'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
 		'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac">'+
 			'<sheetData/>'+
-			'<mergeCells count="0"/>'+
 		'</worksheet>',
 
 	"xl/styles.xml":
@@ -905,20 +943,18 @@ var excelStrings = {
 					'<name val="Calibri" />'+
 					'<i />'+
 				'</font>'+
-				'<font>'+
-					'<sz val="11" />'+
-					'<name val="Calibri" />'+
-					'<u />'+
-				'</font>'+
-			'</fonts>'+
-			'<fills count="6">'+
-				'<fill>'+
-					'<patternFill patternType="none" />'+
-				'</fill>'+
-				'<fill>'+ // Excel appears to use this as a dotted background regardless of values but
-					'<patternFill patternType="none" />'+ // to be valid to the schema, use a patternFill
-				'</fill>'+
-				'<fill>'+
+        '<font>' +
+        '<sz val="11" />' +
+        '<name val="Calibri" />' +
+        '<u />' +
+        '</font>' +
+        '</fonts>' +
+        '<fills count="6">' +
+        '<fill>' +
+        '<patternFill patternType="none" />' +
+        '</fill>' +
+        '<fill/>' + // Excel appears to use this as a dotted background regardless of values
+        '<fill>'+
 					'<patternFill patternType="solid">'+
 						'<fgColor rgb="FFD9D9D9" />'+
 						'<bgColor indexed="64" />'+
@@ -1080,7 +1116,7 @@ var _excelSpecials = [
  */
 
 // Set the default SWF path
-DataTable.Buttons.swfPath = '//cdn.datatables.net/buttons/'+DataTable.Buttons.version+'/swf/flashExport.swf';
+    DataTable.Buttons.swfPath = '//cdn.datatables.net/buttons/1.2.4/swf/flashExport.swf';
 
 // Method to allow Flash buttons to be resized when made visible - as they are
 // of zero height and width if initialised hidden
@@ -1106,44 +1142,28 @@ DataTable.ext.buttons.copyFlash = $.extend( {}, flashButton, {
 	},
 
 	action: function ( e, dt, button, config ) {
-		// Check that the trigger did actually occur due to a Flash activation
-		if ( ! config._fromFlash ) {
-			return;
-		}
+        // Check that the trigger did actually occur due to a Flash activation
+        if (!config._fromFlash) {
+            return;
+        }
 
-		this.processing( true );
+        this.processing(true);
 
-		var flash = config._flash;
-		var exportData = _exportData( dt, config );
-		var info = dt.buttons.exportInfo( config );
-		var newline = _newLine(config);
-		var output = exportData.str;
+        var flash = config._flash;
+        var data = _exportData(dt, config);
+        var output = config.customize ?
+            config.customize(data.str, config) :
+            data.str;
 
-		if ( info.title ) {
-			output = info.title + newline + newline + output;
-		}
+        flash.setAction('copy');
+        _setText(flash, output);
 
-		if ( info.messageTop ) {
-			output = info.messageTop + newline + newline + output;
-		}
+        this.processing(false);
 
-		if ( info.messageBottom ) {
-			output = output + newline + newline + info.messageBottom;
-		}
-
-		if ( config.customize ) {
-			output = config.customize( output, config, dt );
-		}
-
-		flash.setAction( 'copy' );
-		_setText( flash, output );
-
-		this.processing( false );
-
-		dt.buttons.info(
-			dt.i18n( 'buttons.copyTitle', 'Copy to clipboard' ),
-			dt.i18n( 'buttons.copySuccess', {
-				_: 'Copied %d rows to clipboard',
+        dt.buttons.info(
+            dt.i18n('buttons.copyTitle', 'Copy to clipboard'),
+            dt.i18n('buttons.copySuccess', {
+                _: 'Copied %d rows to clipboard',
 				1: 'Copied 1 row to clipboard'
 			}, data.rows ),
 			3000
@@ -1167,14 +1187,13 @@ DataTable.ext.buttons.csvFlash = $.extend( {}, flashButton, {
 		// Set the text
 		var flash = config._flash;
 		var data = _exportData( dt, config );
-		var info = dt.buttons.exportInfo( config );
 		var output = config.customize ?
-			config.customize( data.str, config, dt ) :
-			data.str;
+            config.customize(data.str, config) :
+            data.str;
 
-		flash.setAction( 'csv' );
-		flash.setFileName( info.filename );
-		_setText( flash, output );
+        flash.setAction('csv');
+        flash.setFileName(_filename(config));
+        _setText(flash, output);
 	},
 
 	escapeChar: '"'
@@ -1227,12 +1246,7 @@ DataTable.ext.buttons.excelFlash = $.extend( {}, flashButton, {
 
 				// For null, undefined of blank cell, continue so it doesn't create the _createNode
 				if ( row[i] === null || row[i] === undefined || row[i] === '' ) {
-					if ( config.createEmptyCells === true ) {
-						row[i] = '';
-					}
-					else {
-						continue;
-					}
+                    continue;
 				}
 
 				row[i] = $.trim( row[i] );
@@ -1320,35 +1334,10 @@ DataTable.ext.buttons.excelFlash = $.extend( {}, flashButton, {
 			config.customizeData( data );
 		}
 
-		var mergeCells = function ( row, colspan ) {
-			var mergeCells = $('mergeCells', rels);
-
-			mergeCells[0].appendChild( _createNode( rels, 'mergeCell', {
-				attr: {
-					ref: 'A'+row+':'+createCellPos(colspan)+row
-				}
-			} ) );
-			mergeCells.attr( 'count', mergeCells.attr( 'count' )+1 );
-			$('row:eq('+(row-1)+') c', rels).attr( 's', '51' ); // centre
-		};
-
-		// Title and top messages
-		var exportInfo = dt.buttons.exportInfo( config );
-		if ( exportInfo.title ) {
-			addRow( [exportInfo.title], rowPos );
-			mergeCells( rowPos, data.header.length-1 );
-		}
-
-		if ( exportInfo.messageTop ) {
-			addRow( [exportInfo.messageTop], rowPos );
-			mergeCells( rowPos, data.header.length-1 );
-		}
-
-		// Table itself
 		if ( config.header ) {
-			addRow( data.header, rowPos );
-			$('row:last c', rels).attr( 's', '2' ); // bold
-		}
+            addRow(data.header, rowPos);
+            $('row c', rels).attr('s', '2'); // bold
+        }
 
 		for ( var n=0, ie=data.body.length ; n<ie ; n++ ) {
 			addRow( data.body[n], rowPos );
@@ -1357,12 +1346,6 @@ DataTable.ext.buttons.excelFlash = $.extend( {}, flashButton, {
 		if ( config.footer && data.footer ) {
 			addRow( data.footer, rowPos);
 			$('row:last c', rels).attr( 's', '2' ); // bold
-		}
-
-		// Below the table
-		if ( exportInfo.messageBottom ) {
-			addRow( [exportInfo.messageBottom], rowPos );
-			mergeCells( rowPos, data.header.length-1 );
 		}
 
 		// Set column widths
@@ -1382,22 +1365,20 @@ DataTable.ext.buttons.excelFlash = $.extend( {}, flashButton, {
 
 		// Let the developer customise the document if they want to
 		if ( config.customize ) {
-			config.customize( xlsx, config, dt );
+            config.customize(xlsx);
 		}
 
 		_xlsxToStrings( xlsx );
 
-		flash.setAction( 'excel' );
-		flash.setFileName( exportInfo.filename );
-		flash.setSheetData( xlsx );
+        flash.setAction('excel');
+        flash.setFileName(_filename(config));
+        flash.setSheetData(xlsx);
 		_setText( flash, '' );
 
 		this.processing( false );
 	},
 
-	extension: '.xlsx',
-	
-	createEmptyCells: false
+    extension: '.xlsx'
 } );
 
 
@@ -1416,7 +1397,6 @@ DataTable.ext.buttons.pdfFlash = $.extend( {}, flashButton, {
 		// Set the text
 		var flash = config._flash;
 		var data = dt.buttons.exportData( config.exportOptions );
-		var info = dt.buttons.exportInfo( config );
 		var totalWidth = dt.table().node().offsetWidth;
 
 		// Calculate the column width ratios for layout of the table in the PDF
@@ -1424,31 +1404,32 @@ DataTable.ext.buttons.pdfFlash = $.extend( {}, flashButton, {
 			return dt.column( idx ).header().offsetWidth / totalWidth;
 		} );
 
-		flash.setAction( 'pdf' );
-		flash.setFileName( info.filename );
+        flash.setAction('pdf');
+        flash.setFileName(_filename(config));
 
-		_setText( flash, JSON.stringify( {
-			title:         info.title || '',
-			messageTop:    info.messageTop || '',
-			messageBottom: info.messageBottom || '',
-			colWidth:      ratios.toArray(),
-			orientation:   config.orientation,
-			size:          config.pageSize,
-			header:        config.header ? data.header : null,
-			footer:        config.footer ? data.footer : null,
-			body:          data.body
-		} ) );
+		_setText( flash, JSON.stringify({
+            title: _filename(config, false),
+            message: typeof config.message == 'function' ? config.message(dt, button, config) : config.message,
+            colWidth: ratios.toArray(),
+            orientation: config.orientation,
+            size: config.pageSize,
+            header: config.header ? data.header : null,
+            footer: config.footer ? data.footer : null,
+            body: data.body
+        } ) );
 
-		this.processing( false );
-	},
+        this.processing(false);
+    },
 
-	extension: '.pdf',
+    extension: '.pdf',
 
-	orientation: 'portrait',
+    orientation: 'portrait',
 
-	pageSize: 'A4',
+    pageSize: 'A4',
 
-	newline: '\n'
+    message: '',
+
+    newline: '\n'
 } );
 
 

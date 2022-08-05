@@ -1,7 +1,7 @@
 /*!
- * Chart.js v2.9.3
+ * Chart.js v2.9.4
  * https://www.chartjs.org
- * (c) 2019 Chart.js Contributors
+ * (c) 2020 Chart.js Contributors
  * Released under the MIT License
  */
 (function (global, factory) {
@@ -2098,23 +2098,28 @@ Color.prototype.setChannel = function (space, index, val) {
 	svalues[index] = val;
 	this.setValues(space, svalues);
 
-	return this;
+    return this;
 };
 
-if (typeof window !== 'undefined') {
-	window.Color = Color;
-}
+    if (typeof window !== 'undefined') {
+        window.Color = Color;
+    }
 
-var chartjsColor = Color;
+    var chartjsColor = Color;
 
-/**
- * @namespace Chart.helpers
- */
-var helpers = {
-	/**
-	 * An empty function that can be used, for example, for optional callback.
-	 */
-	noop: function() {},
+    function isValidKey(key) {
+        return ['__proto__', 'prototype', 'constructor'].indexOf(key) === -1;
+    }
+
+    /**
+     * @namespace Chart.helpers
+     */
+    var helpers = {
+        /**
+         * An empty function that can be used, for example, for optional callback.
+         */
+        noop: function () {
+        },
 
 	/**
 	 * Returns a unique id, sequentially generated from a global variable.
@@ -2282,8 +2287,8 @@ var helpers = {
 		}
 
 		if (helpers.isObject(source)) {
-			var target = {};
-			var keys = Object.keys(source);
+            var target = Object.create(source);
+            var keys = Object.keys(source);
 			var klen = keys.length;
 			var k = 0;
 
@@ -2303,30 +2308,42 @@ var helpers = {
 	 * @private
 	 */
 	_merger: function(key, target, source, options) {
-		var tval = target[key];
-		var sval = source[key];
+        if (!isValidKey(key)) {
+            // We want to ensure we do not copy prototypes over
+            // as this can pollute global namespaces
+            return;
+        }
 
-		if (helpers.isObject(tval) && helpers.isObject(sval)) {
-			helpers.merge(tval, sval, options);
-		} else {
-			target[key] = helpers.clone(sval);
-		}
-	},
+        var tval = target[key];
+        var sval = source[key];
+
+        if (helpers.isObject(tval) && helpers.isObject(sval)) {
+            helpers.merge(tval, sval, options);
+        } else {
+            target[key] = helpers.clone(sval);
+        }
+    },
 
 	/**
 	 * Merges source[key] in target[key] only if target[key] is undefined.
 	 * @private
 	 */
 	_mergerIf: function(key, target, source) {
-		var tval = target[key];
-		var sval = source[key];
+        if (!isValidKey(key)) {
+            // We want to ensure we do not copy prototypes over
+            // as this can pollute global namespaces
+            return;
+        }
 
-		if (helpers.isObject(tval) && helpers.isObject(sval)) {
-			helpers.mergeIf(tval, sval);
-		} else if (!target.hasOwnProperty(key)) {
-			target[key] = helpers.clone(sval);
-		}
-	},
+        var tval = target[key];
+        var sval = source[key];
+
+        if (helpers.isObject(tval) && helpers.isObject(sval)) {
+            helpers.mergeIf(tval, sval);
+        } else if (!target.hasOwnProperty(key)) {
+            target[key] = helpers.clone(sval);
+        }
+    },
 
 	/**
 	 * Recursively deep copies `source` properties into `target` with the given `options`.
@@ -3816,16 +3833,16 @@ helpers$1.extend(DatasetController.prototype, {
 	 */
 	_configure: function() {
 		var me = this;
-		me._config = helpers$1.merge({}, [
-			me.chart.options.datasets[me._type],
-			me.getDataset(),
-		], {
-			merger: function(key, target, source) {
-				if (key !== '_meta' && key !== 'data') {
-					helpers$1._merger(key, target, source);
-				}
-			}
-		});
+        me._config = helpers$1.merge(Object.create(null), [
+            me.chart.options.datasets[me._type],
+            me.getDataset(),
+        ], {
+            merger: function (key, target, source) {
+                if (key !== '_meta' && key !== 'data') {
+                    helpers$1._merger(key, target, source);
+                }
+            }
+        });
 	},
 
 	_update: function(reset) {
@@ -7082,12 +7099,13 @@ function updateDims(chartArea, params, layout) {
 	newHeight = params.outerHeight - getCombinedMax(maxPadding, chartArea, 'top', 'bottom');
 
 	if (newWidth !== chartArea.w || newHeight !== chartArea.h) {
-		chartArea.w = newWidth;
-		chartArea.h = newHeight;
+        chartArea.w = newWidth;
+        chartArea.h = newHeight;
 
-		// return true if chart area changed in layout's direction
-		return layout.horizontal ? newWidth !== chartArea.w : newHeight !== chartArea.h;
-	}
+        // return true if chart area changed in layout's direction
+        var sizes = layout.horizontal ? [newWidth, chartArea.w] : [newHeight, chartArea.h];
+        return sizes[0] !== sizes[1] && (!isNaN(sizes[0]) || !isNaN(sizes[1]));
+    }
 }
 
 function handleMaxPadding(chartArea) {
@@ -7390,7 +7408,7 @@ var platform_basic = {
 	}
 };
 
-var platform_dom = "/*\n * DOM element rendering detection\n * https://davidwalsh.name/detect-node-insertion\n */\n@keyframes chartjs-render-animation {\n\tfrom { opacity: 0.99; }\n\tto { opacity: 1; }\n}\n\n.chartjs-render-monitor {\n\tanimation: chartjs-render-animation 0.001s;\n}\n\n/*\n * DOM element resizing detection\n * https://github.com/marcj/css-element-queries\n */\n.chartjs-size-monitor,\n.chartjs-size-monitor-expand,\n.chartjs-size-monitor-shrink {\n\tposition: absolute;\n\tdirection: ltr;\n\tleft: 0;\n\ttop: 0;\n\tright: 0;\n\tbottom: 0;\n\toverflow: hidden;\n\tpointer-events: none;\n\tvisibility: hidden;\n\tz-index: -1;\n}\n\n.chartjs-size-monitor-expand > div {\n\tposition: absolute;\n\twidth: 1000000px;\n\theight: 1000000px;\n\tleft: 0;\n\ttop: 0;\n}\n\n.chartjs-size-monitor-shrink > div {\n\tposition: absolute;\n\twidth: 200%;\n\theight: 200%;\n\tleft: 0;\n\ttop: 0;\n}\n";
+    var platform_dom = "/*\r\n * DOM element rendering detection\r\n * https://davidwalsh.name/detect-node-insertion\r\n */\r\n@keyframes chartjs-render-animation {\r\n\tfrom { opacity: 0.99; }\r\n\tto { opacity: 1; }\r\n}\r\n\r\n.chartjs-render-monitor {\r\n\tanimation: chartjs-render-animation 0.001s;\r\n}\r\n\r\n/*\r\n * DOM element resizing detection\r\n * https://github.com/marcj/css-element-queries\r\n */\r\n.chartjs-size-monitor,\r\n.chartjs-size-monitor-expand,\r\n.chartjs-size-monitor-shrink {\r\n\tposition: absolute;\r\n\tdirection: ltr;\r\n\tleft: 0;\r\n\ttop: 0;\r\n\tright: 0;\r\n\tbottom: 0;\r\n\toverflow: hidden;\r\n\tpointer-events: none;\r\n\tvisibility: hidden;\r\n\tz-index: -1;\r\n}\r\n\r\n.chartjs-size-monitor-expand > div {\r\n\tposition: absolute;\r\n\twidth: 1000000px;\r\n\theight: 1000000px;\r\n\tleft: 0;\r\n\ttop: 0;\r\n}\r\n\r\n.chartjs-size-monitor-shrink > div {\r\n\tposition: absolute;\r\n\twidth: 200%;\r\n\theight: 200%;\r\n\tleft: 0;\r\n\ttop: 0;\r\n}\r\n";
 
 var platform_dom$1 = /*#__PURE__*/Object.freeze({
 __proto__: null,
@@ -8098,7 +8116,7 @@ var core_scaleService = {
 	},
 	getScaleDefaults: function(type) {
 		// Return the scale defaults merged with the global settings so that we always use the latest ones
-		return this.defaults.hasOwnProperty(type) ? helpers$1.merge({}, [core_defaults.scale, this.defaults[type]]) : {};
+        return this.defaults.hasOwnProperty(type) ? helpers$1.merge(Object.create(null), [core_defaults.scale, this.defaults[type]]) : {};
 	},
 	updateScaleDefaults: function(type, additions) {
 		var me = this;
@@ -9173,17 +9191,17 @@ core_defaults._set('global', {
  * returns a deep copy of the result, thus doesn't alter inputs.
  */
 function mergeScaleConfig(/* config objects ... */) {
-	return helpers$1.merge({}, [].slice.call(arguments), {
-		merger: function(key, target, source, options) {
-			if (key === 'xAxes' || key === 'yAxes') {
-				var slen = source[key].length;
-				var i, type, scale;
+    return helpers$1.merge(Object.create(null), [].slice.call(arguments), {
+        merger: function (key, target, source, options) {
+            if (key === 'xAxes' || key === 'yAxes') {
+                var slen = source[key].length;
+                var i, type, scale;
 
-				if (!target[key]) {
-					target[key] = [];
-				}
+                if (!target[key]) {
+                    target[key] = [];
+                }
 
-				for (i = 0; i < slen; ++i) {
+                for (i = 0; i < slen; ++i) {
 					scale = source[key][i];
 					type = valueOrDefault$9(scale.type, key === 'xAxes' ? 'category' : 'linear');
 
@@ -9213,17 +9231,17 @@ function mergeScaleConfig(/* config objects ... */) {
  * a deep copy of the result, thus doesn't alter inputs.
  */
 function mergeConfig(/* config objects ... */) {
-	return helpers$1.merge({}, [].slice.call(arguments), {
-		merger: function(key, target, source, options) {
-			var tval = target[key] || {};
-			var sval = source[key];
+    return helpers$1.merge(Object.create(null), [].slice.call(arguments), {
+        merger: function (key, target, source, options) {
+            var tval = target[key] || Object.create(null);
+            var sval = source[key];
 
-			if (key === 'scales') {
-				// scale config merging is complex. Add our own function here for that
-				target[key] = mergeScaleConfig(tval, sval);
-			} else if (key === 'scale') {
-				// used in polar area & radar charts since there is only one scale
-				target[key] = helpers$1.merge(tval, [core_scaleService.getScaleDefaults(sval.type), sval]);
+            if (key === 'scales') {
+                // scale config merging is complex. Add our own function here for that
+                target[key] = mergeScaleConfig(tval, sval);
+            } else if (key === 'scale') {
+                // used in polar area & radar charts since there is only one scale
+                target[key] = helpers$1.merge(tval, [core_scaleService.getScaleDefaults(sval.type), sval]);
 			} else {
 				helpers$1._merger(key, target, source, options);
 			}
@@ -9232,7 +9250,7 @@ function mergeConfig(/* config objects ... */) {
 }
 
 function initConfig(config) {
-	config = config || {};
+    config = config || Object.create(null);
 
 	// Do NOT use mergeConfig for the data object because this method merges arrays
 	// and so would change references to labels and datasets, preventing data updates.
@@ -11209,20 +11227,22 @@ function garbageCollect(caches, length) {
  * labels where offset indicates the anchor point offset from the top in pixels.
  */
 function computeLabelSizes(ctx, tickFonts, ticks, caches) {
-	var length = ticks.length;
-	var widths = [];
-	var heights = [];
-	var offsets = [];
-	var i, j, jlen, label, tickFont, fontString, cache, lineHeight, width, height, nestedLabel, widest, highest;
+    var length = ticks.length;
+    var widths = [];
+    var heights = [];
+    var offsets = [];
+    var widestLabelSize = 0;
+    var highestLabelSize = 0;
+    var i, j, jlen, label, tickFont, fontString, cache, lineHeight, width, height, nestedLabel, widest, highest;
 
-	for (i = 0; i < length; ++i) {
-		label = ticks[i].label;
-		tickFont = ticks[i].major ? tickFonts.major : tickFonts.minor;
-		ctx.font = fontString = tickFont.string;
-		cache = caches[fontString] = caches[fontString] || {data: {}, gc: []};
-		lineHeight = tickFont.lineHeight;
-		width = height = 0;
-		// Undefined labels and arrays should not be measured
+    for (i = 0; i < length; ++i) {
+        label = ticks[i].label;
+        tickFont = ticks[i].major ? tickFonts.major : tickFonts.minor;
+        ctx.font = fontString = tickFont.string;
+        cache = caches[fontString] = caches[fontString] || {data: {}, gc: []};
+        lineHeight = tickFont.lineHeight;
+        width = height = 0;
+        // Undefined labels and arrays should not be measured
 		if (!isNullOrUndef(label) && !isArray(label)) {
 			width = helpers$1.measureText(ctx, cache.data, cache.gc, width, label);
 			height = lineHeight;
@@ -11230,31 +11250,33 @@ function computeLabelSizes(ctx, tickFonts, ticks, caches) {
 			// if it is an array let's measure each element
 			for (j = 0, jlen = label.length; j < jlen; ++j) {
 				nestedLabel = label[j];
-				// Undefined labels and arrays should not be measured
-				if (!isNullOrUndef(nestedLabel) && !isArray(nestedLabel)) {
-					width = helpers$1.measureText(ctx, cache.data, cache.gc, width, nestedLabel);
-					height += lineHeight;
-				}
-			}
-		}
-		widths.push(width);
-		heights.push(height);
-		offsets.push(lineHeight / 2);
-	}
-	garbageCollect(caches, length);
+                // Undefined labels and arrays should not be measured
+                if (!isNullOrUndef(nestedLabel) && !isArray(nestedLabel)) {
+                    width = helpers$1.measureText(ctx, cache.data, cache.gc, width, nestedLabel);
+                    height += lineHeight;
+                }
+            }
+        }
+        widths.push(width);
+        heights.push(height);
+        offsets.push(lineHeight / 2);
+        widestLabelSize = Math.max(width, widestLabelSize);
+        highestLabelSize = Math.max(height, highestLabelSize);
+    }
+    garbageCollect(caches, length);
 
-	widest = widths.indexOf(Math.max.apply(null, widths));
-	highest = heights.indexOf(Math.max.apply(null, heights));
+    widest = widths.indexOf(widestLabelSize);
+    highest = heights.indexOf(highestLabelSize);
 
-	function valueAt(idx) {
-		return {
-			width: widths[idx] || 0,
-			height: heights[idx] || 0,
-			offset: offsets[idx] || 0
-		};
-	}
+    function valueAt(idx) {
+        return {
+            width: widths[idx] || 0,
+            height: heights[idx] || 0,
+            offset: offsets[idx] || 0
+        };
+    }
 
-	return {
+    return {
 		first: valueAt(0),
 		last: valueAt(length - 1),
 		widest: valueAt(widest),
