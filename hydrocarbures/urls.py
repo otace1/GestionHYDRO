@@ -17,8 +17,6 @@ if settings.DEBUG:
 urlpatterns = [
                   path('__debug__/', include(debug_toolbar.urls)),
                   # path('sentry-debug/', trigger_error),
-
-                  # path('adloc/', admin.site.urls),
                   path('ads/', include('ads.urls')),
                   path('cargaison/', include('enreg.urls')),
                   path('shydro/', include('shydro.urls')),
@@ -26,6 +24,7 @@ urlpatterns = [
                   path('labo/', include('labo.urls')),
                   path('accounts/', include('accounts.urls')),
                   path('facturations/', include('facturations.urls')),
-                  path('', login_user)
+                  path('', login_user),
+                  path('__reload__/', include("django_browser_reload.urls")),
 
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

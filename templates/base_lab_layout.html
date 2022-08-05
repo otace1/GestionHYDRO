@@ -479,13 +479,14 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-md-7">
+                    <div class="col-md-12">
                         <div class="card bg-gradient-dark">
                             <div class="card-header">
                                 <h3 class="card-title"><b>ECHANTILLONS EN ATTENTE DE RECEPTION</b></h3>
                                 <div class="card-tools">
                                     <form method="get" action="{% url 'rechercheqr' %}">
-                                        <input class="form-control" name="q" type="text" placeholder="QR CODE"
+                                        <input class="form-control" name="q" type="text"
+                                               placeholder="SCANNER LE QR CODE"
                                                aria-label="Search">
                                     </form>
                                     {#                                        <div class="input-group input-group-sm" style="width: 500px;">#}
@@ -503,25 +504,25 @@
                         </div>
                     </div>
 
-                    <div class="col-md-5">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-tools">
-                                    <form method="get" action="{% url 'recherchecode' %}">
-                                        <input class="form-control" name="q" type="text" placeholder="CODE LABO"
-                                               aria-label="Search">
-                                    </form>
-                                </div>
-                                <h3 class="card-title"><b>ECHANTILLONS RECEPTIONNES</b></h3>
-                            </div>
-
-                            <div class="card-body table-responsive p-0">
-                                {% block reception %}
-
-                                {% endblock %}
-                            </div>
-                        </div>
-                    </div>
+                    {#                    <div class="col-md-5">#}
+                    {#                        <div class="card">#}
+                    {#                            <div class="card-header">#}
+                    {#                                <div class="card-tools">#}
+                    {#                                    <form method="get" action="{% url 'recherchecode' %}">#}
+                    {#                                        <input class="form-control" name="q" type="text" placeholder="CODE LABO"#}
+                    {#                                               aria-label="Search">#}
+                    {#                                    </form>#}
+                    {#                                </div>#}
+                    {#                                <h3 class="card-title"><b>ECHANTILLONS RECEPTIONNES</b></h3>#}
+                    {#                            </div>#}
+                    {##}
+                    {#                            <div class="card-body table-responsive p-0">#}
+                    {#                                {% block reception %}#}
+                    {##}
+                    {#                                {% endblock %}#}
+                    {#                            </div>#}
+                    {#                        </div>#}
+                    {#                    </div>#}
                 </div>
                 <!-- /.col -->
             </div>

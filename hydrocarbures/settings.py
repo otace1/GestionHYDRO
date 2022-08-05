@@ -61,18 +61,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-
-    # 3rd Parties
     'debug_toolbar',
-    # 'widget_tweaks',
     'django_countries',
     'crispy_forms',
-    # 'crispy_forms_foundation',
     'qr_code',
     'django_tables2',
-    # 'bootstrap3',
     'bootstrap4',
     'bootstrap_datepicker_plus',
+    'django_htmx',
+    'formtools',
+    'tailwind',
+    'django_browser_reload',
+
     # 'django-pandas',
     # 'jquery',
     # 'django_filters',
@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     'accounts',
     'ads',
     'facturations',
+    'theme',
 
 ]
 
@@ -115,6 +116,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
 
 SESSION_EXPIRE_SECONDS = 1200
@@ -153,8 +156,8 @@ DATABASES = {
         'NAME': 'hydro_occ',
         'ENGINE': 'django.db.backends.mysql',
         # 'ENGINE': 'django.db.backends.mysql',
-        'USER': 'root',
-        'PASSWORD': '',
+        'USER': 'hydro_occ',
+        'PASSWORD': 'P@55w0rd!23121988',
         'OPTIONS': {
             'autocommit': True,
         },
@@ -162,8 +165,8 @@ DATABASES = {
 }
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
-
 DJANGO_TABLES2_TEMPLATE = 'django_tables2/bootstrap-responsive.html'
+TAILWIND_APP_NAME = 'theme'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -211,6 +214,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 MEDIA_URL = '/media/'
 
+# DB Primary key
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # # Sentry
 #

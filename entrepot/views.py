@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect
-from .tables import EchantillonTable, CargaisonDechargement, EchantillonEnregistrer, CargaisonDechargee, \
-    CargaisonEnAttenteRequisition, RapportEchantillonage
+from .tables import *
 from enreg.models import *
 from accounts.models import *
-from .forms import Echantilloner, Decharger
+from .forms import *
 from labo.utils import render_to_pdf
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -14,9 +13,9 @@ from django_tables2 import RequestConfig
 from datetime import date
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
-import datetime
 from .numrappech import numRappEch
 from .densite15 import densite15
+
 
 
 # Gestion des echantillonages
@@ -375,16 +374,9 @@ class GestionDechargement():
         today = date.today()
 
         if role == 9:
-            # qs = Cargaison.objects.filter(Q(etat="Conforme aux exigences") | Q(etat='En attente de dechargement')).filter(entrepot__affectationentrepot__username_id=id,dateheurecargaison__lte=today,dateheurecargaison__gt=today - datetime.timedelta(days=120)).order_by('-dateheurecargaison')
-            # g= Resultat.objects.filter(massevolumique15=)
-            # qs = Resultat.objects.filter(
-            #     Q(idcargaison__idcargaison__idcargaison__etat='Conforme aux exigences') | Q(
-            #         idcargaison__idcargaison__idcargaison__etat='Echantillonner'),
-            #     idcargaison__idcargaison__idcargaison__entrepot=affectation_entrepot).order_by(
-            #     '-idcargaison__datereceptionlabo')
-
-            qs = Cargaison.objects.filter(Q(etat='Echantillonner'), entrepot=affectation_entrepot)
-            table = CargaisonDechargement(qs, prefix='2_')
+            qs = Cargaison.objects.filter(Q(etat='Echantillonner'), entrepot=affectation_entrepot).order_by(
+                '-dateheurecargaison')
+            table = CargaisonDechargement2(qs, prefix='2_')
 
             qs1 = Dechargement.objects.filter(
                 idcargaison__idcargaison__idcargaison__idcargaison__etat='Cargaison dechargee',
@@ -392,18 +384,15 @@ class GestionDechargement():
                 '-datedechargement')
             table1 = CargaisonDechargee(qs1, prefix='1_')
 
-            RequestConfig(request, paginate={"per_page": 17}).configure(table)
-            RequestConfig(request, paginate={"per_page": 17}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"per_page": 10}).configure(table1)
             return render(request, 'entrepot_dechargement.html', {'cargaison': table,
                                                                   'rapport': table1,
                                                                   })
         else:
             if role == 3 or role == 1:
-                qs = Resultat.objects.filter(
-                    Q(idcargaison__idcargaison__idcargaison__etat='Conforme aux exigences') | Q(
-                        idcargaison__idcargaison__idcargaison__etat='En attente de dechargement'),
-                    idcargaison__idcargaison__idcargaison__entrepot=affectation_entrepot).order_by(
-                    '-idcargaison__datereceptionlabo')
+                qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
+                                              entrepot=affectation_entrepot).order_by('-dateheurecargaison')
                 table = CargaisonDechargement(qs, prefix='1_')
 
                 qs1 = Dechargement.objects.filter(
@@ -412,8 +401,8 @@ class GestionDechargement():
                     '-datedechargement')
                 table1 = CargaisonDechargee(qs1, prefix='1_')
 
-                RequestConfig(request, paginate={"per_page": 17}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 17}).configure(table1)
+                RequestConfig(request, paginate={"per_page": 10}).configure(table)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
                 return render(request, 'entrepot_dechargement.html', {'cargaison': table,
                                                                       'rapport': table1,
                                                                       })
@@ -627,19 +616,17 @@ def echantillonage(request, pk):
 
     # Getting current Year & Month
     today = date.today()
-
     template = 'form.html'
     form = Echantilloner()
     pk = pk
     if request.method == 'POST':
-        qte = request.POST['qte']
-        numplombh = request.POST['numplombh']
-        numplombb = request.POST['numplombb']
-        numplombbr = request.POST['numplombbr']
-        numplombaph = request.POST['numplombaph']
-        etatphysique = request.POST['etatphysique']
+        formSave = Echantilloner(request.POST)
+        if formSave.is_valid():
+            matricule = formSave.cleaned_data['matricule']
+            methodeutilisee = formSave.cleaned_data['methodeutilisee']
+            qte = formSave.cleaned_data['qte']
 
-        # Test pour les villes sans Labo
+        # Pour toute les villes sans Labo
         if role == 9:
             c = Cargaison.objects.get(idcargaison=pk)
             ville = c.entrepot.ville
@@ -650,9 +637,8 @@ def echantillonage(request, pk):
             c.etat = "Echantillonner"
             c.save(update_fields=['etat', 'rapechctrl'])
 
-            e = Entrepot_echantillon(idcargaison=c, numplombb=numplombb, numplombbr=numplombbr, numplombaph=numplombaph,
-                                     numplombh=numplombh, numrappech=numrappech, numrappechauto=numrappechauto,
-                                     etatphysique=etatphysique, qte=qte)
+            e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
+                                     methodeutilisee=methodeutilisee, qte=qte)
             e.save()
 
             # Sauvegarde de l'info dans la table Labo reception pour la prise en charge au dechargement des entites sans labo
@@ -678,15 +664,15 @@ def echantillonage(request, pk):
             importateur = c.importateur
             adresseimportateur = c.importateur_id
             adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-            declarant = c.declarant
+            # declarant = c.declarant
             produit = c.produit
             volume = c.volume
             provenance = c.provenance.name
             voie = c.voie.nomvoie
             immatriculation = c.immatriculation
             qtelabo = e.qte
-            numplombh = e.numplombh
-            numrappechauto = e.numrappechauto
+            # numplombh = e.numplombh
+            # numrappechauto = e.numrappechauto
 
             data = {
                 'dateechantillonage': dateechantillonage,
@@ -695,14 +681,14 @@ def echantillonage(request, pk):
                 'numdos': numdos,
                 'importateur': importateur,
                 'adresseimportateur': adresseimportateur,
-                'declarant': declarant,
+                # 'declarant': declarant,
                 'produit': produit,
                 'volume': volume,
                 'provenance': provenance,
                 'voie': voie,
                 'immatriculation': immatriculation,
                 'qtelabo': qtelabo,
-                'numplombh': numplombh,
+                # 'numplombh': numplombh,
                 'numrappechauto': numrappechauto,
             }
 
@@ -719,9 +705,8 @@ def echantillonage(request, pk):
             c.etat = "Echantillonner"
             c.save(update_fields=['etat', 'rapechctrl'])
 
-            e = Entrepot_echantillon(idcargaison=c, numplombb=numplombb, numplombbr=numplombbr, numplombaph=numplombaph,
-                                     numplombh=numplombh, numrappech=numrappech, numrappechauto=numrappechauto,
-                                     etatphysique=etatphysique, qte=qte)
+            e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
+                                     methodeutilisee=methodeutilisee, qte=qte)
             e.save()
 
             # Generer le rapport d'echantillonage
@@ -734,14 +719,14 @@ def echantillonage(request, pk):
             importateur = c.importateur
             adresseimportateur = c.importateur_id
             adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-            declarant = c.declarant
+            # declarant = c.declarant
             produit = c.produit
             volume = c.volume
             provenance = c.provenance.name
             voie = c.voie.nomvoie
             immatriculation = c.immatriculation
             qtelabo = e.qte
-            numplombh = e.numplombh
+            # numplombh = e.numplombh
             numrappechauto = e.numrappechauto
 
             data = {
@@ -751,14 +736,14 @@ def echantillonage(request, pk):
                 'numdos': numdos,
                 'importateur': importateur,
                 'adresseimportateur': adresseimportateur,
-                'declarant': declarant,
+                # 'declarant': declarant,
                 'produit': produit,
                 'volume': volume,
                 'provenance': provenance,
                 'voie': voie,
                 'immatriculation': immatriculation,
                 'qtelabo': qtelabo,
-                'numplombh': numplombh,
+                # 'numplombh': numplombh,
                 'numrappechauto': numrappechauto,
             }
             # Render PDF Files
@@ -814,764 +799,826 @@ def rapportechantillonage(request, pk):
     return HttpResponse(pdf, content_type='application/pdf')
 
 
-@login_required(login_url='login')
-def dechargement(request, pk):
-    template = 'formDecharger.html'
-
-    # Getting Infos for Certificate Print
-    user = request.user
-    id = user.id
-    ville = AffectationVille.objects.get(username_id=id)
-    ville = ville.ville_id
-    province = Ville.objects.get(idville=ville)
-    province = province.province
-    province = province.upper()
-    role = user.role_id
-
-    form = Decharger()
-    pk = pk
-    request.session['url'] = request.get_full_path()  # Getting URL full path
-
-    # Changement d'etat de la cargaison
-    carg = Cargaison.objects.get(idcargaison=pk)
-    carg.etat = "Cargaison dechargee"
-
-    # Getting current Year & Month
-    today = date.today()
-    month = today.month
-    year = today.year
-
-    if request.method == 'POST':
-        formSave = Decharger(request.POST)
-        if formSave.is_valid():
-            types = formSave.cleaned_data['types']
-            densiteEntrepot = float(formSave.cleaned_data['densite'])
-            indexinit = formSave.cleaned_data['indexinit']
-            indexfin = formSave.cleaned_data['indexfin']
-            temperature = float(formSave.cleaned_data['temperature'])
-            govjaugee = formSave.cleaned_data['gov']
-
-            # Calcul de la densite a 15
-            dens15 = densite15(temperature, densiteEntrepot)
-            densite = dens15 * 1000
-            print(densite)
-
-            # Checking if there is value into index to get GOV by calculation of index values
-            if indexinit is not None:
-                if indexfin is not None:
-                    govmeter = indexfin - indexinit
-
-                    # Test pour calcul des GSV avec valeurs jaugees
-                    if govjaugee is not None:
-                        if Resultat.objects.filter(idcargaison_id=pk).exists():
-                            r = Resultat.objects.get(idcargaison_id=pk)
-                            # Retrieve densite of the product from the LAB
-                            # densitelabo = float(r.massevolumique15)
-                            # densite = float(densite) * 1000
-
-                            if densite >= float(839):
-                                a = 186.9696
-                                b = 0.4862
-                                delta = temperature - 15
-                                alpha = (a / densite) / densite + (b / densite)
-                                vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                                gsvjaugee = round((vcf * govjaugee), 5)
-                                mtv = gsvjaugee * (densite) / 1000
-                                mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-                            else:
-                                if (densite >= float(788)) & (densite < float(839)):
-                                    a = 594.5418
-                                    delta = temperature - 15
-                                    alpha = (a / densite) / densite
-                                    vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                                    gsvjaugee = round((vcf * govjaugee), 5)
-                                    mtv = gsvjaugee * (densite) / 1000
-                                    mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-                                else:
-                                    if (densite > float(770)) & (densite < float(788)):
-                                        a = 0.00336312
-                                        b = 2680.3206
-                                        delta = temperature - 15
-                                        alpha = ((-a) + (b)) / densite / densite
-                                        vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                                        gsvjaugee = round((vcf * govjaugee), 5)
-                                        mtv = gsvjaugee * densite / 1000
-                                        mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-                                    else:
-                                        a = 346.4228
-                                        b = 0.4388
-                                        d = densite
-                                        delta = temperature - 15
-                                        alpha = (((a) / (d)) / (d)) + (b / d)
-                                        vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                                        gsvjaugee = round((vcf * govjaugee), 5)
-                                        mtv = gsvjaugee * densite / 1000
-                                        mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-
-                    # Continuer les calculs normalement pour gsvmeter
-                    if Resultat.objects.filter(idcargaison_id=pk).exists():
-                        r = Resultat.objects.get(idcargaison_id=pk)
-                        key = r.idcargaison_id
-
-                        # Retrieve densite of the product from the LAB
-                        # densitelabo = float(r.massevolumique15)
-                        # densite = float(densite) * 1000
-
-                        if densite >= float(839):
-                            a = 186.9696
-                            b = 0.4862
-                            delta = temperature - 15
-                            alpha = (a / densite) / densite + (b / densite)
-                            vcfmeter = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                            gsvmeter = round((vcfmeter * govmeter), 5)
-                            mtvmeter = gsvmeter * (densite) / 1000
-                            mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
-                        else:
-                            if (densite >= float(788)) & (densite < float(839)):
-                                a = 594.5418
-                                delta = temperature - 15
-                                alpha = (a / densite) / densite
-                                vcfmeter = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                                gsvmeter = round((vcfmeter * govmeter), 5)
-                                mtvmeter = gsvmeter * (densite) / 1000
-                                mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
-                            else:
-                                if (densite > float(770)) & (densite < float(788)):
-                                    a = 0.00336312
-                                    b = 2680.3206
-                                    delta = temperature - 15
-                                    alpha = ((-a) + (b)) / densite / densite
-                                    vcfmeter = math.exp(
-                                        (-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                                    gsvmeter = round((vcfmeter * govmeter), 5)
-                                    mtvmeter = gsvmeter * densite / 1000
-                                    mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
-                                else:
-                                    a = 346.4228
-                                    b = 0.4388
-                                    d = densite
-                                    delta = temperature - 15
-                                    alpha = (((a) / (d)) / (d)) + (b / d)
-                                    vcfmeter = math.exp(
-                                        (-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                                    gsvmeter = round((vcfmeter * govmeter), 5)
-                                    mtvmeter = gsvmeter * densite / 1000
-                                    mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
-
-            if Resultat.objects.filter(idcargaison_id=pk).exists():
-                r = Resultat.objects.get(idcargaison_id=pk)
-                key = r.idcargaison_id
-
-                # densitelabo = float(r.massevolumique15)
-                # densite = float(densite) * 1000
-
-                if densite >= float(839):
-                    a = 186.9696
-                    b = 0.4862
-                    delta = temperature - 15
-                    alpha = (a / densite) / densite + (b / densite)
-                    vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-                    gsvjaugee = round((vcf * govjaugee), 5)
-                    mtv = gsvjaugee * (densite) / 1000
-                    mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-                else:
-                    if (densite >= float(788)) & (densite < float(839)):
-                        a = 594.5418
-                        delta = temperature - 15
-                        alpha = (a / densite) / densite
-                        vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                        gsvjaugee = round((vcf * govjaugee), 5)
-                        mtv = gsvjaugee * (densite) / 1000
-                        mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-                    else:
-                        if (densite > float(770)) & (densite < float(788)):
-                            a = 0.00336312
-                            b = 2680.3206
-                            delta = temperature - 15
-                            alpha = ((-a) + (b)) / densite / densite
-                            vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                            gsvjaugee = round((vcf * govjaugee), 5)
-                            mtv = gsvjaugee * densite / 1000
-                            mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-                        else:
-                            a = 346.4228
-                            b = 0.4388
-                            d = densite
-                            delta = temperature - 15
-                            alpha = (((a) / (d)) / (d)) + (b / d)
-                            vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                            gsvjaugee = round((vcf * govjaugee), 5)
-                            mtv = gsvjaugee * densite / 1000
-                            mta = ((densite) - 1.1) * (gsvjaugee / 1000)
-
-            # Enregistrement des donnees calculee de dechargement
-            e = Dechargement(idcargaison_id=key, typescontainer=types, indexinitial=indexinit, indexfinal=indexfin,
-                             temperature=temperature, govjaugee=govjaugee, gsvjaugee=gsvjaugee, mtv=mtv, mta=mta,
-                             vcf=vcf,
-                             densite=dens15, govmeter=govmeter, gsvmeter=gsvmeter, mtameter=mtameter,
-                             mtvmeter=mtvmeter, vcfmeter=vcfmeter)
-
-            # Mise a jour du statut de la cargaison
-            carg.save(update_fields=['etat'])
-            e.save()
-
-            # Suite pour l'impression du certificat d'essaie
-            d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-                                                                                 FROM hydro_occ.enreg_laboreception \
-                                                                                 WHERE idcargaison_id = %s', [pk, ])
-            for obj in d:
-                mois = obj.mois
-                annee = obj.annee
-
-            # Recuperation du produit de la cargaison
-            p = Produit.objects.get(cargaison=pk)
-            produit = p.nomproduit
-
-            # Fecthing object with pk corresponding into database
-            a = Cargaison.objects.get(idcargaison=pk)
-            b = Entrepot_echantillon.objects.get(idcargaison=pk)
-            c = LaboReception.objects.get(idcargaison=pk)
-            d = Resultat.objects.get(idcargaison=pk)
-
-            # Fetching into DBS general results
-            numcertificatqualite = c.numcertificatqualite
-            codelabo = c.codelabo
-            dateanalyse = d.dateanalyse
-            importateur = a.importateur
-            declarant = a.declarant
-            dateechantillonage = b.dateechantillonage
-            entrepot = a.entrepot
-            # provenance = a.provenance.name
-            qte = b.qte
-            datereceptionlabo = c.datereceptionlabo
-            codelabo = c.codelabo
-            numdossier = a.numdos
-            # immatriculation = a.immatriculation
-            numrappech = b.numrappech
-
-            # Recuperation des donnees pour l'affichage du Rapport Journalier au dechargement
-            # Request to fecth data into database
-            cargaison_data = Cargaison.objects.get(idcargaison=pk)
-            echantillon_data = Entrepot_echantillon.objects.get(idcargaison=pk)
-            dechargement_data = Dechargement.objects.get(idcargaison=pk)
-            resultat_data = Resultat.objects.get(idcargaison_id=pk)
-
-            # Qty compteur
-            meterbefore = dechargement_data.indexinitial
-            meterafter = dechargement_data.indexfinal
-            govmeter = meterafter - meterbefore
-            gsvmeter = dechargement_data.gsvmeter
-
-            # Qty Jaugee
-            govjaugee = dechargement_data.govjaugee
-
-            # Densite a 15 Entrepot
-            densiteentrepot = dechargement_data.densite
-
-            # Qty Declare
-            ltgov = float(cargaison_data.volume)
-
-            # Calcul des differences et pourcentage
-            govlttanker = float(govjaugee) - ltgov
-            govtankermeter = govmeter - govjaugee
-            gsvtankermeter = float(gsvmeter) - gsvjaugee
-            mtatankermeter = float(mtameter) - mta
-            govltmeter = float(govmeter) - ltgov
-
-            immatriculation = cargaison_data.immatriculation
-            entrance = cargaison_data.frontiere
-            arrivaldate = cargaison_data.dateheurecargaison
-            origin = cargaison_data.provenance.name
-            provenance = cargaison_data.provenance.name
-            product = cargaison_data.produit
-            operationdate = dechargement_data.datedechargement
-            receiver = cargaison_data.entrepot
-            consigner = cargaison_data.importateur
-            gov = dechargement_data.govjaugee
-            temperature = dechargement_data.temperature
-            vcf = dechargement_data.vcf
-            gsv = dechargement_data.gsvjaugee
-            mta = dechargement_data.mta
-            densitelabo = resultat_data.massevolumique15
-            frais = gsv * 11
-
-            # Getting data from laboratory
-            if Resultat.objects.filter(idcargaison_id=pk).exists():
-                labo_data = Resultat.objects.get(idcargaison=pk)
-                color = labo_data.couleurastm
-                aspect = labo_data.aspect
-                odor = labo_data.odeur
-            else:
-                color = '-'
-                aspect = '-'
-                odor = '-'
-
-            # Last 3 Cargo Data Fetch
-            lastthreecargo = Cargaison.objects.filter(immatriculation=immatriculation).order_by(
-                '-dateheurecargaison')[:3]
-            taille = len(lastthreecargo)
-            array = []
-            for p in lastthreecargo:
-                array.append(p.produit)
-
-            if taille == 3:
-                flast = array[0]
-                slast = array[1]
-                tlast = array[2]
-            else:
-                if taille == 2:
-                    flast = array[0]
-                    slast = array[1]
-                    tlast = '-'
-                else:
-                    if taille == 1:
-                        flast = '-'
-                        slast = '-'
-                        tlast = '-'
-                    else:
-                        flast = '-'
-                        slast = '-'
-                        tlast = '-'
-
-            # Test pour afficher les differents rapports
-            if produit == 'GASOIL':
-                template = 'report/rapportvalide/gasoilreport.html'
-
-                # Resultat Gasoil Fetching data into Database
-                couleurastm = d.couleurastm
-                aciditetotal = d.aciditetotal
-                soufre = d.soufre
-                massevolumique = d.massevolumique
-                massevolumique15 = d.massevolumique15
-                distillation = d.distillation
-                distillation10 = d.distillation10
-                distillation20 = d.distillation20
-                distillation50 = d.distillation50
-                distillation90 = d.distillation90
-                pointinitial = d.pointinitial
-                pointfinal = d.pointfinal
-                pointeclair = d.pointeclair
-                viscosite = d.viscosite
-                pointecoulement = d.pointecoulement
-                teneureau = d.teneureau
-                sediment = d.sediment
-                corrosion = d.corrosion
-                indicecetane = d.indicecetane
-                densite = d.densite
-                recuperation362 = d.recuperation362
-                cendre = d.cendre
-
-                data = {
-                    'numcertificatqualite': numcertificatqualite,
-                    'dateanalyse': dateanalyse,
-                    # 'dateimpression': dateimpression,
-                    'importateur': importateur,
-                    'declarant': declarant,
-                    'entrepot': entrepot,
-                    'dateechantillonage': dateechantillonage,
-                    'provenance': provenance,
-                    'qte': qte,
-                    'datereceptionlabo': datereceptionlabo,
-                    'codelabo': codelabo,
-                    'numdossier': numdossier,
-                    'immatriculation': immatriculation,
-                    'couleurastm': couleurastm,
-                    'aciditetotal': aciditetotal,
-                    'soufre': soufre,
-                    'massevolumique': massevolumique,
-                    'distillation': distillation,
-                    'distillation10': distillation10,
-                    'distillation20': distillation20,
-                    'distillation50': distillation50,
-                    'distillation90': distillation90,
-                    'pointfinal': pointfinal,
-                    'pointeclair': pointeclair,
-                    'pointinitial': pointinitial,
-                    'viscosite': viscosite,
-                    'pointecoulement': pointecoulement,
-                    'teneureau': teneureau,
-                    'sediment': sediment,
-                    'corrosion': corrosion,
-                    'indicecetane': indicecetane,
-                    'densite': densite,
-                    'recuperation362': recuperation362,
-                    'cendre': cendre,
-                    'massevolumique15': massevolumique15,
-                    'numrappech': numrappech,
-                    'produit': produit,
-                    'mois': mois,
-                    'annee': annee,
-                    'province': province,
-                    'entrance': entrance,
-                    'arrivaldate': arrivaldate,
-                    'origin': origin,
-                    'product': product,
-                    'operationdate': operationdate,
-                    'receiver': receiver,
-                    'consigner': consigner,
-                    'govjaugee': govjaugee,
-                    'ltgov': ltgov,
-                    'temperature': temperature,
-                    'densitelabo': densitelabo,
-                    'densiteentrepot': densiteentrepot,
-                    'vcf': vcf,
-                    'gsv': gsv,
-                    'mta': mta,
-                    'flast': flast,
-                    'slast': slast,
-                    'tlast': tlast,
-                    'color': color,
-                    'aspect': aspect,
-                    'odor': odor,
-                    'frais': frais,
-                    'govlttanker': govlttanker,
-                    'govtankermeter': govtankermeter,
-                    'gsvtankermeter': gsvtankermeter,
-                    'mtatankermeter': mtatankermeter,
-                    'govltmeter': govltmeter,
-                    'meterbefore': meterbefore,
-                    'meterafter': meterafter,
-                    'govmeter': govmeter,
-                    'gsvmeter': gsvmeter
-                }
-
-                # Rendered PDF report
-                pdf = render_to_pdf(template, data)
-                return HttpResponse(pdf, content_type='application/pdf')
-            else:
-                if produit == 'MOGAS':
-                    template = 'report/rapportvalide/mogasreport.html'
-                    # Resultat Gasoil Fetching data into Database
-                    aspect = d.aspect
-                    odeur = d.odeur
-                    couleursaybolt = d.couleursaybolt
-                    soufre = d.soufre
-                    distillation = d.distillation
-                    pointfinal = d.pointfinal
-                    residu = d.residu
-                    corrosion = d.corrosion
-                    pourcent10 = d.pourcent10
-                    pourcent20 = d.pourcent20
-                    pourcent50 = d.pourcent50
-                    pourcent70 = d.pourcent70
-                    pourcent90 = d.pourcent90
-                    tensionvapeur = d.tensionvapeur
-                    difftemperature = d.difftemperature
-                    plomb = d.plomb
-                    indiceoctane = d.indiceoctane
-                    massevolumique15 = d.massevolumique15
-
-                    data = {
-                        'numcertificatqualite': numcertificatqualite,
-                        'dateanalyse': dateanalyse,
-                        # 'dateimpression': dateimpression,
-                        'importateur': importateur,
-                        'declarant': declarant,
-                        'entrepot': entrepot,
-                        'dateechantillonage': dateechantillonage,
-                        'provenance': provenance,
-                        'qte': qte,
-                        'datereceptionlabo': datereceptionlabo,
-                        'codelabo': codelabo,
-                        'numdossier': numdossier,
-                        'immatriculation': immatriculation,
-                        'numrappech': numrappech,
-                        'aspect': aspect,
-                        'odeur': odeur,
-                        'couleursaybolt': couleursaybolt,
-                        'soufre': soufre,
-                        'distillation': distillation,
-                        'pointfinal': pointfinal,
-                        'residu': residu,
-                        'corrosion': corrosion,
-                        'pourcent10': pourcent10,
-                        'pourcent20': pourcent20,
-                        'pourcent50': pourcent50,
-                        'pourcent70': pourcent70,
-                        'pourcent90': pourcent90,
-                        'tensionvapeur': tensionvapeur,
-                        'difftemperature': difftemperature,
-                        'plomb': plomb,
-                        'indiceoctane': indiceoctane,
-                        'massevolumique15': massevolumique15,
-                        'produit': produit,
-                        'mois': mois,
-                        'annee': annee,
-                        'province': province,
-                        'entrance': entrance,
-                        'arrivaldate': arrivaldate,
-                        'origin': origin,
-                        'product': product,
-                        'operationdate': operationdate,
-                        'receiver': receiver,
-                        'consigner': consigner,
-                        'govjaugee': govjaugee,
-                        'ltgov': ltgov,
-                        'temperature': temperature,
-                        'densitelabo': densitelabo,
-                        'densiteentrepot': densiteentrepot,
-                        'vcf': vcf,
-                        'gsv': gsv,
-                        'mta': mta,
-                        'flast': flast,
-                        'slast': slast,
-                        'tlast': tlast,
-                        'color': color,
-                        'odor': odor,
-                        'frais': frais,
-                        'govlttanker': govlttanker,
-                        'govtankermeter': govtankermeter,
-                        'gsvtankermeter': gsvtankermeter,
-                        'mtatankermeter': mtatankermeter,
-                        'govltmeter': govltmeter,
-                        'meterbefore': meterbefore,
-                        'meterafter': meterafter,
-                        'govmeter': govmeter,
-                        'gsvmeter': gsvmeter
-                    }
-
-                    # Rendered PDF report
-                    pdf = render_to_pdf(template, data)
-                    return HttpResponse(pdf, content_type='application/pdf')
-                else:
-                    if produit == 'JET A1':
-                        template = 'report/rapportvalide/jeta1report.html'
-
-                        # Resultat Gasoil Fetching data into Database
-                        aspect = d.aspect
-                        couleursaybolt = d.couleursaybolt
-                        aciditetotal = d.aciditetotal
-                        soufre = d.soufre
-                        soufremercaptan = d.soufremercaptan
-                        docteurtest = d.docteurtest
-                        distillation = d.distillation
-                        pointinitial = d.pointinitial
-                        pointfinal = d.pointfinal
-                        pointfumee = d.pointfumee
-                        pointeclair = d.pointeclair
-                        freezingpoint = d.freezingpoint
-                        residu = d.residu
-                        perte = d.perte
-                        massevolumique15 = d.massevolumique15
-                        viscosite = d.viscosite
-                        pointinflammabilite = d.pointinflammabilite
-                        teneureau = d.teneureau
-                        corrosion = d.corrosion
-                        conductivite = d.conductivite
-                        vol10 = d.vol10
-                        vol20 = d.vol20
-                        vol30 = d.vol30
-                        vol40 = d.vol40
-                        vol50 = d.vol50
-                        vol60 = d.vol60
-                        vol70 = d.vol70
-                        vol80 = d.vol80
-                        vol90 = d.vol90
-
-                        data = {
-                            'numcertificatqualite': numcertificatqualite,
-                            'dateanalyse': dateanalyse,
-                            # 'dateimpression': dateimpression,
-                            'importateur': importateur,
-                            'declarant': declarant,
-                            'entrepot': entrepot,
-                            'dateechantillonage': dateechantillonage,
-                            'provenance': provenance,
-                            'qte': qte,
-                            'datereceptionlabo': datereceptionlabo,
-                            'codelabo': codelabo,
-                            'numdossier': numdossier,
-                            'immatriculation': immatriculation,
-                            'numrappech': numrappech,
-                            'aspect': aspect,
-                            'couleursaybolt': couleursaybolt,
-                            'aciditetotal': aciditetotal,
-                            'soufre': soufre,
-                            'soufremercaptan': soufremercaptan,
-                            'docteurtest': docteurtest,
-                            'distillation': distillation,
-                            'pointinitial': pointinitial,
-                            'pointfinal': pointfinal,
-                            'pointfumee': pointfumee,
-                            'freezingpoint': freezingpoint,
-                            'residu': residu,
-                            'perte': perte,
-                            'pointeclair': pointeclair,
-                            'massevolumique15': massevolumique15,
-                            'viscosite': viscosite,
-                            'pointinflammabilite': pointinflammabilite,
-                            'teneureau': teneureau,
-                            'corrosion': corrosion,
-                            'conductivite': conductivite,
-                            'vol10': vol10,
-                            'vol20': vol20,
-                            'vol30': vol30,
-                            'vol40': vol40,
-                            'vol50': vol50,
-                            'vol60': vol60,
-                            'vol70': vol70,
-                            'vol80': vol80,
-                            'vol90': vol90,
-                            'produit': produit,
-                            'mois': mois,
-                            'annee': annee,
-                            'province': province,
-                            'entrance': entrance,
-                            'arrivaldate': arrivaldate,
-                            'origin': origin,
-                            'product': product,
-                            'operationdate': operationdate,
-                            'receiver': receiver,
-                            'consigner': consigner,
-                            'govjaugee': govjaugee,
-                            'ltgov': ltgov,
-                            'temperature': temperature,
-                            'densitelabo': densitelabo,
-                            'densiteentrepot': densiteentrepot,
-                            'vcf': vcf,
-                            'gsv': gsv,
-                            'mta': mta,
-                            'flast': flast,
-                            'slast': slast,
-                            'tlast': tlast,
-                            'color': color,
-                            'odor': odor,
-                            'frais': frais,
-                            'govlttanker': govlttanker,
-                            'govtankermeter': govtankermeter,
-                            'gsvtankermeter': gsvtankermeter,
-                            'mtatankermeter': mtatankermeter,
-                            'govltmeter': govltmeter,
-                            'meterbefore': meterbefore,
-                            'meterafter': meterafter,
-                            'govmeter': govmeter,
-                            'gsvmeter': gsvmeter
-                        }
-                        # Rendered PDF report
-                        pdf = render_to_pdf(template, data)
-                        return HttpResponse(pdf, content_type='application/pdf')
-                    else:
-                        if produit == 'PETROLE LAMPANT':
-                            template = 'report/rapportvalide/petrolereport.html'
-
-                            # Resultat Gasoil Fetching data into Database
-                            aspect = d.aspect
-                            couleursaybolt = d.couleursaybolt
-                            aciditetotal = d.aciditetotal
-                            soufre = d.soufre
-                            soufremercaptan = d.soufremercaptan
-                            docteurtest = d.docteurtest
-                            distillation = d.distillation
-                            pointinitial = d.pointinitial
-                            pointfinal = d.pointfinal
-                            pointfumee = d.pointfumee
-                            pointeclair = d.pointeclair
-                            freezingpoint = d.freezingpoint
-                            residu = d.residu
-                            perte = d.perte
-                            massevolumique15 = d.massevolumique15
-                            viscosite = d.viscosite
-                            pointinflammabilite = d.pointinflammabilite
-                            teneureau = d.teneureau
-                            corrosion = d.corrosion
-                            conductivite = d.conductivite
-                            vol10 = d.vol10
-                            vol20 = d.vol20
-                            vol30 = d.vol30
-                            vol40 = d.vol40
-                            vol50 = d.vol50
-                            vol60 = d.vol60
-                            vol70 = d.vol70
-                            vol80 = d.vol80
-                            vol90 = d.vol90
-
-                            data = {
-                                'numcertificatqualite': numcertificatqualite,
-                                'dateanalyse': dateanalyse,
-                                # 'dateimpression': dateimpression,
-                                'importateur': importateur,
-                                'declarant': declarant,
-                                'entrepot': entrepot,
-                                'dateechantillonage': dateechantillonage,
-                                'provenance': provenance,
-                                'qte': qte,
-                                'datereceptionlabo': datereceptionlabo,
-                                'codelabo': codelabo,
-                                'numdossier': numdossier,
-                                'immatriculation': immatriculation,
-                                'numrappech': numrappech,
-                                'aspect': aspect,
-                                'couleursaybolt': couleursaybolt,
-                                'aciditetotal': aciditetotal,
-                                'soufre': soufre,
-                                'soufremercaptan': soufremercaptan,
-                                'docteurtest': docteurtest,
-                                'distillation': distillation,
-                                'pointinitial': pointinitial,
-                                'pointfinal': pointfinal,
-                                'pointfumee': pointfumee,
-                                'freezingpoint': freezingpoint,
-                                'residu': residu,
-                                'perte': perte,
-                                'pointeclair': pointeclair,
-                                'massevolumique15': massevolumique15,
-                                'viscosite': viscosite,
-                                'pointinflammabilite': pointinflammabilite,
-                                'teneureau': teneureau,
-                                'corrosion': corrosion,
-                                'conductivite': conductivite,
-                                'vol10': vol10,
-                                'vol20': vol20,
-                                'vol30': vol30,
-                                'vol40': vol40,
-                                'vol50': vol50,
-                                'vol60': vol60,
-                                'vol70': vol70,
-                                'vol80': vol80,
-                                'vol90': vol90,
-                                'produit': produit,
-                                'mois': mois,
-                                'annee': annee,
-                                'province': province,
-                                'entrance': entrance,
-                                'arrivaldate': arrivaldate,
-                                'origin': origin,
-                                'product': product,
-                                'operationdate': operationdate,
-                                'receiver': receiver,
-                                'consigner': consigner,
-                                'govjaugee': govjaugee,
-                                'ltgov': ltgov,
-                                'temperature': temperature,
-                                'densitelabo': densitelabo,
-                                'densiteentrepot': densiteentrepot,
-                                'vcf': vcf,
-                                'gsv': gsv,
-                                'mta': mta,
-                                'flast': flast,
-                                'slast': slast,
-                                'tlast': tlast,
-                                'color': color,
-                                'odor': odor,
-                                'frais': frais,
-                                'govlttanker': govlttanker,
-                                'govtankermeter': govtankermeter,
-                                'gsvtankermeter': gsvtankermeter,
-                                'mtatankermeter': mtatankermeter,
-                                'govltmeter': govltmeter,
-                                'meterbefore': meterbefore,
-                                'meterafter': meterafter,
-                                'govmeter': govmeter,
-                                'gsvmeter': gsvmeter
-                            }
-
-                            # Rendered PDF report
-                            pdf = render_to_pdf(template, data)
-                            return HttpResponse(pdf, content_type='application/pdf')
-
-        return redirect('dechargement')
-    else:
-        return render(request, template, {'form': form})
+# @login_required(login_url='login')
+# def dechargement(request, pk):
+#     template = 'formPreInspection1.html'
+#     # Getting Infos for Certificate Print
+#     user = request.user
+#     id = user.id
+#     ville = AffectationVille.objects.get(username_id=id)
+#     ville = ville.ville_id
+#     province = Ville.objects.get(idville=ville)
+#     province = province.province
+#     province = province.upper()
+#     role = user.role_id
+#     form = PreInspectionForm1()
+#     contex = {'form':form}
+#     # form = Decharger()
+#     pk = pk
+#     request.session['url'] = request.get_full_path()  # Getting URL full path
+#
+#     # Changement d'etat de la cargaison
+#     carg = Cargaison.objects.get(idcargaison=pk)
+#     carg.etat = "Cargaison dechargee"
+#
+#     # Getting current Year & Month
+#     today = date.today()
+#     month = today.month
+#     year = today.year
+#
+#     if request.method == 'POST':
+#         formSave1 = PreInspectionForm1(request.POST)
+#         if formSave1.is_valid():
+#             meter = formSave1.cleaned_data['meter']
+#             tanker = formSave1.cleaned_data['tanker']
+#             shore = formSave1.cleaned_data['shore']
+#             request.session['meter']=meter
+#             request.session['meter']=tanker
+#             request.session['meter']=shore
+#             request.session['pk']=pk
+#
+#             if meter:
+#                 if tanker:
+#                     template = 'SealInspectionForm.html'
+#                     cargaison = Cargaison.objects.get(pk=pk)
+#                     sealformset = modelformset_factory(InspectionSeal, fields=('manifoldnumber','sealstate'))
+#                     if request.method=="POST":
+#                         formset = sealformset(request.POST,
+#                             queryset=InspectionSeal.objects.filter(idcargaison_id=cargaison.idcargaison))
+#                         if formset.is_valid():
+#                             instances = formset.save(commit=False)
+#                             for instance in instances:
+#                                 instance.idcargaison_id = cargaison.id
+#                                 instance.save()
+#                             return redirect('dechargement')
+#
+#                     formset = sealformset(queryset=InspectionSeal.objects.filter(idcargaison_id=cargaison.idcargaison))
+#
+#                     context = {'formset':formset}
+#                     return render(request,template,context)
+#         #         else:
+#         #             if shore:
+#         #                 template = 'MeterShore.html'
+#         #                 form = PreInspectionForm1()
+#         #                 context = {'form': form}
+#         #                 return render(request, template, context)
+#         #             else:
+#         #                 template = 'SealInspectionForm.html'
+#         #                 form = PreInspectionForm1()
+#         #                 context = {'form': form}
+#         #                 return render(request, template, context)
+#         #     else:
+#         #         if tanker:
+#         #             template = 'SealInspectionForm.html'
+#         #             form = PreInspectionForm1()
+#         #             context = {'form': form}
+#         #             return render(request, template, context)
+#         #         else:
+#         #             if shore:
+#         #                 template = 'SealInspectionForm.html'
+#         #                 form = PreInspectionForm1()
+#         #                 context = {'form': form}
+#         #                 return render(request, template, context)
+#         #
+#         #     template = 'formDecharger.html'
+#         #     context = {'form':form}
+#         #     return render(request,template,context)
+#         # return redirect('dechargement')
+#     else:
+#         return render(request,template,contex)
+#
+#
+#     # if request.method == 'POST':
+#     #     formSave = Decharger(request.POST)
+#     #     if formSave.is_valid():
+#     #         types = formSave.cleaned_data['types']
+#     #         densiteEntrepot = float(formSave.cleaned_data['densite'])
+#     #         indexinit = formSave.cleaned_data['indexinit']
+#     #         indexfin = formSave.cleaned_data['indexfin']
+#     #         temperature = float(formSave.cleaned_data['temperature'])
+#     #         govjaugee = formSave.cleaned_data['gov']
+#     #
+#     #         # Calcul de la densite a 15
+#     #         dens15 = densite15(temperature, densiteEntrepot)
+#     #         densite = dens15 * 1000
+#     #         print(densite)
+#     #
+#     #         # Checking if there is value into index to get GOV by calculation of index values
+#     #         if indexinit is not None:
+#     #             if indexfin is not None:
+#     #                 govmeter = indexfin - indexinit
+#     #
+#     #                 # Test pour calcul des GSV avec valeurs jaugees
+#     #                 if govjaugee is not None:
+#     #                     if Resultat.objects.filter(idcargaison_id=pk).exists():
+#     #                         r = Resultat.objects.get(idcargaison_id=pk)
+#     #                         # Retrieve densite of the product from the LAB
+#     #                         # densitelabo = float(r.massevolumique15)
+#     #                         # densite = float(densite) * 1000
+#     #
+#     #                         if densite >= float(839):
+#     #                             a = 186.9696
+#     #                             b = 0.4862
+#     #                             delta = temperature - 15
+#     #                             alpha = (a / densite) / densite + (b / densite)
+#     #                             vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
+#     #                             gsvjaugee = round((vcf * govjaugee), 5)
+#     #                             mtv = gsvjaugee * (densite) / 1000
+#     #                             mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #                         else:
+#     #                             if (densite >= float(788)) & (densite < float(839)):
+#     #                                 a = 594.5418
+#     #                                 delta = temperature - 15
+#     #                                 alpha = (a / densite) / densite
+#     #                                 vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                                 gsvjaugee = round((vcf * govjaugee), 5)
+#     #                                 mtv = gsvjaugee * (densite) / 1000
+#     #                                 mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #                             else:
+#     #                                 if (densite > float(770)) & (densite < float(788)):
+#     #                                     a = 0.00336312
+#     #                                     b = 2680.3206
+#     #                                     delta = temperature - 15
+#     #                                     alpha = ((-a) + (b)) / densite / densite
+#     #                                     vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                                     gsvjaugee = round((vcf * govjaugee), 5)
+#     #                                     mtv = gsvjaugee * densite / 1000
+#     #                                     mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #                                 else:
+#     #                                     a = 346.4228
+#     #                                     b = 0.4388
+#     #                                     d = densite
+#     #                                     delta = temperature - 15
+#     #                                     alpha = (((a) / (d)) / (d)) + (b / d)
+#     #                                     vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                                     gsvjaugee = round((vcf * govjaugee), 5)
+#     #                                     mtv = gsvjaugee * densite / 1000
+#     #                                     mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #
+#     #                 # Continuer les calculs normalement pour gsvmeter
+#     #                 if Resultat.objects.filter(idcargaison_id=pk).exists():
+#     #                     r = Resultat.objects.get(idcargaison_id=pk)
+#     #                     key = r.idcargaison_id
+#     #
+#     #                     # Retrieve densite of the product from the LAB
+#     #                     # densitelabo = float(r.massevolumique15)
+#     #                     # densite = float(densite) * 1000
+#     #
+#     #                     if densite >= float(839):
+#     #                         a = 186.9696
+#     #                         b = 0.4862
+#     #                         delta = temperature - 15
+#     #                         alpha = (a / densite) / densite + (b / densite)
+#     #                         vcfmeter = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
+#     #                         gsvmeter = round((vcfmeter * govmeter), 5)
+#     #                         mtvmeter = gsvmeter * (densite) / 1000
+#     #                         mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
+#     #                     else:
+#     #                         if (densite >= float(788)) & (densite < float(839)):
+#     #                             a = 594.5418
+#     #                             delta = temperature - 15
+#     #                             alpha = (a / densite) / densite
+#     #                             vcfmeter = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                             gsvmeter = round((vcfmeter * govmeter), 5)
+#     #                             mtvmeter = gsvmeter * (densite) / 1000
+#     #                             mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
+#     #                         else:
+#     #                             if (densite > float(770)) & (densite < float(788)):
+#     #                                 a = 0.00336312
+#     #                                 b = 2680.3206
+#     #                                 delta = temperature - 15
+#     #                                 alpha = ((-a) + (b)) / densite / densite
+#     #                                 vcfmeter = math.exp(
+#     #                                     (-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                                 gsvmeter = round((vcfmeter * govmeter), 5)
+#     #                                 mtvmeter = gsvmeter * densite / 1000
+#     #                                 mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
+#     #                             else:
+#     #                                 a = 346.4228
+#     #                                 b = 0.4388
+#     #                                 d = densite
+#     #                                 delta = temperature - 15
+#     #                                 alpha = (((a) / (d)) / (d)) + (b / d)
+#     #                                 vcfmeter = math.exp(
+#     #                                     (-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                                 gsvmeter = round((vcfmeter * govmeter), 5)
+#     #                                 mtvmeter = gsvmeter * densite / 1000
+#     #                                 mtameter = ((densite) - 1.1) * (gsvmeter / 1000)
+#     #
+#     #         if Resultat.objects.filter(idcargaison_id=pk).exists():
+#     #             r = Resultat.objects.get(idcargaison_id=pk)
+#     #             key = r.idcargaison_id
+#     #
+#     #             # densitelabo = float(r.massevolumique15)
+#     #             # densite = float(densite) * 1000
+#     #
+#     #             if densite >= float(839):
+#     #                 a = 186.9696
+#     #                 b = 0.4862
+#     #                 delta = temperature - 15
+#     #                 alpha = (a / densite) / densite + (b / densite)
+#     #                 vcf = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
+#     #                 gsvjaugee = round((vcf * govjaugee), 5)
+#     #                 mtv = gsvjaugee * (densite) / 1000
+#     #                 mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #             else:
+#     #                 if (densite >= float(788)) & (densite < float(839)):
+#     #                     a = 594.5418
+#     #                     delta = temperature - 15
+#     #                     alpha = (a / densite) / densite
+#     #                     vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                     gsvjaugee = round((vcf * govjaugee), 5)
+#     #                     mtv = gsvjaugee * (densite) / 1000
+#     #                     mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #                 else:
+#     #                     if (densite > float(770)) & (densite < float(788)):
+#     #                         a = 0.00336312
+#     #                         b = 2680.3206
+#     #                         delta = temperature - 15
+#     #                         alpha = ((-a) + (b)) / densite / densite
+#     #                         vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                         gsvjaugee = round((vcf * govjaugee), 5)
+#     #                         mtv = gsvjaugee * densite / 1000
+#     #                         mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #                     else:
+#     #                         a = 346.4228
+#     #                         b = 0.4388
+#     #                         d = densite
+#     #                         delta = temperature - 15
+#     #                         alpha = (((a) / (d)) / (d)) + (b / d)
+#     #                         vcf = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
+#     #                         gsvjaugee = round((vcf * govjaugee), 5)
+#     #                         mtv = gsvjaugee * densite / 1000
+#     #                         mta = ((densite) - 1.1) * (gsvjaugee / 1000)
+#     #
+#     #         # Enregistrement des donnees calculee de dechargement
+#     #         e = Dechargement(idcargaison_id=key, typescontainer=types, indexinitial=indexinit, indexfinal=indexfin,
+#     #                          temperature=temperature, govjaugee=govjaugee, gsvjaugee=gsvjaugee, mtv=mtv, mta=mta,
+#     #                          vcf=vcf,
+#     #                          densite=dens15, govmeter=govmeter, gsvmeter=gsvmeter, mtameter=mtameter,
+#     #                          mtvmeter=mtvmeter, vcfmeter=vcfmeter)
+#     #
+#     #         # Mise a jour du statut de la cargaison
+#     #         carg.save(update_fields=['etat'])
+#     #         e.save()
+#     #
+#     #         # Suite pour l'impression du certificat d'essaie
+#     #         d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
+#     #                                                                              FROM hydro_occ.enreg_laboreception \
+#     #                                                                              WHERE idcargaison_id = %s', [pk, ])
+#     #         for obj in d:
+#     #             mois = obj.mois
+#     #             annee = obj.annee
+#     #
+#     #         # Recuperation du produit de la cargaison
+#     #         p = Produit.objects.get(cargaison=pk)
+#     #         produit = p.nomproduit
+#     #
+#     #         # Fecthing object with pk corresponding into database
+#     #         a = Cargaison.objects.get(idcargaison=pk)
+#     #         b = Entrepot_echantillon.objects.get(idcargaison=pk)
+#     #         c = LaboReception.objects.get(idcargaison=pk)
+#     #         d = Resultat.objects.get(idcargaison=pk)
+#     #
+#     #         # Fetching into DBS general results
+#     #         numcertificatqualite = c.numcertificatqualite
+#     #         codelabo = c.codelabo
+#     #         dateanalyse = d.dateanalyse
+#     #         importateur = a.importateur
+#     #         declarant = a.declarant
+#     #         dateechantillonage = b.dateechantillonage
+#     #         entrepot = a.entrepot
+#     #         # provenance = a.provenance.name
+#     #         qte = b.qte
+#     #         datereceptionlabo = c.datereceptionlabo
+#     #         codelabo = c.codelabo
+#     #         numdossier = a.numdos
+#     #         # immatriculation = a.immatriculation
+#     #         numrappech = b.numrappech
+#     #
+#     #         # Recuperation des donnees pour l'affichage du Rapport Journalier au dechargement
+#     #         # Request to fecth data into database
+#     #         cargaison_data = Cargaison.objects.get(idcargaison=pk)
+#     #         echantillon_data = Entrepot_echantillon.objects.get(idcargaison=pk)
+#     #         dechargement_data = Dechargement.objects.get(idcargaison=pk)
+#     #         resultat_data = Resultat.objects.get(idcargaison_id=pk)
+#     #
+#     #         # Qty compteur
+#     #         meterbefore = dechargement_data.indexinitial
+#     #         meterafter = dechargement_data.indexfinal
+#     #         govmeter = meterafter - meterbefore
+#     #         gsvmeter = dechargement_data.gsvmeter
+#     #
+#     #         # Qty Jaugee
+#     #         govjaugee = dechargement_data.govjaugee
+#     #
+#     #         # Densite a 15 Entrepot
+#     #         densiteentrepot = dechargement_data.densite
+#     #
+#     #         # Qty Declare
+#     #         ltgov = float(cargaison_data.volume)
+#     #
+#     #         # Calcul des differences et pourcentage
+#     #         govlttanker = float(govjaugee) - ltgov
+#     #         govtankermeter = govmeter - govjaugee
+#     #         gsvtankermeter = float(gsvmeter) - gsvjaugee
+#     #         mtatankermeter = float(mtameter) - mta
+#     #         govltmeter = float(govmeter) - ltgov
+#     #
+#     #         immatriculation = cargaison_data.immatriculation
+#     #         entrance = cargaison_data.frontiere
+#     #         arrivaldate = cargaison_data.dateheurecargaison
+#     #         origin = cargaison_data.provenance.name
+#     #         provenance = cargaison_data.provenance.name
+#     #         product = cargaison_data.produit
+#     #         operationdate = dechargement_data.datedechargement
+#     #         receiver = cargaison_data.entrepot
+#     #         consigner = cargaison_data.importateur
+#     #         gov = dechargement_data.govjaugee
+#     #         temperature = dechargement_data.temperature
+#     #         vcf = dechargement_data.vcf
+#     #         gsv = dechargement_data.gsvjaugee
+#     #         mta = dechargement_data.mta
+#     #         densitelabo = resultat_data.massevolumique15
+#     #         frais = gsv * 11
+#     #
+#     #         # Getting data from laboratory
+#     #         if Resultat.objects.filter(idcargaison_id=pk).exists():
+#     #             labo_data = Resultat.objects.get(idcargaison=pk)
+#     #             color = labo_data.couleurastm
+#     #             aspect = labo_data.aspect
+#     #             odor = labo_data.odeur
+#     #         else:
+#     #             color = '-'
+#     #             aspect = '-'
+#     #             odor = '-'
+#     #
+#     #         # Last 3 Cargo Data Fetch
+#     #         lastthreecargo = Cargaison.objects.filter(immatriculation=immatriculation).order_by(
+#     #             '-dateheurecargaison')[:3]
+#     #         taille = len(lastthreecargo)
+#     #         array = []
+#     #         for p in lastthreecargo:
+#     #             array.append(p.produit)
+#     #
+#     #         if taille == 3:
+#     #             flast = array[0]
+#     #             slast = array[1]
+#     #             tlast = array[2]
+#     #         else:
+#     #             if taille == 2:
+#     #                 flast = array[0]
+#     #                 slast = array[1]
+#     #                 tlast = '-'
+#     #             else:
+#     #                 if taille == 1:
+#     #                     flast = '-'
+#     #                     slast = '-'
+#     #                     tlast = '-'
+#     #                 else:
+#     #                     flast = '-'
+#     #                     slast = '-'
+#     #                     tlast = '-'
+#     #
+#     #         # Test pour afficher les differents rapports
+#     #         if produit == 'GASOIL':
+#     #             template = 'report/rapportvalide/gasoilreport.html'
+#     #
+#     #             # Resultat Gasoil Fetching data into Database
+#     #             couleurastm = d.couleurastm
+#     #             aciditetotal = d.aciditetotal
+#     #             soufre = d.soufre
+#     #             massevolumique = d.massevolumique
+#     #             massevolumique15 = d.massevolumique15
+#     #             distillation = d.distillation
+#     #             distillation10 = d.distillation10
+#     #             distillation20 = d.distillation20
+#     #             distillation50 = d.distillation50
+#     #             distillation90 = d.distillation90
+#     #             pointinitial = d.pointinitial
+#     #             pointfinal = d.pointfinal
+#     #             pointeclair = d.pointeclair
+#     #             viscosite = d.viscosite
+#     #             pointecoulement = d.pointecoulement
+#     #             teneureau = d.teneureau
+#     #             sediment = d.sediment
+#     #             corrosion = d.corrosion
+#     #             indicecetane = d.indicecetane
+#     #             densite = d.densite
+#     #             recuperation362 = d.recuperation362
+#     #             cendre = d.cendre
+#     #
+#     #             data = {
+#     #                 'numcertificatqualite': numcertificatqualite,
+#     #                 'dateanalyse': dateanalyse,
+#     #                 # 'dateimpression': dateimpression,
+#     #                 'importateur': importateur,
+#     #                 'declarant': declarant,
+#     #                 'entrepot': entrepot,
+#     #                 'dateechantillonage': dateechantillonage,
+#     #                 'provenance': provenance,
+#     #                 'qte': qte,
+#     #                 'datereceptionlabo': datereceptionlabo,
+#     #                 'codelabo': codelabo,
+#     #                 'numdossier': numdossier,
+#     #                 'immatriculation': immatriculation,
+#     #                 'couleurastm': couleurastm,
+#     #                 'aciditetotal': aciditetotal,
+#     #                 'soufre': soufre,
+#     #                 'massevolumique': massevolumique,
+#     #                 'distillation': distillation,
+#     #                 'distillation10': distillation10,
+#     #                 'distillation20': distillation20,
+#     #                 'distillation50': distillation50,
+#     #                 'distillation90': distillation90,
+#     #                 'pointfinal': pointfinal,
+#     #                 'pointeclair': pointeclair,
+#     #                 'pointinitial': pointinitial,
+#     #                 'viscosite': viscosite,
+#     #                 'pointecoulement': pointecoulement,
+#     #                 'teneureau': teneureau,
+#     #                 'sediment': sediment,
+#     #                 'corrosion': corrosion,
+#     #                 'indicecetane': indicecetane,
+#     #                 'densite': densite,
+#     #                 'recuperation362': recuperation362,
+#     #                 'cendre': cendre,
+#     #                 'massevolumique15': massevolumique15,
+#     #                 'numrappech': numrappech,
+#     #                 'produit': produit,
+#     #                 'mois': mois,
+#     #                 'annee': annee,
+#     #                 'province': province,
+#     #                 'entrance': entrance,
+#     #                 'arrivaldate': arrivaldate,
+#     #                 'origin': origin,
+#     #                 'product': product,
+#     #                 'operationdate': operationdate,
+#     #                 'receiver': receiver,
+#     #                 'consigner': consigner,
+#     #                 'govjaugee': govjaugee,
+#     #                 'ltgov': ltgov,
+#     #                 'temperature': temperature,
+#     #                 'densitelabo': densitelabo,
+#     #                 'densiteentrepot': densiteentrepot,
+#     #                 'vcf': vcf,
+#     #                 'gsv': gsv,
+#     #                 'mta': mta,
+#     #                 'flast': flast,
+#     #                 'slast': slast,
+#     #                 'tlast': tlast,
+#     #                 'color': color,
+#     #                 'aspect': aspect,
+#     #                 'odor': odor,
+#     #                 'frais': frais,
+#     #                 'govlttanker': govlttanker,
+#     #                 'govtankermeter': govtankermeter,
+#     #                 'gsvtankermeter': gsvtankermeter,
+#     #                 'mtatankermeter': mtatankermeter,
+#     #                 'govltmeter': govltmeter,
+#     #                 'meterbefore': meterbefore,
+#     #                 'meterafter': meterafter,
+#     #                 'govmeter': govmeter,
+#     #                 'gsvmeter': gsvmeter
+#     #             }
+#     #
+#     #             # Rendered PDF report
+#     #             pdf = render_to_pdf(template, data)
+#     #             return HttpResponse(pdf, content_type='application/pdf')
+#     #         else:
+#     #             if produit == 'MOGAS':
+#     #                 template = 'report/rapportvalide/mogasreport.html'
+#     #                 # Resultat Gasoil Fetching data into Database
+#     #                 aspect = d.aspect
+#     #                 odeur = d.odeur
+#     #                 couleursaybolt = d.couleursaybolt
+#     #                 soufre = d.soufre
+#     #                 distillation = d.distillation
+#     #                 pointfinal = d.pointfinal
+#     #                 residu = d.residu
+#     #                 corrosion = d.corrosion
+#     #                 pourcent10 = d.pourcent10
+#     #                 pourcent20 = d.pourcent20
+#     #                 pourcent50 = d.pourcent50
+#     #                 pourcent70 = d.pourcent70
+#     #                 pourcent90 = d.pourcent90
+#     #                 tensionvapeur = d.tensionvapeur
+#     #                 difftemperature = d.difftemperature
+#     #                 plomb = d.plomb
+#     #                 indiceoctane = d.indiceoctane
+#     #                 massevolumique15 = d.massevolumique15
+#     #
+#     #                 data = {
+#     #                     'numcertificatqualite': numcertificatqualite,
+#     #                     'dateanalyse': dateanalyse,
+#     #                     # 'dateimpression': dateimpression,
+#     #                     'importateur': importateur,
+#     #                     'declarant': declarant,
+#     #                     'entrepot': entrepot,
+#     #                     'dateechantillonage': dateechantillonage,
+#     #                     'provenance': provenance,
+#     #                     'qte': qte,
+#     #                     'datereceptionlabo': datereceptionlabo,
+#     #                     'codelabo': codelabo,
+#     #                     'numdossier': numdossier,
+#     #                     'immatriculation': immatriculation,
+#     #                     'numrappech': numrappech,
+#     #                     'aspect': aspect,
+#     #                     'odeur': odeur,
+#     #                     'couleursaybolt': couleursaybolt,
+#     #                     'soufre': soufre,
+#     #                     'distillation': distillation,
+#     #                     'pointfinal': pointfinal,
+#     #                     'residu': residu,
+#     #                     'corrosion': corrosion,
+#     #                     'pourcent10': pourcent10,
+#     #                     'pourcent20': pourcent20,
+#     #                     'pourcent50': pourcent50,
+#     #                     'pourcent70': pourcent70,
+#     #                     'pourcent90': pourcent90,
+#     #                     'tensionvapeur': tensionvapeur,
+#     #                     'difftemperature': difftemperature,
+#     #                     'plomb': plomb,
+#     #                     'indiceoctane': indiceoctane,
+#     #                     'massevolumique15': massevolumique15,
+#     #                     'produit': produit,
+#     #                     'mois': mois,
+#     #                     'annee': annee,
+#     #                     'province': province,
+#     #                     'entrance': entrance,
+#     #                     'arrivaldate': arrivaldate,
+#     #                     'origin': origin,
+#     #                     'product': product,
+#     #                     'operationdate': operationdate,
+#     #                     'receiver': receiver,
+#     #                     'consigner': consigner,
+#     #                     'govjaugee': govjaugee,
+#     #                     'ltgov': ltgov,
+#     #                     'temperature': temperature,
+#     #                     'densitelabo': densitelabo,
+#     #                     'densiteentrepot': densiteentrepot,
+#     #                     'vcf': vcf,
+#     #                     'gsv': gsv,
+#     #                     'mta': mta,
+#     #                     'flast': flast,
+#     #                     'slast': slast,
+#     #                     'tlast': tlast,
+#     #                     'color': color,
+#     #                     'odor': odor,
+#     #                     'frais': frais,
+#     #                     'govlttanker': govlttanker,
+#     #                     'govtankermeter': govtankermeter,
+#     #                     'gsvtankermeter': gsvtankermeter,
+#     #                     'mtatankermeter': mtatankermeter,
+#     #                     'govltmeter': govltmeter,
+#     #                     'meterbefore': meterbefore,
+#     #                     'meterafter': meterafter,
+#     #                     'govmeter': govmeter,
+#     #                     'gsvmeter': gsvmeter
+#     #                 }
+#     #
+#     #                 # Rendered PDF report
+#     #                 pdf = render_to_pdf(template, data)
+#     #                 return HttpResponse(pdf, content_type='application/pdf')
+#     #             else:
+#     #                 if produit == 'JET A1':
+#     #                     template = 'report/rapportvalide/jeta1report.html'
+#     #
+#     #                     # Resultat Gasoil Fetching data into Database
+#     #                     aspect = d.aspect
+#     #                     couleursaybolt = d.couleursaybolt
+#     #                     aciditetotal = d.aciditetotal
+#     #                     soufre = d.soufre
+#     #                     soufremercaptan = d.soufremercaptan
+#     #                     docteurtest = d.docteurtest
+#     #                     distillation = d.distillation
+#     #                     pointinitial = d.pointinitial
+#     #                     pointfinal = d.pointfinal
+#     #                     pointfumee = d.pointfumee
+#     #                     pointeclair = d.pointeclair
+#     #                     freezingpoint = d.freezingpoint
+#     #                     residu = d.residu
+#     #                     perte = d.perte
+#     #                     massevolumique15 = d.massevolumique15
+#     #                     viscosite = d.viscosite
+#     #                     pointinflammabilite = d.pointinflammabilite
+#     #                     teneureau = d.teneureau
+#     #                     corrosion = d.corrosion
+#     #                     conductivite = d.conductivite
+#     #                     vol10 = d.vol10
+#     #                     vol20 = d.vol20
+#     #                     vol30 = d.vol30
+#     #                     vol40 = d.vol40
+#     #                     vol50 = d.vol50
+#     #                     vol60 = d.vol60
+#     #                     vol70 = d.vol70
+#     #                     vol80 = d.vol80
+#     #                     vol90 = d.vol90
+#     #
+#     #                     data = {
+#     #                         'numcertificatqualite': numcertificatqualite,
+#     #                         'dateanalyse': dateanalyse,
+#     #                         # 'dateimpression': dateimpression,
+#     #                         'importateur': importateur,
+#     #                         'declarant': declarant,
+#     #                         'entrepot': entrepot,
+#     #                         'dateechantillonage': dateechantillonage,
+#     #                         'provenance': provenance,
+#     #                         'qte': qte,
+#     #                         'datereceptionlabo': datereceptionlabo,
+#     #                         'codelabo': codelabo,
+#     #                         'numdossier': numdossier,
+#     #                         'immatriculation': immatriculation,
+#     #                         'numrappech': numrappech,
+#     #                         'aspect': aspect,
+#     #                         'couleursaybolt': couleursaybolt,
+#     #                         'aciditetotal': aciditetotal,
+#     #                         'soufre': soufre,
+#     #                         'soufremercaptan': soufremercaptan,
+#     #                         'docteurtest': docteurtest,
+#     #                         'distillation': distillation,
+#     #                         'pointinitial': pointinitial,
+#     #                         'pointfinal': pointfinal,
+#     #                         'pointfumee': pointfumee,
+#     #                         'freezingpoint': freezingpoint,
+#     #                         'residu': residu,
+#     #                         'perte': perte,
+#     #                         'pointeclair': pointeclair,
+#     #                         'massevolumique15': massevolumique15,
+#     #                         'viscosite': viscosite,
+#     #                         'pointinflammabilite': pointinflammabilite,
+#     #                         'teneureau': teneureau,
+#     #                         'corrosion': corrosion,
+#     #                         'conductivite': conductivite,
+#     #                         'vol10': vol10,
+#     #                         'vol20': vol20,
+#     #                         'vol30': vol30,
+#     #                         'vol40': vol40,
+#     #                         'vol50': vol50,
+#     #                         'vol60': vol60,
+#     #                         'vol70': vol70,
+#     #                         'vol80': vol80,
+#     #                         'vol90': vol90,
+#     #                         'produit': produit,
+#     #                         'mois': mois,
+#     #                         'annee': annee,
+#     #                         'province': province,
+#     #                         'entrance': entrance,
+#     #                         'arrivaldate': arrivaldate,
+#     #                         'origin': origin,
+#     #                         'product': product,
+#     #                         'operationdate': operationdate,
+#     #                         'receiver': receiver,
+#     #                         'consigner': consigner,
+#     #                         'govjaugee': govjaugee,
+#     #                         'ltgov': ltgov,
+#     #                         'temperature': temperature,
+#     #                         'densitelabo': densitelabo,
+#     #                         'densiteentrepot': densiteentrepot,
+#     #                         'vcf': vcf,
+#     #                         'gsv': gsv,
+#     #                         'mta': mta,
+#     #                         'flast': flast,
+#     #                         'slast': slast,
+#     #                         'tlast': tlast,
+#     #                         'color': color,
+#     #                         'odor': odor,
+#     #                         'frais': frais,
+#     #                         'govlttanker': govlttanker,
+#     #                         'govtankermeter': govtankermeter,
+#     #                         'gsvtankermeter': gsvtankermeter,
+#     #                         'mtatankermeter': mtatankermeter,
+#     #                         'govltmeter': govltmeter,
+#     #                         'meterbefore': meterbefore,
+#     #                         'meterafter': meterafter,
+#     #                         'govmeter': govmeter,
+#     #                         'gsvmeter': gsvmeter
+#     #                     }
+#     #                     # Rendered PDF report
+#     #                     pdf = render_to_pdf(template, data)
+#     #                     return HttpResponse(pdf, content_type='application/pdf')
+#     #                 else:
+#     #                     if produit == 'PETROLE LAMPANT':
+#     #                         template = 'report/rapportvalide/petrolereport.html'
+#     #
+#     #                         # Resultat Gasoil Fetching data into Database
+#     #                         aspect = d.aspect
+#     #                         couleursaybolt = d.couleursaybolt
+#     #                         aciditetotal = d.aciditetotal
+#     #                         soufre = d.soufre
+#     #                         soufremercaptan = d.soufremercaptan
+#     #                         docteurtest = d.docteurtest
+#     #                         distillation = d.distillation
+#     #                         pointinitial = d.pointinitial
+#     #                         pointfinal = d.pointfinal
+#     #                         pointfumee = d.pointfumee
+#     #                         pointeclair = d.pointeclair
+#     #                         freezingpoint = d.freezingpoint
+#     #                         residu = d.residu
+#     #                         perte = d.perte
+#     #                         massevolumique15 = d.massevolumique15
+#     #                         viscosite = d.viscosite
+#     #                         pointinflammabilite = d.pointinflammabilite
+#     #                         teneureau = d.teneureau
+#     #                         corrosion = d.corrosion
+#     #                         conductivite = d.conductivite
+#     #                         vol10 = d.vol10
+#     #                         vol20 = d.vol20
+#     #                         vol30 = d.vol30
+#     #                         vol40 = d.vol40
+#     #                         vol50 = d.vol50
+#     #                         vol60 = d.vol60
+#     #                         vol70 = d.vol70
+#     #                         vol80 = d.vol80
+#     #                         vol90 = d.vol90
+#     #
+#     #                         data = {
+#     #                             'numcertificatqualite': numcertificatqualite,
+#     #                             'dateanalyse': dateanalyse,
+#     #                             # 'dateimpression': dateimpression,
+#     #                             'importateur': importateur,
+#     #                             'declarant': declarant,
+#     #                             'entrepot': entrepot,
+#     #                             'dateechantillonage': dateechantillonage,
+#     #                             'provenance': provenance,
+#     #                             'qte': qte,
+#     #                             'datereceptionlabo': datereceptionlabo,
+#     #                             'codelabo': codelabo,
+#     #                             'numdossier': numdossier,
+#     #                             'immatriculation': immatriculation,
+#     #                             'numrappech': numrappech,
+#     #                             'aspect': aspect,
+#     #                             'couleursaybolt': couleursaybolt,
+#     #                             'aciditetotal': aciditetotal,
+#     #                             'soufre': soufre,
+#     #                             'soufremercaptan': soufremercaptan,
+#     #                             'docteurtest': docteurtest,
+#     #                             'distillation': distillation,
+#     #                             'pointinitial': pointinitial,
+#     #                             'pointfinal': pointfinal,
+#     #                             'pointfumee': pointfumee,
+#     #                             'freezingpoint': freezingpoint,
+#     #                             'residu': residu,
+#     #                             'perte': perte,
+#     #                             'pointeclair': pointeclair,
+#     #                             'massevolumique15': massevolumique15,
+#     #                             'viscosite': viscosite,
+#     #                             'pointinflammabilite': pointinflammabilite,
+#     #                             'teneureau': teneureau,
+#     #                             'corrosion': corrosion,
+#     #                             'conductivite': conductivite,
+#     #                             'vol10': vol10,
+#     #                             'vol20': vol20,
+#     #                             'vol30': vol30,
+#     #                             'vol40': vol40,
+#     #                             'vol50': vol50,
+#     #                             'vol60': vol60,
+#     #                             'vol70': vol70,
+#     #                             'vol80': vol80,
+#     #                             'vol90': vol90,
+#     #                             'produit': produit,
+#     #                             'mois': mois,
+#     #                             'annee': annee,
+#     #                             'province': province,
+#     #                             'entrance': entrance,
+#     #                             'arrivaldate': arrivaldate,
+#     #                             'origin': origin,
+#     #                             'product': product,
+#     #                             'operationdate': operationdate,
+#     #                             'receiver': receiver,
+#     #                             'consigner': consigner,
+#     #                             'govjaugee': govjaugee,
+#     #                             'ltgov': ltgov,
+#     #                             'temperature': temperature,
+#     #                             'densitelabo': densitelabo,
+#     #                             'densiteentrepot': densiteentrepot,
+#     #                             'vcf': vcf,
+#     #                             'gsv': gsv,
+#     #                             'mta': mta,
+#     #                             'flast': flast,
+#     #                             'slast': slast,
+#     #                             'tlast': tlast,
+#     #                             'color': color,
+#     #                             'odor': odor,
+#     #                             'frais': frais,
+#     #                             'govlttanker': govlttanker,
+#     #                             'govtankermeter': govtankermeter,
+#     #                             'gsvtankermeter': gsvtankermeter,
+#     #                             'mtatankermeter': mtatankermeter,
+#     #                             'govltmeter': govltmeter,
+#     #                             'meterbefore': meterbefore,
+#     #                             'meterafter': meterafter,
+#     #                             'govmeter': govmeter,
+#     #                             'gsvmeter': gsvmeter
+#     #                         }
+#     #
+#     #                         # Rendered PDF report
+#     #                         pdf = render_to_pdf(template, data)
+#     #                         return HttpResponse(pdf, content_type='application/pdf')
+#     #
+#     #     return redirect('dechargement')
+#     # else:
+#     #     return render(request, template, {'form': form})
 
 
 # Impression certificat de qualite au niveau de l'entrepot
@@ -1950,6 +1997,187 @@ def impressionCert(request, pk):
                         return HttpResponse(pdf, content_type='application/pdf')
                     else:
                         return redirect('logout')
-
     else:
         return redirect('logout')
+
+
+# Seals Inspections
+@login_required(login_url='login')
+def choiceoftype(request, pk):
+    template = 'choicetype.html'
+    form = PreInspectionForm1(request.POST or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            meter = form.cleaned_data['meter']
+            tanker = form.cleaned_data['tanker']
+            shore = form.cleaned_data['shore']
+
+            # Test pour affichage des formulaires correspondant
+            if shore is True:
+                return redirect('shore', pk=pk)
+
+            if tanker is True:
+                return redirect('seals', pk=pk)
+
+            if tanker is True & shore is True:
+                return redirect('dechargement')
+
+            if meter is True:
+                return redirect('seals', pk=pk)
+                # return redirect('dechargement')
+
+            if meter is True & shore is True:
+                return redirect('dechargement')
+
+            if meter is True & tanker is True:
+                return redirect('seals', pk=pk)
+
+            if meter is True & tanker is True & shore is True:
+                return redirect('dechargement')
+
+    else:
+        context = {'form': form}
+        return render(request, template, context)
+
+
+@login_required(login_url='login')
+def seals(request, pk):
+    template = 'formPreInspection1.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    # seals = InspectionSeal.objects.filter(idcargaison_id=cargaison)
+    form = SealInspection(request.POST or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form = form.save(commit=False)
+            form.idcargaison = cargaison
+            form.save()
+            return redirect('seal-details', pk=form.id)
+        else:
+            template = "partials/sealinspection.html"
+            return render(request, template, {'form': form})
+
+    context = {
+        "form": form,
+        "cargaison": cargaison,
+        # "seals":seals,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def sealinspection(request):
+    template = 'partials/sealinspection.html'
+    form = SealInspection()
+    context = {
+        "form": form
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def detailseals(request, pk):
+    template = 'partials/sealdetails.html'
+    seals = InspectionSeal.objects.get(id=pk)
+    context = {"seals": seals}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def sealsdelete(request, pk):
+    seal = InspectionSeal.objects.get(pk=pk)
+    seal.delete()
+    return HttpResponse()
+
+
+@login_required(login_url='login')
+def updateseals(request, pk):
+    template = 'partials/sealinspection.html'
+    seal = InspectionSeal.objects.get(pk=pk)
+    form = SealInspection(request.POST or None, instance=seal)
+
+    if request.method == "POST":
+        if request.method == 'POST':
+            if form.is_valid():
+                form = form.save()
+                return redirect('seal-details', pk=form.id)
+
+    context = {
+        "form": form,
+        "seal": seal,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def tankerinspection(request):
+    pass
+
+
+@login_required(login_url='login')
+def shorebefore(request, pk):
+    template = 'ShoreInspection.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    form = ShoreInspectionBefore(request.POST or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form = form.save(commit=False)
+            form.idcargaison = cargaison
+            form.save()
+            return redirect('shore-details', pk=form.id)
+        else:
+            template = "partials/shoreinspection.html"
+            return render(request, template, {'form': form})
+
+    context = {
+        "form": form,
+        "cargaison": cargaison,
+    }
+    return render(request, template, context)
+    pass
+
+
+@login_required(login_url='login')
+def shoreinspectionbefore(request):
+    template = 'partials/shoreinspection.html'
+    form = ShoreInspectionBefore()
+    context = {
+        "form": form
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shoredetails(request, pk):
+    template = 'partials/shoredetails.html'
+    shore = Shore.objects.get(id=pk)
+    context = {"shore": shore}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shoredelete(request, pk):
+    shore = Shore.objects.get(pk=pk)
+    shore.delete()
+    return HttpResponse()
+
+
+@login_required(login_url='login')
+def shoreupdate(request, pk):
+    template = 'partials/shoreinspection.html'
+    shore = Shore.objects.get(pk=pk)
+    form = ShoreInspectionBefore(request.POST or None, instance=shore)
+
+    if request.method == "POST":
+        if request.method == 'POST':
+            if form.is_valid():
+                form = form.save()
+                return redirect('shore-details', pk=form.id)
+
+    context = {
+        "form": form,
+        "shore": shore,
+    }
+    return render(request, template, context)

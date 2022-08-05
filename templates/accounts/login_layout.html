@@ -19,35 +19,36 @@
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
 </head>
-<body class="hold-transition login-page bg-gradient-dark">
-{#      <img src="/media/occ_compas.png" alt="OCC & CGW" width="450px" height="300px">#}
+<body class="hold-transition login-page bg-white">
+<img src="/media/logo_.png" alt="OCC & CGW">
+
 <div class="login-box">
 
-  <div class="login-logo">
-    <a href="#"><b>CGW</b>APP</a>
-  </div>
-  <!-- /.login-logo -->
-  <div class="card">
-    <div class="card-body login-card-body">
-      <p class="login-box-msg">Connectez - vous pour ouvrir votre session</p>
-
-      {% block login %}{% endblock %}
-
-        <div class="row">
-          <div class="col-8">
-            <div class="icheck-primary">
-              <input type="checkbox" id="remember">
-              <label for="remember">
-                Remember Me
-              </label>
-            </div>
-          </div>
-          <!-- /.col -->
-          <!-- /.col -->
-        </div>
+    <div class="login-logo">
+        {#    <a href="#"><b>CGW</b>APP</a>#}
     </div>
-    <!-- /.login-card-body -->
-  </div>
+    <!-- /.login-logo -->
+    <div class="card">
+        <div class="card-body login-card-body">
+            <p class="login-box-msg"><b>Ouverture de Session</b></p>
+
+            {% block login %}{% endblock %}
+
+            {#        <div class="row">#}
+            {#          <div class="col-8">#}
+            {#            <div class="icheck-primary">#}
+            {#              <input type="checkbox" id="remember">#}
+            {#              <label for="remember">#}
+            {#                Remember Me#}
+            {#              </label>#}
+            {#            </div>#}
+            {#          </div>#}
+            {#          <!-- /.col -->#}
+            {#          <!-- /.col -->#}
+            {#        </div>#}
+        </div>
+        <!-- /.login-card-body -->
+    </div>
 </div>
 <!-- /.login-box -->
 

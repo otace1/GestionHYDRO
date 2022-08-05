@@ -60,23 +60,27 @@ E = """<a href="{%url 'reprintact' record.pk%}" class="btn btn-success">Ré-Impr
 
 
 class CodificationTable(tables.Table):
-    numreqi = tables.TemplateColumn(A1, verbose_name='Saisie Ref.Requisition')
-    numreq = tables.Column(verbose_name='Ref.Requisition')
-    numdos = tables.Column(verbose_name='Num. de dossier')
+    numreqi = tables.TemplateColumn(A1, verbose_name='SAISIE REF.REQUISITION')
+    numreq = tables.Column(verbose_name='REF.REQUISITION')
+    numdos = tables.Column(verbose_name='NUM DE DOSSIER')
     buttons = tables.TemplateColumn(A3, verbose_name='')
+    dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPOT')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'immatriculation', 't1d', 't1e',
-                    'numreq']
-        exclude = ['numdos', 'requisitiondackdate', 'requisitionack', 'origine', 'idcargaison', 'declarant',
-                   'tempcargaison', 'densitecargaison', 'idchauffeur', 'nationalite', 'nomchauffeur', 'qrcode', 'poids',
-                   'transporteur', 'impression', 'voie', 'numact', 'conformite', 'provenance', 'tampon', 'etat',
-                   'numdeclaration', 'numdossier', 'codecargaison', 'manifestdgda', 'fournisseur', 'numbtfh',
-                   'valeurfacture', 'user', 'volume', 'volume_decl15', 'frontiere', 'printactdate', 'l_control',
-                   'rapechctrl']
+        sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'volume', 'immatriculation', 'numreq',
+                    'numreqi']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
+                   'requisitiondackdate', 'numdos', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control']
 
 
 class ModificationCodification(tables.Table):

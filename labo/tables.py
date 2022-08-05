@@ -106,13 +106,13 @@ GO = """
 
 class LaboratoireReception(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
-    idcargaison__dateheurecargaison = tables.Column(verbose_name="Date d'Entrée")
-    dateechantillonage = tables.Column(verbose_name="Date d'Echantillonnage")
-    idcargaison__immatriculation = tables.Column(verbose_name='Immatriculation')
-    idcargaison__numdos = tables.Column(verbose_name="Numéro Dossier")
+    idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE D'ENTREE")
+    dateechantillonage = tables.Column(verbose_name="DATE D'ECHANTILLONNAGE")
+    idcargaison__immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    idcargaison__numdos = tables.Column(verbose_name="NUM. DOSSIER")
     # idcargaison__codecargaison = tables.Column(verbose_name='# Hydro')
-    idcargaison__produit__nomproduit = tables.Column(verbose_name='Produit')
-    numrappechauto = tables.Column(verbose_name="Rapport d'Echantillonnage")
+    idcargaison__produit__nomproduit = tables.Column(verbose_name='PRODUIT')
+    numrappechauto = tables.Column(verbose_name="RAPPORT D'ECHANTILLONNAGE")
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped",
@@ -122,7 +122,7 @@ class LaboratoireReception(tables.Table):
         sequence = ['idcargaison__dateheurecargaison', 'dateechantillonage', 'numrappechauto', 'idcargaison__numdos',
                     'idcargaison__immatriculation']
         exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique', 'numdossier',
-                   'idcargaison__codecargaison', 'numrappech', 'useredit',
+                   'idcargaison__codecargaison', 'numrappech', 'useredit', 'matricule', 'methodeutilisee',
                    'qte', 'conformite', 'idcargaison__produit__nomproduit', 'idcargaison']
 
 

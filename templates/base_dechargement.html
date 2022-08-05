@@ -121,7 +121,6 @@
                                 <i class="nav-icon fas fa-truck-moving"></i>
                                 <p>
                                     ENREGISTREMENT
-
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
@@ -299,12 +298,7 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
-                                {#              <li class="nav-item">#}
-                                {#                <a href="{%url 'usersadd'%}" class="nav-link">#}
-                                {#                  <i class="far fa-circle nav-icon"></i>#}
-                                {#                  <p>AJOUT UTILISATEUR</p>#}
-                                {#                </a>#}
-                                {#              </li>#}
+
                                 <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -464,7 +458,7 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>GESTION DES DECHARGEMENTS</b></h1>
+                        <h1 class="m-0 text-dark"><b>INSPECTIONS & DECHARGEMENTS</b></h1>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
@@ -481,7 +475,7 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-6">
+                    <div class="col-md-12">
                         <div class="card bg-gradient-dark">
                             <div class="card-header">
                                 <h1 class="card-title"><b>CONFORME AUX EXIGENCES ET EN ATTENTE DE DECHARGEMENT</b></h1>
@@ -490,26 +484,10 @@
                             </div>
                             <div class="card-body table-responsive p-0">
                                 {% block content %}
-
                                 {% endblock %}
                             </div>
                         </div>
                     </div>
-
-                    {#                    <div class="col-7">#}
-                    {#                        <div class="card bg-gradient-green">#}
-                    {#                            <div class="card-header">#}
-                    {#                                <h1 class="card-title"><b>CARGAISONS DECHARGEES</b></h1>#}
-                    {#                                <div class="card-tools">#}
-                    {#                                </div>#}
-                    {#                            </div>#}
-                    {#                            <div class="card-body table-responsive p-0">#}
-                    {#                                {% block content1 %}{% endblock %}#}
-                    {#              </div>#}
-                    {#          </div>#}
-                    {#    </div>#}
-
-
                 </div>
                 <!-- /.row -->
             </div>

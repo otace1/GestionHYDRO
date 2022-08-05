@@ -6,7 +6,7 @@ TEMPLATE = """
            """
 
 TEMPLATE1 = """
-            <a href="{%url 'decharger' record.pk%}" target="_blank" class="btn btn-primary">DECHARGER</a>
+            <a href="{%url 'choiceoftype' record.pk%}" class="btn btn-primary">INSPECTION</a>
            """
 
 TEMPLATE2 = """
@@ -21,7 +21,12 @@ TEMPLATE3 = """
 
 class EchantillonTable(tables.Table):
     Echantilloner = tables.TemplateColumn(TEMPLATE, verbose_name='')
-    dateheurecargaison = tables.Column(verbose_name="Date d'entree")
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    numreq = tables.Column(verbose_name='REF.REQ.')
+    numdos = tables.Column(verbose_name='NUM.DOSSIER')
     idcargaison = tables.Column(verbose_name='N.Enr.')
     numreq = tables.Column(verbose_name='N.Requisition')
     numdos = tables.Column(verbose_name='N.Dossier')
@@ -33,13 +38,12 @@ class EchantillonTable(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'declarant', 'produit', 'immatriculation', 'numreq', 'numdos']
-        exclude = ['voie', 'idcargaison', 'manifestdgda', 'fournisseur', 'numbtfh', 'valeurfacture',
-                   'nomchauffeur', 'numdossier', 'codecargaison', 'tempcargaison', 'densitecargaison', 'idchauffeur',
-                   'nationalite', 'qrcode', 'poids', 'provenance', 'transporteur', 'etat', 'frontiere', 'entrepot',
-                   'impression', 'volume', 'volume_decl15', 'conformite', 'numact', 'user', 'tampon',
-                   'printactdate', 'l_control', 'requisitionack', 'requisitiondackdate', 'origine', 't1d', 't1e',
-                   'numdeclaration', 'rapechctrl']
+        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numreq', 'numdos']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport', 'entrepot', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
+                   'requisitiondackdate', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control']
 
 
 class CargaisonEnAttenteRequisition(tables.Table):
@@ -54,13 +58,11 @@ class CargaisonEnAttenteRequisition(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation']
-        exclude = ['idcargaison', 'voie', 'manifestdgda', 'declarant', 't1d', 't1e', 'fournisseur', 'numbtfh',
-                   'valeurfacture',
-                   'nomchauffeur', 'numdossier', 'codecargaison', 'tempcargaison', 'densitecargaison', 'idchauffeur',
-                   'nationalite', 'qrcode', 'poids', 'provenance', 'transporteur', 'etat', 'frontiere', 'entrepot',
-                   'impression', 'volume', 'volume_decl15', 'conformite', 'numact', 'user', 'tampon',
-                   'printactdate', 'l_control', 'requisitionack', 'requisitiondackdate', 'numdos', 'numreq', 'origine',
-                   'numdeclaration', 'rapechctrl']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport',
+                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control']
 
 
 class RapportEchantillonage(tables.Table):
@@ -77,26 +79,25 @@ class RapportEchantillonage(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'declarant', 'produit', 'immatriculation',
-                    't1d', 't1e', 'numreq', 'numdos']
-        exclude = ['idcargaison', 'voie', 'manifestdgda', 'fournisseur', 'numbtfh', 'valeurfacture',
-                   'nomchauffeur', 'numdossier', 'codecargaison', 'tempcargaison', 'densitecargaison', 'idchauffeur',
-                   'nationalite', 'qrcode', 'poids', 'provenance', 'transporteur', 'etat', 'frontiere', 'entrepot',
-                   'impression', 'volume', 'volume_decl15', 'conformite', 'numact', 'user', 'tampon',
-                   'printactdate', 'l_control', 'requisitionack', 'requisitiondackdate', 'origine',
-                   'numdeclaration', 'rapechctrl']
+        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation',
+                    'numreq', 'numdos']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport',
+                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control']
 
 
 class CargaisonDechargement(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
     # numdossier = tables.Column(verbose_name='Num. Dossier')
     # codecargaison = tables.Column(verbose_name='#Camion/Wagon/Navire')
-    produit = tables.Column(verbose_name='Produit')
-    massevolumique15 = tables.Column(verbose_name='Densité a 15°')
-    immatriculation = tables.Column(verbose_name='Immatriculation')
-    importateur = tables.Column(verbose_name='Importateur')
+    produit = tables.Column(verbose_name='PRODUIT')
+    # massevolumique15 = tables.Column(verbose_name='Densité a 15°')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
     # idcargaison__idcargaison__idcargaison__numreq = tables.Column(verbose_name='Ref. requisition Client')
-    numdos = tables.Column(verbose_name='Num. Dossier')
+    numdos = tables.Column(verbose_name='NUM. DOSSIER')
 
     class Meta:
         attrs = {
@@ -112,14 +113,45 @@ class CargaisonDechargement(tables.Table):
                     'numdos',
                     'immatriculation',
                     'produit']
-        exclude = ['idcargaison', 'declarant', 'voie', 'tempcargaison', 'densitecargaison', 'idchauffeur', 't1d', 't1e',
-                   'numreq', 'immatriculation', 'nationalite',
-                   'dateheurecargaison', 'numdeclaration', 'manifestdgda', 'fournisseur',
-                   'numbtfh', 'valeurfacture', 'qrcode', 'poids', 'transporteur', 'etat', 'frontiere',
-                   'entrepot', 'conformite', 'impression', 'volume', 'volume_decl15', 'provenance', 'nomchauffeur',
-                   'numact', 'user', 'tampon', 'codecargaison', 'printactdate', 'l_control', 'numdossier', 'rapechctrl',
-                   'requisitiondackdate', 'requisitionack', 'origine', 'massevolumique15']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
+                   'dateheurecargaison',
+                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control']
 
+
+class CargaisonDechargement2(tables.Table):
+    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+    # numdossier = tables.Column(verbose_name='Num. Dossier')
+    # codecargaison = tables.Column(verbose_name='#Camion/Wagon/Navire')
+    produit = tables.Column(verbose_name='PRODUIT')
+    # massevolumique15 = tables.Column(verbose_name='Densité a 15°')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    # idcargaison__idcargaison__idcargaison__numreq = tables.Column(verbose_name='Ref. requisition Client')
+    numdos = tables.Column(verbose_name='NUM. DOSSIER')
+
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "DechargementTable"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+        model = Cargaison
+        row_attrs = {
+            "id": lambda record: record.pk
+        }
+        sequence = ['importateur',
+                    'numdos',
+                    'immatriculation',
+                    'produit']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
+                   'dateheurecargaison',
+                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control']
 
 class EchantillonEnregistrer(tables.Table):
     class Meta:

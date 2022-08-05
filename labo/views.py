@@ -1083,7 +1083,7 @@ class GestionValidation():
             codelabo = c.codelabo
             dateanalyse = d.dateanalyse
             importateur = a.importateur
-            declarant = a.declarant
+            # declarant = a.declarant
             dateechantillonage = b.dateechantillonage
             entrepot = a.entrepot
             provenance = a.provenance.name
@@ -1126,7 +1126,7 @@ class GestionValidation():
                     'numcertificatqualite': numcertificatqualite,
                     'dateanalyse': dateanalyse,
                     'importateur': importateur,
-                    'declarant': declarant,
+                    # 'declarant': declarant,
                     'entrepot': entrepot,
                     'dateechantillonage': dateechantillonage,
                     'provenance': provenance,
@@ -1195,7 +1195,7 @@ class GestionValidation():
                         'numcertificatqualite': numcertificatqualite,
                         'dateanalyse': dateanalyse,
                         'importateur': importateur,
-                        'declarant': declarant,
+                        # 'declarant': declarant,
                         'entrepot': entrepot,
                         'dateechantillonage': dateechantillonage,
                         'provenance': provenance,
@@ -1271,7 +1271,7 @@ class GestionValidation():
                             'numcertificatqualite': numcertificatqualite,
                             'dateanalyse': dateanalyse,
                             'importateur': importateur,
-                            'declarant': declarant,
+                            # 'declarant': declarant,
                             'entrepot': entrepot,
                             'dateechantillonage': dateechantillonage,
                             'provenance': provenance,
@@ -1358,7 +1358,7 @@ class GestionValidation():
                                 'numcertificatqualite': numcertificatqualite,
                                 'dateanalyse': dateanalyse,
                                 'importateur': importateur,
-                                'declarant': declarant,
+                                # 'declarant': declarant,
                                 'entrepot': entrepot,
                                 'dateechantillonage': dateechantillonage,
                                 'provenance': provenance,

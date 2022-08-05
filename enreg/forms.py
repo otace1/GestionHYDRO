@@ -1,35 +1,38 @@
-from crispy_forms.bootstrap import Field
-from crispy_forms.layout import Layout, Submit, Row, Column
+from crispy_forms.layout import Layout, Row, Column
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Fieldset
 from django import forms
 from django_countries.fields import CountryField
 from enreg.models import *
 
-from django.contrib.auth.decorators import login_required
-
-
 class Ajoutcargaison(forms.Form):
     voie = forms.ModelChoiceField(queryset=Voie.objects.all(), label="TYPE VOIE D'ENTREE")
-    fournisseur = forms.CharField(label='FOURNISSEUR', required=False)
+    # fournisseur = forms.CharField(label='FOURNISSEUR', required=False)
     importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'),
-                                         label="IMPORTATEUR")
+                                         label="FOURNISSEUR", required=True)
     produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="NATURE DU PRODUIT")
     frontiere = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('nomville'), label="FRONTIERE D'ENTREE")
     provenance = CountryField().formfield()
-    origine = CountryField().formfield()
+    # origine = CountryField().formfield()
     entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'),
                                       label="ENTREPOT DE DESTINATION")
-    transporteur = forms.CharField(label="TRANSPORTEUR")
+    # transporteur = forms.CharField(label="TRANSPORTEUR")
     declarant = forms.CharField(widget=forms.TextInput(), label="TRANSITAIRE")
     poids = forms.DecimalField(min_value=1, label="MASSE EN TONNE METRIQUE (MTA)")
-    volume = forms.DecimalField(min_value=1, max_value=100, label="VOLUME DECL.")
+    volume = forms.DecimalField(min_value=1, max_value=100, label="VOLUME AMBIANT")
     t1d = forms.CharField(label="T1D", required=False)
     t1e = forms.CharField(label="T1E", required=False)
     numdeclaration = forms.CharField(label="# DECLARATION", required=False)
     numbtfh = forms.CharField(label="NUMERO BT/LT/FICHE CHAUFFEUR", required=False)
     manifestdgda = forms.CharField(label='# MANIFESTE', required=False)
     immatriculation = forms.CharField(label="IMMATRICULATION")
+
+    # Nouveau ajout sur le formulaire d'enregistrement a l'entree
+    typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport'),
+                                                label="TYPE D'UNITE DE TRANPORT", required=False)
+    volume15 = forms.FloatField(label="VOLUME A 15°C", required=False)
+    volume20 = forms.FloatField(label="VOLUME A 20°C", required=False)
+    tonnagevide = forms.FloatField(label="TONNAGE VIDE", required=False)
+    tonnageair = forms.FloatField(label="TONNAGE AIR", required=False)
 
     def __init__(self, *args, **kwargs):
         super(Ajoutcargaison, self).__init__(*args, **kwargs)
@@ -38,39 +41,30 @@ class Ajoutcargaison(forms.Form):
             Row(
                 Column('voie', css_class='form-group col-md-4 mb-0'),
                 Column('frontiere', css_class='form-group col-md-4 mb-0'),
-                Column('transporteur', placeholder='Nom du Fournisseur si applicable',
-                       css_class='form-group col-md-4 mb-0'),
-
+                Column('typeunitetransport', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
             Row(
-                Column('fournisseur', placeholder='Nom du Fournisseur si applicable',
-                       css_class='form-group col-md-6 mb-0'),
-                Column('importateur', css_class='form-group col-md-6 mb-0'),
-                Column('provenance', css_class='form-group col-md-6 mb-0'),
-                Column('origine', css_class='form-group col-md-6 mb-0'),
+                Column('immatriculation', css_class='form-group col-md-4 mb-0'),
+                Column('provenance', label='PROVENANCE', css_class='form-group col-md-4 mb-0'),
+                Column('importateur', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
                 Column('entrepot', css_class='form-group col-md-6 mb-0'),
+                Column('produit', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),
             Row(
-                Column('declarant', css_class='form-group col-md-4 mb-0'),
-                Column('t1e', css_class='form-group col-md-2 mb-0'),
-                Column('t1d', css_class='form-group col-md-2 mb-0'),
-                Column('numdeclaration', css_class='form-group col-md-2 mb-0'),
-                Column('manifestdgda', css_class='form-group col-md-2 mb-0'),
-                css_class='form-row'
-
-            ),
-            Row(
-                Column('produit', css_class='form-group col-md-4 mb-0'),
-                Column('poids', css_class='form-group col-md-4 mb-0'),
                 Column('volume', css_class='form-group col-md-4 mb-0'),
+                Column('volume15', css_class='form-group col-md-4 mb-0'),
+                Column('volume20', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
 
             ),
             Row(
-                Column('immatriculation', css_class='form-group col-md-6 mb-0'),
-                Column('numbtfh', css_class='form-group col-md-6 mb-0'),
+                Column('tonnagevide', css_class='form-group col-md-6 mb-0'),
+                Column('tonnageair', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
 
             ),
