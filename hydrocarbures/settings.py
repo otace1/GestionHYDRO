@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'formtools',
     'tailwind',
     'django_browser_reload',
+    'rest_framework',
 
     # 'django-pandas',
     # 'jquery',

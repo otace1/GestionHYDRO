@@ -10,6 +10,7 @@ TEMPLATE = """
 
 class CargaisonTable(tables.Table):
     Print = tables.TemplateColumn(TEMPLATE, verbose_name='')
+    importateur = tables.Column(verbose_name='IMPORTATEUR')
     user = tables.Column(verbose_name='USER')
     volume = tables.Column(verbose_name='VOL.AMBIANT')
     volume15 = tables.Column(verbose_name='VOL.15°C')
@@ -19,6 +20,7 @@ class CargaisonTable(tables.Table):
     entrepot = tables.Column(verbose_name='ENTREPOT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
+    produit = tables.Column(verbose_name='PRODUIT')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped",
