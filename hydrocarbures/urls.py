@@ -27,4 +27,7 @@ urlpatterns = [
                   path('', login_user),
                   path('__reload__/', include("django_browser_reload.urls")),
 
+                  # Api
+                  path('api/', include("api.urls")),
+
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

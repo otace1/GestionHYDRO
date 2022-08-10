@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, HttpResponse, redirect
 from django_tables2 import RequestConfig
 from django_tables2.paginators import LazyPaginator
-from .forms import Ajoutcargaison
+from .forms import Ajoutcargaison, AjoutCargaison
 from .models import *
 from accounts.models import *
 from .tables import CargaisonTable
@@ -16,7 +16,6 @@ from .tables import CargaisonTable
 
 # Create your views here.
 class GestionCargaison():
-
     # Affichage du Tableaux des caragisons enregistrer
     @login_required(login_url='login')
     def qrcodeprint(request):
@@ -66,83 +65,87 @@ class GestionCargaison():
                 return redirect('logout')
 
     @login_required(login_url='login')
-    def enregistrementCargaison(request):
+    def enregCargaison(request):
         user = request.user
         role = user.role_id
-        id = user.id
         u = user.username
-        username = user.username
-        frontiere = AffectationVille.objects.get(username=id)
-        user = frontiere.ville_id
-        d = date.today()
+
         if role == 2 or role == 1 or role == 7:
-            template = 'cargaison/cargaison_form.html'
+            template = 'cargaison/form.html'
+            form = AjoutCargaison(request.POST or None)
+            if form.is_valid():
+                instance = form.save(commit=False)
+                qrcode = str(uuid.uuid4())
+                instance.qrcode = qrcode
+                instance.etat = "En attente requisition"
+                instance.save()
+                return JsonResponse(qrcode, status=200, safe=False)
+            context = {'form': form}
+            return render(request, template, context)
 
-            # if request.is_ajax and request.method == "POST":
-            if request.method == "POST":
-                # Get Form DATA
-                voie = request.POST['voie']
-                # fournisseur = request.POST['fournisseur']
-                # manifestdgda = request.POST['manifestdgda']
-                # numbtfh = request.POST['numbtfh']
-                # numdeclaration = request.POST['numdeclaration']
-                importateur = request.POST['importateur']
-                produit = request.POST['produit']
-                frontiere = request.POST['frontiere']
-                provenance = request.POST['provenance']
-                entrepot = request.POST['entrepot']
-                # transporteur = request.POST['transporteur']
-                # declarant = request.POST['declarant']
-                # poids = request.POST['poids']
-                volume = request.POST['volume']
-                # t1d = request.POST['t1d']
-                # t1e = request.POST['t1e']
-                immatriculation = request.POST['immatriculation']
-                # origine = request.POST['origine']
-
-                # Field ajouter
-                typeunitetransport = request.POST['typeunitetransport']
-                volume15 = request.POST['volume15']
-                volume20 = request.POST['volume20']
-                tonnagevide = request.POST['tonnagevide']
-                tonnageair = request.POST['tonnagevide']
-
-                if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or produit == '' or volume == '' or immatriculation == '':
-                    vide = 0
-                    return JsonResponse({'error': form.errors, 'vide': vide}, status=400)
-
-                # verification de la quantite saisie
-                volume = float(volume)
-                if volume > 500:
-                    vol = 0
-                    return JsonResponse({'error': form.errors, 'vol': vol},
-                                        status=400)
-
-                # Gestion des cles etrangeres
-                v = Voie.objects.get(pk=voie)
-                i = Importateur.objects.get(pk=importateur)
-                p = Produit.objects.get(pk=produit)
-                f = Ville.objects.get(pk=frontiere)
-                e = Entrepot.objects.get(pk=entrepot)
-                g = TypeUniteTransport.objects.get(idunite=typeunitetransport)
-                # n = Nationalites.objects.get(pk=nationalite)
-
-                # Assignation de l'etat de l'enregistrenment
-                etat = ("En attente requisition")
-
-                # Utilisation de l'UUID comme id unique dans la base de donnee
-                code = str(uuid.uuid4())
-                p = Cargaison(voie=v, importateur=i, produit=p, frontiere=f, provenance=provenance, entrepot=e,
-                              volume=volume, immatriculation=immatriculation, typeunitetransport=g, volume15=volume15,
-                              volume20=volume20, tonnagevide=tonnagevide, tonnageair=tonnageair,
-                              qrcode=code, etat=etat, user=u)
-                p.save()
-                return JsonResponse(code, safe=False, status=200)
-            else:
-                form = Ajoutcargaison()
-            return render(request, template, {'form': form})
-        else:
-            return redirect('logout')
+    # @login_required(login_url='login')
+    # def enregistrementCargaison(request):
+    #     user = request.user
+    #     role = user.role_id
+    #     id = user.id
+    #     u = user.username
+    #     d = date.today()
+    #     if role == 2 or role == 1 or role == 7:
+    #         template = 'cargaison/cargaison_form.html'
+    #
+    #         if request.method == "POST":
+    #             # Get Form DATA
+    #             voie = request.POST['voie']
+    #             importateur = request.POST['importateur']
+    #             produit = request.POST['produit']
+    #             frontiere = request.POST['frontiere']
+    #             provenance = request.POST['provenance']
+    #             entrepot = request.POST['entrepot']
+    #             volume = float(request.POST['volume'])
+    #             immatriculation = request.POST['immatriculation']
+    #
+    #             # Field ajouter
+    #             typeunitetransport = request.POST['typeunitetransport']
+    #             volume15 = float(request.POST['volume15'])
+    #             volume20 = float(request.POST['volume20'])
+    #             tonnagevide = float(request.POST['tonnagevide'])
+    #             tonnageair = float(request.POST['tonnagevide'])
+    #
+    #             if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or produit == '' or volume == '' or immatriculation == '':
+    #                 vide = 0
+    #                 return JsonResponse({'error': form.errors, 'vide': vide}, status=400)
+    #
+    #             # verification de la quantite saisie
+    #             volume = float(volume)
+    #             if volume > 500:
+    #                 vol = 0
+    #                 return JsonResponse({'error': form.errors, 'vol': vol},
+    #                                     status=400)
+    #
+    #             # Gestion des cles etrangeres
+    #             v = Voie.objects.get(pk=voie)
+    #             i = Importateur.objects.get(pk=importateur)
+    #             p = Produit.objects.get(pk=produit)
+    #             f = Ville.objects.get(pk=frontiere)
+    #             e = Entrepot.objects.get(pk=entrepot)
+    #             g = TypeUniteTransport.objects.get(idunite=typeunitetransport)
+    #
+    #             # Assignation de l'etat de l'enregistrenment
+    #             etat = ("En attente requisition")
+    #
+    #             # Utilisation de l'UUID comme id unique dans la base de donnee
+    #             code = str(uuid.uuid4())
+    #             p = Cargaison(voie=v, importateur=i, produit=p, frontiere=f, provenance=provenance, entrepot=e,
+    #                           volume=volume, immatriculation=immatriculation, typeunitetransport=g, volume15=volume15,
+    #                           volume20=volume20, tonnagevide=tonnagevide, tonnageair=tonnageair,
+    #                           qrcode=code, etat=etat, user=u)
+    #             p.save()
+    #             return JsonResponse(code, safe=False, status=200)
+    #         else:
+    #             form = Ajoutcargaison()
+    #         return render(request, template, {'form': form})
+    #     else:
+    #         return redirect('logout')
 
     @login_required(login_url='login')
     def effacer(request, pk):
