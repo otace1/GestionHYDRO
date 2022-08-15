@@ -11,7 +11,6 @@ urlpatterns = [
     path('fournisseur/', NomFournisseur.as_view(), name='fournisseur'),
     path('entrepot/', NomEntrepot.as_view(), name='entrepot'),
     path('produit/', TypeProduit.as_view(), name='produit'),
-    path('produit/', TypeProduit.as_view(), name='produit'),
     path('qrcode/<int:pk>/cargo/qrcode/', GetQrcode.as_view(), name='getqrcode'),
 
 ]
