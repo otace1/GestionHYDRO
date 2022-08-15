@@ -120,19 +120,91 @@ class Dashboard():
                 i = Importateur.objects.filter(idimportateur=volume['importateur'])
                 imp.append(i[0])
 
-            v1 = vol[0]
-            v2 = vol[1]
-            v3 = vol[2]
-            v4 = vol[3]
-            v5 = vol[4]
+            # Exception management temp fix for empty value
 
-            i1 = imp[0]
-            i2 = imp[1]
-            i3 = imp[2]
-            i4 = imp[3]
-            i5 = imp[4]
+            if vol[0]:
+                if vol[1]:
+                    if vol[2]:
+                        if vol[3]:
+                            if vol[4]:
+                                v1 = vol[0]
+                                v2 = vol[1]
+                                v3 = vol[2]
+                                v4 = vol[3]
+                                v5 = vol[4]
+                            else:
+                                v1 = vol[0]
+                                v2 = vol[1]
+                                v3 = vol[2]
+                                v4 = vol[3]
+                                v5 = 0
+                        else:
+                            v1 = vol[0]
+                            v2 = vol[1]
+                            v3 = vol[2]
+                            v4 = 0
+                            v5 = 0
+                    else:
+                        v1 = vol[0]
+                        v2 = vol[1]
+                        v3 = 0
+                        v4 = 0
+                        v5 = 0
+                else:
+                    v1 = vol[0]
+                    v2 = 0
+                    v3 = 0
+                    v4 = 0
+                    v5 = 0
+            else:
+                v1 = 0
+                v2 = 0
+                v3 = 0
+                v4 = 0
+                v5 = 0
 
-            # Total year Stats
+            if imp[0]:
+                if imp[1]:
+                    if imp[2]:
+                        if imp[3]:
+                            if imp[4]:
+                                i1 = imp[0]
+                                i2 = imp[1]
+                                i3 = imp[2]
+                                i4 = imp[3]
+                                i5 = imp[4]
+                            else:
+                                i1 = imp[0]
+                                i2 = imp[1]
+                                i3 = imp[2]
+                                i4 = imp[3]
+                                i5 = 0
+                        else:
+                            i1 = imp[0]
+                            i2 = imp[1]
+                            i3 = imp[2]
+                            i4 = 0
+                            i5 = 0
+                    else:
+                        i1 = imp[0]
+                        i2 = imp[1]
+                        i3 = 0
+                        i4 = 0
+                        i5 = 0
+                else:
+                    i1 = imp[0]
+                    i2 = 0
+                    i3 = 0
+                    i4 = 0
+                    i5 = 0
+            else:
+                i1 = 0
+                i2 = 0
+                i3 = 0
+                i4 = 0
+                i5 = 0
+
+                # Total year Stats
             ytotal = Cargaison.objects.select_related().filter(dateheurecargaison__year=year).aggregate(Sum('volume'))
             total = ytotal['volume__sum']
 

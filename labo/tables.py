@@ -150,7 +150,7 @@ class TableauEchantillonRecu(tables.Table):
 
 class AffichageAnalyse(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
-    numrappech = tables.Column(accessor='idcargaison.numrappech', verbose_name="Numéro de RE")
+    numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="Numéro de RE")
     produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='Nature produit')
     datereceptionlabo = tables.Column(verbose_name='Date de réception')
     numcertificatqualite = tables.Column(verbose_name='Numéro CQ Attribué')
@@ -159,7 +159,7 @@ class AffichageAnalyse(tables.Table):
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['datereceptionlabo', 'codelabo', 'numrappech', 'produit']
+        sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit']
         exclude = ['numcertificatqualite', 'idcargaison']
 
 
@@ -180,7 +180,7 @@ class AffichageAnalyseRefaire(tables.Table):
 class AffichageValidation1(tables.Table):
     actions = tables.TemplateColumn(VALIDATION1, verbose_name='')
     # certificat = tables.TemplateColumn(CQ, verbose_name='C.Q')
-    idcargaison__idcargaison__numrappech = tables.Column(verbose_name='Numéro RE')
+    idcargaison__idcargaison__numrappechauto = tables.Column(verbose_name='Numéro RE')
     idcargaison__codelabo = tables.Column(verbose_name="Code Labo")
     idcargaison__numcertificatqualite = tables.Column(verbose_name="Numéro CQ")
     idcargaison__idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="Produit")
@@ -190,7 +190,7 @@ class AffichageValidation1(tables.Table):
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['idcargaison__codelabo', 'idcargaison__idcargaison__numrappech',
+        sequence = ['idcargaison__codelabo', 'idcargaison__idcargaison__numrappechauto',
                     'idcargaison__idcargaison__idcargaison__importateur__nomimportateur',
                     'idcargaison__idcargaison__idcargaison__produit__nomproduit', 'idcargaison__numcertificatqualite']
         exclude = ['idcargaison', 'numcertificatqualite', 'codelabo', 'datereceptionlabo']
@@ -199,7 +199,7 @@ class AffichageValidation1(tables.Table):
 class AffichageValidation2(tables.Table):
     actions = tables.TemplateColumn(VALIDATION2, verbose_name='')
     # certificat = tables.TemplateColumn(CQ, verbose_name='C.Q')
-    idcargaison__idcargaison__numrappech = tables.Column(verbose_name='Numéro RE')
+    idcargaison__idcargaison__numrappechauto = tables.Column(verbose_name='Numéro RE')
     idcargaison__codelabo = tables.Column(verbose_name="Code Labo")
     idcargaison__numcertificatqualite = tables.Column(verbose_name="Numéro CQ")
     idcargaison__idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="Produit")
@@ -209,7 +209,7 @@ class AffichageValidation2(tables.Table):
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['idcargaison__codelabo', 'idcargaison__idcargaison__numrappech',
+        sequence = ['idcargaison__codelabo', 'idcargaison__idcargaison__numrappechauto',
                     'idcargaison__idcargaison__idcargaison__importateur__nomimportateur',
                     'idcargaison__idcargaison__idcargaison__produit__nomproduit', 'idcargaison__numcertificatqualite']
         exclude = ['idcargaison', 'numcertificatqualite', 'codelabo', 'datereceptionlabo']

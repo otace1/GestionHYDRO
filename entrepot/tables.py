@@ -57,12 +57,13 @@ class CargaisonEnAttenteRequisition(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation']
+        sequence = ['dateheurecargaison', 'immatriculation', 'importateur', 'produit']
         exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport',
-                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
+                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids', 'volume',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+                   'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
+                   'importateur']
 
 
 class RapportEchantillonage(tables.Table):

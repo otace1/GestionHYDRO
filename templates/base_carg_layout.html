@@ -64,7 +64,7 @@
   </head>
 
   <!-- sidebar: style can be found in sidebar.less -->
-  <body class="hold-transition sidebar-mini layout-fixed">
+  <body class="hold-transition sidebar-mini sidebar-collapse">
   <div class="wrapper">
 
       <!-- Navbar -->
@@ -81,7 +81,6 @@
               <!-- Navbar Search -->
               <li class="nav-item">
                   <div class="navbar-search-block">
-                      <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b></a>
                   </div>
               </li>
           </ul>
@@ -91,7 +90,7 @@
           <!-- Brand Logo -->
           <a href="#" class="brand-link">
               {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
-              <span class="brand-text font-weight-light"><b>GESTION</b>DES<b>HYDROS</b></span>
+              <span class="brand-text font-weight-light"><b>Gestions des Hydrocarbures</b></span>
           </a>
 
           <!-- Sidebar -->
@@ -103,6 +102,9 @@
                   </div>
                   <div class="info">
                       <a href="#" class="d-block">{{ request.user.first_name }} {{ request.user.last_name }}</a>
+
+                      <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b></a>
+
                   </div>
               </div>
               <!-- sidebar: style can be found in sidebar.less -->
@@ -115,7 +117,7 @@
                           <li class="nav-item has-treeview menu-open">
                               <a href="{% url 'dashboard' %}" class="nav-link active">
                                   <i class="nav-icon fas fa-tachometer-alt"></i>
-                                  <p>DASHBOARD & KPIs</p>
+                                  <p>Tableau de bord</p>
                               </a>
                           </li>
 
@@ -267,6 +269,9 @@
                               </ul>
                           </li>
 
+                      {% endif %}
+
+                      {% if user.role_id == 10 %}
                           <li class="nav-item has-treeview">
                               <a href="" class="nav-link">
                                   <i class="nav-icon fas fa-file-archive"></i>

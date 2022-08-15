@@ -2,25 +2,21 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view, APIView
 from rest_framework.response import Response
 from rest_framework import status
-from enreg.models import *
+from enreg.models import Voie, Ville, TypeUniteTransport, Importateur, Entrepot, Produit
 from .serializers import *
-
 import uuid
-
 
 class AddCargo(APIView):
     queryset = Cargaison.objects.all()
     serializer_class = CargaisonSerializer
-
     def post(self, request):
         serializer = CargaisonSerializer(data=request.data)
         if serializer.is_valid():
-            instance = serializer.save(commit=False)
             qrcode = str(uuid.uuid4())
-            instance.etat = "En attente requisition"
-            instance.qrcode = qrcode
-            context = {'qrcode': qrcode}
+            etat = "En attente requisition"
+            instance = serializer.save(qrcode=qrcode, etat=etat)
             instance.save()
+            context = {'qrcode': qrcode}
             return Response(context, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -29,3 +25,74 @@ class AddCargo(APIView):
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
         return Response(serializer.data)
+
+
+class TypeVoie(APIView):
+    queryset = Voie.objects.all()
+    serializer_class = VoieSerializer
+
+    def get(self, request):
+        data = Voie.objects.all()
+        serializer = VoieSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class NomFrontiere(APIView):
+    queryset = Ville.objects.all()
+    serializer_class = FrontiereSerializer
+
+    def get(self, request):
+        data = Ville.objects.all()
+        serializer = FrontiereSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class TypeUnite(APIView):
+    queryset = TypeUniteTransport.objects.all()
+    serializer_class = UniteSerializer
+
+    def get(self, request):
+        data = TypeUniteTransport.objects.all()
+        serializer = UniteSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class NomFournisseur(APIView):
+    queryset = Importateur.objects.all()
+    serializer_class = FournisseurSerializer
+
+    def get(self, request):
+        data = Importateur.objects.all()
+        serializer = FournisseurSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class NomEntrepot(APIView):
+    queryset = Entrepot.objects.all()
+    serializer_class = EntrepotSerializer
+
+    def get(self, request):
+        data = Entrepot.objects.all()
+        serializer = EntrepotSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class TypeProduit(APIView):
+    queryset = Produit.objects.all()
+    serializer_class = ProduitSerializer
+
+    def get(self, request):
+        data = Produit.objects.all()
+        serializer = ProduitSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class GetQrcode(APIView):
+    queryset = Cargaison.objects.all()
+    serializer_class = CargaisonSerializer
+
+    def get(self, request, pk):
+        data = Cargaison.objects.get(idcargaison=pk)
+        data = data.qrcode
+        context = {'qrcode': data}
+        return Response(context, status=status.HTTP_200_OK)
