@@ -116,3 +116,10 @@ class Provenance(APIView):
         data = COUNTRIES.values()
         context = {'provenance': data}
         return Response(context, status=status.HTTP_200_OK)
+
+
+class GetCargoList(APIView):
+    def get(self, request):
+        data = Cargaison.objects.all()
+        serializer = CargaisonSerializer(data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

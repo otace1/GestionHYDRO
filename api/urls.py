@@ -13,4 +13,7 @@ urlpatterns = [
     path('produit/', TypeProduit.as_view(), name='produit'),
     path('qrcode/<int:pk>/cargo/qrcode/', GetQrcode.as_view(), name='getqrcode'),
 
+    # Listing
+    path('list/cargo/', GetCargoList.as_view(), name='getcargolist'),
+
 ]
