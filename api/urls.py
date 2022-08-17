@@ -16,4 +16,7 @@ urlpatterns = [
     # Listing
     path('list/cargo/', GetCargoList.as_view(), name='getcargolist'),
 
+    # Compteur
+    path('compteur/cargo/', GetCargoCount.as_view(), name='getcargocount'),
+
 ]
