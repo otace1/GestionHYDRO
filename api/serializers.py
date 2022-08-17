@@ -45,5 +45,6 @@ class ProduitSerializer(ModelSerializer):
         model = Produit
         fields = '__all__'
 
+#
 # class ProvenanceSerializer(serializers.Serializer):
 #     provenance = CountryField(name_only=True)
