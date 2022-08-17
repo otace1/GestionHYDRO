@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from enreg.models import Voie, Ville, TypeUniteTransport, Importateur, Entrepot, Produit
 from django_countries.fields import CountryField
-from django_countries.data import COUNTRIES
+from django_countries import countries
 from .serializers import *
 import uuid
 
@@ -17,6 +17,7 @@ class AddCargo(APIView):
     def post(self, request):
         serializer = CargaisonSerializer(data=request.data)
         if serializer.is_valid():
+
             qrcode = str(uuid.uuid4())
             etat = "En attente requisition"
             instance = serializer.save(qrcode=qrcode, etat=etat)
@@ -113,7 +114,7 @@ class GetQrcode(APIView):
 
 class Provenance(APIView):
     def get(self, request):
-        data = COUNTRIES.values()
+        data = countries
         context = {'provenance': data}
         return Response(context, status=status.HTTP_200_OK)
 

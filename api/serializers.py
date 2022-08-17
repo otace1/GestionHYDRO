@@ -1,4 +1,6 @@
 from rest_framework.serializers import ModelSerializer
+from django_countries.serializer_fields import CountryField
+from rest_framework import serializers
 from enreg.models import *
 
 
@@ -43,7 +45,5 @@ class ProduitSerializer(ModelSerializer):
         model = Produit
         fields = '__all__'
 
-# class ProvenanceSerializer(ModelSerializer):
-#     class Meta:
-#         model =
-#         fields = '__all__'
+# class ProvenanceSerializer(serializers.Serializer):
+#     provenance = CountryField(name_only=True)
