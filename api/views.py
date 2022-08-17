@@ -114,7 +114,7 @@ class GetQrcode(APIView):
 
 class Provenance(APIView):
     def get(self, request):
-        data = countries.name()
+        data = countries
         context = {'provenance': data}
         return Response(context, status=status.HTTP_200_OK)
 
