@@ -17,10 +17,47 @@ class AddCargo(APIView):
     def post(self, request):
         serializer = CargaisonSerializer(data=request.data)
         if serializer.is_valid():
+            data = serializer.data
+
+            voie = Voie.objects.get(nomvoie=data['voie'])
+            voie = voie.idvoie
+            frontiere = Ville.objects.get(nomville=data['frontiere'])
+            frontiere = frontiere.idville
+            typeunitetransport = TypeUniteTransport.objects.get(unitetransport=data['typeunitetransport'])
+            typeunitetransport = typeunitetransport.idunite
+            provenance = data['provenance']
+            importateur = Importateur.objects.get(nomimportateur=data['importateur'])
+            importateur = importateur.idimportateur
+            entrepot = Entrepot.objects.get(nomentrepot=data['entrepot'])
+            entrepot = entrepot.identrepot
+            immatriculation = data['immatriculation']
+            produit = Produit.objects.get(nomproduit=data['produit'])
+            produit = produit.idproduit
+            volume = data['volume']
+            volume15 = data['volume15']
+            volume20 = data['volume20']
+            tonnagevide = data['tonnagevide']
+            tonnageair = data['tonnageair']
 
             qrcode = str(uuid.uuid4())
             etat = "En attente requisition"
-            instance = serializer.save(qrcode=qrcode, etat=etat)
+            instance = Cargaison.objects.create(
+                voie=voie,
+                frontiere=frontiere,
+                typeunitetransport=typeunitetransport,
+                provenance=provenance,
+                importateur=importateur,
+                entrepot=entrepot,
+                immatriculation=immatriculation,
+                produit=produit,
+                volume=volume,
+                volume15=volume15,
+                volume20=volume20,
+                tonnagevide=tonnagevide,
+                tonnageair=tonnageair,
+                qrcode=qrcode,
+                etat=etat
+            )
             instance.save()
             context = {'qrcode': qrcode}
             return Response(context, status=status.HTTP_200_OK)
