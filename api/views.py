@@ -6,8 +6,10 @@ from rest_framework import status
 from enreg.models import Voie, Ville, TypeUniteTransport, Importateur, Entrepot, Produit
 from django_countries.fields import CountryField
 from django_countries.data import COUNTRIES
+from django_countries.data import COUNTRIES
 from .serializers import *
 import uuid
+import decimal
 
 
 class AddCargo(APIView):
@@ -15,50 +17,307 @@ class AddCargo(APIView):
     serializer_class = CargaisonSerializer
 
     def post(self, request):
-        serializer = CargaisonSerializer(data=request.data)
+        data = request.data
+        voie = Voie.objects.get(nomvoie=data['voie'])
+        voie = voie.idvoie
+        frontiere = Ville.objects.get(nomville=data['frontiere'])
+        frontiere = frontiere.idville
+        typeunitetransport = TypeUniteTransport.objects.get(unitetransport=data['typeunitetransport'])
+        typeunitetransport = typeunitetransport.idunite
+        provenance = data['provenance']
+        # Get the key of the provenance value in dict
+        a = COUNTRIES
+        key = [k for k, v in a.items() if v == provenance]
+        provenance = key[0]
+        print(provenance)
+        importateur = Importateur.objects.get(nomimportateur=data['importateur'])
+        importateur = importateur.idimportateur
+        entrepot = Entrepot.objects.get(nomentrepot=data['entrepot'])
+        entrepot = entrepot.identrepot
+        immatriculation = data['immatriculation']
+        produit = Produit.objects.get(nomproduit=data['produit'])
+        produit = produit.idproduit
+        volume = decimal.Decimal(data['volume'])
+        volume15 = data['volume15']
+        volume20 = data['volume20']
+        tonnagevide = data['tonnagevide']
+        tonnageair = data['tonnageair']
+
+        if volume15:
+            if volume20:
+                if tonnagevide:
+                    if tonnageair:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        volume20 = decimal.Decimal(data['volume20'])
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'volume20': volume20,
+                            'tonnagevide': tonnagevide,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        volume20 = decimal.Decimal(data['volume20'])
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'volume20': volume20,
+                            'tonnagevide': tonnagevide,
+                        }
+                else:
+                    if tonnageair:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        volume20 = decimal.Decimal(data['volume20'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'volume20': volume20,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        volume20 = decimal.Decimal(data['volume20'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'volume20': volume20,
+                        }
+            else:
+                if tonnagevide:
+                    if tonnageair:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'tonnagevide': tonnagevide,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'tonnagevide': tonnagevide,
+                        }
+                else:
+                    if tonnageair:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        volume15 = decimal.Decimal(data['volume15'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume15': volume15,
+                        }
+        else:
+            if volume20:
+                if tonnagevide:
+                    if tonnageair:
+                        volume20 = decimal.Decimal(data['volume20'])
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume20': volume20,
+                            'tonnagevide': tonnagevide,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        volume20 = decimal.Decimal(data['volume20'])
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume20': volume20,
+                            'tonnagevide': tonnagevide,
+                        }
+                else:
+                    if tonnageair:
+                        volume20 = decimal.Decimal(data['volume20'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'volume20': volume20,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                        }
+            else:
+                if tonnagevide:
+                    if tonnageair:
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'tonnagevide': tonnagevide,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        tonnagevide = decimal.Decimal(data['tonnagevide'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'tonnagevide': tonnagevide,
+                        }
+                else:
+                    if tonnageair:
+                        tonnageair = decimal.Decimal(data['tonnageair'])
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                            'tonnageair': tonnageair
+                        }
+                    else:
+                        data = {
+                            'voie': voie,
+                            'frontiere': frontiere,
+                            'typeunitetransport': typeunitetransport,
+                            'provenance': provenance,
+                            'importateur': importateur,
+                            'entrepot': entrepot,
+                            'immatriculation': immatriculation,
+                            'produit': produit,
+                            'volume': volume,
+                        }
+
+        serializer = CargaisonSerializer(data=data)
         if serializer.is_valid():
-            data = serializer.data
-
-            voie = Voie.objects.get(nomvoie=data['voie'])
-            voie = voie.idvoie
-            frontiere = Ville.objects.get(nomville=data['frontiere'])
-            frontiere = frontiere.idville
-            typeunitetransport = TypeUniteTransport.objects.get(unitetransport=data['typeunitetransport'])
-            typeunitetransport = typeunitetransport.idunite
-            provenance = data['provenance']
-            importateur = Importateur.objects.get(nomimportateur=data['importateur'])
-            importateur = importateur.idimportateur
-            entrepot = Entrepot.objects.get(nomentrepot=data['entrepot'])
-            entrepot = entrepot.identrepot
-            immatriculation = data['immatriculation']
-            produit = Produit.objects.get(nomproduit=data['produit'])
-            produit = produit.idproduit
-            volume = data['volume']
-            volume15 = data['volume15']
-            volume20 = data['volume20']
-            tonnagevide = data['tonnagevide']
-            tonnageair = data['tonnageair']
-
+            # data = serializer.data
             qrcode = str(uuid.uuid4())
             etat = "En attente requisition"
-            instance = Cargaison.objects.create(
-                voie=voie,
-                frontiere=frontiere,
-                typeunitetransport=typeunitetransport,
-                provenance=provenance,
-                importateur=importateur,
-                entrepot=entrepot,
-                immatriculation=immatriculation,
-                produit=produit,
-                volume=volume,
-                volume15=volume15,
-                volume20=volume20,
-                tonnagevide=tonnagevide,
-                tonnageair=tonnageair,
-                qrcode=qrcode,
-                etat=etat
-            )
-            instance.save()
+            serializer.save(qrcode=qrcode, etat=etat)
             context = {'qrcode': qrcode}
             return Response(context, status=status.HTTP_200_OK)
         else:

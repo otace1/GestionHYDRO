@@ -5,6 +5,7 @@ from enreg.models import *
 
 
 class CargaisonSerializer(ModelSerializer):
+    provenance = CountryField()
     class Meta:
         model = Cargaison
         fields = '__all__'

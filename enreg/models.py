@@ -157,10 +157,10 @@ class Cargaison(models.Model):
 
     # Nouveau champ a ajouter
     typeunitetransport = models.ForeignKey(TypeUniteTransport, on_delete=models.CASCADE, blank=True, null=True)
-    volume15 = models.FloatField(blank=True, null=True)
-    volume20 = models.FloatField(blank=True, null=True)
-    tonnagevide = models.FloatField(blank=True, null=True)
-    tonnageair = models.FloatField(blank=True, null=True)
+    volume15 = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    volume20 = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    tonnagevide = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    tonnageair = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
 
     l_control = models.IntegerField(null=True)
     printactdate = models.DateField(auto_now_add=True)
