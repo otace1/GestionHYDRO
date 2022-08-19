@@ -1,13 +1,10 @@
-import django_countries.data
-from django.shortcuts import render
 from rest_framework.decorators import api_view, APIView
 from rest_framework.response import Response
-from rest_framework import status
-from enreg.models import Voie, Ville, TypeUniteTransport, Importateur, Entrepot, Produit
-from django_countries.fields import CountryField
-from django_countries.data import COUNTRIES
+from rest_framework import status, viewsets
 from django_countries.data import COUNTRIES
 from .serializers import *
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
 import uuid
 import decimal
 
@@ -427,3 +424,9 @@ class GetCargoCount(APIView):
         data = Cargaison.objects.all().count()
         context = {'count': data}
         return Response(context, status=status.HTTP_200_OK)
+
+
+class UserViewSerializer(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserSerializer
+    queryset = get_user_model().objects.all()
