@@ -337,11 +337,11 @@ class TypeVoie(APIView):
 
 
 class NomFrontiere(APIView):
-    queryset = Ville.objects.all()
+    queryset = Ville.objects.all().order_by('nomville')
     serializer_class = FrontiereSerializer
 
     def get(self, request):
-        data = Ville.objects.all()
+        data = Ville.objects.all().order_by('nomville')
         serializer = FrontiereSerializer(data, many=True)
         return Response(serializer.data)
 
@@ -365,21 +365,21 @@ class TypeUnite(APIView):
 
 
 class NomFournisseur(APIView):
-    queryset = Importateur.objects.all()
+    queryset = Importateur.objects.all().order_by('nomimportateur')
     serializer_class = FournisseurSerializer
 
     def get(self, request):
-        data = Importateur.objects.all()
+        data = Importateur.objects.all().order_by('nomimportateur')
         serializer = FournisseurSerializer(data, many=True)
         return Response(serializer.data)
 
 
 class NomEntrepot(APIView):
-    queryset = Entrepot.objects.all()
+    queryset = Entrepot.objects.all().order_by('nomentrepot')
     serializer_class = EntrepotSerializer
 
     def get(self, request):
-        data = Entrepot.objects.all()
+        data = Entrepot.objects.all().order_by('nomentrepot')
         serializer = EntrepotSerializer(data, many=True)
         return Response(serializer.data)
 
@@ -406,6 +406,9 @@ class GetQrcode(APIView):
 
 
 class Provenance(APIView):
+    queryset = Cargaison.objects.all()
+
+    # serializer_class = CargaisonSerializer
     def get(self, request):
         data = COUNTRIES.values()
         context = {'provenance': data}
@@ -413,6 +416,9 @@ class Provenance(APIView):
 
 
 class GetCargoList(APIView):
+    queryset = Cargaison.objects.all()
+    serializer_class = CargaisonSerializer
+
     def get(self, request):
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
@@ -420,6 +426,9 @@ class GetCargoList(APIView):
 
 
 class GetCargoCount(APIView):
+    queryset = Cargaison.objects.all()
+    serializer_class = CargaisonSerializer
+
     def get(self, request):
         data = Cargaison.objects.all().count()
         context = {'count': data}
@@ -430,3 +439,4 @@ class UserViewSerializer(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
+
