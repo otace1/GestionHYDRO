@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 import uuid
 import decimal
+import datetime
 
 
 class AddCargo(APIView):
@@ -430,8 +431,15 @@ class GetCargoCount(APIView):
     serializer_class = CargaisonSerializer
 
     def get(self, request):
-        data = Cargaison.objects.all().count()
-        context = {'count': data}
+        y = datetime.date.today()
+        year = y.year
+        month = y.month
+        annual = Cargaison.objects.filter(dateheurecargaison__year=year).count()
+        monthly = Cargaison.objects.filter(dateheurecargaison__month=month).count()
+        context = {
+            'annual': annual,
+            'monthly': monthly
+        }
         return Response(context, status=status.HTTP_200_OK)
 
 

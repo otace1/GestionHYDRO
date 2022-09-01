@@ -44,3 +44,5 @@ router = DefaultRouter()
 router.register('user', UserViewSerializer, basename='user')
 
 urlpatterns += router.urls
+
+# userAccessToken
