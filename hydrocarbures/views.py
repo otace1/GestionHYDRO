@@ -9,7 +9,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         # Add custom claims
-        token["sub"] = settings.SIMPLE_JWT.get("ISSUER", "")
+        token["sub"] = settings.SIMPLE_JWT.get("USER_ID_CLAIM", "")
         # When the serializer is called token['exp'] does not reflect the settings.ACCES_TOKEN_LIFETIME
         # and is set to now + 1day,thus we subtract a day to get iat
         token["iat"] = token["exp"] - (60 * 60 * 24)
