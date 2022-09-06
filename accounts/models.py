@@ -121,9 +121,10 @@ class MyUser(AbstractBaseUser):
                         Generates a JSON Web Token that stores this user's ID and has an expiry
                         date set to 60 days into the future.
         """
+        if not firebase_admin._apps:
+            cred = credentials.Certificate('./api/serviceAccount.json')
+            default_app = firebase_admin.initialize_app(cred)
 
-        cred = credentials.Certificate('./api/serviceAccount.json')
-        default_app = firebase_admin.initialize_app(cred)
         additional_claims = {
             'names': self.get_full_name()
         }
