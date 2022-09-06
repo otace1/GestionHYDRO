@@ -3,8 +3,13 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
+from django.conf import settings
 from jsignature.fields import JSignatureField
 from jsignature.mixins import JSignatureFieldsMixin
+import jwt
+from datetime import datetime, timedelta
+import firebase_admin
+from firebase_admin import credentials, auth
 
 from enreg.models import Entrepot, Ville
 
@@ -48,7 +53,6 @@ class MyUserManager(BaseUserManager):
 
 # Table des utilisateurs
 class MyUser(AbstractBaseUser):
-
     username = models.CharField(
         max_length=20,
         validators=[
@@ -86,6 +90,47 @@ class MyUser(AbstractBaseUser):
     def natural_key(self):
         return self.my_natural_key
 
+    @property
+    def token(self):
+        """
+        Allows us to get a user's token by calling `user.token` instead of
+        `user.generate_jwt_token().
+        The `@property` decorator above makes this possible. `token` is called
+        a "dynamic property".
+        """
+        return self._generate_jwt_token()
+
+    def get_full_name(self):
+        """
+        This method is required by Django for things like handling emails.
+        Typically this would be the user's first and last name. Since we do
+        not store the user's real name, we return their username instead.
+        """
+        return self.first_name + " " + self.last_name
+
+    def get_short_name(self):
+        """
+        This method is required by Django for things like handling emails.
+        Typically, this would be the user's first name. Since we do not store
+        the user's real name, we return their username instead.
+        """
+        return self.username
+
+    def _generate_jwt_token(self):
+        """
+                        Generates a JSON Web Token that stores this user's ID and has an expiry
+                        date set to 60 days into the future.
+        """
+
+        cred = credentials.Certificate('./api/serviceAccount.json')
+        default_app = firebase_admin.initialize_app(cred)
+        additional_claims = {
+            'names': self.get_full_name()
+        }
+        uid = str(self.id)
+        token = auth.create_custom_token(uid, additional_claims)
+        return token
+
 
 # Tables des affectations aux entrepots
 class AffectationEntrepot(models.Model):
@@ -113,9 +158,3 @@ class AffectationVille(models.Model):
 # Gestion des signatures electroniques
 class SignatureModel(JSignatureFieldsMixin):
     username = models.IntegerField(null=True, blank=True)
-
-# #Tables des affectations des Roles des utilisateurs
-# class AffectationRoles(models.Model):
-#     idaffectation_roles = models.AutoField(primary_key=True, auto_created=True)
-#     username = models.ForeignKey(MyUser, on_delete=models.CASCADE)
-#     role = models.ForeignKey(Roles, on_delete=models.CASCADE)

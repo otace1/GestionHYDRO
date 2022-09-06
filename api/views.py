@@ -1,10 +1,13 @@
-from rest_framework.decorators import api_view, APIView
+from rest_framework.decorators import api_view, APIView, permission_classes
 from rest_framework.response import Response
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, permissions, exceptions
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import AllowAny
+from accounts.models import MyUser
 from django_countries.data import COUNTRIES
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 import uuid
 import decimal
 import datetime
@@ -443,8 +446,38 @@ class GetCargoCount(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def loginApiView(request):
+    data = request.data
+    username = data['username']
+    password = data['password']
+    response = Response()
+    if (username is None) or (password is None):
+        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+    user = MyUser.objects.filter(username=username).first()
+    if (user is None):
+        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+    if (not user.check_password(password)):
+        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+
+    access_token = user.token
+    response.data = {
+        'access_token': access_token,
+    }
+    return response
+
+
 class UserViewSerializer(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
 
+
+class AuthUserApiView(GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(get_user_model())
+        return Response({'user': serializer.data})

@@ -19,4 +19,8 @@ urlpatterns = [
     # Compteur
     path('compteur/cargo/', GetCargoCount.as_view(), name='getcargocount_api'),
 
+    # Auth
+    path('auth/user/', AuthUserApiView.as_view(), name='auth'),
+    path('auth/user/login/', loginApiView, name='apiLoginToken'),
+
 ]
