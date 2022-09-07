@@ -7,9 +7,9 @@ from django.conf import settings
 from jsignature.fields import JSignatureField
 from jsignature.mixins import JSignatureFieldsMixin
 import jwt
-from datetime import datetime, timedelta
 import firebase_admin
 from firebase_admin import credentials, auth
+import datetime
 
 from enreg.models import Entrepot, Ville
 
@@ -100,6 +100,12 @@ class MyUser(AbstractBaseUser):
         """
         return self._generate_jwt_token()
 
+    def refreshToken(self):
+        """
+        Get Refresh Token for user continues access to data
+        """
+        return self._generate_jwt_refresh_token()
+
     def get_full_name(self):
         """
         This method is required by Django for things like handling emails.
@@ -108,13 +114,6 @@ class MyUser(AbstractBaseUser):
         """
         return self.first_name + " " + self.last_name
 
-    def get_short_name(self):
-        """
-        This method is required by Django for things like handling emails.
-        Typically, this would be the user's first name. Since we do not store
-        the user's real name, we return their username instead.
-        """
-        return self.username
 
     def _generate_jwt_token(self):
         """
@@ -126,11 +125,24 @@ class MyUser(AbstractBaseUser):
             default_app = firebase_admin.initialize_app(cred)
 
         additional_claims = {
-            'names': self.get_full_name()
+            'names': self.get_full_name(),
         }
+
         uid = str(self.id)
         token = auth.create_custom_token(uid, additional_claims)
         return token
+
+    def _generate_jwt_refresh_token(self):
+        refresh_token_payload = {
+            'user_id': self.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7),
+            'iat': datetime.datetime.utcnow()
+        }
+
+        refresh_token = jwt.encode(
+            refresh_token_payload, settings.SECRET_KEY, algorithm='HS256')
+
+        return refresh_token
 
 
 # Tables des affectations aux entrepots

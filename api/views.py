@@ -462,8 +462,10 @@ def loginApiView(request):
         raise exceptions.AuthenticationFailed('The login details are incorrect or required')
 
     access_token = user.token
+    refresh_token = user.refreshToken()
     response.data = {
         'access_token': access_token,
+        'refresh_token': refresh_token
     }
     return response
 
