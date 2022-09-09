@@ -325,6 +325,7 @@ class AddCargo(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
+
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
         return Response(serializer.data)
@@ -333,6 +334,7 @@ class AddCargo(APIView):
 class TypeVoie(APIView):
     queryset = Voie.objects.all()
     serializer_class = VoieSerializer
+    permission_classes(permissions.AllowAny)
 
     def get(self, request):
         data = Voie.objects.all()
@@ -343,6 +345,7 @@ class TypeVoie(APIView):
 class NomFrontiere(APIView):
     queryset = Ville.objects.all().order_by('nomville')
     serializer_class = FrontiereSerializer
+    permission_classes(permissions.AllowAny)
 
     def get(self, request):
         data = Ville.objects.all().order_by('nomville')
@@ -353,14 +356,15 @@ class NomFrontiere(APIView):
 class TypeUnite(APIView):
     queryset = TypeUniteTransport.objects.all()
     serializer_class = UniteSerializer
+    permission_classes(permissions.AllowAny)
 
-    def post(self, request):
-        serializer = UniteSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # def post(self, request):
+    #     serializer = UniteSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_200_OK)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
         data = TypeUniteTransport.objects.all()
@@ -371,6 +375,7 @@ class TypeUnite(APIView):
 class NomFournisseur(APIView):
     queryset = Importateur.objects.all().order_by('nomimportateur')
     serializer_class = FournisseurSerializer
+    permission_classes(permissions.AllowAny)
 
     def get(self, request):
         data = Importateur.objects.all().order_by('nomimportateur')
@@ -381,6 +386,7 @@ class NomFournisseur(APIView):
 class NomEntrepot(APIView):
     queryset = Entrepot.objects.all().order_by('nomentrepot')
     serializer_class = EntrepotSerializer
+    permission_classes(permissions.AllowAny)
 
     def get(self, request):
         data = Entrepot.objects.all().order_by('nomentrepot')
@@ -391,6 +397,7 @@ class NomEntrepot(APIView):
 class TypeProduit(APIView):
     queryset = Produit.objects.all()
     serializer_class = ProduitSerializer
+    permission_classes(permissions.AllowAny)
 
     def get(self, request):
         data = Produit.objects.all()
