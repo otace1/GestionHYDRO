@@ -126,6 +126,10 @@ class MyUser(AbstractBaseUser):
 
         additional_claims = {
             'names': self.get_full_name(),
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'last_name': self.last_name,
+            'role': self.role,
         }
 
         uid = str(self.id)
