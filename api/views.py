@@ -470,6 +470,7 @@ def loginApiView(request):
 
     access_token = user.token
     refresh_token = user.refreshToken()
+    response.set_cookie(key="jwt", value=access_token, httponly=True)
     response.data = {
         'access_token': access_token,
         'refresh_token': refresh_token
