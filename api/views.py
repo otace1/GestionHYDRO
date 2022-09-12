@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions, exceptions
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
+from rest_framework_api_key.permissions import HasAPIKey
+from rest_framework.authtoken.models import Token
+from rest_framework_api_key.models import APIKey
 from accounts.models import MyUser
 from django_countries.data import COUNTRIES
 from .serializers import *
@@ -11,6 +14,34 @@ from django.contrib.auth import get_user_model, authenticate
 import uuid
 import decimal
 import datetime
+
+
+# This for firebase Login system view Custom JWT
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def loginApiView(request):
+    data = request.data
+    username = data['username']
+    password = data['password']
+    response = Response()
+    if (username is None) or (password is None):
+        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+    user = MyUser.objects.filter(username=username).first()
+    if (user is None):
+        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+    if (not user.check_password(password)):
+        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
+
+    access_token = user.token
+    apiKey = Token.objects.filter(user=user).first()
+    apiKey = apiKey.key
+
+    response.set_cookie(key="jwt", value=access_token, httponly=True)
+    response.data = {
+        'access_token': access_token,
+        'apiKey': apiKey,
+    }
+    return response
 
 
 class AddCargo(APIView):
@@ -334,7 +365,8 @@ class AddCargo(APIView):
 class TypeVoie(APIView):
     queryset = Voie.objects.all()
     serializer_class = VoieSerializer
-    permission_classes(permissions.AllowAny)
+
+    # permission_classes = [HasAPIKey]
 
     def get(self, request):
         data = Voie.objects.all()
@@ -345,7 +377,8 @@ class TypeVoie(APIView):
 class NomFrontiere(APIView):
     queryset = Ville.objects.all().order_by('nomville')
     serializer_class = FrontiereSerializer
-    permission_classes(permissions.AllowAny)
+
+    # permission_classes = [HasAPIKey]
 
     def get(self, request):
         data = Ville.objects.all().order_by('nomville')
@@ -356,7 +389,8 @@ class NomFrontiere(APIView):
 class TypeUnite(APIView):
     queryset = TypeUniteTransport.objects.all()
     serializer_class = UniteSerializer
-    permission_classes(permissions.AllowAny)
+
+    # permission_classes = [HasAPIKey]
 
     # def post(self, request):
     #     serializer = UniteSerializer(data=request.data)
@@ -375,7 +409,8 @@ class TypeUnite(APIView):
 class NomFournisseur(APIView):
     queryset = Importateur.objects.all().order_by('nomimportateur')
     serializer_class = FournisseurSerializer
-    permission_classes(permissions.AllowAny)
+
+    # permission_classes = [HasAPIKey]
 
     def get(self, request):
         data = Importateur.objects.all().order_by('nomimportateur')
@@ -386,7 +421,8 @@ class NomFournisseur(APIView):
 class NomEntrepot(APIView):
     queryset = Entrepot.objects.all().order_by('nomentrepot')
     serializer_class = EntrepotSerializer
-    permission_classes(permissions.AllowAny)
+
+    # permission_classes = [HasAPIKey]
 
     def get(self, request):
         data = Entrepot.objects.all().order_by('nomentrepot')
@@ -397,7 +433,8 @@ class NomEntrepot(APIView):
 class TypeProduit(APIView):
     queryset = Produit.objects.all()
     serializer_class = ProduitSerializer
-    permission_classes(permissions.AllowAny)
+
+    # permission_classes = [HasAPIKey]
 
     def get(self, request):
         data = Produit.objects.all()
@@ -419,6 +456,7 @@ class GetQrcode(APIView):
 class Provenance(APIView):
     queryset = Cargaison.objects.all()
 
+    # permission_classes = [HasAPIKey]
     # serializer_class = CargaisonSerializer
     def get(self, request):
         data = COUNTRIES.values()
@@ -430,6 +468,8 @@ class GetCargoList(APIView):
     queryset = Cargaison.objects.all()
     serializer_class = CargaisonSerializer
 
+    # permission_classes = [HasAPIKey]
+
     def get(self, request):
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
@@ -439,6 +479,8 @@ class GetCargoList(APIView):
 class GetCargoCount(APIView):
     queryset = Cargaison.objects.all()
     serializer_class = CargaisonSerializer
+
+    # permission_classes = [HasAPIKey]
 
     def get(self, request):
         y = datetime.date.today()
@@ -453,40 +495,14 @@ class GetCargoCount(APIView):
         return Response(context, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def loginApiView(request):
-    data = request.data
-    username = data['username']
-    password = data['password']
-    response = Response()
-    if (username is None) or (password is None):
-        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
-    user = MyUser.objects.filter(username=username).first()
-    if (user is None):
-        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
-    if (not user.check_password(password)):
-        raise exceptions.AuthenticationFailed('The login details are incorrect or required')
-
-    access_token = user.token
-    refresh_token = user.refreshToken()
-    response.set_cookie(key="jwt", value=access_token, httponly=True)
-    response.data = {
-        'access_token': access_token,
-        'refresh_token': refresh_token
-    }
-    return response
-
-
 class UserViewSerializer(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = [HasAPIKey]
     serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
 
 
 class AuthUserApiView(GenericAPIView):
-    permission_classes = (permissions.IsAuthenticated,)
-
+    # permission_classes = [HasAPIKey]
     def get(self, request):
         user = request.user
         serializer = UserSerializer(get_user_model())

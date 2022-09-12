@@ -2,17 +2,9 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 from accounts.views import login_user
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
 from rest_framework.routers import DefaultRouter
 from api.views import UserViewSerializer
-# from .views import MyTokenObtainPairView
-
-#
-# def trigger_error(request):
-#     division_by_zero = 1 / 0
+from django.contrib import admin
 
 if settings.DEBUG:
     import debug_toolbar
@@ -20,6 +12,9 @@ if settings.DEBUG:
 urlpatterns = [
                   path('__debug__/', include(debug_toolbar.urls)),
                   # path('sentry-debug/', trigger_error),
+                  path('admin/', admin.site.urls),
+                  path('ads/', include('ads.urls')),
+                  path('ads/', include('ads.urls')),
                   path('ads/', include('ads.urls')),
                   path('cargaison/', include('enreg.urls')),
                   path('shydro/', include('shydro.urls')),
