@@ -357,7 +357,7 @@ class AddCargo(APIView):
 
     def get(self, request):
 
-        data = Cargaison.objects.all().order_by('dateheurecargaison')
+        data = Cargaison.objects.all().order_by('-dateheurecargaison')
         serializer = CargaisonSerializer(data, many=True)
         return Response(serializer.data)
 
