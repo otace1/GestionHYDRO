@@ -36,8 +36,7 @@ class EchantillonTable(tables.Table):
     numreq = tables.Column(verbose_name='REF.REQ.')
     numdos = tables.Column(verbose_name='NUM.DOSSIER')
     idcargaison = tables.Column(verbose_name='N.Enr.')
-    numreq = tables.Column(verbose_name='N.Requisition')
-    numdos = tables.Column(verbose_name='N.Dossier')
+
 
     class Meta:
         attrs = {
@@ -46,12 +45,13 @@ class EchantillonTable(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numreq', 'numdos']
-        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        sequence = ['idcargaison', 'dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numreq',
+                    'numdos']
+        exclude = ['valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'entrepot', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
                    'requisitiondackdate', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'volume']
 
 
 
@@ -72,7 +72,7 @@ class CargaisonEnAttenteRequisition(tables.Table):
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids', 'volume',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-                   'importateur']
+                   'importateur', 'before', 'after', 'entrepot']
 
 
 class RapportEchantillonage(tables.Table):

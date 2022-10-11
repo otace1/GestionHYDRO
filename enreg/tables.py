@@ -33,4 +33,4 @@ class CargaisonTable(tables.Table):
                    'typeunitetransport',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after']

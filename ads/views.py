@@ -122,89 +122,110 @@ class Dashboard():
 
             # Exception management temp fix for empty value
 
-            if vol[0]:
-                if vol[1]:
-                    if vol[2]:
-                        if vol[3]:
-                            if vol[4]:
-                                v1 = vol[0]
-                                v2 = vol[1]
-                                v3 = vol[2]
-                                v4 = vol[3]
-                                v5 = vol[4]
-                            else:
-                                v1 = vol[0]
-                                v2 = vol[1]
-                                v3 = vol[2]
-                                v4 = vol[3]
-                                v5 = 0
-                        else:
-                            v1 = vol[0]
-                            v2 = vol[1]
-                            v3 = vol[2]
-                            v4 = 0
-                            v5 = 0
-                    else:
-                        v1 = vol[0]
-                        v2 = vol[1]
-                        v3 = 0
-                        v4 = 0
-                        v5 = 0
-                else:
-                    v1 = vol[0]
-                    v2 = 0
-                    v3 = 0
-                    v4 = 0
-                    v5 = 0
-            else:
+            try:
+                v1 = vol[0]
+                v2 = vol[1]
+                v3 = vol[2]
+                v4 = vol[3]
+                v5 = vol[4]
+            except:
                 v1 = 0
                 v2 = 0
                 v3 = 0
                 v4 = 0
                 v5 = 0
-
-            if imp[0]:
-                if imp[1]:
-                    if imp[2]:
-                        if imp[3]:
-                            if imp[4]:
-                                i1 = imp[0]
-                                i2 = imp[1]
-                                i3 = imp[2]
-                                i4 = imp[3]
-                                i5 = imp[4]
-                            else:
-                                i1 = imp[0]
-                                i2 = imp[1]
-                                i3 = imp[2]
-                                i4 = imp[3]
-                                i5 = 0
-                        else:
-                            i1 = imp[0]
-                            i2 = imp[1]
-                            i3 = imp[2]
-                            i4 = 0
-                            i5 = 0
-                    else:
-                        i1 = imp[0]
-                        i2 = imp[1]
-                        i3 = 0
-                        i4 = 0
-                        i5 = 0
-                else:
-                    i1 = imp[0]
-                    i2 = 0
-                    i3 = 0
-                    i4 = 0
-                    i5 = 0
-            else:
                 i1 = 0
                 i2 = 0
                 i3 = 0
                 i4 = 0
                 i5 = 0
 
-                # Total year Stats
+            #
+            # if vol[0]:
+            #     if vol[1]:
+            #         if vol[2]:
+            #             if vol[3]:
+            #                 if vol[4]:
+            #                     v1 = vol[0]
+            #                     v2 = vol[1]
+            #                     v3 = vol[2]
+            #                     v4 = vol[3]
+            #                     v5 = vol[4]
+            #                 else:
+            #                     v1 = vol[0]
+            #                     v2 = vol[1]
+            #                     v3 = vol[2]
+            #                     v4 = vol[3]
+            #                     v5 = 0
+            #             else:
+            #                 v1 = vol[0]
+            #                 v2 = vol[1]
+            #                 v3 = vol[2]
+            #                 v4 = 0
+            #                 v5 = 0
+            #         else:
+            #             v1 = vol[0]
+            #             v2 = vol[1]
+            #             v3 = 0
+            #             v4 = 0
+            #             v5 = 0
+            #     else:
+            #         v1 = vol[0]
+            #         v2 = 0
+            #         v3 = 0
+            #         v4 = 0
+            #         v5 = 0
+            # else:
+            #     v1 = 0
+            #     v2 = 0
+            #     v3 = 0
+            #     v4 = 0
+            #     v5 = 0
+            # 
+            # if imp[0]:
+            #     if imp[1]:
+            #         if imp[2]:
+            #             if imp[3]:
+            #                 if imp[4]:
+            #                     i1 = imp[0]
+            #                     i2 = imp[1]
+            #                     i3 = imp[2]
+            #                     i4 = imp[3]
+            #                     i5 = imp[4]
+            #                 else:
+            #                     i1 = imp[0]
+            #                     i2 = imp[1]
+            #                     i3 = imp[2]
+            #                     i4 = imp[3]
+            #                     i5 = 0
+            #             else:
+            #                 i1 = imp[0]
+            #                 i2 = imp[1]
+            #                 i3 = imp[2]
+            #                 i4 = 0
+            #                 i5 = 0
+            #         else:
+            #             i1 = imp[0]
+            #             i2 = imp[1]
+            #             i3 = 0
+            #             i4 = 0
+            #             i5 = 0
+            #     else:
+            #         i1 = imp[0]
+            #         i2 = 0
+            #         i3 = 0
+            #         i4 = 0
+            #         i5 = 0
+            # else:
+            #     i1 = 0
+            #     i2 = 0
+            #     i3 = 0
+            #     i4 = 0
+            #     i5 = 0
+            # 
+            #     # Total year Stats
+            #     
+
             ytotal = Cargaison.objects.select_related().filter(dateheurecargaison__year=year).aggregate(Sum('volume'))
             total = ytotal['volume__sum']
 
@@ -221,13 +242,33 @@ class Dashboard():
                 volume = data['volume__sum']
                 pourcent = (volume * 100) / total
                 pourcentage.append(pourcent)
+                # taille = len(pourcentage)
 
-            # Récupération des pourcentage
-            p1 = math.ceil(pourcentage[0])
-            p2 = math.ceil(pourcentage[1])
-            p3 = math.ceil(pourcentage[2])
-            p4 = math.ceil(pourcentage[3])
-            p5 = math.ceil(pourcentage[4])
+            try:
+                # Récupération des pourcentage
+                p1 = math.ceil(pourcentage[0])
+            except:
+                p1 = 1
+
+            try:
+                p2 = math.ceil(pourcentage[1])
+            except:
+                p2 = 1
+
+            try:
+                p3 = math.ceil(pourcentage[2])
+            except:
+                p3 = 1
+
+            try:
+                p4 = math.ceil(pourcentage[3])
+            except:
+                p4 = 1
+
+            try:
+                p5 = math.ceil(pourcentage[4])
+            except:
+                p5 = 1
 
             # Tableau des derniers enregistrements
             table = DerniersEnregistrements(Cargaison.objects.all().order_by('-idcargaison')[:8])

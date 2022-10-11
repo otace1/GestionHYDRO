@@ -80,7 +80,7 @@ class CodificationTable(tables.Table):
                    'typeunitetransport', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
                    'requisitiondackdate', 'numdos', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after']
 
 
 class ModificationCodification(tables.Table):
@@ -97,7 +97,7 @@ class ModificationCodification(tables.Table):
             , 'qrcode', 'poids', 'transporteur', 'impression', 'voie', 'numact', 'conformite',
                    'provenance', 'tampon', 'l_control', 'etat', 'numdeclaration', 'manifestdgda', 'fournisseur',
                    'numbtfh', 'valeurfacture', 'user', 'volume', 'volume_decl15', 'frontiere', 'printactdate',
-                   'produit']
+                   'produit', 'before', 'after']
 
 class ResultatGoLabo(tables.Table):
     actions = tables.TemplateColumn(B, verbose_name='')
