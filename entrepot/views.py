@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect
 from .tables import *
 from enreg.models import *
+from django.core.exceptions import BadRequest
 from accounts.models import *
 from .forms import *
 from labo.utils import render_to_pdf
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 import math
 from django.db.models import Q, Count
@@ -374,7 +375,9 @@ class GestionDechargement():
         today = date.today()
 
         if role == 9:
-            qs = Cargaison.objects.filter(Q(etat='Echantillonner'), entrepot=affectation_entrepot).order_by(
+            qs = Cargaison.objects.filter(Q(etat='Echantillonner'),
+                                          Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3),
+                                          entrepot=affectation_entrepot).order_by(
                 '-dateheurecargaison')
             table = CargaisonDechargement2(qs, prefix='2_')
 
@@ -392,14 +395,20 @@ class GestionDechargement():
         else:
             if role == 3 or role == 1:
                 qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
+                                              Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
                                               entrepot=affectation_entrepot).order_by('-dateheurecargaison')
                 table = CargaisonDechargement(qs, prefix='1_')
 
-                qs1 = Dechargement.objects.filter(
-                    idcargaison__idcargaison__idcargaison__idcargaison__etat='Cargaison dechargee',
-                    idcargaison__idcargaison__idcargaison__idcargaison__entrepot=affectation_entrepot).order_by(
-                    '-datedechargement')
-                table1 = CargaisonDechargee(qs1, prefix='1_')
+                # affichage des tanker cabotteurs
+                qs1 = Cargaison.objects.filter(before=True, entrepot=affectation_entrepot).order_by(
+                    '-dateheurecargaison')
+                table1 = TankerCabotteur(qs1, prefix='2_')
+
+                # qs1 = Dechargement.objects.filter(
+                #     idcargaison__idcargaison__idcargaison__idcargaison__etat='Cargaison dechargee',
+                #     idcargaison__idcargaison__idcargaison__idcargaison__entrepot=affectation_entrepot).order_by(
+                #     '-datedechargement')
+                # table1 = CargaisonDechargee(qs1, prefix='1_')
 
                 RequestConfig(request, paginate={"per_page": 10}).configure(table)
                 RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
@@ -2014,28 +2023,28 @@ def choiceoftype(request, pk):
             shore = form.cleaned_data['shore']
 
             # Test pour affichage des formulaires correspondant
-            if shore is True:
-                return redirect('shore', pk=pk)
-
-            if tanker is True:
-                return redirect('seals', pk=pk)
-
-            if tanker is True & shore is True:
-                return redirect('dechargement')
-
-            if meter is True:
-                return redirect('seals', pk=pk)
-                # return redirect('dechargement')
-
-            if meter is True & shore is True:
-                return redirect('dechargement')
-
-            if meter is True & tanker is True:
-                return redirect('seals', pk=pk)
-
-            if meter is True & tanker is True & shore is True:
-                return redirect('dechargement')
-
+            if meter is False:
+                if tanker is False:
+                    if shore is False:
+                        return HttpResponseBadRequest
+                    else:
+                        return redirect('shore', pk=pk)
+                else:
+                    if shore is False:
+                        return redirect('seals', pk=pk)
+                    else:
+                        return HttpResponseBadRequest
+            else:
+                if tanker is False:
+                    if shore is False:
+                        return redirect('seals', pk=pk)
+                    else:
+                        return redirect('shore', pk=pk)
+                else:
+                    if shore is False:
+                        return redirect('seals', pk=pk)
+                    else:
+                        return HttpResponseBadRequest
     else:
         context = {'form': form}
         return render(request, template, context)
@@ -2045,8 +2054,8 @@ def choiceoftype(request, pk):
 def seals(request, pk):
     template = 'formPreInspection1.html'
     cargaison = Cargaison.objects.get(idcargaison=pk)
-    # seals = InspectionSeal.objects.filter(idcargaison_id=cargaison)
     form = SealInspection(request.POST or None)
+    request.session['id'] = pk
 
     if request.method == 'POST':
         if form.is_valid():
@@ -2112,20 +2121,164 @@ def updateseals(request, pk):
 
 @login_required(login_url='login')
 def tankerinspection(request):
-    pass
+    pk = request.session['id']
+    template = 'tankerInspection.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    form = TankerInspection(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            produit = request.POST['produit']
+            produit = Produit.objects.get(idproduit=produit)
+            dens = request.POST['dens']
+            temp = request.POST['temp']
+            innagein = request.POST['innagein']
+            volumein = request.POST['volumein']
+            tempin = request.POST['tempin']
+            weightin = request.POST['weightin']
+            meterbefore = request.POST['meterbefore']
+            data = Inspection(idcargaison=cargaison, produit=produit, dens=dens, temp=temp, innagein=innagein,
+                              volumein=volumein, tempin=tempin, weightin=weightin, meterbefore=meterbefore)
+            data.save()
+            return redirect('compartiment', pk=pk)
+    else:
+        context = {'form': form}
+        return render(request, template, context)
 
 
 @login_required(login_url='login')
-def shorebefore(request, pk):
-    template = 'ShoreInspection.html'
-    cargaison = Cargaison.objects.get(idcargaison=pk)
-    form = ShoreInspectionBefore(request.POST or None)
+def compartiment(request, pk):
+    template = 'formCompartiment1.html'
+    inspection = Inspection.objects.get(idcargaison=pk)
+    form = CompartimentInspection(request.POST or None)
+    request.session['id'] = pk
 
     if request.method == 'POST':
         if form.is_valid():
             form = form.save(commit=False)
-            form.idcargaison = cargaison
+            form.idcargaison = inspection
             form.save()
+            return redirect('compartiment-details', pk=form.id)
+        else:
+            template = "partials/compartimentinspection.html"
+            return render(request, template, {'form': form})
+
+    context = {
+        "form": form,
+        "cargaison": inspection,
+        # "seals":seals,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def compartimentinspection(request):
+    template = 'partials/compartimentinspection.html'
+    form = CompartimentInspection()
+    context = {
+        "form": form
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def detailscompartiment(request, pk):
+    template = 'partials/compartimentdetails.html'
+    compartiment = Compartiment.objects.get(id=pk)
+    context = {"compartiment": compartiment}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def compartimentdelete(request, pk):
+    compartement = Compartiment.objects.get(pk=pk)
+    compartement.delete()
+    return HttpResponse()
+
+
+@login_required(login_url='login')
+def updatecompartiment(request, pk):
+    template = 'partials/compartimentinspection.html'
+    compartiment = Compartiment.objects.get(pk=pk)
+    form = CompartimentInspection(request.POST or None, instance=compartiment)
+
+    if request.method == "POST":
+        if request.method == 'POST':
+            if form.is_valid():
+                form = form.save()
+                return redirect('compartiment-details', pk=form.id)
+
+    context = {
+        "form": form,
+        "compartiment": compartiment,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def meterafter(request):
+    pk = request.session['id']
+    template = 'meterafter.html'
+    inspection = Inspection.objects.get(idcargaison=pk)
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    form = MeterAfter(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            meterafter = request.POST['meterafter']
+            cargaison.etat = 'Cargaison dechargee'
+            cargaison.save(update_fields=['etat'])
+
+            inspection.meterafter = meterafter
+            inspection.save(update_fields=['meterafter'])
+            return redirect('dechargement')
+    context = {'form': form}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shoreinspection(request, pk):
+    # pk = request.session['id']
+    template = 'shoreInspectionForm.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    try:
+        Inspection.objects.get(idcargaison_id=cargaison)
+        print("OK")
+        return redirect('shore-inspection-after', pk=pk)
+    except:
+        form = ShoreInspection(request.POST or None)
+        if request.method == 'POST':
+            if form.is_valid():
+                produit = request.POST['produit']
+                produit = Produit.objects.get(idproduit=produit)
+                innagein = request.POST['innagein']
+                volumein = request.POST['volumein']
+                tempin = request.POST['tempin']
+                weightin = request.POST['weightin']
+                data = Inspection(idcargaison=cargaison, produit=produit, innagein=innagein,
+                                  volumein=volumein, tempin=tempin, weightin=weightin)
+                data.save()
+                return redirect('shore-inspection', pk=pk)
+        else:
+            context = {'form': form}
+            return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shoretankbefore(request, pk):
+    template = 'ShoreInspection.html'
+    inspection = Inspection.objects.get(idcargaison=pk)
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    form = ShoreInspectionBefore(request.POST or None)
+    request.session['id'] = pk
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form = form.save(commit=False)
+            form.idinspection = inspection
+            form.save()
+            # Update fields to show that this shore has passed the before inspection
+            cargaison.before = 1
+            cargaison.save(update_fields=['before'])
+
             return redirect('shore-details', pk=form.id)
         else:
             template = "partials/shoreinspection.html"
@@ -2136,11 +2289,53 @@ def shorebefore(request, pk):
         "cargaison": cargaison,
     }
     return render(request, template, context)
-    pass
 
 
 @login_required(login_url='login')
-def shoreinspectionbefore(request):
+def shoretankafter(request, pk):
+    template = 'ShoreInspectionAfter.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    inspection = Inspection.objects.get(idcargaison=cargaison)
+    form = ShoreInspectionAfter(request.POST or None)
+    request.session['id'] = pk
+
+    if request.method == 'POST':
+        if form.is_valid():
+            tankdenomafter = request.POST['tankdenomafter']
+            prodinnageafter = request.POST['prodinnageafter']
+            fwdeepafter = request.POST['fwdeepafter']
+            govafter = request.POST['govafter']
+            tempafter = request.POST['tempafter']
+            densityafter = request.POST['densityafter']
+
+            a = ShoreTank.objects.get(idinspection=inspection)
+            a.tankdenomafter = tankdenomafter
+            a.prodinnageafter = prodinnageafter
+            a.fwdeepafter = fwdeepafter
+            a.govafter = govafter
+            a.tempafter = tempafter
+            a.densityafter = densityafter
+
+            a.save(update_fields=['tankdenomafter', 'prodinnageafter', 'prodinnageafter', 'fwdeepafter', 'govafter',
+                                  'tempafter', 'densityafter'])
+            # Update fields to show that this shore has passed the before inspection
+            cargaison.after = 1
+            cargaison.save(update_fields=['after'])
+
+            return redirect('shore-details-after', pk=form.id)
+        else:
+            template = "partials/shoreinspection.html"
+            return render(request, template, {'form': form})
+
+    context = {
+        "form": form,
+        "cargaison": cargaison,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shore(request):
     template = 'partials/shoreinspection.html'
     form = ShoreInspectionBefore()
     context = {
@@ -2150,15 +2345,42 @@ def shoreinspectionbefore(request):
 
 
 @login_required(login_url='login')
+def shoreafter(request):
+    template = 'partials/shoreinspectionafter.html'
+    form = ShoreInspectionAfter()
+    context = {
+        "form": form
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
 def shoredetails(request, pk):
+    # print(pk)
     template = 'partials/shoredetails.html'
-    shore = Shore.objects.get(id=pk)
+    shore = ShoreTank.objects.get(id=pk)
+    context = {"shore": shore}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shoredetailsafter(request, pk):
+    # print(pk)
+    template = 'partials/shoredetailsafter.html'
+    shore = ShoreTank.objects.get(id=pk)
     context = {"shore": shore}
     return render(request, template, context)
 
 
 @login_required(login_url='login')
 def shoredelete(request, pk):
+    shore = Shore.objects.get(pk=pk)
+    shore.delete()
+    return HttpResponse()
+
+
+@login_required(login_url='login')
+def shoredeleteafter(request, pk):
     shore = Shore.objects.get(pk=pk)
     shore.delete()
     return HttpResponse()
@@ -2179,5 +2401,66 @@ def shoreupdate(request, pk):
     context = {
         "form": form,
         "shore": shore,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def shoreupdateafter(request, pk):
+    template = 'partials/shoreinspectionafter.html'
+    shore = Shore.objects.get(pk=pk)
+    form = ShoreInspectionAfter(request.POST or None, instance=shore)
+
+    if request.method == "POST":
+        if request.method == 'POST':
+            if form.is_valid():
+                tankdenomafter = request.POST['tankdenomafter']
+                prodinnageafter = request.POST['prodinnageafter']
+                fwdeepafter = request.POST['fwdeepafter']
+                govafter = request.POST['govafter']
+                tempafter = request.POST['tempafter']
+                densityafter = request.POST['densityafter']
+
+                shore.tankdenomafter = tankdenomafter
+                shore.prodinnageafter = prodinnageafter
+                shore.fwdeepafter = fwdeepafter
+                shore.govafter = govafter
+                shore.tempafter = tempafter
+                shore.densityafter = densityafter
+
+                shore.save(
+                    update_fields=['tankdenomafter', 'prodinnageafter', 'prodinnageafter', 'fwdeepafter', 'govafter',
+                                   'tempafter', 'densityafter'])
+
+                return redirect('shore-details-after', pk=form.id)
+
+    context = {
+        "form": form,
+        "shore": shore,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def tableaurapports(request):
+    template = 'tableauRapport.html'
+
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, i.dateinspection, a.nomimportateur ,c.immatriculation, p.nomproduit, SUM(co.gov) as GOV,SUM(co.mta) as MTA, SUM(co.mtv) as MTV, SUM(co.vcf) as VCF, SUM(co.gsv) as GSV \
+                                FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_inspection i, hydro_occ.enreg_importateur a, hydro_occ.enreg_produit p, hydro_occ.enreg_compartiment co \
+                                WHERE c.idcargaison = i.idcargaison_id \
+                                AND c.importateur_id = a.idimportateur \
+                                AND c.produit_id = p.idproduit \
+                                AND co.idinspection_id = i.idinspection \
+                                AND i.idcargaison_id = c.idcargaison \
+                                GROUP BY c.idcargaison')
+    qs1 = Cargaison.objects.all()
+    table = RapportInspectionCamion(qs, prefix='1_')
+    table1 = RapportInspectionTanker(qs1, prefix='2_')
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table1)
+
+    context = {
+        'table': table,
+        'table1': table1
     }
     return render(request, template, context)

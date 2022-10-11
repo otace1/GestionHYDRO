@@ -1,0 +1,14 @@
+<div hx-target="this" hx-swap="outerHTML">
+    <h3>{{ shore.tankdenomafter }}</h3>
+    <p>PROD. INNAGE:{{ shore.prodinnageafter }}</p>
+    <p>FW DEEP:{{ shore.fwdeepafter }}</p>
+    <p>GOV:{{ shore.govafter }}</p>
+    <p>Temp.:{{ shore.tempafter }}</p>
+    <form method="GET">
+        <button hx-get="{% url 'shore-update-after' shore.pk %}" class="btn btn-success">Update</button>
+    </form>
+    <form method="POST">
+        {% csrf_token %}
+        <button hx-post="" class="btn btn-danger">Delete</button>
+    </form>
+</div>

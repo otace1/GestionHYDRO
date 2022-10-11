@@ -122,12 +122,41 @@ class SealInspection(forms.ModelForm):
 
 
 class TankerInspection(forms.Form):
-    dens = forms.FloatField()
-    temp = forms.FloatField()
-    innagein = forms.FloatField()
-    volumein = forms.FloatField()
-    tempin = forms.FloatField()
-    weightin = forms.FloatField()
+    produit = forms.ModelChoiceField(Produit.objects.all(), label="PRODUIT")
+    meterbefore = forms.FloatField(required=False, label="INDEX INITIAL COMPTEUR")
+    dens = forms.FloatField(required=False, label="DENSITE")
+    temp = forms.FloatField(required=False, label="AT")
+    innagein = forms.FloatField(required=False, label="INNAGE IN")
+    volumein = forms.FloatField(required=False, label="VOLUME IN")
+    tempin = forms.FloatField(required=False, label="TEMP IN")
+    weightin = forms.FloatField(required=False, label="WEIGHT IN")
+
+    def __init__(self, *args, **kwargs):
+        super(TankerInspection, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(
+                Column('produit', css_class='form-group col-md-6 mb-0'),
+                Column('meterbefore', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('dens', css_class='form-group col-md-6 mb-0'),
+                Column('temp', label='PROVENANCE', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('innagein', css_class='form-group col-md-3 mb-0'),
+                Column('volumein', css_class='form-group col-md-3 mb-0'),
+                Column('tempin', css_class='form-group col-md-3 mb-0'),
+                Column('weightin', css_class='form-group col-md-3 mb-0'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('suivant', 'Suivant', css_class='btn btn-primary'),
+                Reset('annuler', 'Annuler', css_class='btn btn-danger'),
+            ),
+        )
 
 
 class CompartimentInspection(forms.ModelForm):
@@ -142,71 +171,157 @@ class CompartimentInspection(forms.ModelForm):
         )
 
 
-# class ShoreInspectionBefore(forms.Form):
-#     tankdenombefore = forms.CharField(max_length=32)
-#     prodinnagebefore = forms.FloatField()
-#     fwdeepbefore = forms.FloatField()
-#     govbefore = forms.FloatField()
-#     tempbefore = forms.FloatField()
-#     fwvolbefore = forms.FloatField()
-#
-#     def __init__(self,*args,**kwargs):
-#         super(ShoreInspectionBefore, self).__init__(*args,**kwargs)
-#         self.helper = FormHelper()
-#         self.helper.layout = Layout(
-#             Row("",
-#                 Column('tankdenombefore', css_class='form-group col-md-4 mb-0'),
-#                 ),
-#             Row("",
-#                 Column('prodinnagebefore', css_class='form-group col-md-3 mb-0'),
-#                 Column('fwdeepbefore', css_class='form-group col-md-3 mb-0'),
-#                 Column('govbefore', css_class='form-group col-md-3 mb-0'),
-#                 Column('tempbefore', css_class='form-group col-md-3 mb-0'),
-#                 css_class='form-row'
-#                 ),
-#             FormActions(
-#                 Submit('suivant', 'Suivant', css_class='btn btn-primary'),
-#                 Reset('annuler', 'Annuler', css_class='btn btn-danger'),
-#             ),
-#         )
+class MeterAfter(forms.Form):
+    meterafter = forms.FloatField(label="INDEX COMPTEUR")
+
+    def __init__(self, *args, **kwargs):
+        super(MeterAfter, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(
+                Column('meterafter', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('suivant', 'Suivant', css_class='btn btn-primary'),
+                Reset('annuler', 'Annuler', css_class='btn btn-danger'),
+            ),
+        )
+
+
+class ShoreInspection(forms.Form):
+    produit = forms.ModelChoiceField(Produit.objects.all(), label="PRODUIT")
+    innagein = forms.FloatField(required=False, label="INNAGE IN")
+    volumein = forms.FloatField(required=False, label="VOLUME IN")
+    tempin = forms.FloatField(required=False, label="TEMP IN")
+    weightin = forms.FloatField(required=False, label="WEIGHT IN")
+
+    def __init__(self, *args, **kwargs):
+        super(ShoreInspection, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row(
+                Column('produit', css_class='form-group col-md-6 mb-0'),
+                Column('innagein', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('volumein', css_class='form-group col-md-4 mb-0'),
+                Column('tempin', css_class='form-group col-md-4 mb-0'),
+                Column('weightin', css_class='form-group col-md-4 mb-0'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('suivant', 'Suivant', css_class='btn btn-primary'),
+                Reset('annuler', 'Annuler', css_class='btn btn-danger'),
+            ),
+        )
+
 
 class ShoreInspectionBefore(forms.ModelForm):
     class Meta:
-        model = Shore
+        model = ShoreTank
         fields = (
             'tankdenombefore',
             'prodinnagebefore',
             'fwdeepbefore',
             'govbefore',
             'tempbefore',
-            'fwvolbefore',
+            'densitybefore',
         )
-        exclude = (
-            'tankdenomafter',
-            'prodinnageafter',
-            'fwdeepafter',
-            'govafter',
-            'tempafter',
-            'fwvolafter',
+
+    def __init__(self, *args, **kwargs):
+        super(ShoreInspectionBefore, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row("",
+                Column('tankdenombefore', css_class='form-group col-md-6 mb-0'),
+                Column('prodinnagebefore', css_class='form-group col-md-6 mb-0'),
+                ),
+            Row("",
+                Column('fwdeepbefore', css_class='form-group col-md-3 mb-0'),
+                Column('govbefore', css_class='form-group col-md-3 mb-0'),
+                Column('tempbefore', css_class='form-group col-md-3 mb-0'),
+                Column('densitybefore', css_class='form-group col-md-3 mb-0'),
+                css_class='form-row'
+                ),
+            FormActions(
+                Submit('suivant', 'Suivant', css_class='btn btn-primary'),
+                Reset('annuler', 'Annuler', css_class='btn btn-danger'),
+            ),
         )
 
 
 class ShoreInspectionAfter(forms.ModelForm):
     class Meta:
-        model = Shore
+        model = ShoreTank
         fields = (
             'tankdenomafter',
             'prodinnageafter',
             'fwdeepafter',
             'govafter',
             'tempafter',
-            'fwvolafter',
+            'densityafter',
         )
-        exclude = (
-            'tankdenombefore',
-            'prodinnagebefore',
-            'fwdeepbefore',
-            'govbefore',
-            'tempbefore',
-            'fwvolbefore',
+
+    def __init__(self, *args, **kwargs):
+        super(ShoreInspectionAfter, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row("",
+                Column('tankdenomafter', css_class='form-group col-md-6 mb-0'),
+                Column('prodinnageafter', css_class='form-group col-md-6 mb-0'),
+                ),
+            Row("",
+                Column('fwdeepafter', css_class='form-group col-md-3 mb-0'),
+                Column('govafter', css_class='form-group col-md-3 mb-0'),
+                Column('tempafter', css_class='form-group col-md-3 mb-0'),
+                Column('densityafter', css_class='form-group col-md-3 mb-0'),
+                css_class='form-row'
+                ),
+            FormActions(
+                Submit('suivant', 'Suivant', css_class='btn btn-primary'),
+                Reset('annuler', 'Annuler', css_class='btn btn-danger'),
+            ),
         )
+
+# class ShoreInspectionBefore(forms.ModelForm):
+#     class Meta:
+#         model = Shore
+#         fields = (
+#             'tankdenombefore',
+#             'prodinnagebefore',
+#             'fwdeepbefore',
+#             'govbefore',
+#             'tempbefore',
+#             'fwvolbefore',
+#         )
+#         exclude = (
+#             'tankdenomafter',
+#             'prodinnageafter',
+#             'fwdeepafter',
+#             'govafter',
+#             'tempafter',
+#             'fwvolafter',
+#         )
+#
+#
+# class ShoreInspectionAfter(forms.ModelForm):
+#     class Meta:
+#         model = Shore
+#         fields = (
+#             'tankdenomafter',
+#             'prodinnageafter',
+#             'fwdeepafter',
+#             'govafter',
+#             'tempafter',
+#             'fwvolafter',
+#         )
+#         exclude = (
+#             'tankdenombefore',
+#             'prodinnagebefore',
+#             'fwdeepbefore',
+#             'govbefore',
+#             'tempbefore',
+#             'fwvolbefore',
+#         )

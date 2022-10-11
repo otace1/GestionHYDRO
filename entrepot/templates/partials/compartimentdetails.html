@@ -1,0 +1,14 @@
+<div hx-target="this" hx-swap="outerHTML">
+    <h3>{{ compartiment.compart }}</h3>
+    <p>Innage :{{ compartiment.innage }}</p>
+    <p>Gov :{{ compartiment.gov }}</p>
+    <p>Temp :{{ compartiment.tempcomp }}</p>
+    <p>Seal State :{{ compartiment.tempcomp }}</p>
+    <form method="GET">
+        <button hx-get="{% url 'compartimentupdate' compartiment.pk %}" class="btn btn-success">Update</button>
+    </form>
+    <form method="POST">
+        {% csrf_token %}
+        <button hx-post="{% url 'compartimentdelete' compartiment.pk %}" class="btn btn-danger">Delete</button>
+    </form>
+</div>

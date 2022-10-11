@@ -30,11 +30,32 @@ urlpatterns = [
 
     # Tanker Inspection
     path('tanker/', views.tankerinspection, name='tanker-inspection'),
+    path('compartiment/<int:pk>', views.compartiment, name='compartiment'),
+    path('detailscompartiment/<int:pk>', views.detailscompartiment, name='compartiment-details'),
+    path('compartimentinspection/', views.compartimentinspection, name='compartiment-inspection'),
+    path('compartiment/delete/<int:pk>', views.compartimentdelete, name='compartimentdelete'),
+    path('compartiment/update/<int:pk>', views.updatecompartiment, name='compartimentupdate'),
+    path('meterafter/', views.meterafter, name='meterafter'),
+    # path('compartiment/', views.compartiment, name='compartiment'),
+    # path('compartiment/details/<int:pk>', views.detailcompartiment, name='compartiment-details'),
+    #
+
     # Shore
-    path('shore/<int:pk>', views.shorebefore, name='shore'),
-    path('shoreinspection/', views.shoreinspectionbefore, name='shore-inspection'),
+    path('shore/<int:pk>', views.shoreinspection, name='shore'),
+    path('shore/inspection/', views.shore, name='shore-insp'),
+    path('shore/tank/<int:pk>', views.shoretankbefore, name='shore-inspection'),
     path('shoredetails/<int:pk>', views.shoredetails, name='shore-details'),
     path('shoredelete/<int:pk>', views.shoredelete, name='shore-delete'),
     path('shoreupdate/<int:pk>', views.shoreupdate, name='shore-update'),
+
+    # Shore After
+    path('shore/inspection/after', views.shoreafter, name='shore-insp-after'),
+    path('shore/tank/after/<int:pk>', views.shoretankafter, name='shore-inspection-after'),
+    path('shoredetails/after/<int:pk>', views.shoredetailsafter, name='shore-details-after'),
+    path('shoredelete/after/<int:pk>', views.shoredeleteafter, name='shore-delete-after'),
+    path('shoreupdate/after/<int:pk>', views.shoreupdateafter, name='shore-update-after'),
+
+    # Rapports
+    path('inspection/', views.tableaurapports, name='tableaurapports'),
 
 ]

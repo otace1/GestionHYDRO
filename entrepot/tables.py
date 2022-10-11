@@ -9,6 +9,10 @@ TEMPLATE1 = """
             <a href="{%url 'choiceoftype' record.pk%}" class="btn btn-primary">INSPECTION</a>
            """
 
+TEMPLATE4 = """
+            <a href="{%url 'choiceoftype' record.pk%}" class="btn btn-primary">INSPECTION AFTER</a>
+           """
+
 TEMPLATE2 = """
     <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RAPPORT D'INSPECTION</a>
     <a href="{%url 'printcert' record.pk%}" class="btn btn-primary">CERTIFICAT DE QUALITE</a>
@@ -16,6 +20,10 @@ TEMPLATE2 = """
 
 TEMPLATE3 = """
     <a href="{%url 'rapportechantillonage' record.pk%}" class="btn btn-danger">RAPPORT D'ECHANTILLONNAGE</a>
+            """
+
+TEMPLATE5 = """
+    <a href="{%url 'rapportechantillonage' record.pk%}" class="btn btn-danger">AFFICHAGE</a>
             """
 
 
@@ -44,6 +52,7 @@ class EchantillonTable(tables.Table):
                    'requisitiondackdate', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control']
+
 
 
 class CargaisonEnAttenteRequisition(tables.Table):
@@ -91,13 +100,9 @@ class RapportEchantillonage(tables.Table):
 
 class CargaisonDechargement(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
-    # numdossier = tables.Column(verbose_name='Num. Dossier')
-    # codecargaison = tables.Column(verbose_name='#Camion/Wagon/Navire')
     produit = tables.Column(verbose_name='PRODUIT')
-    # massevolumique15 = tables.Column(verbose_name='Densité a 15°')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     importateur = tables.Column(verbose_name='FOURNISSEUR')
-    # idcargaison__idcargaison__idcargaison__numreq = tables.Column(verbose_name='Ref. requisition Client')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
 
     class Meta:
@@ -116,21 +121,17 @@ class CargaisonDechargement(tables.Table):
                     'produit']
         exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
-                   'dateheurecargaison',
+                   'dateheurecargaison', 'entrepot',
                    'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after']
 
 
 class CargaisonDechargement2(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
-    # numdossier = tables.Column(verbose_name='Num. Dossier')
-    # codecargaison = tables.Column(verbose_name='#Camion/Wagon/Navire')
     produit = tables.Column(verbose_name='PRODUIT')
-    # massevolumique15 = tables.Column(verbose_name='Densité a 15°')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     importateur = tables.Column(verbose_name='FOURNISSEUR')
-    # idcargaison__idcargaison__idcargaison__numreq = tables.Column(verbose_name='Ref. requisition Client')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
 
     class Meta:
@@ -152,7 +153,37 @@ class CargaisonDechargement2(tables.Table):
                    'dateheurecargaison',
                    'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after']
+
+
+class TankerCabotteur(tables.Table):
+    actions = tables.TemplateColumn(TEMPLATE4, verbose_name='')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    numdos = tables.Column(verbose_name='NUM. DOSSIER')
+
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "DechargementTable"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+        model = Cargaison
+        row_attrs = {
+            "id": lambda record: record.pk
+        }
+        sequence = ['importateur',
+                    'numdos',
+                    'immatriculation',
+                    'produit']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                   'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
+                   'dateheurecargaison', 'before', 'after',
+                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'tampon', 'printactdate', 'l_control', 'entrepot']
+
 
 class EchantillonEnregistrer(tables.Table):
     class Meta:
@@ -186,3 +217,29 @@ class CargaisonDechargee(tables.Table):
                     'idcargaison__idcargaison__idcargaison__idcargaison__immatriculation', 'mta', 'mtv', 'gov', 'gsv']
         exclude = ['idcargaison_id', 'temperature', 'densite15', 'idcargaison', 'vcf', 'indexinitial', 'indexfinal',
                    'typescontainer', 'idcargaison__idcargaison__idcargaison__idcargaison__numreq']
+
+
+class RapportInspectionCamion(tables.Table):
+    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
+    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    GOV = tables.Column(verbose_name='GOV')
+    MTA = tables.Column(verbose_name='MTA')
+    MTV = tables.Column(verbose_name='MTV')
+    VCF = tables.Column(verbose_name='VCF')
+    GSV = tables.Column(verbose_name='GSV')
+    actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
+
+
+class RapportInspectionTanker(tables.Table):
+    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
+    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    GOV = tables.Column(verbose_name='GOV')
+    MTA = tables.Column(verbose_name='MTA')
+    MTV = tables.Column(verbose_name='MTV')
+    VCF = tables.Column(verbose_name='VCF')
+    GSV = tables.Column(verbose_name='GSV')
+    actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')

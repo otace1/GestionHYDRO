@@ -96,7 +96,7 @@ class Entrepot(models.Model):
     identrepot = models.AutoField(primary_key=True, auto_created=True)
     nomentrepot = models.CharField(max_length=100)
     adresseentrepot = models.CharField(max_length=100)
-    ville = models.ForeignKey(Ville, on_delete=models.CASCADE)
+    ville = models.ForeignKey(Ville, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.nomentrepot
@@ -124,12 +124,12 @@ class Produit(models.Model):
 
 class Cargaison(models.Model):
     idcargaison = models.AutoField(primary_key=True, auto_created=True)
-    voie = models.ForeignKey(Voie, on_delete=models.CASCADE, verbose_name="Voie d'entrée")
-    importateur = models.ForeignKey(Importateur, on_delete=models.CASCADE, verbose_name="Importateur")
-    produit = models.ForeignKey(Produit, on_delete=models.CASCADE, verbose_name="Produit")
-    frontiere = models.ForeignKey(Ville, on_delete=models.CASCADE, verbose_name='Frontiere')
+    voie = models.ForeignKey(Voie, on_delete=models.PROTECT, verbose_name="Voie d'entrée")
+    importateur = models.ForeignKey(Importateur, on_delete=models.PROTECT, verbose_name="Importateur")
+    produit = models.ForeignKey(Produit, on_delete=models.PROTECT, verbose_name="Produit")
+    frontiere = models.ForeignKey(Ville, on_delete=models.PROTECT, verbose_name='Frontiere')
     provenance = CountryField(blank_label='(Selectionner le pays)', verbose_name='Provenance')
-    entrepot = models.ForeignKey(Entrepot, on_delete=models.CASCADE, verbose_name='Entrepot')
+    entrepot = models.ForeignKey(Entrepot, on_delete=models.PROTECT, verbose_name='Entrepot')
     poids = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Poids')
     volume = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Volume')
     immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation')
@@ -156,7 +156,7 @@ class Cargaison(models.Model):
     rapechctrl = models.IntegerField(blank=True, null=True)
 
     # Nouveau champ a ajouter
-    typeunitetransport = models.ForeignKey(TypeUniteTransport, on_delete=models.CASCADE, blank=True, null=True)
+    typeunitetransport = models.ForeignKey(TypeUniteTransport, on_delete=models.PROTECT, blank=True, null=True)
     volume15 = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     volume20 = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     tonnagevide = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
@@ -164,6 +164,10 @@ class Cargaison(models.Model):
 
     l_control = models.IntegerField(null=True)
     printactdate = models.DateField(auto_now_add=True)
+
+    # Shore Inspection
+    before = models.BooleanField(default=0, verbose_name='SHORE BEFORE')
+    after = models.BooleanField(default=0, verbose_name='SHORE AFTER')
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
@@ -173,7 +177,7 @@ class Cargaison(models.Model):
 
 
 class Entrepot_echantillon(models.Model):
-    idcargaison = models.OneToOneField(Cargaison, on_delete=models.CASCADE, primary_key=True)
+    idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT, primary_key=True)
     numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage")
     numrappechauto = models.IntegerField(blank=True, null=True, verbose_name="Num. RE")
     # numplombh = models.CharField(max_length=256, verbose_name="Numero Plomb H", blank=True)
@@ -190,7 +194,7 @@ class Entrepot_echantillon(models.Model):
 
 
 class LaboReception(models.Model):
-    idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.CASCADE, primary_key=True)
+    idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.PROTECT, primary_key=True)
     numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True)
     # codelabo = models.CharField(max_length=256, verbose_name="Code Labo ")
     codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ")
@@ -204,7 +208,7 @@ class LaboReception(models.Model):
 
 
 class Resultat(models.Model):
-    idcargaison = models.OneToOneField(LaboReception, on_delete=models.CASCADE, primary_key=True)
+    idcargaison = models.OneToOneField(LaboReception, on_delete=models.PROTECT, primary_key=True)
     aspect = models.CharField(max_length=32, blank=True, default='Claire et Limpide')
     odeur = models.CharField(max_length=32, blank=True, default='Marchande')
     couleursaybolt = models.CharField(max_length=32, blank=True, null=True)
@@ -263,7 +267,7 @@ class Resultat(models.Model):
 
 
 class Dechargement(models.Model):
-    idcargaison = models.OneToOneField(Resultat, on_delete=models.CASCADE, primary_key=True)
+    idcargaison = models.OneToOneField(Resultat, on_delete=models.PROTECT, primary_key=True)
     densite = models.FloatField(null=True, blank=True)
     temperature = models.FloatField(null=True, blank=True)
     govmeter = models.FloatField(null=True, blank=True)
@@ -331,10 +335,10 @@ class Paiement(models.Model):
 
 class Liquidation(models.Model):
     idliquidation = models.AutoField(primary_key=True, auto_created=True)
-    idcargaison = models.ForeignKey(Cargaison, on_delete=models.CASCADE)
+    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
     numerobl = models.CharField(max_length=30, blank=True, verbose_name='Numéro BL')
     datebl = models.DateField(blank=True, verbose_name='Date de BL')
-    codebureau = models.ForeignKey(BureauDGDA, on_delete=models.CASCADE, verbose_name='Code Bureau')
+    codebureau = models.ForeignKey(BureauDGDA, on_delete=models.PROTECT, verbose_name='Code Bureau')
     vol_liq = models.DecimalField(max_digits=32, decimal_places=4, blank=True)
     type_appurement = models.IntegerField(default=False, blank=True)
 
@@ -349,8 +353,8 @@ class SealState(models.Model):
 
 class InspectionSeal(models.Model):
     manifoldnumber = models.CharField(max_length=256, verbose_name='MANIFOLD NUMBER')
-    sealstate = models.ForeignKey(SealState, on_delete=models.CASCADE, verbose_name='SEALS STATE')
-    idcargaison = models.ForeignKey(Cargaison, on_delete=models.CASCADE)
+    sealstate = models.ForeignKey(SealState, on_delete=models.PROTECT, verbose_name='SEALS STATE')
+    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.manifoldnumber
@@ -362,13 +366,42 @@ class InspectionSeal(models.Model):
         return self.my_natural_key
 
 
+class Inspection(models.Model):
+    idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT)
+    idinspection = models.AutoField(primary_key=True, auto_created=True)
+    produit = models.ForeignKey(Produit, on_delete=models.PROTECT, null=True)
+    dens = models.FloatField(null=True)
+    temp = models.FloatField(null=True)
+    innagein = models.FloatField(null=True)
+    volumein = models.FloatField(null=True)
+    tempin = models.FloatField(null=True)
+    weightin = models.FloatField(null=True)
+    meterbefore = models.FloatField(null=True)
+    meterafter = models.FloatField(null=True)
+    dateinspection = models.DateTimeField(auto_now_add=True)
+
+    # def __str__(self):
+    #     return self.idinspection
+
+    def get_absolute_url(self):
+        return reverse('update', kwargs={'pk': self.idinspection})
+
+    def natural_key(self):
+        return self.my_natural_key
+
+
 class Compartiment(models.Model):
-    idcargaison = models.ForeignKey(Cargaison, on_delete=models.CASCADE)
+    idinspection = models.ForeignKey(Inspection, on_delete=models.PROTECT)
+    id = models.AutoField(primary_key=True, auto_created=True)
     compart = models.CharField(max_length=32, blank=True)
-    sealstate = models.ForeignKey(SealState, on_delete=models.CASCADE, verbose_name='SEALS STATE')
+    sealstate = models.ForeignKey(SealState, on_delete=models.PROTECT, verbose_name='SEALS STATE')
     innage = models.FloatField(null=True)
     gov = models.FloatField(null=True)
     tempcomp = models.FloatField(null=True)
+    vcf = models.FloatField(null=True)
+    mta = models.FloatField(null=True)
+    mtv = models.FloatField(null=True)
+    gsv = models.FloatField(null=True)
 
     def __str__(self):
         return self.compart
@@ -380,8 +413,9 @@ class Compartiment(models.Model):
         return self.my_natural_key
 
 
-class Shore(models.Model):
-    idcargaison = models.ForeignKey(Cargaison, on_delete=models.CASCADE)
+class ShoreTank(models.Model):
+    idinspection = models.ForeignKey(Inspection, on_delete=models.PROTECT)
+    id = models.AutoField(primary_key=True, auto_created=True)
     tankdenombefore = models.CharField(max_length=32, verbose_name='TANK DENOM.')
     prodinnagebefore = models.FloatField(null=True, verbose_name='PROD. INNAGE')
     fwdeepbefore = models.FloatField(null=True, verbose_name='FW DEEP')
@@ -394,3 +428,79 @@ class Shore(models.Model):
     govafter = models.FloatField(null=True, verbose_name='GOV')
     tempafter = models.FloatField(null=True, verbose_name='Temp.')
     fwvolafter = models.FloatField(null=True, verbose_name='FW VOL.')
+    dateheurebefore = models.DateTimeField(auto_now_add=True)
+    dateheureafter = models.DateTimeField(null=True)
+
+    densitybefore = models.FloatField(null=True, verbose_name='DENS.15')
+    densityafter = models.FloatField(null=True, verbose_name='DENS.15')
+
+    gsvbefore = models.FloatField(null=True, verbose_name='GSV')
+    gsvafter = models.FloatField(null=True, verbose_name='GSV')
+
+    mtvbefore = models.FloatField(null=True, verbose_name='MTV')
+    mtvafter = models.FloatField(null=True, verbose_name='MTV')
+
+    mtabefore = models.FloatField(null=True, verbose_name='MTA')
+    mtaafter = models.FloatField(null=True, verbose_name='MTA')
+
+    def get_absolute_url(self):
+        return reverse('update', kwargs={'pk': self.id})
+
+    def natural_key(self):
+        return self.my_natural_key
+
+
+class Shore(models.Model):
+    idinspection = models.ForeignKey(Inspection, on_delete=models.PROTECT, null=True)
+    idshore = models.AutoField(primary_key=True, auto_created=True)
+    innagein = models.FloatField(null=True)
+    volumein = models.FloatField(null=True)
+    tempin = models.FloatField(null=True)
+    weightin = models.FloatField(null=True)
+
+    def __str__(self):
+        return self.idshore
+
+    def get_absolute_url(self):
+        return reverse('update', kwargs={'pk': self.idshore})
+
+    def natural_key(self):
+        return self.my_natural_key
+
+
+class ShoreBefore(models.Model):
+    idshore = models.ForeignKey(Shore, on_delete=models.PROTECT)
+    tankdenombefore = models.CharField(max_length=32, verbose_name='TANK DENOM.')
+    prodinnagebefore = models.FloatField(null=True, verbose_name='PROD. INNAGE')
+    fwdeepbefore = models.FloatField(null=True, verbose_name='FW DEEP')
+    govbefore = models.FloatField(null=True, verbose_name='GOV')
+    tempbefore = models.FloatField(null=True, verbose_name='Temp.')
+    fwvolbefore = models.FloatField(null=True, verbose_name='FW VOL.')
+
+    def __str__(self):
+        return self.idshore
+
+    def get_absolute_url(self):
+        return reverse('update', kwargs={'pk': self.idshore})
+
+    def natural_key(self):
+        return self.my_natural_key
+
+
+class ShoreAfter(models.Model):
+    idshore = models.ForeignKey(Shore, on_delete=models.PROTECT)
+    tankdenomafter = models.CharField(max_length=32, verbose_name='TANK DENOM.')
+    prodinnageafter = models.FloatField(null=True, verbose_name='PROD. INNAGE')
+    fwdeepafter = models.FloatField(null=True, verbose_name='FW DEEP')
+    govafter = models.FloatField(null=True, verbose_name='GOV')
+    tempafter = models.FloatField(null=True, verbose_name='Temp.')
+    fwvolafter = models.FloatField(null=True, verbose_name='FW VOL.')
+
+    def __str__(self):
+        return self.idshore
+
+    def get_absolute_url(self):
+        return reverse('update', kwargs={'pk': self.idshore})
+
+    def natural_key(self):
+        return self.my_natural_key

@@ -153,6 +153,12 @@
                                         <p>DECHARGEMENT</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'tableaurapports' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>RAPPORTS</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     {% endif %}
@@ -417,24 +423,24 @@
                             </ul>
                         </li>
 
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-cloud"></i>
-                                <p>
-                                    MONITORING ADMIN
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>IMPORTATION SYDONIA</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+                        {#                        <li class="nav-item has-treeview">#}
+                        {#                            <a href="" class="nav-link">#}
+                        {#                                <i class="nav-icon fas fa-cloud"></i>#}
+                        {#                                <p>#}
+                        {#                                    MONITORING ADMIN#}
+                        {#                                    <i class="fas fa-angle-left right"></i>#}
+                        {#                                    <span class="badge badge-info right"></span>#}
+                        {#                                </p>#}
+                        {#                            </a>#}
+                        {#                            <ul class="nav nav-treeview">#}
+                        {#                                <li class="nav-item">#}
+                        {#                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
+                        {#                                        <i class="far fa-circle nav-icon"></i>#}
+                        {#                                        <p>IMPORTATION SYDONIA</p>#}
+                        {#                                    </a>#}
+                        {#                                </li>#}
+                        {#                            </ul>#}
+                        {#                        </li>#}
                     {% endif %}
 
                     <li class="nav-item has-treeview">
@@ -479,12 +485,27 @@
                     <div class="col-md-12">
                         <div class="card bg-gradient-dark">
                             <div class="card-header">
-                                <h1 class="card-title"><b>CONFORME AUX EXIGENCES ET EN ATTENTE DE DECHARGEMENT</b></h1>
+                                <h1 class="card-title"><b>CAMION CITERNE | WAGON CITERNE | TANKER CABOTTEUR </b></h1>
                                 <div class="card-tools">
                                 </div>
                             </div>
                             <div class="card-body table-responsive p-0">
                                 {% block content %}
+                                {% endblock %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card bg-gradient-dark">
+                            <div class="card-header">
+                                <h1 class="card-title"><b>TANKER CABOTTEUR INSPECTION AFTER</b></h1>
+                                <div class="card-tools">
+                                </div>
+                            </div>
+                            <div class="card-body table-responsive p-0">
+                                {% block content1 %}
                                 {% endblock %}
                             </div>
                         </div>
@@ -497,9 +518,10 @@
     </div>
     <!-- /.content-wrapper -->
     <!-- /.content-wrapper -->
-   <!-- /.content-wrapper -->
-<footer class="main-footer">
-    <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong>
     All rights reserved.
     <div class="float-right d-none d-sm-inline-block">
       <b>Version</b> 3.0

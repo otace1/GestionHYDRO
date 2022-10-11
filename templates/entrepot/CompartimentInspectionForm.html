@@ -4,79 +4,81 @@
 {% bootstrap_javascript jquery='full' %}
 
 {% block extrahead %}
+    {{ form.media }}
 {% endblock %}
 
 <html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>CGW | App</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>CGW | App</title>
-<!-- Tell the browser to be responsive to screen width -->
-<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
-<!-- Ionicons -->
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bbootstrap 4 -->
+    <link rel="stylesheet"
+          href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
 
-<!-- Tempusdominus Bbootstrap 4 -->
-<link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+    <!-- summernote -->
+    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
 
-<!-- iCheck -->
-<link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-<!-- JQVMap -->
-<link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-  <!-- overlayScrollbars -->
-  <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-  <!-- Daterange picker -->
-  <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-  <!-- summernote -->
-  <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-  <!-- DataTables -->
-  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css'%}">
-  <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
-
-   <!-- Google Font: Source Sans Pro -->
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
+    <!-- Google Font: Source Sans Pro -->
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
     <!-- Date picker -->
-{#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+    {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
+    <link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+    <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
-
-{% endblock %}
+    <!-- htmx && django -->
+    <script src="https://unpkg.com/htmx.org@1.7.0"
+            integrity="sha384-EzBXYPt0/T6gxNp0nuPtLkmRpmDBbjg6WmCUZRLXBBwYYmwAUxzlSGej0ARHX0Bo" crossorigin="anonymous"
+            defer></script>
 
 
 </head>
 
 <!-- sidebar: style can be found in sidebar.less -->
-
 <body class="hold-transition sidebar-mini sidebar-collapse">
 <div class="wrapper">
-
     <!-- Navbar -->
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
         <!-- Left navbar links -->
         <ul class="navbar-nav">
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
-    </ul>
+        </ul>
 
-    <!-- Right navbar links -->
-    <ul class="navbar-nav ml-auto">
-        <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b>
-        </a>
-
-    </ul>
-  </nav>
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                    <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b></a>
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <!-- Left side column. contains the logo and sidebar -->
     <!-- Left side column. contains the logo and sidebar -->
@@ -129,7 +131,7 @@
                     {% endif %}
 
 
-                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
+                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
                         <li class="header">ENTREPOT</li>
 
                         <li class="nav-item has-treeview">
@@ -151,12 +153,6 @@
                                     <a href="{% url 'dechargement' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>DECHARGEMENT</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'tableaurapports' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>RAPPORTS</p>
                                     </a>
                                 </li>
                             </ul>
@@ -199,15 +195,7 @@
                                     <li class="nav-item">
                                         <a href="{% url 'validation1' %}" class="nav-link">
                                             <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION SCE HYDRO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 10 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation2' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION CHEF LABO</p>
+                                            <p>VALIDATION</p>
                                         </a>
                                     </li>
                                 {% endif %}
@@ -239,18 +227,11 @@
                             <ul class="nav nav-treeview">
 
                                 <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
+                                    <a href="{% url 'laboresult' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>REQUISITIONS</p>
+                                        <p>GO</p>
                                     </a>
                                 </li>
-
-                                {#                <li class="nav-item">#}
-                                {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
-                                {#                  <i class="far fa-circle nav-icon"></i>#}
-                                {#                  <p>GO</p>#}
-                                {#                </a>#}
-                                {#              </li>#}
                                 <li class="nav-item">
                                     <a href="{% url 'gestionact' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -265,8 +246,7 @@
                                 </li>
                             </ul>
                         </li>
-                    {% endif %}
-                    {% if role == 10 %}
+
                         <li class="nav-item has-treeview">
                             <a href="" class="nav-link">
                                 <i class="nav-icon fas fa-file-archive"></i>
@@ -293,6 +273,7 @@
                         </li>
                     {% endif %}
 
+
                     {% if user.role_id == 1 %}
                         <li class="nav-item has-treeview">ADMINISTRATION</li>
                         <li class="nav-item has-treeview">
@@ -305,12 +286,12 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
-                                {#              <li class="nav-item">#}
-                                {#                <a href="{%url 'usersadd'%}" class="nav-link">#}
-                                {#                  <i class="far fa-circle nav-icon"></i>#}
-                                {#                  <p>AJOUT UTILISATEUR</p>#}
-                                {#                </a>#}
-                                {#              </li>#}
+                                <li class="nav-item">
+                                    <a href="{% url 'usersadd' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>AJOUT UTILISATEUR</p>
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -319,7 +300,7 @@
                                 </li>
 
                                 <li class="nav-item">
-                                    <a href="{% url 'affectation_signature' %}" class="nav-link">
+                                    <a href="{% url 'affectationville' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>AFFECTATION V.</p>
                                     </a>
@@ -428,24 +409,24 @@
                             </ul>
                         </li>
 
-                        {#                        <li class="nav-item has-treeview">#}
-                        {#                            <a href="" class="nav-link">#}
-                        {#                                <i class="nav-icon fas fa-cloud"></i>#}
-                        {#                                <p>#}
-                        {#                                    MONITORING ADMIN#}
-                        {#                                    <i class="fas fa-angle-left right"></i>#}
-                        {#                                    <span class="badge badge-info right"></span>#}
-                        {#                                </p>#}
-                        {#                            </a>#}
-                        {#                            <ul class="nav nav-treeview">#}
-                        {#                                <li class="nav-item">#}
-                        {#                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
-                        {#                                        <i class="far fa-circle nav-icon"></i>#}
-                        {#                                        <p>IMPORTATION SYDONIA</p>#}
-                        {#                                    </a>#}
-                        {#                                </li>#}
-                        {#                            </ul>#}
-                        {#                        </li>#}
+                        {#        <li class="nav-item has-treeview">#}
+                        {#            <a href="" class="nav-link">#}
+                        {#              <i class="nav-icon fas fa-cloud"></i>#}
+                        {#              <p>#}
+                        {#                MONITORING ADMIN#}
+                        {#                <i class="fas fa-angle-left right"></i>#}
+                        {#                <span class="badge badge-info right"></span>#}
+                        {#              </p>#}
+                        {#            </a>#}
+                        {#            <ul class="nav nav-treeview">#}
+                        {#              <li class="nav-item">#}
+                        {#                <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
+                        {#                  <i class="far fa-circle nav-icon"></i>#}
+                        {#                  <p>IMPORTATION SYDONIA</p>#}
+                        {#                </a>#}
+                        {#              </li>#}
+                        {#            </ul>#}
+                        {#        </li>#}
                     {% endif %}
 
                     <li class="nav-item has-treeview">
@@ -470,74 +451,42 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>Module de réception d'échantillons au Laboratoire</b></h1>
+                        {#                        <h1 class="m-0 text-dark"><b>GESTION A L'ENTREPOT</b></h1>#}
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Laboratoire</li>
+                            <li class="breadcrumb-item active">Entrepot</li>
+                            <li class="breadcrumb-item active">Inspection</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
             </div><!-- /.container-fluid -->
         </div>
         <!-- /.content-header -->
-        <!-- Main content -->
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card bg-gradient-dark">
-                            <div class="card-header">
-                                <h3 class="card-title"><b>ECHANTILLONS EN ATTENTE DE RECEPTION</b></h3>
-                                <div class="card-tools">
-                                    <form method="get" action="{% url 'rechercheqr' %}">
-                                        <input class="form-control" name="q" type="text"
-                                               placeholder="SCANNER LE QR CODE"
-                                               aria-label="Search">
-                                    </form>
-                                    {#                                        <div class="input-group input-group-sm" style="width: 500px;">#}
-                                    {#                                            <input type="text" name="q" class="form-control float-right" placeholder="Recherche ....">#}
-                                    {#                                            <div class="input-group-append">#}
-                                    {#                                                <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>#}
-                                    {#                                            </div>#}
-                                    {#                                        </div>#}
-                                </div>
-                            </div>
-                            <div class="card-body table-responsive p-0">
-                                {% block dashboard %}
-                                {% endblock %}
-                            </div>
-                        </div>
-                    </div>
 
-                    {#                    <div class="col-md-5">#}
-                    {#                        <div class="card">#}
-                    {#                            <div class="card-header">#}
-                    {#                                <div class="card-tools">#}
-                    {#                                    <form method="get" action="{% url 'recherchecode' %}">#}
-                    {#                                        <input class="form-control" name="q" type="text" placeholder="CODE LABO"#}
-                    {#                                               aria-label="Search">#}
-                    {#                                    </form>#}
-                    {#                                </div>#}
-                    {#                                <h3 class="card-title"><b>ECHANTILLONS RECEPTIONNES</b></h3>#}
-                    {#                            </div>#}
-                    {##}
-                    {#                            <div class="card-body table-responsive p-0">#}
-                    {#                                {% block reception %}#}
-                    {##}
-                    {#                                {% endblock %}#}
-                    {#                            </div>#}
-                    {#                        </div>#}
-                    {#                    </div>#}
+        <section class="content">
+            <div class="container-fluid col-md-6">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">TANKER INSPECTION</h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body align-content-center">
+                        {% block content %}
+                        {% endblock %}
+                    </div>
+                    <!-- /.card-body -->
                 </div>
-                <!-- /.col -->
+                <!-- /.card -->
             </div>
-            <!-- /.row -->
+
         </section>
         <!-- /.content -->
     </div>
-    <!-- /.content-wrapper -->
+
+
     <!-- /.content-wrapper -->
     <footer class="main-footer">
         <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
@@ -546,12 +495,12 @@
         <div class="float-right d-none d-sm-inline-block">
             <b>Version</b> 3.0
         </div>
-  </footer>
-  <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-  </aside>
-  <!-- /.control-sidebar -->
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
+    <!-- /.control-sidebar -->
 
 </div>
 
@@ -562,7 +511,7 @@
 <script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
-  $.widget.bridge('uibutton', $.ui.button)
+    $.widget.bridge('uibutton', $.ui.button)
 </script>
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -589,8 +538,9 @@
 
 
 <!-- /.JS script for modal -->
-   <!-- jQuery 3 -->
-<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+<!-- jQuery 3 -->
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
 
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -601,12 +551,9 @@
 <script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
 
 <script>
-var Id;
-$(document).ready(function () {
-    {% block javascript %}
-    {% endblock %}
-})
+    document.body.addEventListener('htmx:configRequest', (event) => {
+        event.details.headers['X-CSRFToken'] = "{{ csrf_token }}";
+    })
 </script>
-
 </body>
 </html>

@@ -240,6 +240,12 @@
                                         <p>DECHARGEMENT</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'tableaurapports' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>RAPPORTS</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     {% endif %}
@@ -509,24 +515,24 @@
                             </ul>
                         </li>
 
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-cloud"></i>
-                                <p>
-                                    MONITORING ADMIN
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>IMPORTATION SYDONIA</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+                        {#                        <li class="nav-item has-treeview">#}
+                        {#                            <a href="" class="nav-link">#}
+                        {#                                <i class="nav-icon fas fa-cloud"></i>#}
+                        {#                                <p>#}
+                        {#                                    MONITORING ADMIN#}
+                        {#                                    <i class="fas fa-angle-left right"></i>#}
+                        {#                                    <span class="badge badge-info right"></span>#}
+                        {#                                </p>#}
+                        {#                            </a>#}
+                        {#                            <ul class="nav nav-treeview">#}
+                        {#                                <li class="nav-item">#}
+                        {#                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
+                        {#                                        <i class="far fa-circle nav-icon"></i>#}
+                        {#                                        <p>IMPORTATION SYDONIA</p>#}
+                        {#                                    </a>#}
+                        {#                                </li>#}
+                        {#                            </ul>#}
+                        {#                        </li>#}
                     {% endif %}
 
                     <li class="nav-item has-treeview">

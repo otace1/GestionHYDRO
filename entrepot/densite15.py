@@ -1,6 +1,5 @@
 import math
 
-
 def densite15(x, y):
     t15 = x - 15
     y = float(y)
