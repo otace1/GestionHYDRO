@@ -1,9 +1,28 @@
 from django import forms
-from enreg.models import LaboReception
+from enreg.models import LaboReception, Produit
 from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
 from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
 from bootstrap_datepicker_plus.widgets import DatePickerInput
+
+
+class NatureProduitLaboratoire(forms.Form):
+    natureProduit = forms.ModelChoiceField(queryset=Produit.objects.all(), label='NATURE DU PRODUIT :')
+
+    def __init__(self, *args, **kwargs):
+        super(NatureProduitLaboratoire, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_id = 'registration-form'
+        self.helper.label_class = 'col-md-4'
+        self.helper.field_class = 'col-md-6'
+        self.helper.layout = Layout(
+            Field('natureProduit'),
+            FormActions(
+                Submit('valider', 'valider', css_class='btn btn-primary'),
+                Reset('annuler', 'annuler', css_class='btn btn-danger'),
+            ),
+        )
 
 
 class ReceptionEchantillon(forms.Form):

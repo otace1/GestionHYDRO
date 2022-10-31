@@ -2,7 +2,7 @@ import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, LaboReception, Resultat
 
 TEMPLATE = """ 
-            <a href="{%url 'reception' record.pk%}" class="btn btn-success">Réception</a>
+            <a href="{%url 'natureProduitLabo' record.pk%}" class="btn btn-success">Réception</a>
            """
 
 # <button type="button" class="btn btn-danger" data-id="{{record.pk}}">
@@ -123,7 +123,8 @@ class LaboratoireReception(tables.Table):
                     'idcargaison__immatriculation']
         exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique', 'numdossier',
                    'idcargaison__codecargaison', 'numrappech', 'useredit', 'matricule', 'methodeutilisee',
-                   'qte', 'conformite', 'idcargaison__produit__nomproduit', 'idcargaison']
+                   'qte', 'conformite', 'idcargaison__produit__nomproduit', 'idcargaison', 'natureProduitEntrepot',
+                   'nonConformiteProduit']
 
 
 class TableauEchantillonRecu(tables.Table):

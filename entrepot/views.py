@@ -15,7 +15,7 @@ from datetime import date
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from .numrappech import numRappEch
-from .densite15 import densite15
+from .calculs import *
 
 
 
@@ -34,7 +34,7 @@ class GestionEchantillonage():
         if role == 3 or role == 1 or role == 9:
             qs = Cargaison.objects.filter(etat="En attente requisition").filter(
                 entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
-            qs1 = Cargaison.objects.filter(etat="En attente d'echantillonage").filter(
+            qs1 = Cargaison.objects.filter(etat="En attente d'echantillonage", controlOrganoleptique=False).filter(
                 entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
             qs2 = Cargaison.objects.filter(entrepot__affectationentrepot__username_id=id).filter(
                 Q(rapechctrl=1) | Q(etat="Echantillonner")).order_by('-dateheurecargaison')
@@ -56,8 +56,10 @@ class GestionEchantillonage():
                 entrepot__affectationentrepot__username_id=id).count()
             o = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(etat='Conforme aux exigences'),
                                          entrepot__affectationentrepot__username_id=id).count()
-            x = Cargaison.objects.filter(etat='Cargaison dechargee',
-                                         entrepot__affectationentrepot__username_id=id).count()
+
+            x = Entrepot_echantillon.objects.filter(
+                Q(nonConformiteProduit=True) | Q(idcargaison__controlOrganoleptique=True),
+                idcargaison__entrepot__affectationentrepot__username_id=id).count()
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
@@ -108,8 +110,9 @@ class GestionEchantillonage():
             o = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(etat='Conforme aux exigences'),
                                          entrepot__affectationentrepot__username_id=id).count()
 
-            x = Cargaison.objects.filter(etat='Cargaison dechargee',
-                                         entrepot__affectationentrepot__username_id=id).count()
+            x = Entrepot_echantillon.objects.filter(
+                Q(nonConformiteProduit=True) | Q(idcargaison__controlOrganoleptique=True),
+                idcargaison__entrepot__affectationentrepot__username_id=id).count()
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
@@ -156,8 +159,9 @@ class GestionEchantillonage():
             o = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(etat='Conforme aux exigences'),
                                          entrepot__affectationentrepot__username_id=id).count()
 
-            x = Cargaison.objects.filter(etat='Cargaison dechargee',
-                                         entrepot__affectationentrepot__username_id=id).count()
+            x = Entrepot_echantillon.objects.filter(
+                Q(nonConformiteProduit=True) | Q(idcargaison__controlOrganoleptique=True),
+                idcargaison__entrepot__affectationentrepot__username_id=id).count()
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
@@ -521,33 +525,53 @@ class GestionDechargement():
 #         return redirect('logout')
 
 @login_required(login_url='login')
-def ImpressionRapport(request, pk):
+def impressionRapport(request, pk):
     template = 'rapport.html'
 
     # Request to fecth data into database
-    cargaison_data = Cargaison.objects.get(idcargaison=pk)
-    echantillon_data = Entrepot_echantillon.objects.get(idcargaison=pk)
-    dechargement_data = Dechargement.objects.get(idcargaison=pk)
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    inspection = Inspection.objects.get(idcargaison=pk)
+    seal = InspectionSeal.objects.filter(idcargaison=pk)
     if Resultat.objects.filter(idcargaison_id=pk).exists():
         resultat_data = Resultat.objects.get(idcargaison_id=pk)
 
-    immatriculation = cargaison_data.immatriculation
-    entrance = cargaison_data.frontiere
-    arrivaldate = cargaison_data.dateheurecargaison
-    origin = cargaison_data.provenance.name
-    provenance = cargaison_data.provenance.name
-    product = cargaison_data.produit
-    operationdate = dechargement_data.datedechargement
-    receiver = cargaison_data.entrepot
-    consigner = cargaison_data.importateur
-    gov = dechargement_data.gov
-    temperature = dechargement_data.temperature
-    densite = dechargement_data.densite15
-    vcf = dechargement_data.vcf
-    gsv = dechargement_data.gsv
-    mta = dechargement_data.mta
-    dens15 = resultat_data.densite
-    frais = gsv * 11
+    compartiment = Compartiment.objects.filter(
+        idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
+    govTotal = sum(compartiment.values_list('gov', flat=True))  # gov Total Tanker
+    gsvTotal = sum(compartiment.values_list('gsv', flat=True))  # gsv Total Tanker
+    mtaTotal = sum(compartiment.values_list('mta', flat=True))  # mta Total Tanker
+    mtvTotal = sum(compartiment.values_list('mtv', flat=True))  # mtv Total Tanker
+
+    densite = densite15(inspection.temp, inspection.dens)  # densite 15c
+    govMeter = inspection.meterafter - inspection.meterbefore  # govmeter
+    vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
+    gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
+    mtaMeter = mta(gsvMeter, densite)  # mta Meter
+
+    govLt = float(cargaison.volume)  # gov LT
+    vcfLt = vcf(densite, inspection.temp)  # VCF LT
+    gsvLt = gsv(vcfLt, govLt)  # GSV LT
+    mtvLt = mtv(gsvLt, densite)  # MTV LT
+    mtaLt = mta(gsvLt, densite)  # MTA LT
+
+    govLtTanker = govLt - govTotal  # Difference LT/Tanker
+    gsvLtTanker = gsvLt - gsvTotal  # Difference GSV LT/Tanker
+    mtvLtTanker = mtvLt - mtvTotal  # Difference mtv LT/Tanker
+    mtaLtTanker = mtaLt - mtaTotal  # Difference mtv LT/Tanker
+
+    govTankerMeter = govTotal - govMeter  # Difference Tanker/Meter
+    gsvTankerMeter = gsvTotal - gsvMeter  # Difference GSV Tanker/Meter
+    mtaTankerMeter = mtaTotal - mtaMeter  # Difference MTA Tanker/Meter
+
+    govLtMeter = govLt - govMeter  # Diff LT/Meter
+    gsvLtMeter = gsvLt - gsvMeter  # Diff GSV LT/Meter
+    mtaLtMeter = mtaLt - mtaMeter  # Diff mta LT/Meter
+
+    govMax = max(govTotal, govMeter, govLt)  # Max value of GOV
+    gsvMax = max(gsvTotal, gsvMeter, gsvLt)  # Max value of GSV
+    mtaMax = max(mtaTotal, mtaMeter, mtaLt)  # Max value of MTA
+
+    fraisOcc = 11 * gsvMax  # Frais occ a Payer
 
     # Getting data from laboratory
     if Resultat.objects.filter(idcargaison_id=pk).exists():
@@ -561,55 +585,69 @@ def ImpressionRapport(request, pk):
         odor = '-'
 
     # Last 3 Cargo Data Fetch
-    lastthreecargo = Cargaison.objects.filter(immatriculation=immatriculation).order_by('-dateheurecargaison')[:3]
-    taille = len(lastthreecargo)
-    array = []
-    for p in lastthreecargo:
-        array.append(p.produit)
-
-    if taille == 3:
-        flast = array[0]
-        slast = array[1]
-        tlast = array[2]
-    else:
-        if taille == 2:
-            flast = array[0]
-            slast = array[1]
-            tlast = '-'
-        else:
-            if taille == 1:
-                flast = '-'
-                slast = '-'
-                tlast = '-'
-            else:
-                flast = '-'
-                slast = '-'
-                tlast = '-'
+    lastthreecargo = Cargaison.objects.filter(immatriculation=cargaison.immatriculation).order_by(
+        '-dateheurecargaison')[:3]
+    # taille = len(lastthreecargo)
+    # array = []
+    # for p in lastthreecargo:
+    #     array.append(p.produit)
+    #
+    # if taille == 3:
+    #     flast = array[0]
+    #     slast = array[1]
+    #     tlast = array[2]
+    # else:
+    #     if taille == 2:
+    #         flast = array[0]
+    #         slast = array[1]
+    #         tlast = '-'
+    #     else:
+    #         if taille == 1:
+    #             flast = '-'
+    #             slast = '-'
+    #             tlast = '-'
+    #         else:
+    #             flast = '-'
+    #             slast = '-'
+    #             tlast = '-'
 
     data = {
-        'immatriculation': immatriculation,
-        'entrance': entrance,
-        'arrivaldate': arrivaldate,
-        'origin': origin,
-        'provenance': provenance,
-        'product': product,
-        'operationdate': operationdate,
-        'receiver': receiver,
-        'consigner': consigner,
-        'gov': gov,
-        'temperature': temperature,
+        'cargaison': cargaison,
+        'inspection': inspection,
         'densite': densite,
-        'dens15': dens15,
-        'vcf': vcf,
-        'gsv': gsv,
-        'mta': mta,
-        'flast': flast,
-        'slast': slast,
-        'tlast': tlast,
+        'govmeter': govMeter,
+        'govTotal': govTotal,
+        'gsvTotal': gsvTotal,
+        'mtaTotal': mtaTotal,
+        'gsvMeter': gsvMeter,
+        'govLt': govLt,
+        'govLtTanker': govLtTanker,
+        'govTankerMeter': govTankerMeter,
+        'gsvTankerMeter': gsvTankerMeter,
+        'mtaTankerMeter': mtaTankerMeter,
+        'govLtMeter': govLtMeter,
+        'gsvLtTanker': gsvLtTanker,
+        'mtvLtTanker': mtvLtTanker,
+        'mtaLtTanker': mtaLtTanker,
+        'gsvLtMeter': gsvLtMeter,
+        'mtaLtMeter': mtaLtMeter,
+        'gsvLt': gsvLt,
+        'mtvLt': mtvLt,
+        'mtaLt': mtaLt,
+        'govMax': govMax,
+        'gsvMax': gsvMax,
+        'mtaMax': mtaMax,
+        'fraisOcc': fraisOcc,
+        'seal': seal,
+        'lastthreecargo': lastthreecargo,
+        # 'flast': flast,
+        # 'slast': slast,
+        # 'tlast': tlast,
         'color': color,
         'aspect': aspect,
         'odor': odor,
-        'frais': frais
+        'compartiment': compartiment,
+
     }
     # Render PDF Files
     pdf = render_to_pdf(template, data)
@@ -2155,7 +2193,28 @@ def compartiment(request, pk):
     if request.method == 'POST':
         if form.is_valid():
             form = form.save(commit=False)
-            form.idcargaison = inspection
+
+            t = request.POST['tempcomp']  # Temperature du compartiment
+            govCompart = request.POST['gov']  # Gov du compartiment
+
+            # calcul des valeurs d'inspection
+            # Recuperation des valeurs pour calcul de la densite a 15
+            densite = inspection.dens
+            temperature = inspection.temp
+            d = densite15(temperature, densite)  # Calcul Dens a 15
+
+            v = vcf(d, t)  # VCF
+            g = gsv(v, govCompart)  # GSV
+            m = mtv(g, d)  # MTV
+            a = mta(g, d)  # MTA
+
+            # Recuperation des donnees des calculs
+            form.gsv = g
+            form.mtv = m
+            form.mta = a
+            form.vcf = v
+            form.idinspection = inspection
+
             form.save()
             return redirect('compartiment-details', pk=form.id)
         else:
@@ -2464,3 +2523,43 @@ def tableaurapports(request):
         'table1': table1
     }
     return render(request, template, context)
+
+
+# def reportCheck(request,data):
+#     template
+
+
+@login_required(login_url='login')
+def natureProduit(request, pk):
+    template = 'natureProduit.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    form = NatureProduit(request.POST or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            produit = request.POST['produit']
+            # print(produit)
+            # print(cargaison.produit.idproduit)
+            # addition = produit + cargaison.produit.idproduit #For test purpose
+            # print(addition)
+            if int(produit) == int(cargaison.produit.idproduit):
+                print('Inside the Test')
+                return redirect('echantillonage', pk=pk)
+            else:
+                idcargaison = cargaison
+                produit = Produit.objects.get(idproduit=produit)
+                conformiteProduit = 1
+                cargaison.controlOrganoleptique = 1
+                cargaison.save(update_fields=['controlOrganoleptique'])
+                a = Entrepot_echantillon(idcargaison=idcargaison, natureProduitEntrepot=produit,
+                                         nonConformiteProduit=conformiteProduit)
+                a.save()
+                return redirect('entrepot')
+    else:
+        context = {'form': form}
+        return render(request, template, context)
+
+
+def affichageProduitNonConforme(request):
+    template = ''
+    pass

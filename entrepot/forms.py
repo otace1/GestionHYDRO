@@ -27,9 +27,52 @@ types = [
 methodes = [
     ('', ''),
     ('running sampling', 'RUNNING SAMPLING'),
-    ('allo level sampling', 'ALLO LEVEL SAMPLING'),
+    ('all level sampling', 'ALL LEVEL SAMPLING'),
     ('other', 'OTHER'),
 ]
+
+unites_mesure_innagein = [
+    ('', ''),
+    ('cm', 'CM'),
+    ('m', 'M'),
+]
+
+unites_mesure_volumein = [
+    ('', ''),
+    ('Cu.Mtrs', 'Cu.Mtrs'),
+]
+
+unites_mesure_tempin = [
+    ('', ''),
+    ('C°', 'C°'),
+    ('F°', 'F°'),
+]
+
+unites_mesure_weightin = [
+    ('', ''),
+    ('m/t', ' M/T'),
+]
+
+
+class NatureProduit(forms.Form):
+    produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label='NATURE PRODUIT')
+
+    def __init__(self, *args, **kwargs):
+        super(NatureProduit, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_id = 'registration-form'
+        self.helper.label_class = 'col-md-12'
+        self.helper.field_class = 'col-md-12'
+        self.helper.layout = Layout(
+            Row(
+                Column('produit', css_class='form-group col-md-4 mb-0'),
+            ),
+            FormActions(
+                Submit('VALIDER', 'VALIDER', css_class='btn btn-success'),
+                Reset('CLEAR', 'CLEAR', css_class='btn btn-danger'),
+            ),
+        )
 
 
 class Echantilloner(forms.Form):
@@ -126,10 +169,10 @@ class TankerInspection(forms.Form):
     meterbefore = forms.FloatField(required=False, label="INDEX INITIAL COMPTEUR")
     dens = forms.FloatField(required=False, label="DENSITE")
     temp = forms.FloatField(required=False, label="AT")
-    innagein = forms.FloatField(required=False, label="INNAGE IN")
-    volumein = forms.FloatField(required=False, label="VOLUME IN")
-    tempin = forms.FloatField(required=False, label="TEMP IN")
-    weightin = forms.FloatField(required=False, label="WEIGHT IN")
+    innagein = forms.CharField(widget=forms.Select(choices=unites_mesure_innagein), label="INNAGE IN", required=True)
+    volumein = forms.CharField(widget=forms.Select(choices=unites_mesure_volumein), label="VOLUME IN", required=True)
+    tempin = forms.CharField(widget=forms.Select(choices=unites_mesure_tempin), label="TEMP IN", required=True)
+    weightin = forms.CharField(widget=forms.Select(choices=unites_mesure_weightin), label="WEIGHT IN", required=True)
 
     def __init__(self, *args, **kwargs):
         super(TankerInspection, self).__init__(*args, **kwargs)

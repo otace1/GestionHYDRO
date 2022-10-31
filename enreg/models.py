@@ -165,9 +165,15 @@ class Cargaison(models.Model):
     l_control = models.IntegerField(null=True)
     printactdate = models.DateField(auto_now_add=True)
 
+    # Control d'affichage conformite organoleptique
+    controlOrganoleptique = models.BooleanField(default=0)
+
     # Shore Inspection
     before = models.BooleanField(default=0, verbose_name='SHORE BEFORE')
     after = models.BooleanField(default=0, verbose_name='SHORE AFTER')
+
+    # Champ ajouter apres la mission de l'EST
+    declaration = models.CharField(max_length=255, blank=True, null=True)  # Numero de declaration
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
@@ -178,19 +184,23 @@ class Cargaison(models.Model):
 
 class Entrepot_echantillon(models.Model):
     idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT, primary_key=True)
-    numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage")
+    numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage", blank=True, null=True)
     numrappechauto = models.IntegerField(blank=True, null=True, verbose_name="Num. RE")
     # numplombh = models.CharField(max_length=256, verbose_name="Numero Plomb H", blank=True)
     # numplombb = models.CharField(max_length=256, blank=True)
     # numplombbr = models.CharField(max_length=256, blank=True)
     # numplombaph = models.CharField(max_length=256, blank=True)
     # etatphysique = models.CharField(max_length=256, blank=True)
-    qte = models.CharField(max_length=256)
+    qte = models.CharField(max_length=256, blank=True, null=True)
     conformite = models.CharField(max_length=256, blank=True)
     dateechantillonage = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     useredit = models.CharField(max_length=256, null=True, blank=True)
     matricule = models.CharField(max_length=256, blank=True)
     methodeutilisee = models.CharField(max_length=256, blank=True)
+
+    # Controle de conformite a l'entrepot
+    nonConformiteProduit = models.BooleanField(default=0)
+    natureProduitEntrepot = models.ForeignKey(Produit, on_delete=models.PROTECT, blank=True, null=True)
 
 
 class LaboReception(models.Model):
@@ -372,10 +382,10 @@ class Inspection(models.Model):
     produit = models.ForeignKey(Produit, on_delete=models.PROTECT, null=True)
     dens = models.FloatField(null=True)
     temp = models.FloatField(null=True)
-    innagein = models.FloatField(null=True)
-    volumein = models.FloatField(null=True)
-    tempin = models.FloatField(null=True)
-    weightin = models.FloatField(null=True)
+    innagein = models.CharField(max_length=256, blank=True, null=True)
+    volumein = models.CharField(max_length=256, blank=True, null=True)
+    tempin = models.CharField(max_length=256, blank=True, null=True)
+    weightin = models.CharField(max_length=256, blank=True, null=True)
     meterbefore = models.FloatField(null=True)
     meterafter = models.FloatField(null=True)
     dateinspection = models.DateTimeField(auto_now_add=True)

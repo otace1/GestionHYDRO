@@ -8,7 +8,8 @@ from enreg.models import *
 class AjoutCargaison(forms.ModelForm):
     class Meta:
         model = Cargaison
-        fields = ('voie', 'frontiere', 'typeunitetransport', 'immatriculation', 'provenance', 'produit', 'entrepot',
+        fields = ('voie', 'frontiere', 'typeunitetransport', 'immatriculation', 'provenance', 'produit', 'declaration',
+                  'entrepot',
                   'importateur', 'entrepot', 'produit', 'volume', 'volume15', 'volume20', 'tonnagevide', 'tonnageair')
 
         def __init__(self, *args, **kwargs):
@@ -28,8 +29,9 @@ class AjoutCargaison(forms.ModelForm):
                     css_class='form-row'
                 ),
                 Row(
-                    Column('entrepot', css_class='form-group col-md-6 mb-0'),
-                    Column('produit', css_class='form-group col-md-6 mb-0'),
+                    Column('declaration', css_class='form-group col-md-4 mb-0'),
+                    Column('entrepot', css_class='form-group col-md-4 mb-0'),
+                    Column('produit', css_class='form-group col-md-4 mb-0'),
                     css_class='form-row'
                 ),
                 Row(
@@ -70,6 +72,7 @@ class Ajoutcargaison(forms.Form):
     # Nouveau ajout sur le formulaire d'enregistrement a l'entree
     typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport'),
                                                 label="TYPE D'UNITE DE TRANPORT", required=False)
+    declaration = forms.CharField(label="N°.DECLARATION", required=False)
     volume15 = forms.FloatField(label="VOLUME A 15°C", required=False)
     volume20 = forms.FloatField(label="VOLUME A 20°C", required=False)
     tonnagevide = forms.FloatField(label="TONNAGE VIDE", required=False)
@@ -92,8 +95,9 @@ class Ajoutcargaison(forms.Form):
                 css_class='form-row'
             ),
             Row(
-                Column('entrepot', css_class='form-group col-md-6 mb-0'),
-                Column('produit', css_class='form-group col-md-6 mb-0'),
+                Column('declaration', css_class='form-group col-md-4 mb-0'),
+                Column('entrepot', css_class='form-group col-md-4 mb-0'),
+                Column('produit', css_class='form-group col-md-4 mb-0'),
                 css_class='form-row'
             ),
             Row(

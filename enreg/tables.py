@@ -27,10 +27,11 @@ class CargaisonTable(tables.Table):
                  "id": "cargaison"}
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'produit', 'volume', 'volume15', 'volume20', 'tonnagevide',
-                    'tonnageair', 'entrepot', 'immatriculation']
+        sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume', 'volume15',
+                    'volume20', 'tonnagevide',
+                    'tonnageair']
         exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport',
+                   'typeunitetransport', 'controlOrganoleptique',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration']

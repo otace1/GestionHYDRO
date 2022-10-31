@@ -1,8 +1,12 @@
 import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, Dechargement
 
+# TEMPLATE = """
+#             <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>
+#            """
+
 TEMPLATE = """
-            <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>
+            <a href="{%url 'natureProduit' record.pk%}" class="btn btn-primary">ECHANTILLONNAGE</a>
            """
 
 TEMPLATE1 = """
@@ -23,7 +27,7 @@ TEMPLATE3 = """
             """
 
 TEMPLATE5 = """
-    <a href="{%url 'rapportechantillonage' record.pk%}" class="btn btn-danger">AFFICHAGE</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">AFFICHAGE</a>
             """
 
 
@@ -35,8 +39,8 @@ class EchantillonTable(tables.Table):
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     numreq = tables.Column(verbose_name='REF.REQ.')
     numdos = tables.Column(verbose_name='NUM.DOSSIER')
-    idcargaison = tables.Column(verbose_name='N.Enr.')
-
+    idcargaison = tables.Column(verbose_name='N.ENR.')
+    declaration = tables.Column(verbose_name='N.DECL.')
 
     class Meta:
         attrs = {
@@ -45,19 +49,19 @@ class EchantillonTable(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['idcargaison', 'dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numreq',
-                    'numdos']
-        exclude = ['valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numdos', 'declaration']
+        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'entrepot', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-                   'requisitiondackdate', 'voie', 'provenance', 'poids',
+                   'requisitiondackdate', 'voie', 'provenance', 'poids', 'numreq',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'volume']
-
+                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'volume', 'controlOrganoleptique']
 
 
 class CargaisonEnAttenteRequisition(tables.Table):
-    dateheurecargaison = tables.Column(verbose_name="Date d'entree")
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     idcargaison = tables.Column(verbose_name='N.Enr.')
+    declaration = tables.Column(verbose_name='N.DECL.')
+    immatriculation = tables.Column(verbose_name='IMMATR.')
 
     class Meta:
         attrs = {
@@ -66,13 +70,13 @@ class CargaisonEnAttenteRequisition(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'immatriculation', 'importateur', 'produit']
+        sequence = ['dateheurecargaison', 'immatriculation', 'declaration']
         exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids', 'volume',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-                   'importateur', 'before', 'after', 'entrepot']
+                   'importateur', 'before', 'after', 'entrepot', 'produit', 'controlOrganoleptique']
 
 
 class RapportEchantillonage(tables.Table):
@@ -124,7 +128,7 @@ class CargaisonDechargement(tables.Table):
                    'dateheurecargaison', 'entrepot',
                    'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'controlOrganoleptique']
 
 
 class CargaisonDechargement2(tables.Table):
@@ -243,3 +247,22 @@ class RapportInspectionTanker(tables.Table):
     VCF = tables.Column(verbose_name='VCF')
     GSV = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
+
+
+class NonConformeOrganoleptique(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOS")
+    declaration = tables.Column(verbose_name="#.DECL.")
+    importateur = tables.Column(verbose_name="FOURNISSEUR")
+    entrepot = tables.Column(verbose_name="ENTREPOT")
+    produit = tables.Column(verbose_name="PRODUIT DECL.")
+    natureconstatee = tables.Column(verbose_name="PRODUIT CONST.", attrs={"td": {"bgcolor": "red"}})
+    # volume = tables.Column(verbose_name="VOLUME DECL.")
+
+
+class NonConformeLaboratoire(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOS")
+    declaration = tables.Column(verbose_name="#.DECL.")
+    importateur = tables.Column(verbose_name="FOURNISSEUR")
+    entrepot = tables.Column(verbose_name="ENTREPOT")
+    produit = tables.Column(verbose_name="PRODUIT")
+    volume = tables.Column(verbose_name="VOLUME DECL.")

@@ -23,14 +23,20 @@ class GestionLaboratoire():
     def affichageenchantillon(request):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
+        try:
+            ville = AffectationVille.objects.get(username_id=id)
+        except:
+            template = 'error.html'
+            context = {}
+            return render(request, template, context)
+
         ville = ville.ville_id
         role = user.role_id
-        # form = ReceptionEchantillon()
-        # form1 = ModificationEchantillon()
         if role == 4 or role == 1:
             qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
-                                                     idcargaison__entrepot__ville=ville).order_by('-dateechantillonage')
+                                                     idcargaison__entrepot__ville=ville,
+                                                     idcargaison__controlOrganoleptique=False).order_by(
+                '-dateechantillonage')
             table = LaboratoireReception(qs)
 
             qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
@@ -2895,3 +2901,29 @@ def echantAnalyse(request):
     RequestConfig(request, paginate={"per_page": 20}).configure(table)
     context = {'table': table}
     return render(request, template, context)
+
+
+@login_required(login_url='login')
+def natureProduitLabo(request, pk):
+    template = 'natureProduitLaboratoire.html'
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
+    form = NatureProduitLaboratoire(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            produit = request.POST['natureProduit']
+            if int(produit) == int(cargaison.produit.idproduit):
+                return redirect('reception', pk=pk)
+            else:
+                # idcargaison = cargaison
+                produit = produit
+                produit = Produit.objects.get(idproduit=produit)
+                cargaison.controlOrganoleptique = 1
+                cargaison.save(update_fields=['controlOrganoleptique'])
+                echantillon.nonConformiteProduit = 1
+                echantillon.natureProduitEntrepot = produit
+                echantillon.save(update_fields=['nonConformiteProduit', 'natureProduitEntrepot'])
+                return redirect('labo')
+    else:
+        context = {'form': form}
+        return render(request, template, context)

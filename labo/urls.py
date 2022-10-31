@@ -53,4 +53,7 @@ urlpatterns = [
     path('echantCount/', views.echantCount, name='echantCount'),
     path('echantAnalyse/', views.echantAnalyse, name='echantAnalyse'),
 
+    # Qualification Produit
+    path('nature/<int:pk>', views.natureProduitLabo, name='natureProduitLabo'),
+
 ]

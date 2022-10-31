@@ -7,7 +7,7 @@ urlpatterns = [
     path('rechercher/', views.GestionEchantillonage.rechercheqrcode, name='rechercher'),
     path('rechercherre/', views.GestionEchantillonage.rechercherre, name='rechercherre'),
     path('dechargement/', views.GestionDechargement.tableaudechargement, name='dechargement'),
-    path('rapport/<int:pk>', views.ImpressionRapport, name='rapport'),
+    path('rapport/<int:pk>', views.impressionRapport, name='rapport'),
 
     # Compteur
     path('c1/', views.GestionEchantillonage.c1, name='c1'),
@@ -57,5 +57,13 @@ urlpatterns = [
 
     # Rapports
     path('inspection/', views.tableaurapports, name='tableaurapports'),
+
+    # Report Validity Check
+    # path('check/', views.reportCheck, name='reportCheck'),
+    #
+    # Nature du produit
+    path('nature/<int:pk>', views.natureProduit, name='natureProduit'),
+
+    path('nonconforme/', views.affichageProduitNonConforme, name='affichageProduitNonConforme'),  # Non conforme
 
 ]

@@ -1,5 +1,3 @@
-{% load qr_code %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,7 +32,9 @@
         </td>
         <td colspan="3"
             style="width:60%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <span><b>INSPECTION CERTIFICATE N°: </b> </span><br/>
+            <span><b>INSPECTION CERTIFICATE N°: </b> </span>
+            <br/>
+            <br/>
             <span><b>MATRC.  TRUCK / TOWED : </b> {{ cargaison.immatriculation }}</span><br/>
             <span><b>ENTRANCE : </b> {{ cargaison.frontiere }}</span><br/>
             <span><b>ARRIVAL DATE :</b> {{ cargaison.dateheurecargaison }}</span><br/>
@@ -52,47 +52,60 @@
 
 <br/>
 
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 40%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>INSPECTION CERTIFICATE N°: </b></td>
+    </tr>
+</table>
 <br/>
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
         <td align="center"
-            style="width: 100%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            style="width: 40%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>LAST THREE CARGO</b>
         </td>
-
-    </tr>
-</table>
-<table cellspacing="1" cellpadding="3px" border="0"
-       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
-    <tr>
-        {% for lastthreecargo in lastthreecargo %}
-            <td align="left"
-                style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ lastthreecargo.produit }}</b></td>
-        {% endfor %}
-
-</table>
-<br/>
-<table cellspacing="1" cellpadding="3px" border="0"
-       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
-    <tr>
         <td align="center"
-            style="width: 100%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>LOWER SEALS</b>
-        </td>
-
+            style="width: 5%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 55%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>LOWER SEAL</b></td>
     </tr>
 </table>
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
-        {% for seal in seal %}
-            <td align="center"
-                style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ seal.manifoldnumber }}</b></td>
-        {% endfor %}
+        <td align="left"
+            style="width: 40%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>FIRST LAST: </b>{{ flast }}</td>
+        {#        <td align="left"#}
+        {#            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
+        {#            <b>SEAL ONE: </b></td>#}
+        {#        <td align="left"#}
+        {#            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
+        {#            <b>SEAL FOUR: </b></td>#}
+        {#    </tr>#}
+    <tr>
+        <td align="left"
+            style="width: 40%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SECOND LAST: </b>{{ slast }}</td>
+        {#        <td align="left"#}
+        {#            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
+        {#            <b>SEAL TWO:</b></td>#}
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 40%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>THIRD LAST: </b>{{ tlast }}</td>
+        {#        <td align="left"#}
+        {#            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
+        {#            <b>SEAL THREE:</b></td>#}
 
+    </tr>
 </table>
 
 <br/>
@@ -476,33 +489,7 @@
     </tr>
 </table>
 <br/>
-{#<table cellspacing="1" cellpadding="3px" border="0"#}
-{#       style="border-collapse: collapse;width: 50%;color: black;border: hidden;solid black">#}
-{#    <tr>#}
-{#        <td align="left"#}
-{#            style="width: 50%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
-{#            <b>Remarks</b>#}
-{#        </td>#}
-{#        <td align="Center"#}
-{#            style="width: 50%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
-{#            <b>Vérification de l'authenticité/Verification of authenticity</b>#}
-{#        </td>#}
-{#    </tr>#}
-{#</table>#}
-{#<table cellspacing="1" cellpadding="3px" border="0"#}
-{#       style="border-collapse: collapse;width: 50%;color: black;border: hidden;solid black;height: 100px">#}
-{#    <tr>#}
-{#        <td align="left"#}
-{#            style="width: 50%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
-{#            <b>#}
-{#                {% qr_from_text "cargaison.qrcode" size=10 border=10 %}#}
-{#            </b>#}
-{#        </td>#}
-{##}
-{#    </tr>#}
-{#</table>#}
-
-<br/>
+Remarks
 
 <table>
     <tr>
@@ -517,9 +504,4 @@
         </td>
     </tr>
 </table>
-
-{#<footer>#}
-{#    <p align="center">“This document is computer generated and does not require the Registrar’s signature or#}
-{#        the Company’s stamp in order to be considered valid”.</p>#}
-{#</footer>#}
 </html>

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, HttpResponse
 from enreg.models import Cargaison, Ville, Voie, Entrepot, Importateur, Produit, Dechargement, Entrepot_echantillon, \
     Resultat, LaboReception
 from accounts.models import *
-from .tables import CodificationTable, ResultatGoLabo, Avarie, Act, Act2, ModificationCodification
+from .tables import *
 from .forms import CodificationHydro
 from django.contrib.auth.decorators import login_required
 from shydro.utils import render_to_pdf
@@ -142,7 +142,6 @@ def linedetails(request, pk):
 
 #Gestion des Go apres avoir obtenu le statut de la cargaison
 class GestionResultatLabo():
-
 #Methode pour l'affichage des resultats venant Labo conforme
     @login_required(login_url='login')
     def affichagetableauresultat(request):
@@ -168,17 +167,34 @@ class GestionResultatLabo():
     def affichagetableauavarie(request):
         user = request.user
         id = user.id
+        try:
+            ville = AffectationVille.objects.get(username=id)
+        except:
+            template = 'error.html'
+            context = {}
+            return render(request, template, context)
         role = user.role_id
         if role == 7 or role == 1:
-            table = Avarie(Cargaison.objects.filter(etat="Non conforme aux exigences", frontiere__affectationville__username_id=id).order_by('-dateheurecargaison'))
+            qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
+                                                     idcargaison__entrepot__ville=ville.ville_id)
+            qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
+                                                      idcargaison__entrepot__ville=ville.ville_id)
+
+            table = NonConformeOrganoleptique(qs)
+            table1 = NonConformeLaboratoire(qs1)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            return render(request, 'shydro_avarie.html', {'cargaison': table})
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
+            context = {
+                'table': table,
+                'table1': table1,
+            }
+            return render(request, 'shydro_avarie.html', context)
         else:
             return redirect('logout')
 
+
 #Class pour la gestion des dechargements
 class GestionDecharger():
-
 #Methode pour l'envoi du Go de dechargement aux entrepots
     @login_required(login_url='login')
     def godechargement(request,pk):

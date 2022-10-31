@@ -12,13 +12,12 @@ urlpatterns = [
     path('codecam/<int:pk>', views.codecam, name='codecam'),
 
     path('', views.GestionResultatLabo.affichagetableauresultat, name='laboresult'),
-    path('avaries/', views.GestionResultatLabo.affichagetableauavarie, name='avarie'),
+    path('nonconforme/', views.GestionResultatLabo.affichagetableauavarie, name='avarie'),
 
     path('act/', views.GestionDecharger.gestionact, name='gestionact'),
     path('act/<int:pk>', views.GestionDecharger.printact, name='printact'),
     path('react/<int:pk>', views.GestionDecharger.reprintact, name='reprintact'),
     path('rechercheact/', views.GestionDecharger.rechercheact, name='rechercheact'),
-
 
     path('go/<int:pk>', views.GestionDecharger.godechargement, name='go'),
 

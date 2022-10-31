@@ -120,11 +120,13 @@ class DerniersEnregistrements(tables.Table):
         exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'origine', 'requisitionack',
                    'requisitiondackdate', 'numdos', 'numreq', 'rapechctrl', 'datereceptionlabo', 'poids',
                    'immatriculation', 'valeurfacture', 'numbtfh', 'numdeclaration', 'manifestdgda', 't1e', 't1d',
-                   'dateanalyse', 'numcertificatqualite', 'fournisseur', 'entrepot',
+                   'dateanalyse', 'numcertificatqualite', 'fournisseur', 'entrepot', 'controlOrganoleptique',
+                   'declaration',
                    'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
                    'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
                    'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
-                   'l_control']
+                   'l_control', 'volume15', 'typeunitetransport', 'volume20', 'tonnagevide', 'tonnageair', 'before',
+                   'after']
 
 
 class ProductionTable(tables.Table):
