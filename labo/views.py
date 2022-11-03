@@ -33,10 +33,8 @@ class GestionLaboratoire():
         # ville = ville.ville_id
         role = user.role_id
         if role == 4 or role == 1:
-            qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
-                                                     idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__controlOrganoleptique=False).order_by(
-                '-dateechantillonage')
+            qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner", idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__controlOrganoleptique=False).order_by('-dateechantillonage')
             table = LaboratoireReception(qs)
 
             qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours").order_by(
@@ -211,8 +209,7 @@ class GestionAnalyse():
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1:
             qs = LaboReception.objects.filter(idcargaison__idcargaison__etat='Analyse Labo en cours',
-                                              idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
-                '-datereceptionlabo')
+                                              idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by('-datereceptionlabo')
             table1 = AffichageAnalyse(qs, prefix='1_')
             qs2 = LaboReception.objects.filter(idcargaison__idcargaison__etat='Refaire',
                                                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
@@ -1021,17 +1018,14 @@ class GestionValidation():
             table = AffichageValidation1(qs, prefix='1_')
 
             # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(
-                idcargaison__entrepot__ville__affectationville__username_id=id,
-                dateechantillonage__day=da,
-                dateechantillonage__month=mo,
-                dateechantillonage__year=yr).count()
-            enanalyse = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Validation en cours 1').count()
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                                dateechantillonage__day=da,
+                                                                dateechantillonage__month=mo,
+                                                                dateechantillonage__year=yr).count()
+            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
 
             RequestConfig(request, paginate={"per_page": 14}).configure(table)
             return render(request, 'labo_validation1.html', {'labo': table,
@@ -1573,17 +1567,14 @@ class GestionValidation():
             table = AffichageValidation2(qs, prefix='1_')
 
             # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(
-                idcargaison__entrepot__ville__affectationville__username_id=id,
-                dateechantillonage__day=da,
-                dateechantillonage__month=mo,
-                dateechantillonage__year=yr).count()
-            enanalyse = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(
-                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                idcargaison__idcargaison__etat='Validation en cours 1').count()
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                                dateechantillonage__day=da,
+                                                                dateechantillonage__month=mo,
+                                                                dateechantillonage__year=yr).count()
+            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
 
             RequestConfig(request, paginate={"per_page": 14}).configure(table)
             return render(request, 'labo_validation2.html', {'labo': table,

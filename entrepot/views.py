@@ -49,8 +49,7 @@ class GestionEchantillonage():
             # n = Cargaison.objects.filter(
             #     Q(etat='En attente requisition') | Q(tampon='0') | Q(etat="En attente d'echantillonage")).filter(
             #     entrepot__affectationentrepot__username_id=id, dateheurecargaison__date=today).count()
-            n = Cargaison.objects.filter(etat='En attente requisition',
-                                         entrepot__affectationentrepot__username_id=id).count()
+            n = Cargaison.objects.filter(etat='En attente requisition',entrepot__affectationentrepot__username_id=id).count()
             d = Cargaison.objects.filter(
                 Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
                 entrepot__affectationentrepot__username_id=id).count()
@@ -399,8 +398,7 @@ class GestionDechargement():
             if role == 3 or role == 1:
                 qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
                                               Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
-                                              entrepot__affectationentrepot__username_id=id).order_by(
-                    '-dateheurecargaison')
+                                              entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
                 table = CargaisonDechargement(qs, prefix='1_')
 
                 # affichage des tanker cabotteurs
@@ -2517,12 +2515,12 @@ def tableaurapports(request):
                                 AND v.entrepot_id = c.entrepot_id \
                                 AND v.username_id = %s \
                                 GROUP BY c.idcargaison \
-                                ORDER BY i.dateinspection DESC', [user, ])
+                                ORDER BY i.dateinspection DESC',[user,])
     qs1 = Cargaison.objects.all()
     table = RapportInspectionCamion(qs, prefix='1_')
     table1 = RapportInspectionTanker(qs1, prefix='2_')
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table1)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table1)
 
     context = {
         'table': table,
@@ -2578,15 +2576,15 @@ def affichageProduitNonConforme(request):
     qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
                                               idcargaison__entrepot__affectationentrepot__username_id=id)
 
-    table = NonConformeOrganoleptique(qs, prefix='1')
-    table1 = NonConformeLaboratoire(qs1, prefix='2')
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table1)
+    table = NonConformeOrganoleptique(qs,prefix='1')
+    table1 = NonConformeLaboratoire(qs1,prefix='2')
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table1)
     context = {
         'table': table,
         'table1': table1,
     }
-    return render(request, template, context)
+    return render(request,template,context)
 
 
 @login_required(login_url='login')
@@ -2595,9 +2593,8 @@ def affichageEnAttenteRequisition(request):
     role = user.role_id
     id = user.id
     template = 'enAttenteRequisition.html'
-    qs = Cargaison.objects.filter(etat="En attente requisition").filter(
-        entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+    qs = Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
     table = CargaisonEnAttenteRequisition(qs)
     RequestConfig(request, paginate={"per_page": 5}).configure(table)
-    context = {'table': table}
-    return render(request, template, context)
+    context = {'table':table}
+    return render(request,template,context)

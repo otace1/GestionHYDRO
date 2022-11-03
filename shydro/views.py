@@ -31,8 +31,7 @@ class GestionCodification():
                 if qs == "":
                     request.session['url'] = request.get_full_path()
                     table = CodificationTable(
-                        Cargaison.objects.filter(etat="En attente requisition").filter(
-                            entrepot__ville__affectationville__username_id=id) \
+                        Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="1_")
                     data = Entrepot.objects.filter(ville__affectationville__username_id=id)
                     RequestConfig(request, paginate={"per_page": 20}).configure(table)
@@ -45,8 +44,7 @@ class GestionCodification():
                     qs_temp = Entrepot.objects.get(nomentrepot=qs)
                     id_ent = qs_temp.identrepot
                     table = CodificationTable(
-                        Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent,
-                                                 entrepot__ville__affectationville__username_id=id) \
+                        Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent, entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="3_")
                     data = Entrepot.objects.filter(ville__affectationville__username_id=id)
                     RequestConfig(request, paginate={"per_page": 20}).configure(table)
@@ -57,28 +55,22 @@ class GestionCodification():
             else:
                 request.session['url'] = request.get_full_path()
 
-                e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                             entrepot__ville__affectationville__username_id=id).count()
-                d = Cargaison.objects.filter(etat="Conforme aux exigences",
-                                             entrepot__ville__affectationville__username_id=id).count()
-                l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-                                             entrepot__ville__affectationville__username_id=id).count()
-                n = Entrepot_echantillon.objects.filter(
-                    Q(nonConformiteProduit=True) | Q(idcargaison__etat="Non conforme aux exigences"),
-                    idcargaison__entrepot__ville__affectationville__username_id=id).count()
+                e = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=id).count()
+                d = Cargaison.objects.filter(etat="Conforme aux exigences",entrepot__ville__affectationville__username_id=id).count()
+                l = Cargaison.objects.filter(etat="Analyse Labo en cours",entrepot__ville__affectationville__username_id=id).count()
+                n = Entrepot_echantillon.objects.filter(Q(nonConformiteProduit=True)|Q(idcargaison__etat="Non conforme aux exigences"), idcargaison__entrepot__ville__affectationville__username_id=id).count()
 
-                table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition",
-                                                                   entrepot__ville__affectationville__username_id=id) \
+                table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
                 data = Entrepot.objects.filter(ville__affectationville__username_id=id)
                 RequestConfig(request, paginate={"per_page": 20}).configure(table)
                 context = {
                     'cargaison': table,
                     'filter': data,
-                    'e': e,
-                    'd': d,
-                    'l': l,
-                    'n': n
+                    'e':e,
+                    'd':d,
+                    'l':l,
+                    'n':n
                 }
                 return render(request, 'shydro.html', context)
         else:
@@ -132,7 +124,7 @@ def lineupdate(request, pk):
     name = MyUser.objects.get(id=id)
     name = name.username
 
-    # Get Town du point de dechargement pour l'attribution automatique des numeros
+    #Get Town du point de dechargement pour l'attribution automatique des numeros
     c = Cargaison.objects.get(idcargaison=pk)
     c = c.entrepot_id
     c = Entrepot.objects.get(identrepot=c)
@@ -181,36 +173,36 @@ class GestionResultatLabo():
                                                           AND c.frontiere_id = a.ville_id \
                                                           AND a.username_id = %s \
                                                           AND c.etat = "Conforme aux exigences" \
-                                                          ORDER BY r.dateanalyse DESC', [id, ]))
+                                                          ORDER BY r.dateanalyse DESC', [id,]))
 
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             return render(request, 'shydro_result.html', {'cargaison': table})
         else:
             return redirect('logout')
 
-# Methode pour l'affichage des resultats venant du Labo Avarie
-@login_required(login_url='login')
-def affichageNonConforme(request):
-    user = request.user
-    id = user.id
-    try:
-        ville = AffectationVille.objects.get(username=id)
-    except:
-        template = 'error.html'
-        context = {}
-        return render(request, template, context)
-    role = user.role_id
-    if role == 7 or role == 1:
-        qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
-                                                 idcargaison__entrepot__ville=ville.ville_id)
-        qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
-                                                  idcargaison__entrepot__ville=ville.ville_id)
+#Methode pour l'affichage des resultats venant du Labo Avarie
+    @login_required(login_url='login')
+    def affichageNonConforme(request):
+        user = request.user
+        id = user.id
+        try:
+            ville = AffectationVille.objects.get(username=id)
+        except:
+            template = 'error.html'
+            context = {}
+            return render(request, template, context)
+        role = user.role_id
+        if role == 7 or role == 1:
+            qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
+                                                     idcargaison__entrepot__ville=ville.ville_id)
+            qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
+                                                      idcargaison__entrepot__ville=ville.ville_id)
 
-        table = NonConformeOrganoleptique(qs)
-        table1 = NonConformeLaboratoire(qs1)
-        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
-        context = {
+            table = NonConformeOrganoleptique(qs)
+            table1 = NonConformeLaboratoire(qs1)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
+            context = {
                 'table': table,
                 'table1': table1,
             }
@@ -508,9 +500,9 @@ class GestionDecharger():
                     RequestConfig(request, paginate={"per_page": 10}).configure(table1)
 
                     return render(request, 'shydro_act.html', {
-                        'act': table,
-                        'act1': table1,
-                    })
+                            'act': table,
+                            'act1': table1,
+                        })
             else:
 
                 return redirect('logout')
@@ -521,36 +513,33 @@ class GestionDecharger():
 def enAttenteEchantillonnage(request):
     user = request.user.id
     template = 'enAttenteEchantillonnage.html'
-    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                  entrepot__ville__affectationville__username_id=user)
+    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user)
     table = EnAttenteEchantillonage(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
-    context = {'table': table}
-    return render(request, template, context)
+    context = {'table':table}
+    return render(request,template,context)
 
 
 @login_required(login_url='login')
 def enAttenteDechargement(request):
     user = request.user.id
     template = 'enAttenteDechargement.html'
-    qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Conforme aux exigences",
-                                 idcargaison__idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Conforme aux exigences",idcargaison__idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteDechargement(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
-    context = {'table': table}
-    return render(request, template, context)
+    context = {'table':table}
+    return render(request,template,context)
 
 
 @login_required(login_url='login')
 def enAttenteResultatLabo(request):
     user = request.user.id
     template = 'enAttenteResultatLabo.html'
-    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-                                      idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteResultatLabo(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
-    context = {'table': table}
-    return render(request, template, context)
+    context = {'table':table}
+    return render(request,template,context)
 
 
 @login_required(login_url='login')
@@ -573,7 +562,7 @@ def rapportActivite(request):
                                 AND v.ville_id = ee.ville_id \
                                 AND v.username_id = %s \
                                 GROUP BY c.idcargaison \
-                                ORDER BY i.dateinspection DESC', [user, ])
+                                ORDER BY i.dateinspection DESC',[user,])
     table = RapportActivite(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
     export_format = request.GET.get("_export", None)
@@ -581,5 +570,24 @@ def rapportActivite(request):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
 
-    context = {'table': table}
-    return render(request, template, context)
+    context = {'table':table}
+    return render(request,template,context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
