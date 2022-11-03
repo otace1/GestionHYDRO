@@ -181,14 +181,14 @@ class GestionResultatLabo():
                                                           AND c.frontiere_id = a.ville_id \
                                                           AND a.username_id = %s \
                                                           AND c.etat = "Conforme aux exigences" \
-                                                          ORDER BY r.dateanalyse DESC', [id,]))
+                                                          ORDER BY r.dateanalyse DESC', [id, ]))
 
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             return render(request, 'shydro_result.html', {'cargaison': table})
         else:
             return redirect('logout')
 
-#Methode pour l'affichage des resultats venant du Labo Avarie
+# Methode pour l'affichage des resultats venant du Labo Avarie
 @login_required(login_url='login')
 def affichageNonConforme(request):
     user = request.user
@@ -201,16 +201,16 @@ def affichageNonConforme(request):
         return render(request, template, context)
     role = user.role_id
     if role == 7 or role == 1:
-            qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
-                                                     idcargaison__entrepot__ville=ville.ville_id)
-            qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
-                                                      idcargaison__entrepot__ville=ville.ville_id)
+        qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
+                                                 idcargaison__entrepot__ville=ville.ville_id)
+        qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
+                                                  idcargaison__entrepot__ville=ville.ville_id)
 
-            table = NonConformeOrganoleptique(qs)
-            table1 = NonConformeLaboratoire(qs1)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
-            context = {
+        table = NonConformeOrganoleptique(qs)
+        table1 = NonConformeLaboratoire(qs1)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
+        context = {
                 'table': table,
                 'table1': table1,
             }
@@ -516,7 +516,6 @@ class GestionDecharger():
                 return redirect('logout')
         else:
             return redirect('logout')
-
 
 @login_required(login_url='login')
 def enAttenteEchantillonnage(request):
