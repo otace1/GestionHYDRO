@@ -23,24 +23,23 @@ class GestionLaboratoire():
     def affichageenchantillon(request):
         user = request.user
         id = user.id
-        try:
-            ville = AffectationVille.objects.get(username_id=id)
-        except:
-            template = 'error.html'
-            context = {}
-            return render(request, template, context)
-
-        ville = ville.ville_id
+        # try:
+        #     ville = AffectationVille.objects.get(username_id=id)
+        # except:
+        #     template = 'error.html'
+        #     context = {}
+        #     return render(request, template, context)
+        #
+        # ville = ville.ville_id
         role = user.role_id
         if role == 4 or role == 1:
             qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner",
-                                                     idcargaison__entrepot__ville=ville,
+                                                     idcargaison__entrepot__ville__affectationville__username_id=id,
                                                      idcargaison__controlOrganoleptique=False).order_by(
                 '-dateechantillonage')
             table = LaboratoireReception(qs)
 
-            qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-                                               idcargaison__idcargaison__entrepot__ville=ville).order_by(
+            qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours").order_by(
                 '-datereceptionlabo')
             table1 = TableauEchantillonRecu(qs1, prefix='2_')
 
@@ -60,8 +59,17 @@ class GestionLaboratoire():
     def receptionechantillon(request, pk):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        v = ville.ville_id
+
+        # Get Town du point de dechargement pour l'attribution automatique des numeros
+        print(pk)
+        c = Cargaison.objects.get(idcargaison=pk)
+        c = c.entrepot_id
+        c = Entrepot.objects.get(identrepot=c)
+        v = c.ville_id
+        print(v)
+
+        # ville = AffectationVille.objects.get(username_id=id)
+        # v = ville.ville_id
         role = user.role_id
         if role == 4 or role == 1:
             # Getting current Year & Month
@@ -197,17 +205,17 @@ class GestionAnalyse():
     def affichageanalyse(request):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        v = ville.ville_id
+        # ville = AffectationVille.objects.get(username_id=id)
+        # v = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1:
             qs = LaboReception.objects.filter(idcargaison__idcargaison__etat='Analyse Labo en cours',
-                                              idcargaison__idcargaison__entrepot__ville=v).order_by(
+                                              idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
                 '-datereceptionlabo')
             table1 = AffichageAnalyse(qs, prefix='1_')
             qs2 = LaboReception.objects.filter(idcargaison__idcargaison__etat='Refaire',
-                                               idcargaison__idcargaison__entrepot__ville=v).order_by(
+                                               idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
                 '-datereceptionlabo')
             table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
@@ -997,8 +1005,8 @@ class GestionValidation():
     def affichagetableauvalidation1(request):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
+        # ville = AffectationVille.objects.get(username_id=id)
+        # ville = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         d = datetime.today()
@@ -1008,19 +1016,22 @@ class GestionValidation():
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
             qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Validation en cours 1",
-                                         idcargaison__idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                                         idcargaison__idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
                 'dateanalyse')
             table = AffichageValidation1(qs, prefix='1_')
 
             # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville=ville,
-                                                                dateechantillonage__day=da,
-                                                                dateechantillonage__month=mo,
-                                                                dateechantillonage__year=yr).count()
-            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
-                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
-                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
+            laboreception = Entrepot_echantillon.objects.filter(
+                idcargaison__entrepot__ville__affectationville__username_id=id,
+                dateechantillonage__day=da,
+                dateechantillonage__month=mo,
+                dateechantillonage__year=yr).count()
+            enanalyse = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Validation en cours 1').count()
 
             RequestConfig(request, paginate={"per_page": 14}).configure(table)
             return render(request, 'labo_validation1.html', {'labo': table,
@@ -1058,8 +1069,16 @@ class GestionValidation():
     def affichagerapportpdf(request, pk):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
+
+        # Get Town du point de dechargement pour l'attribution automatique des numeros
+        c = Cargaison.objects.get(idcargaison=pk)
+        c = c.entrepot_id
+        c = Entrepot.objects.get(identrepot=c)
+        ville = c.ville_id
+
+        print(ville)
+        # ville = AffectationVille.objects.get(username_id=id)
+        # ville = ville.ville_id
         province = Ville.objects.get(idville=ville)
         province = province.province
         province = province.upper()
@@ -1530,8 +1549,16 @@ class GestionValidation():
     def affichagetableauvalidation2(request):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
+
+        # Get Town du point de dechargement pour l'attribution automatique des numeros
+        # c = Cargaison.objects.get(idcargaison=pk)
+        # c = c.entrepot_id
+        # c = Entrepot.objects.get(identrepot=c)
+        # ville = c.ville_id
+        #
+        # print(ville)
+        # ville = AffectationVille.objects.get(username_id=id)
+        # ville = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         d = datetime.today()
@@ -1541,19 +1568,22 @@ class GestionValidation():
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
             qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Validation en cours 2",
-                                         idcargaison__idcargaison__idcargaison__entrepot__ville=ville).order_by(
+                                         idcargaison__idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
                 'dateanalyse')
             table = AffichageValidation2(qs, prefix='1_')
 
             # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville=ville,
-                                                                dateechantillonage__day=da,
-                                                                dateechantillonage__month=mo,
-                                                                dateechantillonage__year=yr).count()
-            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
-                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville=ville,
-                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
+            laboreception = Entrepot_echantillon.objects.filter(
+                idcargaison__entrepot__ville__affectationville__username_id=id,
+                dateechantillonage__day=da,
+                dateechantillonage__month=mo,
+                dateechantillonage__year=yr).count()
+            enanalyse = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(
+                idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                idcargaison__idcargaison__etat='Validation en cours 1').count()
 
             RequestConfig(request, paginate={"per_page": 14}).configure(table)
             return render(request, 'labo_validation2.html', {'labo': table,
@@ -1574,14 +1604,14 @@ class GestionImpressionLabo():
     def affichagetableauimpression(request):
         user = request.user
         id = user.id
-        ville = AffectationVille.objects.get(username_id=id)
-        v = ville.ville_id
+        # ville = AffectationVille.objects.get(username_id=id)
+        # v = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1:
             qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__impression=0,
                                          idcargaison__idcargaison__idcargaison__etat='Conforme aux exigences',
-                                         idcargaison__idcargaison__idcargaison__entrepot__ville=v).order_by(
+                                         idcargaison__idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
                 'dateanalyse')
             table = AffichageTableauImpression(qs, prefix='2_')
 

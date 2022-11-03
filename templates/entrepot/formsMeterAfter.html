@@ -123,7 +123,7 @@
                                 <i class="nav-icon fas fa-truck-moving"></i>
                                 <p>
                                     ENREGISTREMENT
-
+                                    <i class="fas fa-save right"></i>
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
@@ -136,27 +136,14 @@
                         <li class="header">ENTREPOT</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
+                            <a href="{% url 'entrepot' %}" class="nav-link">
                                 <i class="nav-icon fas fa fa-industry"></i>
                                 <p>
                                     ENTREPOT
-                                    <i class="right fas fa-angle-left"></i>
+                                    <i class="right fas fa-truck"></i>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'entrepot' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>ECHANTILLONAGE</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'dechargement' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>DECHARGEMENT</p>
-                                    </a>
-                                </li>
-                            </ul>
+
                         </li>
                     {% endif %}
 
@@ -196,7 +183,15 @@
                                     <li class="nav-item">
                                         <a href="{% url 'validation1' %}" class="nav-link">
                                             <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION</p>
+                                            <p>VALIDATION SCE HYDRO</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 10 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation2' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION CHEF LABO</p>
                                         </a>
                                     </li>
                                 {% endif %}
@@ -217,37 +212,45 @@
                         <li class="header">HYDRO OCC</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
+                            <a href="{% url 'codification' %}" class="nav-link">
                                 <i class="nav-icon fas fa-building"></i>
                                 <p>
-                                    HYDRO OCC
-                                    <i class="fas fa-angle-left right"></i>
+                                    HYDRO
+                                    <i class="fas fa-trailer right"></i>
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-
-                                <li class="nav-item">
-                                    <a href="{% url 'laboresult' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>GO</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gestionact' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>ACTs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'avarie' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AVARIES</p>
-                                    </a>
-                                </li>
-                            </ul>
+                            {#                            <ul class="nav nav-treeview">#}
+                            {##}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'codification' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>REQUISITIONS</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {##}
+                            {#                <li class="nav-item">#}
+                            {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
+                            {#                  <i class="far fa-circle nav-icon"></i>#}
+                            {#                  <p>GO</p>#}
+                            {#                </a>#}
+                            {#              </li>#}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'gestionact' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>ACTs</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'affichageNonConforme' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>AVARIES</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                            </ul>#}
                         </li>
-
+                    {% endif %}
+                    {% if role == 10 %}
                         <li class="nav-item has-treeview">
                             <a href="" class="nav-link">
                                 <i class="nav-icon fas fa-file-archive"></i>
@@ -274,7 +277,6 @@
                         </li>
                     {% endif %}
 
-
                     {% if user.role_id == 1 %}
                         <li class="nav-item has-treeview">ADMINISTRATION</li>
                         <li class="nav-item has-treeview">
@@ -287,12 +289,7 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'usersadd' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT UTILISATEUR</p>
-                                    </a>
-                                </li>
+
                                 <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -301,7 +298,7 @@
                                 </li>
 
                                 <li class="nav-item">
-                                    <a href="{% url 'affectationville' %}" class="nav-link">
+                                    <a href="{% url 'affectation_signature' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>AFFECTATION V.</p>
                                     </a>
@@ -410,24 +407,24 @@
                             </ul>
                         </li>
 
-                        {#        <li class="nav-item has-treeview">#}
-                        {#            <a href="" class="nav-link">#}
-                        {#              <i class="nav-icon fas fa-cloud"></i>#}
-                        {#              <p>#}
-                        {#                MONITORING ADMIN#}
-                        {#                <i class="fas fa-angle-left right"></i>#}
-                        {#                <span class="badge badge-info right"></span>#}
-                        {#              </p>#}
-                        {#            </a>#}
-                        {#            <ul class="nav nav-treeview">#}
-                        {#              <li class="nav-item">#}
-                        {#                <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
-                        {#                  <i class="far fa-circle nav-icon"></i>#}
-                        {#                  <p>IMPORTATION SYDONIA</p>#}
-                        {#                </a>#}
-                        {#              </li>#}
-                        {#            </ul>#}
-                        {#        </li>#}
+                        {#                        <li class="nav-item has-treeview">#}
+                        {#                            <a href="" class="nav-link">#}
+                        {#                                <i class="nav-icon fas fa-cloud"></i>#}
+                        {#                                <p>#}
+                        {#                                    MONITORING ADMIN#}
+                        {#                                    <i class="fas fa-angle-left right"></i>#}
+                        {#                                    <span class="badge badge-info right"></span>#}
+                        {#                                </p>#}
+                        {#                            </a>#}
+                        {#                            <ul class="nav nav-treeview">#}
+                        {#                                <li class="nav-item">#}
+                        {#                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
+                        {#                                        <i class="far fa-circle nav-icon"></i>#}
+                        {#                                        <p>IMPORTATION SYDONIA</p>#}
+                        {#                                    </a>#}
+                        {#                                </li>#}
+                        {#                            </ul>#}
+                        {#                        </li>#}
                     {% endif %}
 
                     <li class="nav-item has-treeview">

@@ -121,7 +121,7 @@
                                 <i class="nav-icon fas fa-truck-moving"></i>
                                 <p>
                                     ENREGISTREMENT
-
+                                    <i class="fas fa-save right"></i>
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
@@ -134,33 +134,14 @@
                         <li class="header">ENTREPOT</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
+                            <a href="{% url 'entrepot' %}" class="nav-link">
                                 <i class="nav-icon fas fa fa-industry"></i>
                                 <p>
                                     ENTREPOT
-                                    <i class="right fas fa-angle-left"></i>
+                                    <i class="right fas fa-truck"></i>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'entrepot' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>ECHANTILLONAGE</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'dechargement' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>DECHARGEMENT</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'tableaurapports' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>RAPPORTS</p>
-                                    </a>
-                                </li>
-                            </ul>
+
                         </li>
                     {% endif %}
 
@@ -229,42 +210,42 @@
                         <li class="header">HYDRO OCC</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
+                            <a href="{% url 'codification' %}" class="nav-link">
                                 <i class="nav-icon fas fa-building"></i>
                                 <p>
-                                    HYDRO OCC
-                                    <i class="fas fa-angle-left right"></i>
+                                    HYDRO
+                                    <i class="fas fa-trailer right"></i>
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-
-                                <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REQUISITIONS</p>
-                                    </a>
-                                </li>
-
-                                {#                <li class="nav-item">#}
-                                {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
-                                {#                  <i class="far fa-circle nav-icon"></i>#}
-                                {#                  <p>GO</p>#}
-                                {#                </a>#}
-                                {#              </li>#}
-                                <li class="nav-item">
-                                    <a href="{% url 'gestionact' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>ACTs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'avarie' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AVARIES</p>
-                                    </a>
-                                </li>
-                            </ul>
+                            {#                            <ul class="nav nav-treeview">#}
+                            {##}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'codification' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>REQUISITIONS</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {##}
+                            {#                <li class="nav-item">#}
+                            {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
+                            {#                  <i class="far fa-circle nav-icon"></i>#}
+                            {#                  <p>GO</p>#}
+                            {#                </a>#}
+                            {#              </li>#}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'gestionact' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>ACTs</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'affichageNonConforme' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>AVARIES</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                            </ul>#}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -306,12 +287,7 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
-                                {#              <li class="nav-item">#}
-                                {#                <a href="{%url 'usersadd'%}" class="nav-link">#}
-                                {#                  <i class="far fa-circle nav-icon"></i>#}
-                                {#                  <p>AJOUT UTILISATEUR</p>#}
-                                {#                </a>#}
-                                {#              </li>#}
+
                                 <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -482,79 +458,86 @@
                 </div><!-- /.row -->
             </div><!-- /.container-fluid -->
         </div>
-    <!-- /.content-header -->
-
-    <section class="content">
-    <div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-info">
-                <div class="inner">
-                    <h3>{{ n }}</h3>
-                    <p><b>NOUVEAUX ENREGISTREMENTS DU JOUR</b></p>
+        <!-- /.content-header --><br/>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-4 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3>{{ n }}</h3>
+                                <p><b>EN ATTENTE DE REQUISITION</b></p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-alert-circled"></i>
+                            </div>
+                            <a href="{% url 'affichageEnAttenteRequisition' %}" class="small-box-footer">DETAILS <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                    <div class="col-lg-4 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-success">
+                            <div class="inner">
+                                <h3>{{ d }}</h3>
+                                <p><b>EN ATTENTE DE DECHARGEMENT</b></p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-funnel"></i>
+                            </div>
+                            <a href="{% url 'dechargement' %}" class="small-box-footer">DETAILS <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                    {#        <div class="col-lg-3 col-6">#}
+                    {#            <!-- small box -->#}
+                    {#            <div class="small-box bg-warning">#}
+                    {#                <div class="inner">#}
+                    {#                    <h3>{{ r }}</h3>#}
+                    {#                    <p><b>EN ATTENTE D'ECHANTILLONAGE</b></p>#}
+                    {#                </div>#}
+                    {#                <div class="icon">#}
+                    {#                    <i class="ion ion-alert"></i>#}
+                    {#                </div>#}
+                    {#                <a href="" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>#}
+                    {#            </div>#}
+                    {#        </div>#}
+                    <!-- ./col -->
+                    <div class="col-lg-4 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-danger">
+                            <div class="inner">
+                                <h3>{{ x }}</h3>
+                                <p><b>CARGAISON NON CONFORME</b></p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-android-bar"></i>
+                            </div>
+                            <a href="{% url 'affichageProduitNonConforme' %}" class="small-box-footer">DETAILS <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
                 </div>
-                <div class="icon">
-                    <i class="ion ion-alert-circled"></i>
+                <div>
+                    <a href="" class="btn btn-outline-success">RAPPORT D'ECHANTILLONAGE</a>
+                    <a href="{% url 'tableaurapports' %}" class="btn btn-outline-success">RAPPORT D'INSPECTION</a>
                 </div>
-                <a href="" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
             </div>
-        </div>
-        <!-- ./col -->
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-success">
-                <div class="inner">
-                    <h3>{{ d }}</h3>
-                    <p><b>EN ATTENTE DE DECHARGEMENT</b></p>
-                </div>
-                <div class="icon">
-                    <i class="ion ion-funnel"></i>
-                </div>
-                <a href="{% url 'dechargement' %}" class="small-box-footer">DETAILS <i
-                        class="fas fa-arrow-circle-right"></i></a>
-            </div>
-        </div>
-        <!-- ./col -->
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-warning">
-                <div class="inner">
-                    <h3>{{ r }}</h3>
-                    <p><b>EN ATTENTE D'ECHANTILLONAGE</b></p>
-                </div>
-                <div class="icon">
-                    <i class="ion ion-alert"></i>
-                </div>
-                <a href="" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-        </div>
-        <!-- ./col -->
-        <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-danger">
-                <div class="inner">
-                    <h3>{{ x }}</h3>
-                    <p><b>CARGAISON NON CONFORME</b></p>
-                </div>
-                <div class="icon">
-                    <i class="ion ion-android-bar"></i>
-                </div>
-                <a href="#" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-        </div>
-        <!-- ./col -->
-    </div>
-        <!-- /.row -->
-        <div class="row">
-            {% block search %}
-        {% endblock %}
-            <div class="col-md-9">
-                <div class="card">
-                    <div class="card-header bg-gradient-dark">
-                        <h1 class="card-title"><b>CARGAISON EN ATTENTE D'ECHANTILLONAGE</b></h1>
-                        <div class="card-tools">
-                            <form method="get" action="{%url 'rechercher'%}">
+            <br/>
+            <!-- /.row -->
+            <div class="row">
+                {% block search %}
+                {% endblock %}
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-gradient-dark">
+                            <h1 class="card-title"><b>CARGAISON EN ATTENTE D'ECHANTILLONAGE</b></h1>
+                            <div class="card-tools">
+                                <form method="get" action="{% url 'rechercher' %}">
                                 <div class="input-group input-group-sm" style="width: 500px;">
                                     <input type="text" name="q" class="form-control float-right"
                                            placeholder="SCANNER LE QRCODE ICI">
@@ -565,40 +548,40 @@
                                 </div>
                             </form>
                         </div>
-                    </div>
+                        </div>
 
-                    <div class="card-body table-responsive p-0">
-                        {% block content %}
+                        <div class="card-body table-responsive p-0">
+                            {% block content %}
 
-                        {% endblock %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header bg-gradient-dark">
-                        <h1 class="card-title"><b>CARGAISON EN ATTENTE DE REQUISITION</b></h1>
-
-                    </div>
-
-                    <div class="card-body table-responsive p-0">
-                        {% block content1 %}
-
-                        {% endblock %}
+                            {% endblock %}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-        </div>
-        {#        <div class="row">#}
-        {#            <div class="col-md-12">#}
-        {#                <div class="card">#}
-        {#                    <div class="card-header bg-gradient-red">#}
-        {#                        <h1 class="card-title"><b>TABLEAU DES RAPPORTS D'ECHANTILLONAGES</b></h1>#}
-        {#                        <div class="card-tools">#}
-        {#                            <form method="get" action='{% url 'rechercherre' %}'>#}
-        {#                                <div class="input-group input-group-sm" style="width: 500px;">#}
+                {#            <div class="col-md-3">#}
+                {#                <div class="card">#}
+                {#                    <div class="card-header bg-gradient-dark">#}
+                {#                        <h1 class="card-title"><b>CARGAISON EN ATTENTE DE REQUISITION</b></h1>#}
+                {##}
+                {#                    </div>#}
+                {##}
+                {#                    <div class="card-body table-responsive p-0">#}
+                {#                        {% block content1 %}#}
+                {##}
+                {#                        {% endblock %}#}
+                {#                    </div>#}
+                {#                </div>#}
+                {#            </div>#}
+
+            </div>
+            {#        <div class="row">#}
+            {#            <div class="col-md-12">#}
+            {#                <div class="card">#}
+            {#                    <div class="card-header bg-gradient-red">#}
+            {#                        <h1 class="card-title"><b>TABLEAU DES RAPPORTS D'ECHANTILLONAGES</b></h1>#}
+            {#                        <div class="card-tools">#}
+            {#                            <form method="get" action='{% url 'rechercherre' %}'>#}
+            {#                                <div class="input-group input-group-sm" style="width: 500px;">#}
         {#                                    <input type="text" name="q" class="form-control float-right"#}
         {#                                           placeholder="SCANNER LE QRCODE ICI">#}
         {#                                    <div class="input-group-append">#}

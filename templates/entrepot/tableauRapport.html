@@ -8,14 +8,15 @@
 {% endblock %}
 
 <html>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>CGW | App</title>
-<!-- Tell the browser to be responsive to screen width -->
-<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>CGW | App</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
 <!-- Ionicons -->
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 
@@ -121,6 +122,7 @@
                                 <i class="nav-icon fas fa-truck-moving"></i>
                                 <p>
                                     ENREGISTREMENT
+                                    <i class="fas fa-save right"></i>
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
@@ -133,33 +135,14 @@
                         <li class="header">ENTREPOT</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
+                            <a href="{% url 'entrepot' %}" class="nav-link">
                                 <i class="nav-icon fas fa fa-industry"></i>
                                 <p>
                                     ENTREPOT
-                                    <i class="right fas fa-angle-left"></i>
+                                    <i class="right fas fa-truck"></i>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'entrepot' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>ECHANTILLONAGE</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'dechargement' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>DECHARGEMENT</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'tableaurapports' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>RAPPORTS</p>
-                                    </a>
-                                </li>
-                            </ul>
+
                         </li>
                     {% endif %}
 
@@ -228,42 +211,42 @@
                         <li class="header">HYDRO OCC</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
+                            <a href="{% url 'codification' %}" class="nav-link">
                                 <i class="nav-icon fas fa-building"></i>
                                 <p>
-                                    HYDRO OCC
-                                    <i class="fas fa-angle-left right"></i>
+                                    HYDRO
+                                    <i class="fas fa-trailer right"></i>
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
-
-                                <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REQUISITIONS</p>
-                                    </a>
-                                </li>
-
-                                {#                <li class="nav-item">#}
-                                {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
-                                {#                  <i class="far fa-circle nav-icon"></i>#}
-                                {#                  <p>GO</p>#}
-                                {#                </a>#}
-                                {#              </li>#}
-                                <li class="nav-item">
-                                    <a href="{% url 'gestionact' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>ACTs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'avarie' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AVARIES</p>
-                                    </a>
-                                </li>
-                            </ul>
+                            {#                            <ul class="nav nav-treeview">#}
+                            {##}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'codification' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>REQUISITIONS</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {##}
+                            {#                <li class="nav-item">#}
+                            {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
+                            {#                  <i class="far fa-circle nav-icon"></i>#}
+                            {#                  <p>GO</p>#}
+                            {#                </a>#}
+                            {#              </li>#}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'gestionact' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>ACTs</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                                <li class="nav-item">#}
+                            {#                                    <a href="{% url 'affichageNonConforme' %}" class="nav-link">#}
+                            {#                                        <i class="far fa-circle nav-icon"></i>#}
+                            {#                                        <p>AVARIES</p>#}
+                            {#                                    </a>#}
+                            {#                                </li>#}
+                            {#                            </ul>#}
                         </li>
                     {% endif %}
                     {% if role == 10 %}

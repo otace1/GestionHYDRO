@@ -7,7 +7,6 @@ from django.db.models import *
 # Numero de Dossier Annuel et unique
 def numDossier(pk, ville):
     d = Cargaison.objects.get(idcargaison=pk)
-    d = Cargaison.objects.get(idcargaison=pk)
     d = d.dateheurecargaison
     d = datetime.datetime.date(d)
     d = d.year

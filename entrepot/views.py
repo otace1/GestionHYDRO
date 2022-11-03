@@ -32,23 +32,25 @@ class GestionEchantillonage():
         form = Echantilloner(request.POST or None)
 
         if role == 3 or role == 1 or role == 9:
-            qs = Cargaison.objects.filter(etat="En attente requisition").filter(
-                entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+            # qs = Cargaison.objects.filter(etat="En attente requisition").filter(
+            #     entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
             qs1 = Cargaison.objects.filter(etat="En attente d'echantillonage", controlOrganoleptique=False).filter(
                 entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
             qs2 = Cargaison.objects.filter(entrepot__affectationentrepot__username_id=id).filter(
                 Q(rapechctrl=1) | Q(etat="Echantillonner")).order_by('-dateheurecargaison')
             table = EchantillonTable(qs1, prefix="1_")
-            table1 = CargaisonEnAttenteRequisition(qs, prefix="2_")
+            # table1 = CargaisonEnAttenteRequisition(qs, prefix="2_")
             table2 = RapportEchantillonage(qs2, prefix='3_')
-            RequestConfig(request, paginate={"per_page": 10}).configure(table)
-            RequestConfig(request, paginate={"per_page": 5}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 5}).configure(table)
+            # RequestConfig(request, paginate={"per_page": 5}).configure(table1)
             RequestConfig(request, paginate={"per_page": 5}).configure(table2)
 
             # #Compteur de la page principale de l'entrepot
-            n = Cargaison.objects.filter(
-                Q(etat='En attente requisition') | Q(tampon='0') | Q(etat="En attente d'echantillonage")).filter(
-                entrepot__affectationentrepot__username_id=id, dateheurecargaison__date=today).count()
+            # n = Cargaison.objects.filter(
+            #     Q(etat='En attente requisition') | Q(tampon='0') | Q(etat="En attente d'echantillonage")).filter(
+            #     entrepot__affectationentrepot__username_id=id, dateheurecargaison__date=today).count()
+            n = Cargaison.objects.filter(etat='En attente requisition',
+                                         entrepot__affectationentrepot__username_id=id).count()
             d = Cargaison.objects.filter(
                 Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
                 entrepot__affectationentrepot__username_id=id).count()
@@ -63,7 +65,7 @@ class GestionEchantillonage():
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
-                'cargaison1': table1,
+                # 'cargaison1': table1,
                 'cargaison2': table2,
                 'form': form,
                 'n': n,
@@ -90,15 +92,12 @@ class GestionEchantillonage():
                 Q(etat="En attente d'echantillonage") | Q(tampon='0') | Q(etat="En attente requisition")).filter(
                 entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
             table = EchantillonTable(qs, prefix="1_")
-            # table = EchantillonTable(Cargaison.objects.filter(Q(etat='En attente requisition')|Q(tampon='0')).filter(entrepot__affectationentrepot__username_id=id,
-            #                              dateheurecargaison__lte=today,
-            #                              dateheurecargaison__gt=today - datetime.timedelta(days=90)).order_by('-dateheurecargaison'))
             RequestConfig(request, paginate={"per_page": 12}).configure(table)
 
             # #Compteur de la page principale de l'entrepot
             n = Cargaison.objects.filter(
                 Q(etat='En attente requisition') | Q(tampon='0') | Q(etat="En attente d'echantillonage")).filter(
-                entrepot__affectationentrepot__username_id=id, dateheurecargaison__date=today).count()
+                entrepot__affectationentrepot__username_id=id).count()
 
             d = Cargaison.objects.filter(
                 Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
@@ -146,7 +145,7 @@ class GestionEchantillonage():
             # #Compteur de la page principale de l'entrepot
             n = Cargaison.objects.filter(
                 Q(etat='En attente requisition') | Q(tampon='0') | Q(etat="En attente d'echantillonage")).filter(
-                entrepot__affectationentrepot__username_id=id, dateheurecargaison__date=today).count()
+                entrepot__affectationentrepot__username_id=id).count()
 
             d = Cargaison.objects.filter(
                 Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
@@ -373,21 +372,21 @@ class GestionDechargement():
         user = request.user
         id = user.id
         role = user.role_id
-        affectation_entrepot = AffectationEntrepot.objects.get(username=id)
-        affectation_entrepot = affectation_entrepot.entrepot
+        # affectation_entrepot = AffectationEntrepot.objects.get(username=id)
+        # affectation_entrepot = affectation_entrepot.entrepot
         request.session['url'] = request.get_full_path()
         today = date.today()
 
         if role == 9:
             qs = Cargaison.objects.filter(Q(etat='Echantillonner'),
                                           Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3),
-                                          entrepot=affectation_entrepot).order_by(
+                                          entrepot__affectationentrepot__username_id=id).order_by(
                 '-dateheurecargaison')
             table = CargaisonDechargement2(qs, prefix='2_')
 
             qs1 = Dechargement.objects.filter(
                 idcargaison__idcargaison__idcargaison__idcargaison__etat='Cargaison dechargee',
-                idcargaison__idcargaison__idcargaison__idcargaison__entrepot=affectation_entrepot).order_by(
+                idcargaison__idcargaison__idcargaison__idcargaison__entrepot__affectationentrepot__username_id=id).order_by(
                 '-datedechargement')
             table1 = CargaisonDechargee(qs1, prefix='1_')
 
@@ -400,11 +399,12 @@ class GestionDechargement():
             if role == 3 or role == 1:
                 qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
                                               Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
-                                              entrepot=affectation_entrepot).order_by('-dateheurecargaison')
+                                              entrepot__affectationentrepot__username_id=id).order_by(
+                    '-dateheurecargaison')
                 table = CargaisonDechargement(qs, prefix='1_')
 
                 # affichage des tanker cabotteurs
-                qs1 = Cargaison.objects.filter(before=True, entrepot=affectation_entrepot).order_by(
+                qs1 = Cargaison.objects.filter(before=True, entrepot__affectationentrepot__username_id=id).order_by(
                     '-dateheurecargaison')
                 table1 = TankerCabotteur(qs1, prefix='2_')
 
@@ -2502,21 +2502,27 @@ def shoreupdateafter(request, pk):
 
 @login_required(login_url='login')
 def tableaurapports(request):
+    user = request.user.id
+
     template = 'tableauRapport.html'
 
     qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, i.dateinspection, a.nomimportateur ,c.immatriculation, p.nomproduit, SUM(co.gov) as GOV,SUM(co.mta) as MTA, SUM(co.mtv) as MTV, SUM(co.vcf) as VCF, SUM(co.gsv) as GSV \
-                                FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_inspection i, hydro_occ.enreg_importateur a, hydro_occ.enreg_produit p, hydro_occ.enreg_compartiment co \
+                                FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_inspection i, hydro_occ.enreg_importateur a, hydro_occ.enreg_produit p, hydro_occ.enreg_compartiment co, accounts_affectationentrepot v, hydro_occ.enreg_entrepot ee, hydro_occ.enreg_ville ev  \
                                 WHERE c.idcargaison = i.idcargaison_id \
                                 AND c.importateur_id = a.idimportateur \
                                 AND c.produit_id = p.idproduit \
                                 AND co.idinspection_id = i.idinspection \
                                 AND i.idcargaison_id = c.idcargaison \
-                                GROUP BY c.idcargaison')
+                                AND c.entrepot_id = ee.identrepot \
+                                AND v.entrepot_id = c.entrepot_id \
+                                AND v.username_id = %s \
+                                GROUP BY c.idcargaison \
+                                ORDER BY i.dateinspection DESC', [user, ])
     qs1 = Cargaison.objects.all()
     table = RapportInspectionCamion(qs, prefix='1_')
     table1 = RapportInspectionTanker(qs1, prefix='2_')
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table1)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table1)
 
     context = {
         'table': table,
@@ -2560,6 +2566,38 @@ def natureProduit(request, pk):
         return render(request, template, context)
 
 
+@login_required(login_url='login')
 def affichageProduitNonConforme(request):
-    template = ''
-    pass
+    user = request.user
+    role = user.role_id
+    id = user.id
+    template = 'affichageProduitNonConforme.html'
+
+    qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
+                                             idcargaison__entrepot__affectationentrepot__username_id=id)
+    qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
+                                              idcargaison__entrepot__affectationentrepot__username_id=id)
+
+    table = NonConformeOrganoleptique(qs, prefix='1')
+    table1 = NonConformeLaboratoire(qs1, prefix='2')
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 5}).configure(table1)
+    context = {
+        'table': table,
+        'table1': table1,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def affichageEnAttenteRequisition(request):
+    user = request.user
+    role = user.role_id
+    id = user.id
+    template = 'enAttenteRequisition.html'
+    qs = Cargaison.objects.filter(etat="En attente requisition").filter(
+        entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+    table = CargaisonEnAttenteRequisition(qs)
+    RequestConfig(request, paginate={"per_page": 5}).configure(table)
+    context = {'table': table}
+    return render(request, template, context)

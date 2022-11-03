@@ -43,14 +43,12 @@ class GestionCargaison():
         role = user.role_id
         id = user.id
         u = user.username
-        frontiere = AffectationVille.objects.get(username=id)
-        user = frontiere.username_id
         form = Ajoutcargaison()
         today = date.today()
         if role == 2:
             table = CargaisonTable(Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,
                                                                                             dateheurecargaison__year=today.year))
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             return render(request, 'cargaison/cargaison.html', {'cargaison': table,
                                                                 'form': form})
         else:
@@ -58,7 +56,7 @@ class GestionCargaison():
                 form = Ajoutcargaison()
                 table = CargaisonTable(
                     Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison'))
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
                 return render(request, 'cargaison/cargaison.html', {'cargaison': table,
                                                                     'form': form})
             else:

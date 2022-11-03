@@ -12,7 +12,7 @@ urlpatterns = [
     path('codecam/<int:pk>', views.codecam, name='codecam'),
 
     path('', views.GestionResultatLabo.affichagetableauresultat, name='laboresult'),
-    path('nonconforme/', views.GestionResultatLabo.affichagetableauavarie, name='avarie'),
+    path('affichageNonConforme/', views.GestionResultatLabo.affichageNonConforme, name='affichageNonConforme'),
 
     path('act/', views.GestionDecharger.gestionact, name='gestionact'),
     path('act/<int:pk>', views.GestionDecharger.printact, name='printact'),
@@ -21,8 +21,13 @@ urlpatterns = [
 
     path('go/<int:pk>', views.GestionDecharger.godechargement, name='go'),
 
+    path('enAttenteEchantillonnage/', views.enAttenteEchantillonnage, name='enAttenteEchantillonnage'),
+    path('enAttenteDechargement/', views.enAttenteDechargement, name='enAttenteDechargement'),
+    path('enAttenteResultatLabo/', views.enAttenteResultatLabo, name='enAttenteResultatLabo'),
+    path('rapportActivite/', views.rapportActivite, name='rapportActivite'),
+    path('rapportActiviteExport/', views.rapportActivite, name='rapportActiviteExport'),
+
     # path('delete/<int:pk>', views.GestionCodification.linedelete, name='delete'),
     # path('search/',views.GestionCodification.search,name='search'),
-
 
 ]

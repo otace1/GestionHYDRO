@@ -58,10 +58,14 @@ class EchantillonTable(tables.Table):
 
 
 class CargaisonEnAttenteRequisition(tables.Table):
-    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    dateheurecargaison = tables.Column(verbose_name="DATE ENTREE.")
     idcargaison = tables.Column(verbose_name='N.Enr.')
     declaration = tables.Column(verbose_name='N.DECL.')
-    immatriculation = tables.Column(verbose_name='IMMATR.')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION.')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    produit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL.DECL.(Cu.MTrs)')
 
     class Meta:
         attrs = {
@@ -70,13 +74,14 @@ class CargaisonEnAttenteRequisition(tables.Table):
         }
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['dateheurecargaison', 'immatriculation', 'declaration']
-        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        sequence = ['idcargaison', 'declaration', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume',
+                    'immatriculation']
+        exclude = ['valeurfacture', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport',
-                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids', 'volume',
+                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-                   'importateur', 'before', 'after', 'entrepot', 'produit', 'controlOrganoleptique']
+                   'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair'
+            , 'before', 'after', 'entrepot', 'controlOrganoleptique']
 
 
 class RapportEchantillonage(tables.Table):
@@ -250,19 +255,29 @@ class RapportInspectionTanker(tables.Table):
 
 
 class NonConformeOrganoleptique(tables.Table):
-    numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.")
-    importateur = tables.Column(verbose_name="FOURNISSEUR")
-    entrepot = tables.Column(verbose_name="ENTREPOT")
-    produit = tables.Column(verbose_name="PRODUIT DECL.")
-    natureconstatee = tables.Column(verbose_name="PRODUIT CONST.", attrs={"td": {"bgcolor": "red"}})
+    idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+    natureProduitEntrepot__nomproduit = tables.Column(verbose_name="PRODUIT CONST.", attrs={"td": {"bgcolor": "red"}})
+
     # volume = tables.Column(verbose_name="VOLUME DECL.")
+    class Meta:
+        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        template_name = "django_tables2/bootstrap4.html"
 
 
 class NonConformeLaboratoire(tables.Table):
-    numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.")
-    importateur = tables.Column(verbose_name="FOURNISSEUR")
-    entrepot = tables.Column(verbose_name="ENTREPOT")
-    produit = tables.Column(verbose_name="PRODUIT")
-    volume = tables.Column(verbose_name="VOLUME DECL.")
+    idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+
+    # volume = tables.Column(verbose_name="VOLUME DECL.")
+    class Meta:
+        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        template_name = "django_tables2/bootstrap4.html"

@@ -323,17 +323,17 @@
               <li class="nav-item">
                 <a href="{%url 'laboresult'%}" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion des Go</p>
+                    <p>Gestion des Go</p>
                 </a>
               </li>
-               <li class="nav-item">
-                <a href="{%url 'gestionact'%}" class="nav-link">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Gestion des ACT</p>
-                </a>
-               </li>
                 <li class="nav-item">
-                    <a href="{% url 'avarie' %}" class="nav-link">
+                    <a href="{% url 'gestionact' %}" class="nav-link">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Gestion des ACT</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'affichageNonConforme' %}" class="nav-link">
                         <i class="far fa-circle nav-icon"></i>
                         <p>Gestion des Avariés</p>
                     </a>

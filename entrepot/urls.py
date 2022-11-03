@@ -65,5 +65,7 @@ urlpatterns = [
     path('nature/<int:pk>', views.natureProduit, name='natureProduit'),
 
     path('nonconforme/', views.affichageProduitNonConforme, name='affichageProduitNonConforme'),  # Non conforme
+    path('affichageEnAttenteRequisition/', views.affichageEnAttenteRequisition, name='affichageEnAttenteRequisition'),
+    # En attente de requisition
 
 ]

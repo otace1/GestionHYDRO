@@ -39,7 +39,7 @@ B2 = """
 
 A3 = """
     
-    <a href="{%url 'update' record.pk%}" class="btn btn-success">AUTORISE POUR LE CONTROLE</a>
+    <a href="{%url 'update' record.pk%}" class="btn btn-success">AUTORISER</a>
     
 """
 
@@ -68,6 +68,7 @@ class CodificationTable(tables.Table):
     importateur = tables.Column(verbose_name='FOURNISSEUR')
     entrepot = tables.Column(verbose_name='ENTREPOT')
     produit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOLUME')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     declaration = tables.Column(verbose_name='N°DECLARATION')
 
@@ -157,6 +158,61 @@ class NonConformeLaboratoire(tables.Table):
     idcargaison__produit = tables.Column(verbose_name="PRODUIT")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
     # volume = tables.Column(verbose_name="VOLUME DECL.")
+
+
+class EnAttenteEchantillonage(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOS")
+    declaration = tables.Column(verbose_name="#.DECL.")
+    importateur = tables.Column(verbose_name="FOURNISSEUR")
+    entrepot = tables.Column(verbose_name="ENTREPOT")
+    produit = tables.Column(verbose_name="PRODUIT")
+    immatriculation = tables.Column(verbose_name="IMMAT.")
+    requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "red"}})
+
+
+class EnAttenteDechargement(tables.Table):
+    idcargaison__idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    idcargaison__idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__idcargaison__idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+    idcargaison__idcargaison__idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
+    idcargaison__idcargaison__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    idcargaison__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+    dateanalyse = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "red"}})
+
+
+class EnAttenteResultatLabo(tables.Table):
+    idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+    idcargaison__idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
+    idcargaison__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "red"}})
+
+
+class RapportActivite(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOS")
+    declaration = tables.Column(verbose_name="#.DECL.")
+    nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    nomville = tables.Column(verbose_name="FRONTIERE")
+    entrepot = tables.Column(verbose_name="ENTREPOT")
+    produit = tables.Column(verbose_name="PRODUIT")
+    immatriculation = tables.Column(verbose_name="IMMAT.")
+    dateheurecargaison = tables.Column(verbose_name="DATE D'ENT.", attrs={"td": {"bgcolor": "yellow"}})
+    requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "yellow"}})
+    dateechantillonage = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
+    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
+    dateanalyse = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
+    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}},
+                                   accessor='Inspection.idcargaison.dateinspection')
+    volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
+    volConst = tables.Column(verbose_name="VOL.CONST", attrs={"td": {"bgcolor": "red"}})
+    gsvT = tables.Column(verbose_name='GSV', attrs={"td": {"bgcolor": "green"}})
 
 
 class Act(tables.Table):
