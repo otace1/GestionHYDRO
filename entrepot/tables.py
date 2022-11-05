@@ -1,5 +1,8 @@
 import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, Dechargement
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+
 
 # TEMPLATE = """
 #             <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>
@@ -28,6 +31,10 @@ TEMPLATE3 = """
 
 TEMPLATE5 = """
     <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">AFFICHAGE</a>
+            """
+
+A = """
+    <a href="{%url 'correctionNonConformite' record.pk%}" class="btn btn-danger">CORRECTION</a>
             """
 
 
@@ -262,11 +269,19 @@ class NonConformeOrganoleptique(tables.Table):
     idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
     natureProduitEntrepot__nomproduit = tables.Column(verbose_name="PRODUIT CONST.", attrs={"td": {"bgcolor": "red"}})
+    action = tables.TemplateColumn(A, verbose_name='')
+    #
+    # def render_button(self, record):
+    #     e = Entrepot_echantillon.objects.get(idcargaison=record.id)
+    #     if e.useredit == 'cedric':
+    #         url = reverse("correctionNonConformite", args=(record.id,))
+    #         return mark_safe(f'<a href="{url}" class="btn btn-danger">CORRECTION {record.id}</a>')
+    #     return mark_safe("")
 
-    # volume = tables.Column(verbose_name="VOLUME DECL.")
-    class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
+    # # volume = tables.Column(verbose_name="VOLUME DECL.")
+    # class Meta:
+    #     attrs = {"class": "table table-hover text-nowrap table-striped"}
+    #     template_name = "django_tables2/bootstrap4.html"
 
 
 class NonConformeLaboratoire(tables.Table):

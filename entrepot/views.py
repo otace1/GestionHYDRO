@@ -58,9 +58,7 @@ class GestionEchantillonage():
             o = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(etat='Conforme aux exigences'),
                                          entrepot__affectationentrepot__username_id=id).count()
 
-            x = Entrepot_echantillon.objects.filter(
-                Q(nonConformiteProduit=True) | Q(idcargaison__controlOrganoleptique=True),
-                idcargaison__entrepot__affectationentrepot__username_id=id).count()
+            x = Entrepot_echantillon.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id).count()
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
@@ -660,10 +658,11 @@ def echantillonage(request, pk):
     role = user.role_id
 
     # Getting current Year & Month
-    today = date.today()
+    today = datetime.datetime.now()
     template = 'form.html'
     form = Echantilloner()
     pk = pk
+
     if request.method == 'POST':
         formSave = Echantilloner(request.POST)
         if formSave.is_valid():
@@ -671,7 +670,6 @@ def echantillonage(request, pk):
             methodeutilisee = formSave.cleaned_data['methodeutilisee']
             qte = formSave.cleaned_data['qte']
 
-        # Pour toute les villes sans Labo
         if role == 9:
             c = Cargaison.objects.get(idcargaison=pk)
             ville = c.entrepot.ville
@@ -683,6 +681,7 @@ def echantillonage(request, pk):
             c.save(update_fields=['etat', 'rapechctrl'])
 
             e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
+                                     dateechantillonage=today,
                                      methodeutilisee=methodeutilisee, qte=qte)
             e.save()
 
@@ -701,6 +700,7 @@ def echantillonage(request, pk):
 
             # Generer le rapport d'echantillonage
             template = 'rapportechantillonage.html'
+
             e = Entrepot_echantillon.objects.get(idcargaison=pk)
             entrepot = c.entrepot
             dateechantillonage = e.dateechantillonage
@@ -751,7 +751,7 @@ def echantillonage(request, pk):
             c.save(update_fields=['etat', 'rapechctrl'])
 
             e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
-                                     methodeutilisee=methodeutilisee, qte=qte)
+                                     methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
             e.save()
 
             # Generer le rapport d'echantillonage
@@ -2547,7 +2547,7 @@ def natureProduit(request, pk):
             # addition = produit + cargaison.produit.idproduit #For test purpose
             # print(addition)
             if int(produit) == int(cargaison.produit.idproduit):
-                print('Inside the Test')
+                # print('Inside the Test')
                 return redirect('echantillonage', pk=pk)
             else:
                 idcargaison = cargaison
@@ -2555,6 +2555,7 @@ def natureProduit(request, pk):
                 conformiteProduit = 1
                 cargaison.controlOrganoleptique = 1
                 cargaison.save(update_fields=['controlOrganoleptique'])
+
                 a = Entrepot_echantillon(idcargaison=idcargaison, natureProduitEntrepot=produit,
                                          nonConformiteProduit=conformiteProduit)
                 a.save()
@@ -2598,3 +2599,30 @@ def affichageEnAttenteRequisition(request):
     RequestConfig(request, paginate={"per_page": 5}).configure(table)
     context = {'table':table}
     return render(request,template,context)
+
+
+@login_required(login_url='login')
+def correctionNonConformite(request,pk):
+    user = request.user
+    c = Cargaison.objects.get(idcargaison=pk)
+    e = Entrepot_echantillon.objects.get(idcargaison=pk)
+    p = Produit.objects.get(nomproduit=e.natureProduitEntrepot)
+
+    #Update Declared Product
+    c.produit = p
+    c.controlOrganoleptique = False
+    c.save(update_fields=['produit','controlOrganoleptique'])
+
+    #Update details on Echnatillon_Table
+    e.nonConformiteProduit = False
+    e.changementNatureControl = True   #Controle du changement de Nature
+    e.useredit = user.username
+    e.save(update_fields=['nonConformiteProduit','changementNatureControl','useredit'])
+
+    return redirect('entrepot')
+
+
+
+
+
+

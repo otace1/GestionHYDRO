@@ -130,7 +130,7 @@ class Cargaison(models.Model):
     frontiere = models.ForeignKey(Ville, on_delete=models.PROTECT, verbose_name='Frontiere')
     provenance = CountryField(blank_label='(Selectionner le pays)', verbose_name='Provenance')
     entrepot = models.ForeignKey(Entrepot, on_delete=models.PROTECT, verbose_name='Entrepot')
-    poids = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Poids')
+    # poids = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Poids')
     volume = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Volume')
     immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation')
     dateheurecargaison = models.DateTimeField(auto_now_add=True, verbose_name='Date et heure')
@@ -186,11 +186,6 @@ class Entrepot_echantillon(models.Model):
     idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT, primary_key=True)
     numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage", blank=True, null=True)
     numrappechauto = models.IntegerField(blank=True, null=True, verbose_name="Num. RE")
-    # numplombh = models.CharField(max_length=256, verbose_name="Numero Plomb H", blank=True)
-    # numplombb = models.CharField(max_length=256, blank=True)
-    # numplombbr = models.CharField(max_length=256, blank=True)
-    # numplombaph = models.CharField(max_length=256, blank=True)
-    # etatphysique = models.CharField(max_length=256, blank=True)
     qte = models.CharField(max_length=256, blank=True, null=True)
     conformite = models.CharField(max_length=256, blank=True)
     dateechantillonage = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -198,17 +193,13 @@ class Entrepot_echantillon(models.Model):
     matricule = models.CharField(max_length=256, blank=True)
     methodeutilisee = models.CharField(max_length=256, blank=True)
 
-    # Controle de conformite a l'entrepot
-    nonConformiteProduit = models.BooleanField(default=0)
-    natureProduitEntrepot = models.ForeignKey(Produit, on_delete=models.PROTECT, blank=True, null=True)
-
 
 class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.PROTECT, primary_key=True)
     numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True)
-    # codelabo = models.CharField(max_length=256, verbose_name="Code Labo ")
     codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ")
     datereceptionlabo = models.DateField(verbose_name="Date reception")
+
 
     def get_absolute_url(self):
         return reverse('reception', kwargs={'pk': self.idcargaison})
@@ -514,3 +505,6 @@ class ShoreAfter(models.Model):
 
     def natural_key(self):
         return self.my_natural_key
+
+
+

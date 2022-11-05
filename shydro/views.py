@@ -58,7 +58,7 @@ class GestionCodification():
                 e = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=id).count()
                 d = Cargaison.objects.filter(etat="Conforme aux exigences",entrepot__ville__affectationville__username_id=id).count()
                 l = Cargaison.objects.filter(etat="Analyse Labo en cours",entrepot__ville__affectationville__username_id=id).count()
-                n = Entrepot_echantillon.objects.filter(Q(nonConformiteProduit=True)|Q(idcargaison__etat="Non conforme aux exigences"), idcargaison__entrepot__ville__affectationville__username_id=id).count()
+                n = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences", idcargaison__entrepot__ville__affectationville__username_id=id).count()
 
                 table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
