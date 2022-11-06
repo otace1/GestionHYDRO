@@ -2926,9 +2926,9 @@ def echantAnalyse(request):
 
 @login_required(login_url='login')
 def natureProduitLabo(request, pk):
+    user = request.user.id
     template = 'natureProduitLaboratoire.html'
     cargaison = Cargaison.objects.get(idcargaison=pk)
-    echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
     form = NatureProduitLaboratoire(request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
@@ -2936,15 +2936,17 @@ def natureProduitLabo(request, pk):
             if int(produit) == int(cargaison.produit.idproduit):
                 return redirect('reception', pk=pk)
             else:
-                # idcargaison = cargaison
-                produit = produit
                 produit = Produit.objects.get(idproduit=produit)
-                cargaison.controlOrganoleptique = 1
-                cargaison.save(update_fields=['controlOrganoleptique'])
-                echantillon.nonConformiteProduit = 1
-                echantillon.natureProduitEntrepot = produit
-                echantillon.save(update_fields=['nonConformiteProduit', 'natureProduitEntrepot'])
-                return redirect('labo')
+                try:
+                    c = ControlNatureProduit.objects.get(idcargaison=pk)
+                    c.natureProduitLabo = produit.nomproduit
+                    c.userLabo = user
+                    c.save(update_fields=['natureProduitLabo','userLabo'])
+                    return redirect('reception', pk=pk)
+                except:
+                    c = ControlNatureProduit(idcargaison=cargaison,natureProduitLabo=produit.nomproduit,userLabo=user)
+                    c.save()
+                    return redirect('reception', pk=pk)
     else:
         context = {'form': form}
         return render(request, template, context)

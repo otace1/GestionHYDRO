@@ -152,15 +152,16 @@ class TableauEchantillonRecu(tables.Table):
 class AffichageAnalyse(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="Numéro de RE")
-    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='Nature produit')
+    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='Produit DECL.')
     datereceptionlabo = tables.Column(verbose_name='Date de réception')
+    natureProduitLabo = tables.Column(verbose_name='Produit CONST.')
     numcertificatqualite = tables.Column(verbose_name='Numéro CQ Attribué')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit']
+        sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit','natureProduitLabo']
         exclude = ['numcertificatqualite', 'idcargaison']
 
 

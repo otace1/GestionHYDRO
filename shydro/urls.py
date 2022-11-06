@@ -29,5 +29,8 @@ urlpatterns = [
 
     # path('delete/<int:pk>', views.GestionCodification.linedelete, name='delete'),
     # path('search/',views.GestionCodification.search,name='search'),
+    # Correction de la non conformite declarative
+    # path('correctionNonConformite/<int:pk>', views.correctionNonConformite, name='correctionNatureProduit'),
+    # Non conforme
 
 ]

@@ -69,6 +69,6 @@ urlpatterns = [
     # En attente de requisition
 
     #Correction de la non conformite declarative
-    path('correctionNonConformite/<int:pk>', views.correctionNonConformite, name='correctionNonConformite'),  # Non conforme
+    path('correctionNonConformite/<int:pk>', views.correctionNonConformite, name='correctionConformiteProduit'),  # Non conforme
 
 ]

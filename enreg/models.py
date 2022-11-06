@@ -507,4 +507,16 @@ class ShoreAfter(models.Model):
         return self.my_natural_key
 
 
+class ControlNatureProduit(models.Model):
+    idcontrol = models.AutoField(primary_key=True,auto_created=True)
+    idcargaison = models.ForeignKey(Cargaison,on_delete=models.PROTECT, blank=True, null=True)
+    natureProduitEntrepot = models.CharField(max_length=20,blank=True, null=True)
+    natureProduitLabo = models.CharField(max_length=20,blank=True, null=True)
+    userEntrepot = models.IntegerField(blank=True,null=True)
+    userLabo = models.IntegerField(blank=True, null=True)
+    conformiteProduit = models.BooleanField(default=True)
+    correctionNature = models.CharField(max_length=20,blank=True,null=True)
+    userHydro = models.IntegerField(blank=True,null=True)
+    timestamp = models.DateTimeField(auto_now=True, blank=True, null=True)
+
 

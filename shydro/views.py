@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, HttpResponse
-from enreg.models import Cargaison, Ville, Voie, Entrepot, Importateur, Produit, Dechargement, Entrepot_echantillon, \
-    Resultat, LaboReception
+from enreg.models import *
 from accounts.models import *
 from .tables import *
 from .forms import CodificationHydro
@@ -58,7 +57,8 @@ class GestionCodification():
                 e = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=id).count()
                 d = Cargaison.objects.filter(etat="Conforme aux exigences",entrepot__ville__affectationville__username_id=id).count()
                 l = Cargaison.objects.filter(etat="Analyse Labo en cours",entrepot__ville__affectationville__username_id=id).count()
-                n = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences", idcargaison__entrepot__ville__affectationville__username_id=id).count()
+                n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
+                                                        conformiteProduit=False).count()
 
                 table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
@@ -185,18 +185,17 @@ class GestionResultatLabo():
     def affichageNonConforme(request):
         user = request.user
         id = user.id
-        try:
-            ville = AffectationVille.objects.get(username=id)
-        except:
-            template = 'error.html'
-            context = {}
-            return render(request, template, context)
+        # try:
+        #     ville = AffectationVille.objects.get(username=id)
+        # except:
+        #     template = 'error.html'
+        #     context = {}
+        #     return render(request, template, context)
         role = user.role_id
         if role == 7 or role == 1:
-            qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
-                                                     idcargaison__entrepot__ville=ville.ville_id)
+            qs = ControlNatureProduit.objects.filter(idcargaison__entrepot__ville__affectationville__username=id, conformiteProduit=False)
             qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
-                                                      idcargaison__entrepot__ville=ville.ville_id)
+                                                      idcargaison__entrepot__ville__affectationville__username=id)
 
             table = NonConformeOrganoleptique(qs)
             table1 = NonConformeLaboratoire(qs1)
@@ -574,6 +573,21 @@ def rapportActivite(request):
     return render(request,template,context)
 
 
+#
+# @login_required(login_url='login')
+# def correctionNonConformite(request,pk):
+#     user = request.user.id
+#     c = Cargaison.objects.get(idcargaison=pk)
+#     e = Entrepot_echantillon.objects.get(idcargaison=pk)
+#     p = Produit.objects.get(nomproduit=e.natureProduitEntrepot)
+#
+#     #Update Product Name Correction
+#     x = ControlNatureProduit.objects.get(idcargaison=pk)
+#     x.correctionNature = x.natureProduitEntrepot
+#     x.userHydro = user
+#     x.save(update_fields=['correctionNature','userHydro'])
+#     return redirect('codification')
+#
 
 
 

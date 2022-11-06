@@ -34,20 +34,20 @@ TEMPLATE5 = """
             """
 
 A = """
-    <a href="{%url 'correctionNonConformite' record.pk%}" class="btn btn-danger">CORRECTION</a>
+    <a href="{%url 'correctionConformiteProduit' record.pk%}" class="btn btn-danger">CORRECTION</a>
             """
 
 
 class EchantillonTable(tables.Table):
-    Echantilloner = tables.TemplateColumn(TEMPLATE, verbose_name='')
-    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit = tables.Column(verbose_name='PRODUIT')
-    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    numreq = tables.Column(verbose_name='REF.REQ.')
-    numdos = tables.Column(verbose_name='NUM.DOSSIER')
-    idcargaison = tables.Column(verbose_name='N.ENR.')
-    declaration = tables.Column(verbose_name='N.DECL.')
+    idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    idcargaison__importateur = tables.Column(verbose_name='FOURNISSEUR')
+    idcargaison__produit = tables.Column(verbose_name='PRODUIT')
+    idcargaison__immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    idcargaison__numreq = tables.Column(verbose_name='REF.REQ.')
+    idcargaison__numdos = tables.Column(verbose_name='NUM.DOSSIER')
+    idcargaison__idcargaison = tables.Column(verbose_name='N.ENR.')
+    idcargaison__declaration = tables.Column(verbose_name='N.DECL.')
+    echantilloner = tables.TemplateColumn(TEMPLATE, verbose_name='')
 
     class Meta:
         attrs = {
@@ -55,13 +55,13 @@ class EchantillonTable(tables.Table):
             "id": "example2"
         }
         template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numdos', 'declaration']
-        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport', 'entrepot', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-                   'requisitiondackdate', 'voie', 'provenance', 'poids', 'numreq',
-                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'volume', 'controlOrganoleptique']
+        # model = Cargaison
+        # sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numdos', 'declaration']
+        # exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        #            'typeunitetransport', 'entrepot', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
+        #            'requisitiondackdate', 'voie', 'provenance', 'poids', 'numreq',
+        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+        #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'volume', 'controlOrganoleptique']
 
 
 class CargaisonEnAttenteRequisition(tables.Table):
@@ -247,6 +247,13 @@ class RapportInspectionCamion(tables.Table):
     GSV = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
 
 class RapportInspectionTanker(tables.Table):
     dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
@@ -260,28 +267,33 @@ class RapportInspectionTanker(tables.Table):
     GSV = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
 
 class NonConformeOrganoleptique(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
-    idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
-    natureProduitEntrepot__nomproduit = tables.Column(verbose_name="PRODUIT CONST.", attrs={"td": {"bgcolor": "red"}})
+    idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
+    natureProduitEntrepot = tables.Column(verbose_name="PRODUIT CONST. ENTREPOT", attrs={"td": {"bgcolor": "red"}})
+    natureProduitLabo = tables.Column(verbose_name="PRODUIT CONST. LABORATOIRE", attrs={"td": {"bgcolor": "green"}})
     action = tables.TemplateColumn(A, verbose_name='')
-    #
-    # def render_button(self, record):
-    #     e = Entrepot_echantillon.objects.get(idcargaison=record.id)
-    #     if e.useredit == 'cedric':
-    #         url = reverse("correctionNonConformite", args=(record.id,))
-    #         return mark_safe(f'<a href="{url}" class="btn btn-danger">CORRECTION {record.id}</a>')
-    #     return mark_safe("")
 
-    # # volume = tables.Column(verbose_name="VOLUME DECL.")
-    # class Meta:
-    #     attrs = {"class": "table table-hover text-nowrap table-striped"}
-    #     template_name = "django_tables2/bootstrap4.html"
+
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
 
 
 class NonConformeLaboratoire(tables.Table):
@@ -294,5 +306,9 @@ class NonConformeLaboratoire(tables.Table):
 
     # volume = tables.Column(verbose_name="VOLUME DECL.")
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
         template_name = "django_tables2/bootstrap4.html"
+

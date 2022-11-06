@@ -32,10 +32,7 @@ class GestionEchantillonage():
         form = Echantilloner(request.POST or None)
 
         if role == 3 or role == 1 or role == 9:
-            # qs = Cargaison.objects.filter(etat="En attente requisition").filter(
-            #     entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
-            qs1 = Cargaison.objects.filter(etat="En attente d'echantillonage", controlOrganoleptique=False).filter(
-                entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+            qs1 = ControlNatureProduit.objects.filter(Q(idcargaison__etat="En attente d'echantillonage", idcargaison__entrepot__affectationentrepot__username_id=id) | Q(conformiteProduit=True)).order_by('-timestamp')
             qs2 = Cargaison.objects.filter(entrepot__affectationentrepot__username_id=id).filter(
                 Q(rapechctrl=1) | Q(etat="Echantillonner")).order_by('-dateheurecargaison')
             table = EchantillonTable(qs1, prefix="1_")
@@ -58,7 +55,9 @@ class GestionEchantillonage():
             o = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(etat='Conforme aux exigences'),
                                          entrepot__affectationentrepot__username_id=id).count()
 
-            x = Entrepot_echantillon.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id).count()
+            # x = Entrepot_echantillon.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id, idcargaison__controlnatureproduit__conformiteProduit = False).count()
+
+            x= ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,conformiteProduit=False).count()
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
@@ -2535,6 +2534,7 @@ def tableaurapports(request):
 
 @login_required(login_url='login')
 def natureProduit(request, pk):
+    user = request.user.id
     template = 'natureProduit.html'
     cargaison = Cargaison.objects.get(idcargaison=pk)
     form = NatureProduit(request.POST or None)
@@ -2542,23 +2542,13 @@ def natureProduit(request, pk):
     if request.method == 'POST':
         if form.is_valid():
             produit = request.POST['produit']
-            # print(produit)
-            # print(cargaison.produit.idproduit)
-            # addition = produit + cargaison.produit.idproduit #For test purpose
-            # print(addition)
             if int(produit) == int(cargaison.produit.idproduit):
-                # print('Inside the Test')
+                c = ControlNatureProduit(idcargaison=cargaison,natureProduitEntrepot=produit.nomproduit,userEntrepot=user, conformiteProduit=True)
                 return redirect('echantillonage', pk=pk)
             else:
-                idcargaison = cargaison
                 produit = Produit.objects.get(idproduit=produit)
-                conformiteProduit = 1
-                cargaison.controlOrganoleptique = 1
-                cargaison.save(update_fields=['controlOrganoleptique'])
-
-                a = Entrepot_echantillon(idcargaison=idcargaison, natureProduitEntrepot=produit,
-                                         nonConformiteProduit=conformiteProduit)
-                a.save()
+                c = ControlNatureProduit(idcargaison=cargaison,natureProduitEntrepot=produit.nomproduit,userEntrepot=user, conformiteProduit=False)
+                c.save()
                 return redirect('entrepot')
     else:
         context = {'form': form}
@@ -2572,8 +2562,7 @@ def affichageProduitNonConforme(request):
     id = user.id
     template = 'affichageProduitNonConforme.html'
 
-    qs = Entrepot_echantillon.objects.filter(nonConformiteProduit=True,
-                                             idcargaison__entrepot__affectationentrepot__username_id=id)
+    qs = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,conformiteProduit=False)
     qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
                                               idcargaison__entrepot__affectationentrepot__username_id=id)
 
@@ -2603,22 +2592,13 @@ def affichageEnAttenteRequisition(request):
 
 @login_required(login_url='login')
 def correctionNonConformite(request,pk):
-    user = request.user
-    c = Cargaison.objects.get(idcargaison=pk)
-    e = Entrepot_echantillon.objects.get(idcargaison=pk)
-    p = Produit.objects.get(nomproduit=e.natureProduitEntrepot)
-
-    #Update Declared Product
-    c.produit = p
-    c.controlOrganoleptique = False
-    c.save(update_fields=['produit','controlOrganoleptique'])
-
-    #Update details on Echnatillon_Table
-    e.nonConformiteProduit = False
-    e.changementNatureControl = True   #Controle du changement de Nature
-    e.useredit = user.username
-    e.save(update_fields=['nonConformiteProduit','changementNatureControl','useredit'])
-
+    user = request.user.id
+    # Update Product Name Correction
+    x = ControlNatureProduit.objects.get(idcontrol=pk)
+    x.correctionNature = x.natureProduitEntrepot
+    x.userEntrepot = user
+    x.conformiteProduit = True
+    x.save(update_fields=['correctionNature', 'userEntrepot','conformiteProduit'])
     return redirect('entrepot')
 
 
