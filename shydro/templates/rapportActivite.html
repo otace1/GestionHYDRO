@@ -1,7 +1,15 @@
 {% extends 'shydro/rapportActivite.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
+{% load crispy_forms_tags %}
 {% load django_tables2 %}
+
+
+{% block search %}
+    <form action="" method="POST" title="Filter">
+    {% csrf_token %}
+        {% crispy form %}
+    </form>
+{% endblock %}
+
 
 
 {% block export %}

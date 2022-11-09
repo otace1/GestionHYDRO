@@ -1,9 +1,10 @@
 from django import forms
 from crispy_forms.helper import FormHelper, Layout
-from crispy_forms.layout import Submit,Row, Reset, Column, Fieldset
-from crispy_forms.bootstrap import Field, InlineField, FormActions,StrictButton
+from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
+from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton, Div
 from django_countries.fields import CountryField
 from enreg.models import Cargaison, Entrepot_echantillon
+from bootstrap_datepicker_plus.widgets import DatePickerInput
 
 class CodificationHydro(forms.Form):
     numdossier = forms.CharField(label="Numero du dossier :", required=True)
@@ -29,3 +30,26 @@ class CodificationHydro(forms.Form):
             ),
 
  )
+
+class SearchByDate(forms.Form):
+    start_date = forms.DateField(widget=DatePickerInput, required=False, label='DATE DEBUT')
+    end_date = forms.DateField(widget=DatePickerInput, required=False, label='DATE FIN')
+
+    def __init__(self, *args, **kwargs):
+        super(SearchByDate, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'POST'
+        self.helper.form_show_labels = True
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_show_errors = True
+        self.helper.label_class = 'col-md-12'
+        self.helper.field_class = 'col-md-12'
+        self.helper.layout = Layout(
+            Div(
+                Field('start_date', css_class='form-group col-sm-2'),
+                Field('end_date', css_class='form-group col-sm-2'),
+            ),
+            FormActions(
+                Submit('Search', 'Search', css_class='btn-success'),
+            )
+        )

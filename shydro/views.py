@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, HttpResponse
 from enreg.models import *
 from accounts.models import *
 from .tables import *
-from .forms import CodificationHydro
+from .forms import *
 from django.contrib.auth.decorators import login_required
 from shydro.utils import render_to_pdf
 from django_tables2.paginators import LazyPaginator
@@ -545,21 +545,32 @@ def enAttenteResultatLabo(request):
 def rapportActivite(request):
     user = request.user.id
     template = 'rapportActivite.html'
-    # qs = LaboReception.objects.filter(idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    form = SearchByDate(request.POST or None)
+
+    # qs = Cargaison.objects.select_related('entrepot_echantillon').filter(entrepot__ville__affectationville__username_id=user)
     qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_inspection i, hydro_occ.enreg_importateur a, hydro_occ.enreg_produit p, hydro_occ.enreg_compartiment co, hydro_occ.enreg_entrepot_echantillon e , hydro_occ.enreg_laboreception l, hydro_occ.enreg_resultat r, accounts_affectationville v, hydro_occ.enreg_entrepot ee, hydro_occ.enreg_ville ev \
-                                WHERE c.idcargaison = i.idcargaison_id \
-                                AND a.idimportateur  = c.importateur_id \
-                                AND c.produit_id = p.idproduit \
-                                AND i.idcargaison_id = c.idcargaison \
-                                AND e.idcargaison_id = c.idcargaison \
-                                AND l.idcargaison_id = c.idcargaison \
-                                AND r.idcargaison_id = c.idcargaison \
-                                AND co.idinspection_id = i.idinspection \
-                                AND c.entrepot_id = ee.identrepot \
-                                AND c.frontiere_id = ev.idville \
-                                AND v.ville_id = ee.ville_id \
-                                AND v.username_id = %s \
+                                FROM enreg_cargaison c \
+                                    LEFT JOIN enreg_entrepot_echantillon e \
+                                    ON c.idcargaison = e.idcargaison_id \
+                                    LEFT JOIN enreg_laboreception l \
+                                    ON e.idcargaison_id = l.idcargaison_id \
+                                    LEFT JOIN enreg_resultat r \
+                                    ON l.idcargaison_id = r.idcargaison_id \
+                                    LEFT JOIN enreg_inspection i \
+                                    ON i.idcargaison_id = c.idcargaison \
+                                    LEFT JOIN enreg_compartiment co \
+                                    ON co.idinspection_id = i.idinspection \
+                                    LEFT JOIN enreg_produit p \
+                                    ON p.idproduit = c.produit_id \
+                                    LEFT JOIN enreg_importateur a \
+                                    ON a.idimportateur = c.importateur_id \
+                                    LEFT JOIN enreg_entrepot ee \
+                                    ON ee.identrepot = c.entrepot_id \
+                                    LEFT JOIN enreg_ville ev \
+                                    ON ev.idville = ee.ville_id \
+                                    LEFT JOIN accounts_affectationville v \
+                                    ON v.ville_id = ev.idville \
+                                WHERE v.username_id= %s \
                                 GROUP BY c.idcargaison \
                                 ORDER BY i.dateinspection DESC',[user,])
     table = RapportActivite(qs)
@@ -569,7 +580,10 @@ def rapportActivite(request):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
 
-    context = {'table':table}
+    context = {
+        'table':table,
+        'form':form
+        }
     return render(request,template,context)
 
 

@@ -149,6 +149,15 @@ class NonConformeOrganoleptique(tables.Table):
     natureProduitEntrepot__nomproduit = tables.Column(verbose_name="PRODUIT CONST.", attrs={"td": {"bgcolor": "red"}})
     # volume = tables.Column(verbose_name="VOLUME DECL.")
 
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
+
+
 
 class NonConformeLaboratoire(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
@@ -159,6 +168,15 @@ class NonConformeLaboratoire(tables.Table):
     idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
     # volume = tables.Column(verbose_name="VOLUME DECL.")
 
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
+
+
 
 class EnAttenteEchantillonage(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
@@ -168,6 +186,16 @@ class EnAttenteEchantillonage(tables.Table):
     produit = tables.Column(verbose_name="PRODUIT")
     immatriculation = tables.Column(verbose_name="IMMAT.")
     requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "red"}})
+
+
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
+
 
 
 class EnAttenteDechargement(tables.Table):
@@ -182,6 +210,15 @@ class EnAttenteDechargement(tables.Table):
     idcargaison__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
     dateanalyse = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "red"}})
 
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
+
+
 
 class EnAttenteResultatLabo(tables.Table):
     idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
@@ -195,11 +232,21 @@ class EnAttenteResultatLabo(tables.Table):
     datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "red"}})
 
 
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
+
+
+
 class RapportActivite(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
     declaration = tables.Column(verbose_name="#.DECL.")
-    nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
-    nomville = tables.Column(verbose_name="FRONTIERE")
+    importateur = tables.Column(verbose_name="FOURNISSEUR")
+    frontiere = tables.Column(verbose_name="FRONTIERE")
     entrepot = tables.Column(verbose_name="ENTREPOT")
     produit = tables.Column(verbose_name="PRODUIT")
     immatriculation = tables.Column(verbose_name="IMMAT.")
@@ -208,11 +255,20 @@ class RapportActivite(tables.Table):
     dateechantillonage = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
     datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
     dateanalyse = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
-    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}},
-                                   accessor='Inspection.idcargaison.dateinspection')
+    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}})
     volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
     volConst = tables.Column(verbose_name="VOL.CONST", attrs={"td": {"bgcolor": "red"}})
     gsvT = tables.Column(verbose_name='GSV', attrs={"td": {"bgcolor": "green"}})
+
+
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
+
+
 
 
 class Act(tables.Table):
