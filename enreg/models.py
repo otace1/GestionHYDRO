@@ -139,7 +139,7 @@ class Cargaison(models.Model):
     numdossier = models.CharField(max_length=30, null=True, blank=True, verbose_name="Numéro Dossier Hydro")
     codecargaison = models.CharField(max_length=30, null=True, blank=True, verbose_name="Codification Hydro")
     numact = models.IntegerField(null=True, blank=True, verbose_name="Numéro ACT")
-    conformite = models.CharField(max_length=30, blank=True, null=True, verbose_name='Conformité aux exigences')
+    conformite = models.CharField(max_length=30, blank=True, null=True, verbose_name='DECISION LABO')
     impression = models.BooleanField(default="0")
     user = models.CharField(max_length=200, default='NULL', blank=True, verbose_name='User')
     tampon = models.CharField(max_length=2, default="1")
@@ -174,6 +174,9 @@ class Cargaison(models.Model):
 
     # Champ ajouter apres la mission de l'EST
     declaration = models.CharField(max_length=255, blank=True, null=True)  # Numero de declaration
+
+    #Champ de control pour l'inspection
+    etatInspection = models.BooleanField(default=False)
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
@@ -394,11 +397,12 @@ class Inspection(models.Model):
 class Compartiment(models.Model):
     idinspection = models.ForeignKey(Inspection, on_delete=models.PROTECT)
     id = models.AutoField(primary_key=True, auto_created=True)
-    compart = models.CharField(max_length=32, blank=True)
+    compart = models.CharField(max_length=32, blank=True, verbose_name='DENOM. COMPARTIMENT')
     sealstate = models.ForeignKey(SealState, on_delete=models.PROTECT, verbose_name='SEALS STATE')
-    innage = models.FloatField(null=True)
-    gov = models.FloatField(null=True)
-    tempcomp = models.FloatField(null=True)
+    # produit = models.ForeignKey(Produit, on_delete=models.PROTECT, verbose_name='PRODUIT')
+    innage = models.FloatField(null=True, blank=True, verbose_name='INNAGE')
+    gov = models.FloatField(null=True, verbose_name='GOV JAUGE')
+    tempcomp = models.FloatField(null=True, verbose_name='TEMPERATURE')
     vcf = models.FloatField(null=True)
     mta = models.FloatField(null=True)
     mtv = models.FloatField(null=True)

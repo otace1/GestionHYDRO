@@ -45,7 +45,7 @@ unites_mesure_volumein = [
 unites_mesure_tempin = [
     ('', ''),
     ('C°', 'C°'),
-    ('F°', 'F°'),
+    # ('F°', 'F°'),
 ]
 
 unites_mesure_weightin = [
@@ -163,13 +163,13 @@ class SealInspection(forms.ModelForm):
             'sealstate',
         )
 
-
+#Avec presence compteur
 class TankerInspection(forms.Form):
-    produit = forms.ModelChoiceField(Produit.objects.all(), label="PRODUIT")
-    meterbefore = forms.FloatField(required=False, label="INDEX INITIAL COMPTEUR")
-    dens = forms.FloatField(required=False, label="DENSITE")
-    temp = forms.FloatField(required=False, label="AT")
-    innagein = forms.CharField(widget=forms.Select(choices=unites_mesure_innagein), label="INNAGE IN", required=True)
+    # produit = forms.ModelChoiceField(Produit.objects.all(), label="PRODUIT")
+    meterbefore = forms.FloatField(required=False, label="INDEX INITIAL DU COMPTEUR")
+    dens = forms.FloatField(required=True, label="DENSITE (Ex. 820.907)")
+    temp = forms.FloatField(required=True, label="TEMPERATURE")
+    innagein = forms.CharField(widget=forms.Select(choices=unites_mesure_innagein), label="INNAGE IN", required=False)
     volumein = forms.CharField(widget=forms.Select(choices=unites_mesure_volumein), label="VOLUME IN", required=True)
     tempin = forms.CharField(widget=forms.Select(choices=unites_mesure_tempin), label="TEMP IN", required=True)
     weightin = forms.CharField(widget=forms.Select(choices=unites_mesure_weightin), label="WEIGHT IN", required=True)
@@ -179,7 +179,7 @@ class TankerInspection(forms.Form):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Row(
-                Column('produit', css_class='form-group col-md-6 mb-0'),
+                # Column('produit', css_class='form-group col-md-6 mb-0'),
                 Column('meterbefore', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
             ),

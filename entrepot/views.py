@@ -32,7 +32,7 @@ class GestionEchantillonage():
         form = Echantilloner(request.POST or None)
 
         if role == 3 or role == 1 or role == 9:
-            qs1 = ControlNatureProduit.objects.filter(Q(idcargaison__etat="En attente d'echantillonage", idcargaison__entrepot__affectationentrepot__username_id=id) | Q(conformiteProduit=True)).order_by('-timestamp')
+            qs1 = Cargaison.objects.filter(etat="En attente d'echantillonage", entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
             qs2 = Cargaison.objects.filter(entrepot__affectationentrepot__username_id=id).filter(
                 Q(rapechctrl=1) | Q(etat="Echantillonner")).order_by('-dateheurecargaison')
             table = EchantillonTable(qs1, prefix="1_")
@@ -43,31 +43,20 @@ class GestionEchantillonage():
             RequestConfig(request, paginate={"per_page": 5}).configure(table2)
 
             # #Compteur de la page principale de l'entrepot
-            # n = Cargaison.objects.filter(
-            #     Q(etat='En attente requisition') | Q(tampon='0') | Q(etat="En attente d'echantillonage")).filter(
-            #     entrepot__affectationentrepot__username_id=id, dateheurecargaison__date=today).count()
             n = Cargaison.objects.filter(etat='En attente requisition',entrepot__affectationentrepot__username_id=id).count()
             d = Cargaison.objects.filter(
                 Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
                 entrepot__affectationentrepot__username_id=id).count()
-            r = Cargaison.objects.filter(Q(etat='En attente requisition') | Q(tampon='0')).filter(
-                entrepot__affectationentrepot__username_id=id).count()
-            o = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(etat='Conforme aux exigences'),
-                                         entrepot__affectationentrepot__username_id=id).count()
-
-            # x = Entrepot_echantillon.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id, idcargaison__controlnatureproduit__conformiteProduit = False).count()
-
+            i = Cargaison.objects.filter(etatInspection=True,entrepot__affectationentrepot__username_id=id).count()
             x= ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,conformiteProduit=False).count()
 
             return render(request, 'entrepot.html', {
                 'cargaison': table,
-                # 'cargaison1': table1,
                 'cargaison2': table2,
                 'form': form,
                 'n': n,
                 'd': d,
-                'r': r,
-                'o': o,
+                'i': i,
                 'x': x,
             })
         else:
@@ -374,9 +363,7 @@ class GestionDechargement():
         today = date.today()
 
         if role == 9:
-            qs = Cargaison.objects.filter(Q(etat='Echantillonner'),
-                                          Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3),
-                                          entrepot__affectationentrepot__username_id=id).order_by(
+            qs = Cargaison.objects.filter(etat='Echantillonner',entrepot__affectationentrepot__username_id=id).order_by(
                 '-dateheurecargaison')
             table = CargaisonDechargement2(qs, prefix='2_')
 
@@ -526,6 +513,10 @@ def impressionRapport(request, pk):
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
     inspection = Inspection.objects.get(idcargaison=pk)
+    if inspection.meterbefore is None:
+        inspection.meterbefore = 0
+    if inspection.meterafter is None:
+        inspection.meterafter = 0
     seal = InspectionSeal.objects.filter(idcargaison=pk)
     if Resultat.objects.filter(idcargaison_id=pk).exists():
         resultat_data = Resultat.objects.get(idcargaison_id=pk)
@@ -533,40 +524,69 @@ def impressionRapport(request, pk):
     compartiment = Compartiment.objects.filter(
         idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
     govTotal = sum(compartiment.values_list('gov', flat=True))  # gov Total Tanker
-    gsvTotal = sum(compartiment.values_list('gsv', flat=True))  # gsv Total Tanker
-    mtaTotal = sum(compartiment.values_list('mta', flat=True))  # mta Total Tanker
+    gsvTotal = round(sum(compartiment.values_list('gsv', flat=True)),3)  # gsv Total Tanker
+    mtaTotal = round(sum(compartiment.values_list('mta', flat=True)),3)  # mta Total Tanker
     mtvTotal = sum(compartiment.values_list('mtv', flat=True))  # mtv Total Tanker
 
     densite = densite15(inspection.temp, inspection.dens)  # densite 15c
-    govMeter = inspection.meterafter - inspection.meterbefore  # govmeter
+    govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
     vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
     gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
     mtaMeter = mta(gsvMeter, densite)  # mta Meter
 
     govLt = float(cargaison.volume)  # gov LT
     vcfLt = vcf(densite, inspection.temp)  # VCF LT
-    gsvLt = gsv(vcfLt, govLt)  # GSV LT
-    mtvLt = mtv(gsvLt, densite)  # MTV LT
-    mtaLt = mta(gsvLt, densite)  # MTA LT
+    gsvLt = (cargaison.volume15)# GSV LT
+    if gsvLt is None:
+        gsvLt = 0
+    # gsvLt = gsv(vcfLt, govLt)  # GSV LT
+    mtvLt = (cargaison.tonnagevide)  # MTV LT
+    if mtvLt is None:
+        mtvLt = 0
+    # mtvLt = mtv(gsvLt, densite)  # MTV LT
+    mtaLt = (cargaison.tonnageair)  # MTA LT
+    if mtaLt is None:
+        mtaLt = 0
+    # mtaLt = mta(gsvLt, densite)  # MTA LT
 
     govLtTanker = govLt - govTotal  # Difference LT/Tanker
-    gsvLtTanker = gsvLt - gsvTotal  # Difference GSV LT/Tanker
-    mtvLtTanker = mtvLt - mtvTotal  # Difference mtv LT/Tanker
-    mtaLtTanker = mtaLt - mtaTotal  # Difference mtv LT/Tanker
+    gsvLtTanker = round((float(gsvLt) - gsvTotal),3)  # Difference GSV LT/Tanker
+    mtvLtTanker = round((float(mtvLt) - mtvTotal),3)  # Difference mtv LT/Tanker
+    mtaLtTanker = round((float(mtaLt) - mtaTotal),3)  # Difference mtv LT/Tanker
+    prLtTanker = round((govLtTanker * 100) / govLt,3)
+    if gsvLt==0:
+        gsvLt=1
+    prGsvLtTanker = round((gsvLtTanker * 100) / float(gsvLt),3)
+    if mtaLt==0:
+        mtaLt=1
+    prMtaLtTanker = round((mtaLtTanker * 100) / float(mtaLt),3)
+    if mtvLt==0:
+        mtvLt=1
+    prMtvLtTanker = round((mtvLtTanker * 100) / float(mtvLt),3)
 
     govTankerMeter = govTotal - govMeter  # Difference Tanker/Meter
     gsvTankerMeter = gsvTotal - gsvMeter  # Difference GSV Tanker/Meter
-    mtaTankerMeter = mtaTotal - mtaMeter  # Difference MTA Tanker/Meter
+    mtaTankerMeter = round((mtaTotal - mtaMeter),3)  # Difference MTA Tanker/Meter
+    prTankerMeter = round((govTankerMeter * 100) / govTotal,3)
 
     govLtMeter = govLt - govMeter  # Diff LT/Meter
-    gsvLtMeter = gsvLt - gsvMeter  # Diff GSV LT/Meter
-    mtaLtMeter = mtaLt - mtaMeter  # Diff mta LT/Meter
+    gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
+    mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
+    if govLt==0:
+        govLt=1
+    prLtMeter = round((govLtMeter * 100) / govLt,3)
+    if gsvLt==0:
+        gsvLt=1
+    prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt),3)
+    if mtaLt==0:
+        mtaLt=1
+    prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
 
-    govMax = max(govTotal, govMeter, govLt)  # Max value of GOV
-    gsvMax = max(gsvTotal, gsvMeter, gsvLt)  # Max value of GSV
-    mtaMax = max(mtaTotal, mtaMeter, mtaLt)  # Max value of MTA
+    govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
+    gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
+    mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
 
-    fraisOcc = 11 * gsvMax  # Frais occ a Payer
+    fraisOcc = round((11 * gsvMax),3)  # Frais occ a Payer
 
     # Getting data from laboratory
     if Resultat.objects.filter(idcargaison_id=pk).exists():
@@ -610,6 +630,14 @@ def impressionRapport(request, pk):
         'cargaison': cargaison,
         'inspection': inspection,
         'densite': densite,
+        'prGsvLtTanker':prGsvLtTanker,
+        'prMtaLtTanker':prMtaLtTanker,
+        'prMtvLtTanker':prMtvLtTanker,
+        'prGsvLtMeter':prGsvLtMeter,
+        'prMtaLtMeter':prMtaLtMeter,
+        'prLtTanker':prLtTanker,
+        'prTankerMeter':prTankerMeter,
+        'prLtMeter':prLtMeter,
         'govmeter': govMeter,
         'govTotal': govTotal,
         'gsvTotal': gsvTotal,
@@ -746,12 +774,14 @@ def echantillonage(request, pk):
                                     ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
             numrappechauto = numrappech
             c.rapechctrl = 1
+            c.etatInspection = True
             c.etat = "Echantillonner"
-            c.save(update_fields=['etat', 'rapechctrl'])
+            c.save(update_fields=['etat', 'rapechctrl','etatInspection'])
 
             e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
                                      methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
             e.save()
+
 
             # Generer le rapport d'echantillonage
             template = 'rapportechantillonage.html'
@@ -2061,25 +2091,27 @@ def choiceoftype(request, pk):
             if meter is False:
                 if tanker is False:
                     if shore is False:
-                        return HttpResponseBadRequest
+                        template = 'error.html'
+                        context={}
+                        return render(request,template,context) #Meter=0,Tanker=0,Shore=0
                     else:
-                        return redirect('shore', pk=pk)
+                        return redirect('shore', pk=pk) #Meter=0,Tanker=0,Shore=1
                 else:
                     if shore is False:
-                        return redirect('seals', pk=pk)
+                        return redirect('seals', pk=pk) #Meter=0,Tanker=1,Shore=0
                     else:
-                        return HttpResponseBadRequest
+                        return HttpResponseBadRequest #Meter=0,Tanker=1,Shore=1
             else:
                 if tanker is False:
                     if shore is False:
-                        return redirect('seals', pk=pk)
+                        return redirect('seals', pk=pk) #Meter=1,Tanker=0,Shore=0
                     else:
-                        return redirect('shore', pk=pk)
+                        return redirect('shore', pk=pk) #Meter=1,Tanker=0,Shore=1
                 else:
                     if shore is False:
-                        return redirect('seals', pk=pk)
+                        return redirect('seals', pk=pk) #Meter=1,Tanker=1,Shore=0
                     else:
-                        return HttpResponseBadRequest
+                        return HttpResponseBadRequest #Meter=1,Tanker=1,Shore=1
     else:
         context = {'form': form}
         return render(request, template, context)
@@ -2162,16 +2194,20 @@ def tankerinspection(request):
     form = TankerInspection(request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
-            produit = request.POST['produit']
-            produit = Produit.objects.get(idproduit=produit)
+            # produit = request.POST['produit']
+            # produit = Produit.objects.get(idproduit=produit)
             dens = request.POST['dens']
             temp = request.POST['temp']
             innagein = request.POST['innagein']
+            if innagein == '':
+                innagein == 'N/A'
             volumein = request.POST['volumein']
             tempin = request.POST['tempin']
             weightin = request.POST['weightin']
             meterbefore = request.POST['meterbefore']
-            data = Inspection(idcargaison=cargaison, produit=produit, dens=dens, temp=temp, innagein=innagein,
+            if meterbefore == '':
+                meterbefore = 0
+            data = Inspection(idcargaison=cargaison, dens=dens, temp=temp, innagein=innagein,
                               volumein=volumein, tempin=tempin, weightin=weightin, meterbefore=meterbefore)
             data.save()
             return redirect('compartiment', pk=pk)
@@ -2271,23 +2307,28 @@ def updatecompartiment(request, pk):
 
 
 @login_required(login_url='login')
-def meterafter(request):
-    pk = request.session['id']
+def meterafter(request,pk):
     template = 'meterafter.html'
-    inspection = Inspection.objects.get(idcargaison=pk)
-    cargaison = Cargaison.objects.get(idcargaison=pk)
-    form = MeterAfter(request.POST or None)
-    if request.method == 'POST':
-        if form.is_valid():
-            meterafter = request.POST['meterafter']
-            cargaison.etat = 'Cargaison dechargee'
-            cargaison.save(update_fields=['etat'])
+    try:
+        inspection = Inspection.objects.get(idcargaison=pk)
+        cargaison = Cargaison.objects.get(idcargaison=pk)
+        form = MeterAfter(request.POST or None)
+        if request.method == 'POST':
+            if form.is_valid():
+                meterafter = request.POST['meterafter']
+                cargaison.etat = 'Cargaison dechargee'
+                cargaison.save(update_fields=['etat'])
 
-            inspection.meterafter = meterafter
-            inspection.save(update_fields=['meterafter'])
-            return redirect('dechargement')
-    context = {'form': form}
-    return render(request, template, context)
+                inspection.meterafter = meterafter
+                inspection.save(update_fields=['meterafter'])
+                return redirect('dechargement')
+        context = {'form': form}
+        return render(request, template, context)
+    except:
+        template = 'error_inspection.html'
+        context = {}
+        return render(request,template,context)
+
 
 
 @login_required(login_url='login')
@@ -2500,22 +2541,24 @@ def shoreupdateafter(request, pk):
 @login_required(login_url='login')
 def tableaurapports(request):
     user = request.user.id
-
     template = 'tableauRapport.html'
-
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, i.dateinspection, a.nomimportateur ,c.immatriculation, p.nomproduit, SUM(co.gov) as GOV,SUM(co.mta) as MTA, SUM(co.mtv) as MTV, SUM(co.vcf) as VCF, SUM(co.gsv) as GSV \
-                                FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_inspection i, hydro_occ.enreg_importateur a, hydro_occ.enreg_produit p, hydro_occ.enreg_compartiment co, accounts_affectationentrepot v, hydro_occ.enreg_entrepot ee, hydro_occ.enreg_ville ev  \
-                                WHERE c.idcargaison = i.idcargaison_id \
-                                AND c.importateur_id = a.idimportateur \
-                                AND c.produit_id = p.idproduit \
-                                AND co.idinspection_id = i.idinspection \
-                                AND i.idcargaison_id = c.idcargaison \
-                                AND c.entrepot_id = ee.identrepot \
-                                AND v.entrepot_id = c.entrepot_id \
-                                AND v.username_id = %s \
-                                GROUP BY c.idcargaison \
-                                ORDER BY i.dateinspection DESC',[user,])
-    qs1 = Cargaison.objects.all()
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, c.declaration, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                    FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_inspection i, hydro_occ.enreg_importateur a, hydro_occ.enreg_produit p, hydro_occ.enreg_compartiment co, hydro_occ.enreg_entrepot_echantillon e , hydro_occ.enreg_laboreception l, hydro_occ.enreg_resultat r, accounts_affectationville v, hydro_occ.enreg_entrepot ee, hydro_occ.enreg_ville ev \
+                                    WHERE c.idcargaison = i.idcargaison_id \
+                                    AND a.idimportateur  = c.importateur_id \
+                                    AND c.produit_id = p.idproduit \
+                                    AND i.idcargaison_id = c.idcargaison \
+                                    AND e.idcargaison_id = c.idcargaison \
+                                    AND l.idcargaison_id = c.idcargaison \
+                                    AND r.idcargaison_id = c.idcargaison \
+                                    AND co.idinspection_id = i.idinspection \
+                                    AND c.entrepot_id = ee.identrepot \
+                                    AND c.frontiere_id = ev.idville \
+                                    AND v.ville_id = ee.ville_id \
+                                    AND v.username_id = %s \
+                                    GROUP BY c.idcargaison \
+                                    ORDER BY i.dateinspection DESC', [user, ])
+    qs1 = Cargaison.objects.filter(voie__idvoie=3)
     table = RapportInspectionCamion(qs, prefix='1_')
     table1 = RapportInspectionTanker(qs1, prefix='2_')
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
@@ -2602,7 +2645,45 @@ def correctionNonConformite(request,pk):
     return redirect('entrepot')
 
 
+@login_required(login_url='login')
+def inspection(request,pk):
+    user = request.user.id
+    role = user.role_id
 
+    if role == 3 or role == 1:
+        qs = Cargaison.objects.filter(etatInspection=True, etat="Echantillonner",before=False,entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+        table = CargaisonDechargement(qs, prefix='1_')
+
+        # affichage des tanker cabotteurs
+        qs1 = Cargaison.objects.filter(before=True, entrepot__affectationentrepot__username_id=id).order_by(
+            '-dateheurecargaison')
+        table1 = TankerCabotteur(qs1, prefix='2_')
+        RequestConfig(request, paginate={"per_page": 10}).configure(table)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
+        return render(request, 'entrepot_dechargement.html', {'cargaison': table,
+                                                              'rapport': table1,
+                                                              })
+    else:
+        return redirect('logout')
+
+@login_required(login_url='login')
+def affichageInspection(request):
+    user = request.user.id
+    template = 'enAttenteInspection.html'
+    qs = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    table = EnAttenteInspection(qs,prefix='1_')
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    context = {'table':table}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def marquageInspection(request):
+    pk = request.session['id']
+    c = Cargaison.objects.get(idcargaison=pk)
+    c.etatInspection = False
+    c.save(update_fields=['etatInspection'])
+    return redirect('entrepot')
 
 
 

@@ -461,16 +461,22 @@
                   <div class="row">
                       <div class="col-md-4">
                           <a class="btn btn-danger" href="{% url 'analyse' %}" role="button"> << RETOUR << </a>
-                   </div>
-
-                   <div class="col-md-4">
-                       <div class="card card-default">
+                      </div>
+                  </div>
+              <br/>
+                  <div class="col-md-12">
+                      <div class="card">
+                          <div class="card-body table-responsive p-0">
+{#                              <div class="col-md-4">#}
+{#                       <div class="card card-default">#}
                            {% block content %}
 
                            {% endblock %}
-                       </div>
-                   </div>
-               </div>
+{#                       </div>#}
+{#                          </div>#}
+                          </div>
+                      </div>
+                  </div>
            </div>
            <!-- /.row -->
        </section>
@@ -484,11 +490,6 @@
       <b>Version</b> 3.0
     </div>
   </footer>
-  <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-  </aside>
-  <!-- /.control-sidebar -->
 
 </div>
 

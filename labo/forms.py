@@ -74,11 +74,31 @@ class Mogas(forms.Form):
         self.helper.label_class = 'col-md-4'
         self.helper.field_class = 'col-md-6'
         self.helper.layout = Layout(
+            Row(
+                Column('aspect',css_class='form-group col-md-4 mb-0'),
+                Column('odeur',css_class='form-group col-md-4 mb-0'),
+                Column('couleursaybolt',css_class='form-group col-md-4 mb-0'),
+                Column('soufre',css_class='form-group col-md-4 mb-0'),
+                Column('residu',css_class='form-group col-md-4 mb-0'),
+                Column('corrosion',css_class='form-group col-md-4 mb-0'),
+                Column('pourcent10',css_class='form-group col-md-4 mb-0'),
+                Column('pourcent20',css_class='form-group col-md-4 mb-0'),
+                Column('distillation',css_class='form-group col-md-4 mb-0'),
+                Column('pointfinal',css_class='form-group col-md-4 mb-0'),
+                Column('pourcent50',css_class='form-group col-md-4 mb-0'),
+                Column('pourcent70',css_class='form-group col-md-4 mb-0'),
+                Column('pourcent90',css_class='form-group col-md-4 mb-0'),
+                Column('massevolumique15',css_class='form-group col-md-4 mb-0'),
+                Column('difftemperature',css_class='form-group col-md-4 mb-0'),
+                Column('tensionvapeur',css_class='form-group col-md-4 mb-0'),
+                Column('plomb',css_class='form-group col-md-4 mb-0'),
+                Column('indiceoctane',css_class='form-group col-md-4 mb-0'),
+            ),
 
-            Field('aspect', 'odeur', 'couleursaybolt', 'soufre', 'residu', 'corrosion', 'pourcent10', 'pourcent20',
-                  'distillation', 'pointfinal',
-                  'pourcent50', 'pourcent70', 'pourcent90', 'massevolumique15', 'difftemperature', 'tensionvapeur',
-                  'plomb', 'indiceoctane'),
+            # Field('aspect', 'odeur', 'couleursaybolt', 'soufre', 'residu', 'corrosion', 'pourcent10', 'pourcent20',
+            #       'distillation', 'pointfinal',
+            #       'pourcent50', 'pourcent70', 'pourcent90', 'massevolumique15', 'difftemperature', 'tensionvapeur',
+            #       'plomb', 'indiceoctane'),
 
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),
@@ -120,11 +140,29 @@ class Gasoil(forms.Form):
         self.helper.label_class = 'col-md-4'
         self.helper.field_class = 'col-md-6'
         self.helper.layout = Layout(
-
-            Field('couleurastm', 'aciditetotal', 'soufre', 'massevolumique', 'massevolumique15',
-                  'distillation10', 'distillation20', 'distillation50', 'distillation90', 'pointinitial', 'pointfinal',
-                  'pointeclair', 'viscosite', 'pointecoulement', 'teneureau', 'sediment', 'corrosion', 'indicecetane',
-                  'recuperation362', 'cendre'),
+            Row(
+                Column('couleurastm',css_class='form-group col-md-4 mb-0'),
+                Column('aciditetotal',css_class='form-group col-md-4 mb-0'),
+                Column('soufre',css_class='form-group col-md-4 mb-0'),
+                Column('massevolumique',css_class='form-group col-md-4 mb-0'),
+                Column('massevolumique15',css_class='form-group col-md-4 mb-0'),
+                Column('distillation10',css_class='form-group col-md-4 mb-0'),
+                Column('distillation20',css_class='form-group col-md-4 mb-0'),
+                Column('distillation50',css_class='form-group col-md-4 mb-0'),
+                Column('distillation90',css_class='form-group col-md-4 mb-0'),
+                Column('pointinitial',css_class='form-group col-md-4 mb-0'),
+                Column('pointfinal',css_class='form-group col-md-4 mb-0'),
+                Column('pointeclair',css_class='form-group col-md-4 mb-0'),
+                Column('pointeclair',css_class='form-group col-md-4 mb-0'),
+                Column('viscosite',css_class='form-group col-md-4 mb-0'),
+                Column('pointecoulement',css_class='form-group col-md-4 mb-0'),
+                Column('teneureau',css_class='form-group col-md-4 mb-0'),
+                Column('sediment',css_class='form-group col-md-4 mb-0'),
+                Column('corrosion',css_class='form-group col-md-4 mb-0'),
+                Column('indicecetane',css_class='form-group col-md-4 mb-0'),
+                Column('recuperation362',css_class='form-group col-md-4 mb-0'),
+                Column('cendre',css_class='form-group col-md-4 mb-0'),
+            ),
 
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),
@@ -174,12 +212,35 @@ class JetA1(forms.Form):
         self.helper.label_class = 'col-md-4'
         self.helper.field_class = 'col-md-6'
         self.helper.layout = Layout(
+            Row(
+                Column('aspect',css_class='form-group col-md-4 mb-0'),
+                Column('couleursaybolt',css_class='form-group col-md-4 mb-0'),
+                Column('aciditetotal',css_class='form-group col-md-4 mb-0'),
+                Column('soufre',css_class='form-group col-md-4 mb-0'),
+                Column('soufremercaptan',css_class='form-group col-md-4 mb-0'),
+                Column('docteurtest',css_class='form-group col-md-4 mb-0'),
+                Column('distillation',css_class='form-group col-md-4 mb-0'),
+                Column('pointinitial',css_class='form-group col-md-4 mb-0'),
+                Column('pointfinal',css_class='form-group col-md-4 mb-0'),
+                Column('pointfumee',css_class='form-group col-md-4 mb-0'),
+                Column('pointeclair',css_class='form-group col-md-4 mb-0'),
+                Column('freezingpoint',css_class='form-group col-md-4 mb-0'),
+                Column('residu',css_class='form-group col-md-4 mb-0'),
+                Column('perte',css_class='form-group col-md-4 mb-0'),
+                Column('massevolumique15',css_class='form-group col-md-4 mb-0'),
+                Column('viscosite',css_class='form-group col-md-4 mb-0'),
+                Column('pointinflammabilite',css_class='form-group col-md-4 mb-0'),
+                Column('teneureau',css_class='form-group col-md-4 mb-0'),
+                Column('corrosion',css_class='form-group col-md-4 mb-0'),
+                Column('vol10',css_class='form-group col-md-4 mb-0'),
+                Column('vol90',css_class='form-group col-md-4 mb-0'),
+            ),
 
-            Field('aspect', 'couleursaybolt', 'aciditetotal', 'soufre', 'soufremercaptan', 'docteurtest',
-                  'distillation',
-                  'pointinitial', 'pointfinal', 'pointfumee', 'pointeclair', 'freezingpoint', 'residu', 'perte',
-                  'massevolumique15', 'viscosite',
-                  'pointinflammabilite', 'teneureau', 'corrosion', 'conductivite', 'vol10', 'vol90'),
+            # Field('aspect', 'couleursaybolt', 'aciditetotal', 'soufre', 'soufremercaptan', 'docteurtest',
+            #       'distillation',
+            #       'pointinitial', 'pointfinal', 'pointfumee', 'pointeclair', 'freezingpoint', 'residu', 'perte',
+            #       'massevolumique15', 'viscosite',
+            #       'pointinflammabilite', 'teneureau', 'corrosion', 'conductivite', 'vol10', 'vol90'),
 
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),
@@ -229,12 +290,36 @@ class PetroleLampant(forms.Form):
         self.helper.label_class = 'col-md-4'
         self.helper.field_class = 'col-md-6'
         self.helper.layout = Layout(
+            Row(
+                Column('aspect',css_class='form-group col-md-4 mb-0'),
+                Column('couleursaybolt',css_class='form-group col-md-4 mb-0'),
+                Column('aciditetotal',css_class='form-group col-md-4 mb-0'),
+                Column('soufre',css_class='form-group col-md-4 mb-0'),
+                Column('soufremercaptan',css_class='form-group col-md-4 mb-0'),
+                Column('docteurtest',css_class='form-group col-md-4 mb-0'),
+                Column('distillation',css_class='form-group col-md-4 mb-0'),
+                Column('pointinitial',css_class='form-group col-md-4 mb-0'),
+                Column('pointfinal',css_class='form-group col-md-4 mb-0'),
+                Column('pointfumee',css_class='form-group col-md-4 mb-0'),
+                Column('pointeclair',css_class='form-group col-md-4 mb-0'),
+                Column('freezingpoint',css_class='form-group col-md-4 mb-0'),
+                Column('residu',css_class='form-group col-md-4 mb-0'),
+                Column('perte',css_class='form-group col-md-4 mb-0'),
+                Column('massevolumique15',css_class='form-group col-md-4 mb-0'),
+                Column('viscosite',css_class='form-group col-md-4 mb-0'),
+                Column('pointinflammabilite',css_class='form-group col-md-4 mb-0'),
+                Column('teneureau',css_class='form-group col-md-4 mb-0'),
+                Column('corrosion',css_class='form-group col-md-4 mb-0'),
+                Column('conductivite',css_class='form-group col-md-4 mb-0'),
+                Column('vol10',css_class='form-group col-md-4 mb-0'),
+                Column('vol90',css_class='form-group col-md-4 mb-0'),
+            ),
 
-            Field('aspect', 'couleursaybolt', 'aciditetotal', 'soufre', 'soufremercaptan', 'docteurtest',
-                  'distillation',
-                  'pointinitial', 'pointfinal', 'pointfumee', 'pointeclair', 'freezingpoint', 'residu', 'perte',
-                  'massevolumique15', 'viscosite',
-                  'pointinflammabilite', 'teneureau', 'corrosion', 'conductivite', 'vol10', 'vol90'),
+            # Field('aspect', 'couleursaybolt', 'aciditetotal', 'soufre', 'soufremercaptan', 'docteurtest',
+            #       'distillation',
+            #       'pointinitial', 'pointfinal', 'pointfumee', 'pointeclair', 'freezingpoint', 'residu', 'perte',
+            #       'massevolumique15', 'viscosite',
+            #       'pointinflammabilite', 'teneureau', 'corrosion', 'conductivite', 'vol10', 'vol90'),
 
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),

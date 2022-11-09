@@ -2,7 +2,7 @@ import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, LaboReception, Resultat
 
 TEMPLATE = """ 
-            <a href="{%url 'natureProduitLabo' record.pk%}" class="btn btn-success">Réception</a>
+            <a href="{%url 'reception' record.pk%}" class="btn btn-success">RECEPTION</a>
            """
 
 # <button type="button" class="btn btn-danger" data-id="{{record.pk}}">
@@ -108,10 +108,11 @@ class LaboratoireReception(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
     idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE D'ENTREE")
     dateechantillonage = tables.Column(verbose_name="DATE D'ECHANTILLONNAGE")
+    idcargaison__entrepot = tables.Column(verbose_name='ENTREPOT')
+    idcargaison__produit = tables.Column(verbose_name="NATURE PRODUIT")
     idcargaison__immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     idcargaison__numdos = tables.Column(verbose_name="NUM. DOSSIER")
     # idcargaison__codecargaison = tables.Column(verbose_name='# Hydro')
-    idcargaison__produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     numrappechauto = tables.Column(verbose_name="RAPPORT D'ECHANTILLONNAGE")
 
     class Meta:
@@ -119,8 +120,8 @@ class LaboratoireReception(tables.Table):
                  "id": "table1"}
         template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon
-        sequence = ['idcargaison__dateheurecargaison', 'dateechantillonage', 'numrappechauto', 'idcargaison__numdos',
-                    'idcargaison__immatriculation']
+        sequence = ['idcargaison__dateheurecargaison','dateechantillonage','idcargaison__entrepot','idcargaison__immatriculation','idcargaison__produit','numrappechauto', 'idcargaison__numdos',
+                    ]
         exclude = ['numplombh', 'numplombb', 'numplombbr', 'numplombaph', 'etatphysique', 'numdossier',
                    'idcargaison__codecargaison', 'numrappech', 'useredit', 'matricule', 'methodeutilisee',
                    'qte', 'conformite', 'idcargaison__produit__nomproduit', 'idcargaison', 'natureProduitEntrepot',
@@ -151,32 +152,36 @@ class TableauEchantillonRecu(tables.Table):
 
 class AffichageAnalyse(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
-    numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="Numéro de RE")
-    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='Produit DECL.')
-    datereceptionlabo = tables.Column(verbose_name='Date de réception')
-    natureProduitLabo = tables.Column(verbose_name='Produit CONST.')
-    numcertificatqualite = tables.Column(verbose_name='Numéro CQ Attribué')
+    numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
+    codelabo = tables.Column(verbose_name='CODE LABO')
+    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
+    datereceptionlabo = tables.Column(verbose_name='DATE RECEPT.')
+    # natureProduitLabo = tables.Column(verbose_name='Produit CONST.')
+    numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit','natureProduitLabo']
+        sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit']
         exclude = ['numcertificatqualite', 'idcargaison']
 
 
 class AffichageAnalyseRefaire(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE2, verbose_name='')
-    numrappech = tables.Column(accessor='idcargaison.numrappech', verbose_name="Numéro de RE")
-    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='Nature produit')
-    datereceptionlabo = tables.Column(verbose_name='Date de réception')
+    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+    numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
+    codelabo = tables.Column(verbose_name='CODE LABO')
+    produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
+    datereceptionlabo = tables.Column(verbose_name='DATE RECEPT.')
+    # natureProduitLabo = tables.Column(verbose_name='Produit CONST.')
+    numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['datereceptionlabo', 'codelabo', 'numrappech', 'produit']
-        exclude = ['idcargaison', 'numcertificatqualite']
+        sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit']
+        exclude = ['numcertificatqualite', 'idcargaison']
 
 
 class AffichageValidation1(tables.Table):

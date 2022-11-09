@@ -79,7 +79,7 @@ class CodificationTable(tables.Table):
         sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'volume', 'immatriculation',
                     'declaration', 'numreq',
                     'numreqi']
-        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        exclude = ['idcargaison', 'etatInspection','valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
                    'requisitiondackdate', 'numdos', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',

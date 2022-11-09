@@ -8,8 +8,13 @@ from django.utils.safestring import mark_safe
 #             <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>
 #            """
 
+
+TEMPLATE6 = """
+            <a href="{%url 'meterafter' record.pk%}" class="btn btn-primary">DECHARGEMENT</a>
+           """
+
 TEMPLATE = """
-            <a href="{%url 'natureProduit' record.pk%}" class="btn btn-primary">ECHANTILLONNAGE</a>
+            <a href="{%url 'echantillonage' record.pk%}" class="btn btn-primary">ECHANTILLONNAGE</a>
            """
 
 TEMPLATE1 = """
@@ -30,7 +35,9 @@ TEMPLATE3 = """
             """
 
 TEMPLATE5 = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">AFFICHAGE</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RE</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">CQ</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
             """
 
 A = """
@@ -39,14 +46,14 @@ A = """
 
 
 class EchantillonTable(tables.Table):
-    idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    idcargaison__importateur = tables.Column(verbose_name='FOURNISSEUR')
-    idcargaison__produit = tables.Column(verbose_name='PRODUIT')
-    idcargaison__immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    idcargaison__numreq = tables.Column(verbose_name='REF.REQ.')
-    idcargaison__numdos = tables.Column(verbose_name='NUM.DOSSIER')
-    idcargaison__idcargaison = tables.Column(verbose_name='N.ENR.')
-    idcargaison__declaration = tables.Column(verbose_name='N.DECL.')
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    numreq = tables.Column(verbose_name='REF.REQ.')
+    numdos = tables.Column(verbose_name='NUM.DOSSIER')
+    idcargaison = tables.Column(verbose_name='N.ENR.')
+    declaration = tables.Column(verbose_name='N.DECL.')
     echantilloner = tables.TemplateColumn(TEMPLATE, verbose_name='')
 
     class Meta:
@@ -115,11 +122,12 @@ class RapportEchantillonage(tables.Table):
 
 
 class CargaisonDechargement(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE6, verbose_name='')
     produit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     importateur = tables.Column(verbose_name='FOURNISSEUR')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
+    conformite = tables.Column(verbose_name='DECISION DU LABORATOIRE',attrs={"td": {"bgcolor": "green"}})
 
     class Meta:
         attrs = {
@@ -134,13 +142,33 @@ class CargaisonDechargement(tables.Table):
         sequence = ['importateur',
                     'numdos',
                     'immatriculation',
-                    'produit']
-        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+                    'produit',
+                    'conformite']
+        exclude = ['idcargaison', 'etatInspection','valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
-                   'dateheurecargaison', 'entrepot',
+                   'dateheurecargaison', 'entrepot','declaration',
                    'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
-                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact',
                    'tampon', 'printactdate', 'l_control', 'before', 'after', 'controlOrganoleptique']
+
+
+class EnAttenteInspection(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    numreq = tables.Column(verbose_name='REF.REQ.')
+    numdos = tables.Column(verbose_name='NUM.DOSSIER')
+    idcargaison = tables.Column(verbose_name='N.ENR.')
+    declaration = tables.Column(verbose_name='N.DECL.')
+    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+
+    class Meta:
+        attrs = {
+            "class": "table table-hover text-nowrap table-striped",
+            "id": "example2"
+        }
+        template_name = "django_tables2/bootstrap4.html"
 
 
 class CargaisonDechargement2(tables.Table):
@@ -236,15 +264,19 @@ class CargaisonDechargee(tables.Table):
 
 
 class RapportInspectionCamion(tables.Table):
-    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
     nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
     produit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    GOV = tables.Column(verbose_name='GOV')
-    MTA = tables.Column(verbose_name='MTA')
-    MTV = tables.Column(verbose_name='MTV')
-    VCF = tables.Column(verbose_name='VCF')
-    GSV = tables.Column(verbose_name='GSV')
+    declaration = tables.Column(verbose_name='N.DECL.')
+    dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
+    requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
+    dateechantillonage = tables.Column(verbose_name='DATE ECH.')
+    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
+    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+    dateanalyse = tables.Column(verbose_name='DATE ANALYSE')
+    # dateDech = tables.Column(verbose_name="DATE DECH.")
+    volConst = tables.Column(verbose_name='GOV')
+    gsvT = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
     class Meta:
@@ -256,10 +288,15 @@ class RapportInspectionCamion(tables.Table):
 
 
 class RapportInspectionTanker(tables.Table):
-    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
     nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
     produit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
+    dateechantillonage = tables.Column(verbose_name='DATE ECH.')
+    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
+    dateReceptionLabo = tables.Column(verbose_name='DATE REC.LABO')
+    dateAnalyse = tables.Column(verbose_name='DATE ANALYSE')
+    dateDech = tables.Column(verbose_name="DATE DECH.")
     GOV = tables.Column(verbose_name='GOV')
     MTA = tables.Column(verbose_name='MTA')
     MTV = tables.Column(verbose_name='MTV')
@@ -267,13 +304,13 @@ class RapportInspectionTanker(tables.Table):
     GSV = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
+
     class Meta:
         attrs = {
             "class": "table table-hover text-nowrap table-striped",
             "id": "example2"
         }
         template_name = "django_tables2/bootstrap4.html"
-
 
 class NonConformeOrganoleptique(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")

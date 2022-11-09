@@ -462,7 +462,7 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-lg-4 col-6">
+                    <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-info">
                             <div class="inner">
@@ -476,8 +476,22 @@
                                     class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
+                    <div class="col-lg-3 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3>{{ i }}</h3>
+                                <p><b>EN ATTENTE D'INSPECTION</b></p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-alert-circled"></i>
+                            </div>
+                            <a href="{% url 'affichageInspection' %}" class="small-box-footer">DETAILS <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
                     <!-- ./col -->
-                    <div class="col-lg-4 col-6">
+                    <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-success">
                             <div class="inner">
@@ -491,22 +505,7 @@
                                     class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
-                    <!-- ./col -->
-                    {#        <div class="col-lg-3 col-6">#}
-                    {#            <!-- small box -->#}
-                    {#            <div class="small-box bg-warning">#}
-                    {#                <div class="inner">#}
-                    {#                    <h3>{{ r }}</h3>#}
-                    {#                    <p><b>EN ATTENTE D'ECHANTILLONAGE</b></p>#}
-                    {#                </div>#}
-                    {#                <div class="icon">#}
-                    {#                    <i class="ion ion-alert"></i>#}
-                    {#                </div>#}
-                    {#                <a href="" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>#}
-                    {#            </div>#}
-                    {#        </div>#}
-                    <!-- ./col -->
-                    <div class="col-lg-4 col-6">
+                    <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-danger">
                             <div class="inner">
@@ -523,8 +522,8 @@
                     <!-- ./col -->
                 </div>
                 <div>
-                    <a href="" class="btn btn-outline-success">RAPPORT D'ECHANTILLONAGE</a>
-                    <a href="{% url 'tableaurapports' %}" class="btn btn-outline-success">RAPPORT D'INSPECTION</a>
+{#                    <a href="" class="btn btn-outline-success">RAPPORT D'ECHANTILLONAGE</a>#}
+                    <a href="{% url 'tableaurapports' %}" class="btn btn-outline-danger">RAPPORTS D'ACTIVITES </a>
                 </div>
             </div>
             <br/>
@@ -558,51 +557,9 @@
                     </div>
                 </div>
 
-                {#            <div class="col-md-3">#}
-                {#                <div class="card">#}
-                {#                    <div class="card-header bg-gradient-dark">#}
-                {#                        <h1 class="card-title"><b>CARGAISON EN ATTENTE DE REQUISITION</b></h1>#}
-                {##}
-                {#                    </div>#}
-                {##}
-                {#                    <div class="card-body table-responsive p-0">#}
-                {#                        {% block content1 %}#}
-                {##}
-                {#                        {% endblock %}#}
-                {#                    </div>#}
-                {#                </div>#}
-                {#            </div>#}
 
             </div>
-            {#        <div class="row">#}
-            {#            <div class="col-md-12">#}
-            {#                <div class="card">#}
-            {#                    <div class="card-header bg-gradient-red">#}
-            {#                        <h1 class="card-title"><b>TABLEAU DES RAPPORTS D'ECHANTILLONAGES</b></h1>#}
-            {#                        <div class="card-tools">#}
-            {#                            <form method="get" action='{% url 'rechercherre' %}'>#}
-            {#                                <div class="input-group input-group-sm" style="width: 500px;">#}
-        {#                                    <input type="text" name="q" class="form-control float-right"#}
-        {#                                           placeholder="SCANNER LE QRCODE ICI">#}
-        {#                                    <div class="input-group-append">#}
-        {#                                        <button type="submit" class="btn btn-default"><i class="fas fa-search"></i>#}
-        {#                                        </button>#}
-        {#                                    </div>#}
-        {#                                </div>#}
-        {#                            </form>#}
-        {#                        </div>#}
-        {##}
-        {#                    </div>#}
-        {##}
-        {#                    <div class="card-body table-responsive p-0">#}
-        {#                        {% block content2 %}#}
-        {##}
-        {#                        {% endblock %}#}
-        {#                    </div>#}
-        {#                </div>#}
-        {#            </div>#}
-        {##}
-        {#        </div>#}
+
 
     </div>
 

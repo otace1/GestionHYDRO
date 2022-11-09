@@ -35,7 +35,7 @@ urlpatterns = [
     path('compartimentinspection/', views.compartimentinspection, name='compartiment-inspection'),
     path('compartiment/delete/<int:pk>', views.compartimentdelete, name='compartimentdelete'),
     path('compartiment/update/<int:pk>', views.updatecompartiment, name='compartimentupdate'),
-    path('meterafter/', views.meterafter, name='meterafter'),
+    path('meterafter/<int:pk>', views.meterafter, name='meterafter'),
     # path('compartiment/', views.compartiment, name='compartiment'),
     # path('compartiment/details/<int:pk>', views.detailcompartiment, name='compartiment-details'),
     #
@@ -70,5 +70,12 @@ urlpatterns = [
 
     #Correction de la non conformite declarative
     path('correctionNonConformite/<int:pk>', views.correctionNonConformite, name='correctionConformiteProduit'),  # Non conforme
+
+    #Inspection
+    path('inspection/<int:pk>', views.inspection, name='inspection'),
+    path('affichageInspection/', views.affichageInspection, name='affichageInspection'), #En Attente d'inspection
+    path('marquageInspection/', views.marquageInspection, name='marquageInspection'), #Marquer comme Inspecter
+
+
 
 ]

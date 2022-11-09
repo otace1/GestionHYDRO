@@ -24,7 +24,7 @@ def densite15(x, y):
         i = (b / h ** 2) + (c / h)
         j = math.exp(-i * t15 * (1 + 0.8 * i * t15))
         k = e / j
-        l = round((k / 1000), 7)
+        l = round((k / 1000), 4)
         return l
     else:
         if 770.5 <= a < 786.6:
@@ -38,7 +38,7 @@ def densite15(x, y):
             i = (b / h ** 2) + (c / h)
             j = math.exp(-i * t15 * (1 + 0.8 * i * t15))
             k = e / j
-            l = round((k / 1000), 7)
+            l = round((k / 1000), 4)
             return l
         else:
             if 786.6 <= a < 839:
@@ -52,7 +52,7 @@ def densite15(x, y):
                 i = (b / h ** 2) + (c / h)
                 j = math.exp(-i * t15 * (1 + 0.8 * i * t15))
                 k = e / j
-                l = round((k / 1000), 7)
+                l = round((k / 1000), 4)
                 return l
             else:
                 if a >= 839:
@@ -66,7 +66,7 @@ def densite15(x, y):
                     i = (b / h ** 2) + (c / h)
                     j = math.exp(-i * t15 * (1 + 0.8 * i * t15))
                     k = e / j
-                    l = round((k / 1000), 7)
+                    l = round((k / 1000), 4)
                     return l
 
 
@@ -89,14 +89,14 @@ def vcf(x, y):
         delta = y - 15
         alpha = (a / x) / x + (b / x)
         vcfValue = math.exp((-(alpha)) * delta) - 0.8 * ((alpha) * (alpha)) * ((delta * delta))
-        return vcfValue
+        return round(vcfValue,5)
     else:
         if (x >= float(788)) & (x < float(839)):
             a = 594.5418
             delta = y - 15
             alpha = (a / x) / x
             vcfValue = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-            return vcfValue
+            return round(vcfValue,5)
         else:
             if (x > float(770)) & (x < float(788)):
                 a = 0.00336312
@@ -104,14 +104,14 @@ def vcf(x, y):
                 delta = y - 15
                 alpha = ((-a) + (b)) / x / x
                 vcfValue = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                return vcfValue
+                return round(vcfValue,5)
             else:
                 a = 346.4228
                 b = 0.4388
                 delta = y - 15
                 alpha = (((a) / (x)) / (x)) + (b / x)
                 vcfValue = math.exp((-(alpha) * delta) - 0.8 * ((alpha) * (alpha)) * (delta * delta))
-                return vcfValue
+                return round(vcfValue,5)
 
 
 # Calcul du GSV
@@ -119,7 +119,7 @@ def gsv(x, y):
     # x: Valeur de VCF
     # y: Valeur de GOV
     y = float(y)
-    gsvValue = round((x * y), 5)
+    gsvValue = round((x * y), 3)
     return gsvValue
 
 
@@ -133,7 +133,7 @@ def mtv(x, y):
         if y < 1:
             y = y * 1000
     mtvValue = x * y / 1000
-    return round(mtvValue, 5)
+    return round(mtvValue, 3)
 
 
 # Calcul du MTA
@@ -146,4 +146,4 @@ def mta(x, y):
         if y < 1:
             y = y * 1000
     mtaValue = ((y) - 1.1) * (x / 1000)
-    return round(mtaValue, 5)
+    return round(mtaValue, 3)
