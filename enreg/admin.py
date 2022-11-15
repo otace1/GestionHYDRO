@@ -1,8 +1,6 @@
 from django.contrib import admin
 
-from .models import Cargaison, Entrepot, Ville, Produit, Importateur, Voie, Entrepot_echantillon, LaboReception, \
-    Resultat, TypeUniteTransport, Nationalites, Dechargement, SealState, InspectionSeal, Compartiment, ShoreTank, \
-    Inspection
+from .models import *
 
 # Register your models here.
 
@@ -23,3 +21,6 @@ admin.site.register(InspectionSeal)
 admin.site.register(Inspection)
 admin.site.register(Compartiment)
 admin.site.register(ShoreTank)
+admin.site.register(ParametresProduits)
+admin.site.register(AffectationParametre)
+admin.site.register(ResultatAnalyse)

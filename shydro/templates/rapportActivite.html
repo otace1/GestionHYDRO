@@ -2,15 +2,12 @@
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
 
-
 {% block search %}
     <form action="" method="POST" title="Filter">
-    {% csrf_token %}
+        {% csrf_token %}
         {% crispy form %}
     </form>
 {% endblock %}
-
-
 
 {% block export %}
     <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>

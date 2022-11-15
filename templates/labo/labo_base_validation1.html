@@ -466,37 +466,37 @@
                 <!-- /.container-fluid -->
 
 
-               <div class="row">
-                   <!--Modal Rapport d'importation-->
-                   <div class="modal" tabindex="-1" role="dialog" id="RechercheModal">
-                       <div class="modal-dialog" role="document">
-                           <div class="modal-content">
-                               <div class="modal-header">
-                                   <h3 class="modal-title">Rapport périodique</h3>
-                                   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                       <span aria-hidden="true">&times;</span>
-                                   </button>
-                               </div>
-                               <form method="post" action="{% url 'labodashboardrapport' %}">
-
-                                   <div class="modal-body">
-                                       {% block modal1 %}
-                                       {% endblock %}
-
-                                   </div>
-                                   <div class="modal-footer">
-                                       <button type='submit' class="btn btn-success">Recherche</button>
-                                       <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler
-                                       </button>
-                                   </div>
-                               </form>
-                           </div>
-                       </div>
-                   </div>
-               </div><!-- /.container-fluid -->
+{#               <div class="row">#}
+{#                   <!--Modal Rapport d'importation-->#}
+{#                   <div class="modal" tabindex="-1" role="dialog" id="RechercheModal">#}
+{#                       <div class="modal-dialog" role="document">#}
+{#                           <div class="modal-content">#}
+{#                               <div class="modal-header">#}
+{#                                   <h3 class="modal-title">Rapport périodique</h3>#}
+{#                                   <button type="button" class="close" data-dismiss="modal" aria-label="Close">#}
+{#                                       <span aria-hidden="true">&times;</span>#}
+{#                                   </button>#}
+{#                               </div>#}
+{#                               <form method="post" action="{% url 'labodashboardrapport' %}">#}
+{##}
+{#                                   <div class="modal-body">#}
+{#                                       {% block modal1 %}#}
+{#                                       {% endblock %}#}
+{##}
+{#                                   </div>#}
+{#                                   <div class="modal-footer">#}
+{#                                       <button type='submit' class="btn btn-success">Recherche</button>#}
+{#                                       <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler#}
+{#                                       </button>#}
+{#                                   </div>#}
+{#                               </form>#}
+{#                           </div>#}
+{#                       </div>#}
+{#                   </div>#}
+{#               </div><!-- /.container-fluid -->#}
                <br>
                <div class="row">
-                   <div class="col-md-8">
+                   <div class="col-md-12">
                        <div class="card bg-gradient-dark">
                            <div class="card-header border-0">
                                <h3 class="card-title"><b>Résultats en attente de validation</b></h3>
@@ -508,61 +508,61 @@
                        </div>
                    </div>
 
-                   <div class="col-md-4">
-                       <div class="col-sm-6">
-                           <h1 class="m-0 text-dark"><b>KPIs LABO</b></h1>
-                       </div>
-                       <br>
-                       <div class="col-lg-12 col-12">
-                           <div class="col-md-6">
-                               <a href="" data-toggle="modal" data-target="#RechercheModal"
-                                  class="btn btn-outline-danger" role="button">Rapport périodique du Labo</a>
-                           </div>
-                           <br>
-                           <!-- small box -->
-                           <div class="small-box bg-info">
-                               <div class="inner">
-                                   <h3>{{ laboreception }}</h3>
-
-                                   <p>Échantillons en attente de réceptions du Jour</p>
-                               </div>
-                               <div class="icon">
-                                   <i class="ion ion-stats-bars"></i>
-                               </div>
-                               <a href="{% url 'echantCount' %}" class="small-box-footer">Plus d'info cliquez ici <i
-                                       class="fas fa-arrow-circle-right"></i></a>
-                           </div>
-                       </div>
-                       <!-- ./col -->
-                       <div class="col-lg-12 col-12">
-                           <!-- small box -->
-                           <div class="small-box bg-success">
-                               <div class="inner">
-                                   <h3>{{ enanalyse }}</h3>
-                                   <p>Échantillons réceptionnés et En cours d'analyse</p>
-                               </div>
-                               <div class="icon">
-                                   <i class="ion ion-stats-bars"></i>
-                               </div>
-                               <a href="{% url 'echantAnalyse' %}" class="small-box-footer">Plus d'info cliquez ici <i
-                                       class="fas fa-arrow-circle-right"></i></a>
-                           </div>
-                       </div>
-                       <!-- ./col -->
-                       <div class="col-lg-12 col-12">
-                           <!-- small box -->
-                           <div class="small-box bg-warning">
-                               <div class="inner">
-                                   <h3>{{ enattente }}</h3>
-
-                                   <p>En Attente de vérification et validation</p>
-                               </div>
-
-
-                           </div>
-                       </div>
-                       <!-- ./col -->
-                   </div>
+{#                   <div class="col-md-4">#}
+{#                       <div class="col-sm-6">#}
+{#                           <h1 class="m-0 text-dark"><b>KPIs LABO</b></h1>#}
+{#                       </div>#}
+{#                       <br>#}
+{#                       <div class="col-lg-12 col-12">#}
+{#                           <div class="col-md-6">#}
+{#                               <a href="" data-toggle="modal" data-target="#RechercheModal"#}
+{#                                  class="btn btn-outline-danger" role="button">Rapport périodique du Labo</a>#}
+{#                           </div>#}
+{#                           <br>#}
+{#                           <!-- small box -->#}
+{#                           <div class="small-box bg-info">#}
+{#                               <div class="inner">#}
+{#                                   <h3>{{ laboreception }}</h3>#}
+{##}
+{#                                   <p>Échantillons en attente de réceptions du Jour</p>#}
+{#                               </div>#}
+{#                               <div class="icon">#}
+{#                                   <i class="ion ion-stats-bars"></i>#}
+{#                               </div>#}
+{#                               <a href="{% url 'echantCount' %}" class="small-box-footer">Plus d'info cliquez ici <i#}
+{#                                       class="fas fa-arrow-circle-right"></i></a>#}
+{#                           </div>#}
+{#                       </div>#}
+{#                       <!-- ./col -->#}
+{#                       <div class="col-lg-12 col-12">#}
+{#                           <!-- small box -->#}
+{#                           <div class="small-box bg-success">#}
+{#                               <div class="inner">#}
+{#                                   <h3>{{ enanalyse }}</h3>#}
+{#                                   <p>Échantillons réceptionnés et En cours d'analyse</p>#}
+{#                               </div>#}
+{#                               <div class="icon">#}
+{#                                   <i class="ion ion-stats-bars"></i>#}
+{#                               </div>#}
+{#                               <a href="{% url 'echantAnalyse' %}" class="small-box-footer">Plus d'info cliquez ici <i#}
+{#                                       class="fas fa-arrow-circle-right"></i></a>#}
+{#                           </div>#}
+{#                       </div>#}
+{#                       <!-- ./col -->#}
+{#                       <div class="col-lg-12 col-12">#}
+{#                           <!-- small box -->#}
+{#                           <div class="small-box bg-warning">#}
+{#                               <div class="inner">#}
+{#                                   <h3>{{ enattente }}</h3>#}
+{##}
+{#                                   <p>En Attente de vérification et validation</p>#}
+{#                               </div>#}
+{##}
+{##}
+{#                           </div>#}
+{#                       </div>#}
+{#                       <!-- ./col -->#}
+{#                   </div>#}
 
                </div>
 

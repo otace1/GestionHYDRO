@@ -512,7 +512,7 @@ class ShoreAfter(models.Model):
 
 
 class ControlNatureProduit(models.Model):
-    idcontrol = models.AutoField(primary_key=True,auto_created=True)
+    idcontrol = models.AutoField(primary_key=True, auto_created=True)
     idcargaison = models.ForeignKey(Cargaison,on_delete=models.PROTECT, blank=True, null=True)
     natureProduitEntrepot = models.CharField(max_length=20,blank=True, null=True)
     natureProduitLabo = models.CharField(max_length=20,blank=True, null=True)
@@ -522,5 +522,28 @@ class ControlNatureProduit(models.Model):
     correctionNature = models.CharField(max_length=20,blank=True,null=True)
     userHydro = models.IntegerField(blank=True,null=True)
     timestamp = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+
+class ParametresProduits(models.Model):
+    idParametre = models.AutoField(primary_key=True, auto_created=True)
+    nomParametre = models.CharField(max_length=20,blank=True,null=True)
+
+class AffectationParametre(models.Model):
+    idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
+    idproduit = models.ForeignKey(Produit, on_delete=models.PROTECT)
+    valeurMin = models.FloatField(blank=True,null=True)
+    valeurMax = models.FloatField(blank=True,null=True)
+
+class ResultatAnalyse(models.Model):
+    idResultatAnalyse = models.AutoField(primary_key=True, auto_created=True)
+    idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
+    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
+    valeurResultat = models.FloatField(blank=True,null=True)
+
+
+
+
+
+
 
 

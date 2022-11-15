@@ -440,6 +440,16 @@ class GestionAnalyse():
                                  indiceoctane=indiceoctane, massevolumique15=massevolumique15,
                                  dateimpression=dateimpression)
                     p.save()
+
+                    #Getting Parameters ID
+                    #
+                    #
+                    #
+                    #
+                    # m = Produit.objects.get(idproduit=b.produit_id)
+                    #
+                    # n = ResultatAnalyse(idcargaison=b,)
+
                     return redirect(url)
                 return redirect(url)
             else:
@@ -1002,8 +1012,6 @@ class GestionValidation():
     def affichagetableauvalidation1(request):
         user = request.user
         id = user.id
-        # ville = AffectationVille.objects.get(username_id=id)
-        # ville = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         d = datetime.today()
@@ -1012,9 +1020,11 @@ class GestionValidation():
         yr = d.year
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
-            qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Validation en cours 1",
-                                         idcargaison__idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
-                'dateanalyse')
+            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Validation en cours 1",
+                                         idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
+                'datereceptionlabo')
+
+            # table = AffichageVal1(qs, prefix='1_')
             table = AffichageValidation1(qs, prefix='1_')
 
             # Compteur Chef Laboratoire
@@ -1445,11 +1455,12 @@ class GestionValidation():
             return redirect('logout')
 
     @login_required(login_url='login')
-    def refaire(request, pk):
+    def refaire(request):
         user = request.user
         id = user.id
         role = user.role_id
         url = request.session['url']
+        pk = request.session['pk']
         if role == 6 or role == 1:
             c = Cargaison.objects.get(idcargaison=pk)
             c.etat = "Refaire"
@@ -1460,56 +1471,48 @@ class GestionValidation():
 
     # Validation du responsable Division LABO OCC
     @login_required(login_url='login')
-    def conforme(request, pk):
+    def conforme(request):
         user = request.user
         id = user.id
         role = user.role_id
         url = request.session['url']
+        pk = request.session['pk']
+
         if role == "v2" or role == 1 or role == 6:
             c = Cargaison.objects.get(idcargaison=pk)
-            e = Entrepot_echantillon.objects.get(idcargaison_id=c.idcargaison)
-            r = LaboReception.objects.get(idcargaison_id=e.idcargaison_id)
-            cq = r.numcertificatqualite
-            if cq == "":
-                return redirect('validation1')
-            else:
-                c.etat = "Validation en cours 2"
-                c.conformite = "Conforme aux exigences"
-                # c.etat = "Conforme aux exigences"
-                # c.conformite = "Conforme aux exigences"
-                c.impression = "0"
-                c.save(update_fields=['etat', 'conformite', 'impression'])
-                return redirect(url)
+            c.etat = "Validation en cours 2"
+            c.conformite = "Conforme aux exigences"
+            c.impression = "0"
+            c.save(update_fields=['etat', 'conformite', 'impression'])
+            return redirect(url)
         else:
             return redirect('logout')
 
     @login_required(login_url='login')
-    def nonconforme(request, pk):
+    def nonconforme(request):
         user = request.user
         id = user.id
         role = user.role_id
         url = request.session['url']
-
+        pk = request.session['pk']
         if role == "v2" or role == 1 or role == 6:
             c = Cargaison.objects.get(idcargaison=pk)
-            e = Entrepot_echantillon.objects.get(idcargaison_id=c.idcargaison)
-            r = LaboReception.objects.get(idcargaison_id=e.idcargaison_id)
-            cq = r.numcertificatqualite
-            if cq == "":
-                return redirect('validation1')
-            else:
-                c.etat = "Non conforme aux exigences"
-                c.conformite = "Non conforme aux exigences"
-                c.impression = "0"
-                c.save(update_fields=['etat', 'conformite', 'impression'])
-                return redirect(url)
-        return redirect('logout')
+            c.etat = "Non conforme aux exigences"
+            c.conformite = "Non conforme aux exigences"
+            c.impression = "0"
+            c.save(update_fields=['etat', 'conformite', 'impression'])
+            return redirect(url)
+        else:
+            return redirect('logout')
 
     @login_required(login_url='login')
-    def conforme2(request, pk):
+    def conforme2(request):
         user = request.user
         id = user.id
         role = user.role_id
+        url = request.session['url']
+        pk = request.session['pk']
+
         if role == 1 or role == "ad":
             c = Cargaison.objects.get(idcargaison=pk)
             a = LaboReception.objects.get(idcargaison=pk)
@@ -1523,7 +1526,7 @@ class GestionValidation():
 
 
     @login_required(login_url='login')
-    def nonconforme2(request, pk):
+    def nonconforme2(request):
         user = request.user
         id = user.id
         role = user.role_id
@@ -1543,16 +1546,6 @@ class GestionValidation():
     def affichagetableauvalidation2(request):
         user = request.user
         id = user.id
-
-        # Get Town du point de dechargement pour l'attribution automatique des numeros
-        # c = Cargaison.objects.get(idcargaison=pk)
-        # c = c.entrepot_id
-        # c = Entrepot.objects.get(identrepot=c)
-        # ville = c.ville_id
-        #
-        # print(ville)
-        # ville = AffectationVille.objects.get(username_id=id)
-        # ville = ville.ville_id
         role = user.role_id
         request.session['url'] = request.get_full_path()
         d = datetime.today()
@@ -1561,9 +1554,9 @@ class GestionValidation():
         yr = d.year
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
-            qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Validation en cours 2",
-                                         idcargaison__idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
-                'dateanalyse')
+            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Validation en cours 2",
+                                         idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
+                'datereceptionlabo')
             table = AffichageValidation2(qs, prefix='1_')
 
             # Compteur Chef Laboratoire
@@ -2950,3 +2943,131 @@ def natureProduitLabo(request, pk):
     else:
         context = {'form': form}
         return render(request, template, context)
+
+
+
+#Saisie saisieResultat
+@login_required(login_url='login')
+def saisieResultat(request,pk):
+    template = 'labo_analyse_form.html'
+    request.session['pk'] = pk
+    # qs = ParametresProduits.objects.raw('SELECT pa.idParametre, c.idcargaison, p.nomproduit, pa.nomParametre, r.valeurResultat \
+    #         FROM enreg_cargaison c, enreg_produit p, enreg_affectationparametre a, enreg_parametresproduits pa, enreg_resultatanalyse r \
+    #         WHERE c.produit_id = p.idproduit \
+    #         AND p.idproduit = a.idproduit_id \
+    #         AND a.idParametre_id = pa.idParametre \
+    #         AND pa.idParametre = r.idParametre_id \
+    #         AND c.idcargaison = %s',[pk,])
+
+    qs = ParametresProduits.objects.raw('SELECT pa.idParametre,c.idcargaison, p.nomproduit, pa.nomParametre, r.valeurResultat \
+            FROM enreg_cargaison c \
+            LEFT JOIN enreg_produit p \
+            ON c.produit_id = p.idproduit \
+            LEFT JOIN enreg_affectationparametre a \
+            ON p.idproduit = a.idproduit_id \
+            LEFT JOIN enreg_parametresproduits pa \
+            ON a.idParametre_id = pa.idParametre \
+            LEFT JOIN enreg_resultatanalyse r \
+            ON pa.idParametre = r.idParametre_id \
+            WHERE c.idcargaison = %s \
+            AND c.etat = "Analyse Labo en cours" \
+            ORDER BY a.id ASC' ,[pk,])
+
+    table = SaisieResultat(qs,prefix='_1')
+    RequestConfig(request, paginate={"per_page": 50}).configure(table)
+    context = {'table': table}
+    return render(request,template,context)
+
+@login_required(login_url='login')
+def saisieResultatParametre(request,pk):
+    id = request.session['pk']
+    cargaison = Cargaison.objects.get(idcargaison=id)
+    parametre = ParametresProduits.objects.get(idParametre=pk)
+    if request.method == 'POST':
+        valeurResultat = request.POST['valeurResultat']
+        r = ResultatAnalyse(valeurResultat=valeurResultat, idParametre=parametre, idcargaison=cargaison)
+        r.save()
+        # print('OK')
+        return redirect('saisieResultat',id)
+    else:
+        return redirect('saisieResultat',id)
+
+
+@login_required(login_url='login')
+def validationResulat(request):
+    id = request.session['pk']
+    cargaison = Cargaison.objects.get(idcargaison=id)
+    cargaison.etat = 'Validation en cours 1'
+    cargaison.save(update_fields=['etat'])
+    return redirect('analyse')
+
+
+@login_required(login_url='login')
+def affichageDetailsResultats(request,pk):
+    user = request.user.id
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    request.session['pk'] = pk
+
+    template = 'laboDetailsResultat.html'
+
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
+    	                IF (r.valeurResultat  > a.valeurMax , "Hors norme", \
+    		            IF (r.valeurResultat < a.valeurMin, "Hors norme","Conforme")) as etatValeur \
+                        FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
+                        WHERE c.idcargaison = r.idcargaison_id \
+    	                AND r.idParametre_id = p.idParametre \
+                        AND p.idParametre = a.idParametre_id \
+                        AND a.idproduit_id = ep.idproduit \
+                        AND ep.idproduit = c.produit_id \
+                        AND c.importateur_id = i.idimportateur \
+                        AND c.idcargaison = e.idcargaison_id \
+                        AND e.idcargaison_id = l.idcargaison_id \
+                        AND c.entrepot_id = ee.identrepot \
+                        AND ee.ville_id = ev.idville \
+                        AND ev.idville = aa.ville_id \
+                        AND aa.username_id = %s \
+                        AND c.idcargaison = %s \
+                        AND c.etat = "Validation en cours 1"', [user,pk, ])
+
+    table = AffichageDetailResultat(qs,prefix='_1')
+    RequestConfig(request, paginate={"per_page": 50}).configure(table)
+    context = {'table': table}
+    return render(request,template,context)
+
+
+
+@login_required(login_url='login')
+def affichageDetailsResultatsDroite(request,pk):
+    user = request.user.id
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    request.session['pk'] = pk
+
+    template = 'laboDetailsResultatDroite.html'
+
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
+    	                IF (r.valeurResultat  > a.valeurMax , "Hors norme", \
+    		            IF (r.valeurResultat < a.valeurMin, "Hors norme","Conforme")) as etatValeur \
+                        FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
+                        WHERE c.idcargaison = r.idcargaison_id \
+    	                AND r.idParametre_id = p.idParametre \
+                        AND p.idParametre = a.idParametre_id \
+                        AND a.idproduit_id = ep.idproduit \
+                        AND ep.idproduit = c.produit_id \
+                        AND c.importateur_id = i.idimportateur \
+                        AND c.idcargaison = e.idcargaison_id \
+                        AND e.idcargaison_id = l.idcargaison_id \
+                        AND c.entrepot_id = ee.identrepot \
+                        AND ee.ville_id = ev.idville \
+                        AND ev.idville = aa.ville_id \
+                        AND aa.username_id = %s \
+                        AND c.idcargaison = %s \
+                        AND c.etat = "Validation en cours 2"', [user,pk, ])
+
+    table = AffichageDetailResultat(qs,prefix='_1')
+    RequestConfig(request, paginate={"per_page": 50}).configure(table)
+    context = {'table': table}
+    return render(request,template,context)
+
+
+
+

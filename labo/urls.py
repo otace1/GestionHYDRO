@@ -40,12 +40,12 @@ urlpatterns = [
 
     path('rapport/<int:pk>', views.GestionValidation.affichagerapportpdf, name='rapportvalidationpdf'),
     path('val/<int:pk>', views.GestionValidation.validationv1, name='validationv1'),
-    path('val2/<int:pk>', views.GestionValidation.conforme, name='conforme'),
-    path('val3/<int:pk>', views.GestionValidation.nonconforme, name='nonconforme'),
-    path('ref/<int:pk>', views.GestionValidation.refaire, name='refaire'),
+    path('conforme/', views.GestionValidation.conforme, name='conforme'),
+    path('nonconforme/', views.GestionValidation.nonconforme, name='nonconforme'),
+    path('refaire/', views.GestionValidation.refaire, name='refaire'),
 
-    path('val4/<int:pk>', views.GestionValidation.conforme2, name='conforme2'),
-    path('val5/<int:pk>', views.GestionValidation.nonconforme2, name='nonconforme2'),
+    path('conforme2/', views.GestionValidation.conforme2, name='conforme2'),
+    path('nonconforme2/', views.GestionValidation.nonconforme2, name='nonconforme2'),
 
     # Dashboard Laboratoire
     path('labdash/', views.labdashboard, name='labodashboard'),
@@ -55,5 +55,16 @@ urlpatterns = [
 
     # Qualification Produit
     path('nature/<int:pk>', views.natureProduitLabo, name='natureProduitLabo'),
+
+    #Nouveau Form de Saisie des resultats
+    path('saisieResultat/<int:pk>', views.saisieResultat, name='saisieResultat'),
+    path('saisieResultatParametre/<int:pk>', views.saisieResultatParametre, name='saisieResultatParametre'),
+
+    path('validationResulat/', views.validationResulat, name='validationResulat'),
+
+    path('affichageDetailsResultatsGauche/<int:pk>', views.affichageDetailsResultats, name='affichageDetailsResultats'),
+
+    path('affichageDetailsResultatsDroite/<int:pk>', views.affichageDetailsResultatsDroite, name='affichageDetailsResultatsDroite'),
+
 
 ]

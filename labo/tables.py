@@ -52,13 +52,21 @@ numerore = """
  </form>
 
 """
+#
+# TEMPLATE1 = """
+# <a class="btn btn-primary" href="{%url 'mogas' record.pk%}" role="button">MOGAS</a>
+# <a class="btn btn-primary" href="{%url 'gasoil' record.pk%}" role="button">GASOIL</a>
+# <a class="btn btn-primary" href="{%url 'jeta1' record.pk%}" role="button">JET A1</a>
+# <a class="btn btn-primary" href="{%url 'petrole' record.pk%}" role="button">PETROLE</a>
+#             """
+
 
 TEMPLATE1 = """
-<a class="btn btn-primary" href="{%url 'mogas' record.pk%}" role="button">MOGAS</a>
-<a class="btn btn-primary" href="{%url 'gasoil' record.pk%}" role="button">GASOIL</a>
-<a class="btn btn-primary" href="{%url 'jeta1' record.pk%}" role="button">JET A1</a>
-<a class="btn btn-primary" href="{%url 'petrole' record.pk%}" role="button">PETROLE</a>
+<a class="btn btn-primary" href="{%url 'saisieResultat' record.pk%}" role="button">SAISIE</a>
             """
+
+
+
 
 TEMPLATE2 = """
 <a class="btn btn-primary" href="{%url 'mogasr' record.pk%}" role="button">MOGAS</a>
@@ -67,11 +75,15 @@ TEMPLATE2 = """
 <a class="btn btn-primary" href="{%url 'petroler' record.pk%}" role="button">PETROLE</a>
             """
 
+# VALIDATION1 = """
+# <a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
+# <a href="{%url 'conforme' record.pk%}" class="btn btn-success">CONFORME</a>
+# <a href="{%url 'nonconforme' record.pk%}" class="btn btn-danger">NON CONFORME</a>
+# <a href="{%url 'refaire' record.pk%}" class="btn btn-light">A REFAIRE</a>
+# """
+
 VALIDATION1 = """
-<a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
-<a href="{%url 'conforme' record.pk%}" class="btn btn-success">CONFORME</a>
-<a href="{%url 'nonconforme' record.pk%}" class="btn btn-danger">NON CONFORME</a>
-<a href="{%url 'refaire' record.pk%}" class="btn btn-light">A REFAIRE</a>
+<a href="{%url 'affichageDetailsResultats' record.pk%}" class="btn btn-warning">AFFICHER</a>
 """
 
 CQ = """
@@ -83,10 +95,15 @@ CQ = """
 """
 
 VALIDATION2 = """
-<a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
-<a href="{%url 'conforme2' record.pk%}" class="btn btn-success">CONFORME</a>
-<a href="{%url 'nonconforme2' record.pk%}" class="btn btn-danger">NON CONFORME</a>
+<a href="{%url 'affichageDetailsResultatsDroite' record.pk%}" class="btn btn-warning">AFFICHER</a>
 """
+
+#
+# VALIDATION2 = """
+# <a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
+# <a href="{%url 'conforme2' record.pk%}" class="btn btn-success">CONFORME</a>
+# <a href="{%url 'nonconforme2' record.pk%}" class="btn btn-danger">NON CONFORME</a>
+# """
 
 IMPRESSION = """
     <a href="{%url 'print' record.pk%}" class="btn btn-info">Impression</a>
@@ -187,39 +204,69 @@ class AffichageAnalyseRefaire(tables.Table):
 class AffichageValidation1(tables.Table):
     actions = tables.TemplateColumn(VALIDATION1, verbose_name='')
     # certificat = tables.TemplateColumn(CQ, verbose_name='C.Q')
-    idcargaison__idcargaison__numrappechauto = tables.Column(verbose_name='Numéro RE')
-    idcargaison__codelabo = tables.Column(verbose_name="Code Labo")
-    idcargaison__numcertificatqualite = tables.Column(verbose_name="Numéro CQ")
-    idcargaison__idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="Produit")
-    idcargaison__idcargaison__idcargaison__importateur__nomimportateur = tables.Column(verbose_name="Importateur")
+    datereceptionlabo = tables.Column(verbose_name='DATE REC.')
+    codelabo = tables.Column(verbose_name="CODE LABO")
+    numcertificatqualite = tables.Column(verbose_name="NUM.CQ")
+    idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['idcargaison__codelabo', 'idcargaison__idcargaison__numrappechauto',
-                    'idcargaison__idcargaison__idcargaison__importateur__nomimportateur',
-                    'idcargaison__idcargaison__idcargaison__produit__nomproduit', 'idcargaison__numcertificatqualite']
-        exclude = ['idcargaison', 'numcertificatqualite', 'codelabo', 'datereceptionlabo']
+        sequence = ['datereceptionlabo', 'codelabo', 'numcertificatqualite',
+                    'idcargaison__idcargaison__produit__nomproduit', 'idcargaison__idcargaison__entrepot__nomentrepot'
+                    ]
+        exclude = ['idcargaison', 'idcargaison__numrappechauto']
+
+
+class AffichageVal1(tables.Table):
+    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    nomproduit = tables.Column(verbose_name='PRODUIT')
+    codelabo = tables.Column(verbose_name='CODE LABO')
+    numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
+    # nomParametre = tables.Column(verbose_name='PARAM.')
+    # valeurResultat = tables.Column(verbose_name='VALEUR')
+    # etatValeur = tables.Column(verbose_name='')
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
+class DetailsAnalyse(tables.Table):
+    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    nomproduit = tables.Column(verbose_name='PRODUIT')
+    codelabo = tables.Column(verbose_name='CODE LABO')
+    numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
+    nomParametre = tables.Column(verbose_name='PARAM.')
+    valeurResultat = tables.Column(verbose_name='VALEUR')
+    etatValeur = tables.Column(verbose_name='')
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
 
 
 class AffichageValidation2(tables.Table):
     actions = tables.TemplateColumn(VALIDATION2, verbose_name='')
     # certificat = tables.TemplateColumn(CQ, verbose_name='C.Q')
-    idcargaison__idcargaison__numrappechauto = tables.Column(verbose_name='Numéro RE')
-    idcargaison__codelabo = tables.Column(verbose_name="Code Labo")
-    idcargaison__numcertificatqualite = tables.Column(verbose_name="Numéro CQ")
-    idcargaison__idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="Produit")
-    idcargaison__idcargaison__idcargaison__importateur__nomimportateur = tables.Column(verbose_name="Importateur")
+    # idcargaison__numrappechauto = tables.Column(verbose_name='Numéro RE')
+    datereceptionlabo = tables.Column(verbose_name='DATE REC.')
+    codelabo = tables.Column(verbose_name="CODE LABO")
+    numcertificatqualite = tables.Column(verbose_name="NUM.CQ")
+    idcargaison__idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
         template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
-        sequence = ['idcargaison__codelabo', 'idcargaison__idcargaison__numrappechauto',
-                    'idcargaison__idcargaison__idcargaison__importateur__nomimportateur',
-                    'idcargaison__idcargaison__idcargaison__produit__nomproduit', 'idcargaison__numcertificatqualite']
-        exclude = ['idcargaison', 'numcertificatqualite', 'codelabo', 'datereceptionlabo']
+        sequence = ['datereceptionlabo','codelabo','numcertificatqualite','idcargaison__idcargaison__produit__nomproduit','idcargaison__idcargaison__entrepot__nomentrepot'
+                    ]
+        exclude = ['idcargaison','idcargaison__numrappechauto']
 
 
 class AffichageValidation2Go(tables.Table):
@@ -376,3 +423,41 @@ class EchantReception(tables.Table):
         sequence = ['datereceptionlabo', 'idcargaison__idcargaison__importateur', 'idcargaison__idcargaison__entrepot',
                     'codelabo', 'idcargaison__idcargaison__numrappech', 'idcargaison__idcargaison__produit__nomproduit']
         exclude = ['idcargaison', 'numcertificatqualite']
+
+
+#Template Column
+champSaisieValeurResultat = """
+ <form method=post action="{% url 'saisieResultatParametre' record.pk%}">
+    {% csrf_token %}
+     <input type="text" name="valeurResultat">
+ </form>
+
+"""
+
+class SaisieResultat(tables.Table):
+    nomproduit = tables.Column(verbose_name='PRODUIT')
+    nomParametre = tables.Column(verbose_name='PARAMETRE(S)')
+    valeurResultat = tables.Column(verbose_name='VALEUR RESULTAT')
+    saisieValeur = tables.TemplateColumn(champSaisieValeurResultat, verbose_name='')
+
+    class Meta:
+        attrs = {"class": "table table-hover text-nowrap table-striped",
+                 "id": "table1"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
+class AffichageDetailResultat(tables.Table):
+    codelabo = tables.Column(verbose_name='CODE LABO')
+    nomParametre = tables.Column(verbose_name='NOM PARAMETRE(S)')
+    valeurResultat = tables.Column(verbose_name='RESULTAT(S)')
+    etatValeur = tables.Column(verbose_name='OBSERVATION(S)')
+
+    class Meta:
+        # row_attrs = {"style": lambda record: record.etatValeur "background-color: #8B0000;" if record['Hors norme'] else "background-color: #000000;" }
+        row_attrs = {
+            'id':lambda record:record.etatValeur,
+        }
+        attrs = {"class": "table table-hover text-nowrap table-striped",
+                 "id": "table1"}
+        template_name = "django_tables2/bootstrap4.html"
+

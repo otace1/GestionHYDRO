@@ -52,6 +52,16 @@
 
 {% endblock %}
 
+  <style>
+      .selected {
+  background-color: green;
+}
+
+.bad {
+  background-color: red;
+}
+  </style>
+
   </head>
   <body class="hold-transition sidebar-mini sidebar-collapse">
   <div class="wrapper">
@@ -459,9 +469,10 @@
           <section class="content">
               <div class="container-fluid">
                   <div class="row">
-                      <div class="col-md-4">
-                          <a class="btn btn-danger" href="{% url 'analyse' %}" role="button"> << RETOUR << </a>
-                          <a class="btn btn-primary" href="{% url 'validationResulat' %}" role="button">>> VALIDER >> </a>
+                      <div class="col-md-6">
+                          <a class="btn btn-danger" href="{% url 'validation2' %}" role="button"> << RETOUR << </a>
+                          <a class="btn btn-success" href="{% url 'conforme2' %}" role="button">>> CONFORME >> </a>
+                          <a class="btn btn-danger" href="{% url 'nonconforme2' %}" role="button">>> NON CONFORME >> </a>
                       </div>
                   </div>
               <br/>
@@ -544,12 +555,10 @@ var Id;
 
 $(document).ready(function () {
 
-    {% block javascript %}
-
-    {% endblock %}
-
 })
 </script>
+  {% block javascript %}
 
+  {% endblock %}
 </body>
 </html>

@@ -557,13 +557,13 @@ def impressionRapport(request, pk):
     prLtTanker = round((govLtTanker * 100) / govLt,3)
     if gsvLt==0:
         gsvLt=1
-    prGsvLtTanker = round((gsvLtTanker * 100) / float(gsvLt),3)
+    prGsvLtTanker = round((gsvLtTanker * 100)/ float(gsvLt),3)
     if mtaLt==0:
         mtaLt=1
-    prMtaLtTanker = round((mtaLtTanker * 100) / float(mtaLt),3)
+    prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100),3)
     if mtvLt==0:
         mtvLt=1
-    prMtvLtTanker = round((mtvLtTanker * 100) / float(mtvLt),3)
+    prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
 
     govTankerMeter = govTotal - govMeter  # Difference Tanker/Meter
     gsvTankerMeter = gsvTotal - gsvMeter  # Difference GSV Tanker/Meter
