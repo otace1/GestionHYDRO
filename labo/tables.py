@@ -62,7 +62,7 @@ numerore = """
 
 
 TEMPLATE1 = """
-<a class="btn btn-primary" href="{%url 'saisieResultat' record.pk%}" role="button">SAISIE</a>
+<a class="btn btn-success" href="{%url 'saisieResultat' record.pk%}" role="button">ENCODAGE DES RESULTATS</a>
             """
 
 
@@ -106,7 +106,7 @@ VALIDATION2 = """
 # """
 
 IMPRESSION = """
-    <a href="{%url 'print' record.pk%}" class="btn btn-info">Impression</a>
+    <a href="{%url 'print' record.pk%}" class="btn btn-info">IMPRESSION CERTIFICAT</a>
     """
 
 REIMPRESSION = """
@@ -185,12 +185,11 @@ class AffichageAnalyse(tables.Table):
 
 
 class AffichageAnalyseRefaire(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE2, verbose_name='')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
     codelabo = tables.Column(verbose_name='CODE LABO')
     produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
     datereceptionlabo = tables.Column(verbose_name='DATE RECEPT.')
-    # natureProduitLabo = tables.Column(verbose_name='Produit CONST.')
     numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
 
     class Meta:
@@ -225,9 +224,6 @@ class AffichageVal1(tables.Table):
     nomproduit = tables.Column(verbose_name='PRODUIT')
     codelabo = tables.Column(verbose_name='CODE LABO')
     numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
-    # nomParametre = tables.Column(verbose_name='PARAM.')
-    # valeurResultat = tables.Column(verbose_name='VALEUR')
-    # etatValeur = tables.Column(verbose_name='')
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
@@ -298,33 +294,17 @@ class AffichageValidation2Go(tables.Table):
 
 
 class AffichageTableauImpression(tables.Table):
+    datereceptionlabo = tables.Column(verbose_name='DATE RECEPTION')
+    codelabo = tables.Column(verbose_name='CODE LABO')
+    numcertificatqualite = tables.Column(verbose_name='NUMERO CQ')
+    produit = tables.Column(verbose_name='NATURE PRODUIT')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPROT')
     certificat = tables.TemplateColumn(IMPRESSION, verbose_name='')
-    # fiches = tables.TemplateColumn(IMPRESSION1)
-    numrappech = tables.Column(accessor='idcargaison.idcargaison.numrappech', verbose_name='Numero RE')
-    codelabo = tables.Column(accessor='idcargaison.codelabo', verbose_name='Code Labo')
-    numcertificatqualite = tables.Column(accessor='idcargaison.numcertificatqualite', verbose_name='Numero CQ')
-    produit = tables.Column(accessor='idcargaison.idcargaison.idcargaison.produit')
-    importateur = tables.Column(accessor='idcargaison.idcargaison.idcargaison.importateur')
-    immatriculation = tables.Column(accessor='idcargaison.idcargaison.idcargaison.immatriculation')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
-        model = Resultat
-        sequence = ['dateanalyse','numcertificatqualite', 'codelabo', 'numrappech','produit', 'importateur','immatriculation']
-        exclude = ['idcargaison', 'aspect', 'odeur', 'couleursaybolt', 'couleurastm', 'aciditetotal', 'soufre',
-                   'soufremercaptan',
-                   'docteurtest', 'massevolumique', 'aromatique', 'distillation', 'distillation10', 'distillation20',
-                   'distillation50',
-                   'distillation90', 'pointinitial', 'pointfinal', 'pointeclair', 'pointfumee', 'freezingpoint',
-                   'residu', 'perte',
-                   'viscosite', 'pointinflammabilite', 'pointecoulement', 'teneureau', 'sediment', 'corrosion',
-                   'conductivite',
-                   'pourcent10', 'pourcent20', 'pourcent50', 'pourcent70', 'pourcent90', 'difftemperature',
-                   'tensionvapeur', 'plomb', 'indiceoctane',
-                   'vol10', 'vol20', 'vol30', 'vol40', 'vol50', 'vol60', 'vol70', 'vol80', 'vol90', 'indicecetane',
-                   'densite', 'recuperation362',
-                   'cendre', 'massevolumique15', 'dateimpression']
 
 
 class AffichageTableauReImpression(tables.Table):

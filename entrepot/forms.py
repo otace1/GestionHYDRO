@@ -166,7 +166,7 @@ class SealInspection(forms.ModelForm):
 #Avec presence compteur
 class TankerInspection(forms.Form):
     # produit = forms.ModelChoiceField(Produit.objects.all(), label="PRODUIT")
-    meterbefore = forms.FloatField(required=False, label="INDEX INITIAL DU COMPTEUR")
+    # meterbefore = forms.FloatField(required=False, label="INDEX INITIAL DU COMPTEUR")
     dens = forms.FloatField(required=True, label="DENSITE (Ex. 820.907)")
     temp = forms.FloatField(required=True, label="TEMPERATURE")
     innagein = forms.CharField(widget=forms.Select(choices=unites_mesure_innagein), label="INNAGE IN", required=False)
@@ -178,11 +178,11 @@ class TankerInspection(forms.Form):
         super(TankerInspection, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
-            Row(
-                # Column('produit', css_class='form-group col-md-6 mb-0'),
-                Column('meterbefore', css_class='form-group col-md-6 mb-0'),
-                css_class='form-row'
-            ),
+            # Row(
+            #     # Column('produit', css_class='form-group col-md-6 mb-0'),
+            #     Column('meterbefore', css_class='form-group col-md-6 mb-0'),
+            #     css_class='form-row'
+            # ),
             Row(
                 Column('dens', css_class='form-group col-md-6 mb-0'),
                 Column('temp', label='PROVENANCE', css_class='form-group col-md-6 mb-0'),
@@ -215,12 +215,17 @@ class CompartimentInspection(forms.ModelForm):
 
 
 class MeterAfter(forms.Form):
-    meterafter = forms.FloatField(label="INDEX COMPTEUR")
+    meterbefore = forms.FloatField(required=False, label="INDEX INITIAL DU COMPTEUR")
+    meterafter = forms.FloatField(required=False, label="INDEX FINAL DU COMPTEUR")
 
     def __init__(self, *args, **kwargs):
         super(MeterAfter, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.layout = Layout(
+            Row(
+                Column('meterbefore', css_class='form-group col-md-12 mb-0'),
+                css_class='form-row'
+            ),
             Row(
                 Column('meterafter', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'

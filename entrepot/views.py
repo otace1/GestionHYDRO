@@ -2205,11 +2205,11 @@ def tankerinspection(request):
             volumein = request.POST['volumein']
             tempin = request.POST['tempin']
             weightin = request.POST['weightin']
-            meterbefore = request.POST['meterbefore']
-            if meterbefore == '':
-                meterbefore = 0
+            # # meterbefore = request.POST['meterbefore']
+            # if meterbefore == '':
+            #     meterbefore = 0
             data = Inspection(idcargaison=cargaison, dens=dens, temp=temp, innagein=innagein,
-                              volumein=volumein, tempin=tempin, weightin=weightin, meterbefore=meterbefore)
+                              volumein=volumein, tempin=tempin, weightin=weightin)
             data.save()
             return redirect('compartiment', pk=pk)
     else:
@@ -2317,11 +2317,16 @@ def meterafter(request,pk):
         if request.method == 'POST':
             if form.is_valid():
                 meterafter = request.POST['meterafter']
+                meterbefore = request.POST['meterbefore']
+                if meterbefore == '':
+                    meterbefore = 0
+                if meterafter == '':
+                    meterafter = 0
                 cargaison.etat = 'Cargaison dechargee'
                 cargaison.save(update_fields=['etat'])
 
                 inspection.meterafter = meterafter
-                inspection.save(update_fields=['meterafter'])
+                inspection.save(update_fields=['meterafter','meterbefore'])
                 return redirect('dechargement')
         context = {'form': form}
         return render(request, template, context)

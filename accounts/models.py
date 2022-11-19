@@ -67,6 +67,7 @@ class MyUser(AbstractBaseUser):
     last_name = models.CharField(max_length=30)
     role = models.ForeignKey(Roles, on_delete=models.CASCADE)
     fonction = models.CharField(max_length=256, null=True, blank=True)
+    poste = models.CharField(max_length=100, null=True, blank=True)
     # fonctions = models.CharField(max_length=256, null=True, blank=True)
     # signature = JSignatureField(blank=True, null=True)
 
