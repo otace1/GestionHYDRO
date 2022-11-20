@@ -13,7 +13,6 @@ from accounts.models import *
 from .tables import CargaisonTable
 
 
-
 # Create your views here.
 class GestionCargaison():
     # Affichage du Tableaux des caragisons enregistrer

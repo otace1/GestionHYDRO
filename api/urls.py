@@ -23,4 +23,7 @@ urlpatterns = [
     path('auth/user/', AuthUserApiView.as_view(), name='auth'),
     path('auth/user/login/', loginApiView, name='apiLoginToken'),
 
+    #Verification API
+    path('verificationQrCode/<int:pk>', verificationQrCode, name='verificationQrCode'),
+
 ]

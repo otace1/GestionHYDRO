@@ -27,6 +27,7 @@ urlpatterns = [
 
                   # Api
                   path('api/', include("api.urls")),
+                  # path('verification/', include("verification.urls")),
 
                   # Auth
                   # path('api-auth/', include('rest_framework.urls')),

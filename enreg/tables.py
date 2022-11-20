@@ -30,7 +30,7 @@ class CargaisonTable(tables.Table):
         sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume', 'volume15',
                     'volume20', 'tonnagevide',
                     'tonnageair']
-        exclude = ['idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        exclude = ['dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'controlOrganoleptique',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',

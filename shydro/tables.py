@@ -60,10 +60,6 @@ E = """<a href="{%url 'reprintact' record.pk%}" class="btn btn-success">Ré-Impr
 
 
 class CodificationTable(tables.Table):
-    numreqi = tables.TemplateColumn(A1, verbose_name='SAISIE REF.REQUISITION')
-    numreq = tables.Column(verbose_name='REF.REQUISITION')
-    numdos = tables.Column(verbose_name='NUM DE DOSSIER')
-    buttons = tables.TemplateColumn(A3, verbose_name='')
     dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
     importateur = tables.Column(verbose_name='FOURNISSEUR')
     entrepot = tables.Column(verbose_name='ENTREPOT')
@@ -71,19 +67,23 @@ class CodificationTable(tables.Table):
     volume = tables.Column(verbose_name='VOLUME')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     declaration = tables.Column(verbose_name='N°DECLARATION')
+    # numdos = tables.Column(verbose_name='NUM DE DOSSIER')
+    numreq = tables.Column(verbose_name='REF.REQUISITION')
+    numreqi = tables.TemplateColumn(A1, verbose_name='SAISIE REF.REQUISITION')
+    buttons = tables.TemplateColumn(A3, verbose_name='')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'volume', 'immatriculation',
-                    'declaration', 'numreq',
-                    'numreqi']
-        exclude = ['idcargaison', 'etatInspection','valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-                   'requisitiondackdate', 'numdos', 'voie', 'provenance', 'poids',
-                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'controlOrganoleptique']
+        # model = Cargaison
+        # sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'volume', 'immatriculation',
+        #             'declaration', 'numreq',
+        #             'numreqi']
+        # exclude = ['idcargaison', 'etatInspection','valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        #            'typeunitetransport', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
+        #            'requisitiondackdate', 'numdos', 'voie', 'provenance', 'poids',
+        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+        #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'controlOrganoleptique']
 
 
 class ModificationCodification(tables.Table):

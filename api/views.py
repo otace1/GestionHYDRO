@@ -390,16 +390,6 @@ class TypeUnite(APIView):
     queryset = TypeUniteTransport.objects.all()
     serializer_class = UniteSerializer
 
-    # permission_classes = [HasAPIKey]
-
-    # def post(self, request):
-    #     serializer = UniteSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     def get(self, request):
         data = TypeUniteTransport.objects.all()
         serializer = UniteSerializer(data, many=True)
@@ -480,8 +470,6 @@ class GetCargoCount(APIView):
     queryset = Cargaison.objects.all()
     serializer_class = CargaisonSerializer
 
-    # permission_classes = [HasAPIKey]
-
     def get(self, request):
         y = datetime.date.today()
         year = y.year
@@ -507,3 +495,10 @@ class AuthUserApiView(GenericAPIView):
         user = request.user
         serializer = UserSerializer(get_user_model())
         return Response({'user': serializer.data})
+
+
+@api_view(['GET'])
+def verificationQrCode(request,pk):
+    context = pk
+    return Response(context)
+

@@ -130,8 +130,7 @@ class Cargaison(models.Model):
     frontiere = models.ForeignKey(Ville, on_delete=models.PROTECT, verbose_name='Frontiere')
     provenance = CountryField(blank_label='(Selectionner le pays)', verbose_name='Provenance')
     entrepot = models.ForeignKey(Entrepot, on_delete=models.PROTECT, verbose_name='Entrepot')
-    # poids = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Poids')
-    volume = models.DecimalField(max_digits=20, decimal_places=2, default='0', verbose_name='Volume')
+    volume = models.FloatField(verbose_name='Volume')
     immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation')
     dateheurecargaison = models.DateTimeField(auto_now_add=True, verbose_name='Date et heure')
     qrcode = models.CharField(max_length=250, default='NULL')
@@ -157,16 +156,16 @@ class Cargaison(models.Model):
 
     # Nouveau champ a ajouter
     typeunitetransport = models.ForeignKey(TypeUniteTransport, on_delete=models.PROTECT, blank=True, null=True)
-    volume15 = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    volume20 = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    tonnagevide = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    tonnageair = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    volume15 = models.FloatField(blank=True, null=True)
+    volume20 = models.FloatField(blank=True, null=True)
+    tonnagevide = models.FloatField(blank=True, null=True)
+    tonnageair = models.FloatField(blank=True, null=True)
 
-    l_control = models.IntegerField(null=True)
-    printactdate = models.DateField(auto_now_add=True)
+    # l_control = models.IntegerField(null=True)
+    # printactdate = models.DateField(auto_now_add=True)
 
-    # Control d'affichage conformite organoleptique
-    controlOrganoleptique = models.BooleanField(default=0)
+    # # Control d'affichage conformite organoleptique
+    # controlOrganoleptique = models.BooleanField(default=0)
 
     # Shore Inspection
     before = models.BooleanField(default=0, verbose_name='SHORE BEFORE')
@@ -177,6 +176,9 @@ class Cargaison(models.Model):
 
     #Champ de control pour l'inspection
     etatInspection = models.BooleanField(default=False)
+
+    #Date et heure d'analyse
+    dateHeureAnalyseLabo = models.DateTimeField(blank=True,null=True)
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})

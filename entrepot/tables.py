@@ -104,6 +104,8 @@ class RapportEchantillonage(tables.Table):
     idcargaison = tables.Column(verbose_name='N.Enr.')
     numreq = tables.Column(verbose_name='N.Requisition')
     numdos = tables.Column(verbose_name='N.Dossier')
+    impressionre = tables.TemplateColumn(TEMPLATE3, verbose_name='')
+
 
     class Meta:
         attrs = {
@@ -111,14 +113,14 @@ class RapportEchantillonage(tables.Table):
             "id": "example2"
         }
         template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation',
-                    'numreq', 'numdos']
-        exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport',
-                   'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
-                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control']
+        # model = Cargaison
+        # sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation',
+        #             'numreq', 'numdos']
+        # exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        #            'typeunitetransport',
+        #            'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
+        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+        #            'tampon', 'printactdate', 'l_control']
 
 
 class CargaisonDechargement(tables.Table):

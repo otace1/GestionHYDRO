@@ -34,7 +34,7 @@ class GestionLaboratoire():
         role = user.role_id
         if role == 4 or role == 1:
             qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner", idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__controlOrganoleptique=False).order_by('-dateechantillonage')
+                                                     ).order_by('-dateechantillonage')
             table = LaboratoireReception(qs)
 
             qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours").order_by(
