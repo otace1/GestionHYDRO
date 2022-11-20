@@ -24,6 +24,6 @@ urlpatterns = [
     path('auth/user/login/', loginApiView, name='apiLoginToken'),
 
     #Verification API
-    path('verificationQrCode/<int:pk>', verificationQrCode, name='verificationQrCode'),
+    path('verificationQrCode/', verificationQrCode, name='verificationQrCode'),
 
 ]

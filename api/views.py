@@ -497,8 +497,8 @@ class AuthUserApiView(GenericAPIView):
         return Response({'user': serializer.data})
 
 
-@api_view(['GET'])
-def verificationQrCode(request,pk):
-    context = pk
+@api_view(['POST'])
+def verificationQrCode(request):
+    context = request.data['qrCode']
     return Response(context)
 
