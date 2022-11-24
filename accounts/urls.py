@@ -18,4 +18,6 @@ urlpatterns = [
     # Signature
     path('sign/<int:pk>', views.sign_it, name='sign_it'),
 
+    path('createToken/<int:pk>', views.createToken, name='createToken'), # Create Token
+
 ]

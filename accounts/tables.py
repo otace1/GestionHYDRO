@@ -4,6 +4,7 @@ from .models import MyUser, AffectationEntrepot, AffectationVille
 
 TEMPLATE = """
 <a href="{%url 'edit' record.pk%}" class="btn btn-success" aria-hidden="true">Details</a>
+<a href="{%url 'createToken' record.pk%}" class="btn btn-success" aria-hidden="true">Create APP Token</a>
 <a href="{%url 'delete_user' record.pk%}" class="btn btn-danger" aria-hidden="true">Effacer</a>
             """
 TEMPLATE1 = """
@@ -21,12 +22,21 @@ TEMPLATE3 = """
 
 class ListeUtilisateurs(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
+    id = tables.Column(verbose_name='USER ID')
+    first_name = tables.Column(verbose_name='FIRSTNAME')
+    last_name = tables.Column(verbose_name='LASTNAME')
+    username = tables.Column(verbose_name='USERNAME')
+    fonction = tables.Column(verbose_name='FONCTION')
+    poste = tables.Column(verbose_name='POSTE   ')
+    role = tables.Column(verbose_name='APP LEVEL')
+    last_login = tables.Column(verbose_name='DERNIERE CONNEXION')
+
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = MyUser
-        sequence = ['id', 'first_name', 'last_name', 'username', 'role', 'last_login']
+        sequence = ['id', 'first_name', 'last_name', 'username','fonction','poste', 'role', 'last_login']
         exclude = ['password', 'is_admin', 'is_staff', 'entrepot', 'ville']
 
 

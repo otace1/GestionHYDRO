@@ -269,3 +269,12 @@ def sign_it(request, pk):
 
     context = {'form': form}
     return render(request, template, context)
+
+
+@login_required(login_url='login')
+def createToken(request,pk):
+    user = MyUser.objects.get(id=pk)
+    if user:
+        Token.objects.create(user=user)
+        return redirect('userslist')
+    return redirect('userslist')
