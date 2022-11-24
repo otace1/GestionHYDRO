@@ -524,10 +524,10 @@ def impressionRapport(request, pk):
 
     compartiment = Compartiment.objects.filter(
         idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
-    govTotal = sum(compartiment.values_list('gov', flat=True))  # gov Total Tanker
-    gsvTotal = round(sum(compartiment.values_list('gsv', flat=True)),3)  # gsv Total Tanker
-    mtaTotal = round(sum(compartiment.values_list('mta', flat=True)),3)  # mta Total Tanker
-    mtvTotal = sum(compartiment.values_list('mtv', flat=True))  # mtv Total Tanker
+    govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)),3))  # gov Total Tanker
+    gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)),3))  # gsv Total Tanker
+    mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)),3))  # mta Total Tanker
+    mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)),3))  # mtv Total Tanker
 
     densite = densite15(inspection.temp, inspection.dens)  # densite 15c
     govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
@@ -550,10 +550,10 @@ def impressionRapport(request, pk):
         mtaLt = 0
     # mtaLt = mta(gsvLt, densite)  # MTA LT
 
-    govLtTanker = govLt - govTotal  # Difference LT/Tanker
-    gsvLtTanker = round((float(gsvLt) - gsvTotal),3)  # Difference GSV LT/Tanker
-    mtvLtTanker = round((float(mtvLt) - mtvTotal),3)  # Difference mtv LT/Tanker
-    mtaLtTanker = round((float(mtaLt) - mtaTotal),3)  # Difference mtv LT/Tanker
+    govLtTanker = round((govLt - float(govTotal)),3)  # Difference LT/Tanker
+    gsvLtTanker = round((float(gsvLt) - float(gsvTotal)),3)  # Difference GSV LT/Tanker
+    mtvLtTanker = round((float(mtvLt) - float(mtvTotal)),3)  # Difference mtv LT/Tanker
+    mtaLtTanker = round((float(mtaLt) - float(mtaTotal)),3)  # Difference mtv LT/Tanker
     prLtTanker = round((govLtTanker * 100) / govLt,3)
     if gsvLt==0:
         gsvLt=1
@@ -565,10 +565,10 @@ def impressionRapport(request, pk):
         mtvLt=1
     prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
 
-    govTankerMeter = govTotal - govMeter  # Difference Tanker/Meter
-    gsvTankerMeter = gsvTotal - gsvMeter  # Difference GSV Tanker/Meter
-    mtaTankerMeter = round((mtaTotal - mtaMeter),3)  # Difference MTA Tanker/Meter
-    prTankerMeter = round((govTankerMeter * 100) / govTotal,3)
+    govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
+    gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
+    mtaTankerMeter = round((float(mtaTotal) - mtaMeter),3)  # Difference MTA Tanker/Meter
+    prTankerMeter = round((govTankerMeter * 100) / float(govTotal),3)
 
     govLtMeter = govLt - govMeter  # Diff LT/Meter
     gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
@@ -583,11 +583,27 @@ def impressionRapport(request, pk):
         mtaLt=1
     prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
 
-    govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
-    gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
-    mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
+    #Certified Quantity
+    if govMeter > 0:
+        govMax = govMeter
+        gsvMax = gsvMeter
+        mtaMax = mtaMeter
+    else:
+        if float(govTotal) > 0:
+            govMax = govTotal
+            gsvMax = gsvTotal
+            mtaMax = mtaTotal
+        else:
+            if govLt > 0:
+                govMax = govLt
+                gsvMax = gsvLt
+                mtaMax = mtaLt
 
-    fraisOcc = round((11 * gsvMax),3)  # Frais occ a Payer
+    # govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
+    # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
+    # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
+
+    fraisOcc = round((11 * float(gsvMax)),3)  # Frais occ a Payer
 
     # Getting data from laboratory
     if Resultat.objects.filter(idcargaison_id=pk).exists():

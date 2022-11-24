@@ -207,6 +207,7 @@ class CompartimentInspection(forms.ModelForm):
         model = Compartiment
         fields = (
             'compart',
+            'sealNumber',
             'sealstate',
             'innage',
             'gov',

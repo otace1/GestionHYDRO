@@ -55,25 +55,25 @@
 <br/>
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
-    <tr>
-        <td align="center"
-            style="width: 100%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>LAST THREE CARGO</b>
-        </td>
+{#    <tr>#}
+{#        <td align="center"#}
+{#            style="width: 100%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
+{#            <b>LAST THREE CARGO</b>#}
+{#        </td>#}
+{##}
+{#    </tr>#}
+{#</table>#}
+{#<table cellspacing="1" cellpadding="3px" border="0"#}
+{#       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
+{#    <tr>#}
+{#        {% for lastthreecargo in lastthreecargo %}#}
+{#            <td align="left"#}
+{#                style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
+{#                <b>{{ lastthreecargo.produit }}</b></td>#}
+{#        {% endfor %}#}
+{##}
+{#</table>#}
 
-    </tr>
-</table>
-<table cellspacing="1" cellpadding="3px" border="0"
-       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
-    <tr>
-        {% for lastthreecargo in lastthreecargo %}
-            <td align="left"
-                style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ lastthreecargo.produit }}</b></td>
-        {% endfor %}
-
-</table>
-<br/>
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
@@ -90,7 +90,7 @@
         {% for seal in seal %}
             <td align="center"
                 style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ seal.manifoldnumber }}</b></td>
+                <b>{{ seal.manifoldnumber }} | {{ seal.sealstate }}</b></td>
         {% endfor %}
 
 </table>
@@ -102,19 +102,19 @@
     <tr>
         <td align="center"
             style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>VOLUME IN: Cu.Mtrs</b></td>
+            <b>VOLUME IN: {{ inspection.volumein }}</b></td>
         <td align="center"
             style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>WEIGHT IN: M/T</b></td>
+            <b>WEIGHT IN: {{ inspection.weightin }}</b></td>
         <td align="center"
             style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>TEMP.IN: C°</b></td>
+            <b>TEMP.IN: {{ inspection.tempin }}</b></td>
         <td align="center"
             style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>TABLE USED: 54B</b></td>
         <td align="center"
             style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>INNAGE IN: CM</b></td>
+            <b>INNAGE IN: {{ inspection.innagein }}</b></td>
     </tr>
 </table>
 <br/>
@@ -167,16 +167,16 @@
                 <b>{{ data.compart }}</b></td>
             <td align="center"
                 style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b></b></td>
+                <b>{{ data.sealNumber }}</b></td>
             <td align="center"
                 style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
                 <b>{{ data.innage }}</b></td>
             <td align="center"
                 style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ data.gov }}</b></td>
+                <b>{{ data.gov|floatformat:3 }}</b></td>
             <td align="center"
                 style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ data.tempcomp }}</b></td>
+                <b>{{ data.tempcomp|floatformat:2 }}</b></td>
             <td align="center"
                 style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
                 <b>{{ densite }}</b></td>
@@ -185,7 +185,7 @@
                 <b>{{ data.vcf }}</b></td>
             <td align="center"
                 style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ data.gsv }}</b></td>
+                <b>{{ data.gsv|floatformat:3 }}</b></td>
             <td align="center"
                 style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 1px solid black; border-right:0.10px solid black;">
                 <b>{{ data.mta }}</b></td>
@@ -204,7 +204,7 @@
             <b>TOTAL</b></td>
         <td align="center"
             style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ govTotal }}</b></td>
+            <b>{{ govTotal|floatformat:3 }}</b></td>
         <td align="center"
             style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b></b></td>
@@ -216,10 +216,10 @@
             <b>TOTAL</b></td>
         <td align="center"
             style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvTotal }}</b></td>
+            <b>{{ gsvTotal|floatformat:3 }}</b></td>
         <td align="center"
             style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtaTotal }}</b></td>
+            <b>{{ mtaTotal|floatformat:3 }}</b></td>
     </tr>
 </table>
 <br/>
@@ -271,7 +271,7 @@
             <b>GSV</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvLt }}</b></td>
+            <b>{{ gsvLt|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>METER AFTER</b></td>
@@ -291,13 +291,13 @@
             <b>MTV</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtvLt }}</b></td>
+            <b>{{ mtvLt|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>GOV METER</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ govmeter }}</b></td>
+            <b>{{ govmeter|floatformat:3 }}</b></td>
     </tr>
     <tr>
         <td align="left"
@@ -311,13 +311,13 @@
             <b>MTA</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtaLt }}</b></td>
+            <b>{{ mtaLt|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>GSV METER</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvMeter }}</b></td>
+            <b>{{ gsvMeter|floatformat:3 }}</b></td>
     </tr>
 </table>
 <br/>
@@ -343,22 +343,22 @@
             <b>GOV</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ govLtTanker }}</b></td>
+            <b>{{ govLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prLtTanker }}</b></td>
+            <b>{{ prLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>GOV</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ govMax }}</b></td>
+            <b>{{ govMax|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>GOV</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ govTankerMeter }}</b></td>
+            <b>{{ govTankerMeter|floatformat:3 }}</b></td>
     </tr>
     <tr>
         <td align="left"
@@ -366,22 +366,22 @@
             <b>GSV</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvLtTanker }}</b></td>
+            <b>{{ gsvLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prGsvLtTanker }}</b></td>
+            <b>{{ prGsvLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>GSV</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvMax }}</b></td>
+            <b>{{ gsvMax|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>GSV</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvTankerMeter }}</b></td>
+            <b>{{ gsvTankerMeter|floatformat:3 }}</b></td>
     </tr>
     <tr>
         <td align="left"
@@ -389,22 +389,22 @@
             <b>MTV</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtvLtTanker }}</b></td>
+            <b>{{ mtvLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prMtvLtTanker }}</b></td>
+            <b>{{ prMtvLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>MTA</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtaMax }}</b></td>
+            <b>{{ mtaMax|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>MTA</b></td>
         <td align="left"
             style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtaTankerMeter }}</b></td>
+            <b>{{ mtaTankerMeter|floatformat:3 }}</b></td>
     </tr>
     <tr>
         <td align="left"
@@ -412,10 +412,10 @@
             <b>MTA</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtaLtTanker }}</b></td>
+            <b>{{ mtaLtTanker|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prMtaLtTanker }}</b></td>
+            <b>{{ prMtaLtTanker|floatformat:3 }}</b></td>
     </tr>
 </table>
 <br/>
@@ -435,10 +435,10 @@
             <b>GOV</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ govLtMeter }}</b></td>
+            <b>{{ govLtMeter|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prLtMeter }}</b></td>
+            <b>{{ prLtMeter|floatformat:3 }}</b></td>
         <td align="center"
             style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>CUBIC METER PRICE IN $</b></td>
@@ -452,16 +452,16 @@
             <b>GSV</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ gsvLtMeter }}</b></td>
+            <b>{{ gsvLtMeter|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prGsvLtMeter }}</b></td>
+            <b>{{ prGsvLtMeter|floatformat:3 }}</b></td>
         <td align="center"
             style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
             <b>11 USD</b></td>
         <td align="center"
             style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ fraisOcc }} USD</b></td>
+            <b>{{ fraisOcc|floatformat:3 }} USD</b></td>
     </tr>
     <tr>
         <td align="left"
@@ -469,10 +469,10 @@
             <b>MTA</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ mtaLtMeter }}</b></td>
+            <b>{{ mtaLtMeter|floatformat:3 }}</b></td>
         <td align="left"
             style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <b>{{ prMtaLtMeter }}</b></td>
+            <b>{{ prMtaLtMeter|floatformat:3 }}</b></td>
     </tr>
 </table>
 <br/>
