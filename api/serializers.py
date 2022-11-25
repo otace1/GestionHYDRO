@@ -4,7 +4,6 @@ from rest_framework import serializers
 from enreg.models import *
 from django.contrib.auth import get_user_model
 
-
 class CargaisonSerializer(ModelSerializer):
     provenance = CountryField()
     class Meta:

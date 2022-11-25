@@ -502,13 +502,33 @@ def verificationQrCode(request):
     context = request.data['qrCode']
     try:
         c=Cargaison.objects.get(qrcode=context)
+        try:
+            e=Entrepot_echantillon.objects.get(idcargaison=c)
+            dateEchantillonnage = e.dateechantillonage
+        except:
+            dateEchantillonnage = 'Cargaison non échantillonner'
+
+        try:
+            l=LaboReception.objects.get(idcargaison=c)
+            dateReceptionLabo = l.datereceptionlabo
+        except:
+            dateReceptionLabo = 'Echantillon non réceptionné au Labo'
+
+        try:
+            i=Inspection.objects.get(idcargaison=c)
+            dateInspection = i.dateinspection
+        except:
+            dateInspection = 'Cargaison non inspecter'
+
         data = {
                     'date':c.dateheurecargaison,
-                    'fournisseur':c.importateur,
+                    'fournisseur':c.importateur.nomimportateur,
                     'volume':c.volume,
+                    'dateEchantillonnage':dateEchantillonnage,
+                    'dateReceptionLabo':dateReceptionLabo,
+                    'dateInspection':dateInspection,
                 }
-        serializer = CargaisonSerializer(data,many=False)
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(data, status=status.HTTP_200_OK)
 
