@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, APIView, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions, exceptions
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework.authtoken.models import Token
 from rest_framework_api_key.models import APIKey
@@ -531,4 +531,19 @@ def verificationQrCode(request):
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
     return Response(data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def showDataSaved(request):
+    apiToken = request.META.get('HTTP_AUTHORIZATION')
+    try:
+        u = Token.objects.get(key=apiToken)
+    except:
+        return Response(status=status.HTTP_200_OK)
+    c = Cargaison.objects.filter(user=u.user)
+    serializer = CargaisonSerializer(c, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 
