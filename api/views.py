@@ -507,7 +507,8 @@ def verificationQrCode(request):
                     'fournisseur':c.importateur,
                     'volume':c.volume,
                 }
+        serializer = CargaisonSerializer(data,many=False)
     except:
-        return exceptions.NotFound
-    return Response(data)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
