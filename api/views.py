@@ -500,5 +500,14 @@ class AuthUserApiView(GenericAPIView):
 @api_view(['POST'])
 def verificationQrCode(request):
     context = request.data['qrCode']
-    return Response(context)
+    try:
+        c=Cargaison.objects.get(qrcode=context)
+        data = {
+                    'date':c.dateheurecargaison,
+                    'fournisseur':c.importateur,
+                    'volume':c.volume,
+                }
+    except:
+        return exceptions.NotFound
+    return Response(data)
 
