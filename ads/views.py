@@ -271,8 +271,8 @@ class Dashboard():
                 p5 = 1
 
             # Tableau des derniers enregistrements
-            table = DerniersEnregistrements(Cargaison.objects.all().order_by('-idcargaison')[:8])
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+            table = DerniersEnregistrements(Cargaison.objects.all().order_by('-idcargaison')[:20])
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
 
             # Activité journalier donut chart
             n = Cargaison.objects.filter(dateheurecargaison__date=d, etat="En attente requisition").count()

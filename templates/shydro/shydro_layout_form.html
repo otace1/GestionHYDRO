@@ -243,7 +243,7 @@
                         <li class="header">HYDRO OCC</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="{% url 'codification' %}" class="nav-link">
+                            <a href="" class="nav-link">
                                 <i class="nav-icon fas fa-building"></i>
                                 <p>
                                     HYDRO
@@ -251,34 +251,20 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                            {#                            <ul class="nav nav-treeview">#}
-                            {##}
-                            {#                                <li class="nav-item">#}
-                            {#                                    <a href="{% url 'codification' %}" class="nav-link">#}
-                            {#                                        <i class="far fa-circle nav-icon"></i>#}
-                            {#                                        <p>REQUISITIONS</p>#}
-                            {#                                    </a>#}
-                            {#                                </li>#}
-                            {##}
-                            {#                <li class="nav-item">#}
-                            {#                <a href="{%url 'laboresult'%}" class="nav-link">#}
-                            {#                  <i class="far fa-circle nav-icon"></i>#}
-                            {#                  <p>GO</p>#}
-                            {#                </a>#}
-                            {#              </li>#}
-                            {#                                <li class="nav-item">#}
-                            {#                                    <a href="{% url 'gestionact' %}" class="nav-link">#}
-                            {#                                        <i class="far fa-circle nav-icon"></i>#}
-                            {#                                        <p>ACTs</p>#}
-                            {#                                    </a>#}
-                            {#                                </li>#}
-                            {#                                <li class="nav-item">#}
-                            {#                                    <a href="{% url 'affichageNonConforme' %}" class="nav-link">#}
-                            {#                                        <i class="far fa-circle nav-icon"></i>#}
-                            {#                                        <p>AVARIES</p>#}
-                            {#                                    </a>#}
-                            {#                                </li>#}
-                            {#                            </ul>#}
+                        <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION</p>
+                                    </a>
+                                </li>
+                            <li class="nav-item">
+                                    <a href="{% url 'facturations' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -321,7 +307,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                                <li class="nav-item">
+                            <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -437,25 +423,6 @@
                                 </li>
                             </ul>
                         </li>
-
-                        {#                        <li class="nav-item has-treeview">#}
-                        {#                            <a href="" class="nav-link">#}
-                        {#                                <i class="nav-icon fas fa-cloud"></i>#}
-                        {#                                <p>#}
-                        {#                                    MONITORING ADMIN#}
-                        {#                                    <i class="fas fa-angle-left right"></i>#}
-                        {#                                    <span class="badge badge-info right"></span>#}
-                        {#                                </p>#}
-                        {#                            </a>#}
-                        {#                            <ul class="nav nav-treeview">#}
-                        {#                                <li class="nav-item">#}
-                        {#                                    <a href="{% url 'upload_sydonia' %}" class="nav-link">#}
-                        {#                                        <i class="far fa-circle nav-icon"></i>#}
-                        {#                                        <p>IMPORTATION SYDONIA</p>#}
-                        {#                                    </a>#}
-                        {#                                </li>#}
-                        {#                            </ul>#}
-                        {#                        </li>#}
                     {% endif %}
 
                     <li class="nav-item has-treeview">

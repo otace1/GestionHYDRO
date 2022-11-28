@@ -110,23 +110,18 @@ class StatistiquesJour(tables.Table):
 
 
 class DerniersEnregistrements(tables.Table):
-    dateheurecargaison = tables.Column(verbose_name='Date & Heure')
-    volume = tables.Column(verbose_name='Vol. Décl.')
-    importateur = tables.Column(verbose_name='Import.')
+    dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
+    frontiere = tables.Column(verbose_name='FRONTIERE')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPOT')
+    produit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL.DECL.')
 
     class Meta:
-        model = Cargaison
-        sequence = ['dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume']
-        exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'origine', 'requisitionack',
-                   'requisitiondackdate', 'numdos', 'numreq', 'rapechctrl', 'datereceptionlabo', 'poids',
-                   'immatriculation', 'valeurfacture', 'numbtfh', 'numdeclaration', 'manifestdgda', 't1e', 't1d',
-                   'dateanalyse', 'numcertificatqualite', 'fournisseur', 'entrepot', 'controlOrganoleptique',
-                   'declaration',
-                   'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
-                   'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
-                   'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
-                   'l_control', 'volume15', 'typeunitetransport', 'volume20', 'tonnagevide', 'tonnageair', 'before',
-                   'after']
+        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
 
 
 class ProductionTable(tables.Table):
