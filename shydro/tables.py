@@ -59,6 +59,12 @@ E = """<a href="{%url 'reprintact' record.pk%}" class="btn btn-success">Ré-Impr
             """
 
 
+regularisationButtons = """
+ <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-success">CHANGEMENT DE DESTINATION</a>
+"""
+
+
+
 class CodificationTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
     importateur = tables.Column(verbose_name='FOURNISSEUR')
@@ -218,8 +224,6 @@ class EnAttenteDechargement(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
 
 
-
-
 class EnAttenteResultatLabo(tables.Table):
     idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
@@ -230,7 +234,6 @@ class EnAttenteResultatLabo(tables.Table):
     idcargaison__idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
     idcargaison__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
     datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "red"}})
-
 
     class Meta:
         attrs = {
@@ -260,7 +263,6 @@ class RapportActivite(tables.Table):
     volConst = tables.Column(verbose_name="VOL.CONST", attrs={"td": {"bgcolor": "red"}})
     gsvT = tables.Column(verbose_name='GSV', attrs={"td": {"bgcolor": "green"}})
 
-
     class Meta:
         attrs = {
             "class": "table table-hover text-nowrap table-striped",
@@ -269,45 +271,16 @@ class RapportActivite(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
 
 
-
-
-class Act(tables.Table):
-    actions = tables.TemplateColumn(D, verbose_name='')
-    importateur = tables.Column(verbose_name='Importateur')
-    numdossier = tables.Column(verbose_name='# Dos')
-    codecargaison = tables.Column(verbose_name='# Camion')
-    numcertificatqualite = tables.Column(verbose_name='# CQ')
-    datedechargement = tables.Column(verbose_name='Date')
-    gsv = tables.Column(verbose_name='GSV')
-
-    class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['datedechargement','numdossier','codecargaison','importateur','immatriculation','gsv']
-        exclude = ['idcargaison','provenance','transporteur','poids','volume','tempcargaison','densitecargaison','t1d', 't1e','idchauffeur', 'nationalite','nomchauffeur', 'dateheurecargaison','qrcode', 'etat','volume_decl15',
-                   'numact','conformite','impression','l_control','declarant','numdeclaration','manifestdgda','fournisseur','numbtfh','valeurfacture','numcertificatqualite','frontiere','produit','voie','user','tampon', 'entrepot','printactdate']
-
-
-class Act2(tables.Table):
-    actions = tables.TemplateColumn(E, verbose_name='')
-    printactdate = tables.Column(verbose_name="Date")
-    importateur = tables.Column(verbose_name='Importateur')
-    numdossier = tables.Column(verbose_name='# Dos')
-    codecargaison = tables.Column(verbose_name='# Camion')
-    numcertificatqualite = tables.Column(verbose_name='N° CQ')
-    datedechargement = tables.Column(verbose_name='Date déch.')
-    numact = tables.Column(verbose_name='# ACT')
-    gsv = tables.Column(verbose_name='GSV')
+class Regularisation(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name='DATE ENTR.')
+    frontiere = tables.Column(verbose_name='FRONTIERE ENTR.')
+    importateur = tables.Column(verbose_name='FOURNISSEUR.')
+    produit = tables.Column(verbose_name='PRODUIT.')
+    entrepot = tables.Column(verbose_name="ENTREPOT")
+    immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "green"}})
+    actions = tables.TemplateColumn(regularisationButtons, verbose_name='')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['printactdate','numact', 'numdossier', 'codecargaison','gsv']
-        exclude = ['datedechargement', 'idcargaison', 'provenance', 'transporteur', 'declarant', 'poids', 'volume', 'tempcargaison',
-                   'densitecargaison', 't1d', 't1e', 'idchauffeur', 'nationalite', 'nomchauffeur', 'dateheurecargaison',
-                   'qrcode', 'etat','importateur', 'volume_decl15',
-                   'conformite', 'impression','numdeclaration','manifestdgda','fournisseur','numbtfh','valeurfacture', 'frontiere', 'produit', 'voie', 'user', 'tampon', 'entrepot',
-                   'immatriculation','l_control','numcertificatqualite']
-

@@ -587,26 +587,31 @@ def rapportActivite(request):
     return render(request,template,context)
 
 
-#
-# @login_required(login_url='login')
-# def correctionNonConformite(request,pk):
-#     user = request.user.id
-#     c = Cargaison.objects.get(idcargaison=pk)
-#     e = Entrepot_echantillon.objects.get(idcargaison=pk)
-#     p = Produit.objects.get(nomproduit=e.natureProduitEntrepot)
-#
-#     #Update Product Name Correction
-#     x = ControlNatureProduit.objects.get(idcargaison=pk)
-#     x.correctionNature = x.natureProduitEntrepot
-#     x.userHydro = user
-#     x.save(update_fields=['correctionNature','userHydro'])
-#     return redirect('codification')
-#
+@login_required(login_url='login')
+def regularisation(request):
+    user = request.user.id
+    template ='regularisation.html'
+    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).order_by('-dateheurecargaison')
+    table = Regularisation(qs)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    context = {'table':table}
+    return render(request,template,context)
 
 
-
-
-
+@login_required(login_url='login')
+def regularisationDestination(request,pk):
+    template = 'regularisationDestination.html'
+    form = ChangementDestination(request.POST or None)
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    if request.method == 'POST':
+        entrepot = request.POST['nouvelleDestination']
+        entrepot = Entrepot.objects.get(identrepot=entrepot)
+        cargaison.entrepot = entrepot
+        cargaison.save(update_fields=['entrepot'])
+        return redirect('regularisation')
+    else:
+        context = {'form':form}
+        return render(request,template,context)
 
 
 
