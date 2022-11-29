@@ -583,15 +583,16 @@ def verificationQrCode(request):
 def showDataSaved(request):
     user = request.user.id
     c = Cargaison.objects.filter(user=user)
-    context = {}
-    for i, data in enumerate(c):
-        context[i] = {
+    list = []
+    for data in c:
+        context = {
             "dateheurecargaison":data.dateheurecargaison,
             "importateur":data.importateur.nomimportateur,
             "entrepot":data.entrepot.nomentrepot,
             "immatriculation":data.immatriculation,
         }
-    return Response(context, status=status.HTTP_200_OK)
+        list.append(context)
+    return Response(list, status=status.HTTP_200_OK)
 
 
 
