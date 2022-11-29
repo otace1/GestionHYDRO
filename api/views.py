@@ -582,17 +582,9 @@ def verificationQrCode(request):
 @permission_classes([IsAuthenticated])
 def showDataSaved(request):
     user = request.user.id
-    c = Cargaison.objects.filter(user=user)
-    list = []
-    for data in c:
-        context = {
-            "dateheurecargaison":data.dateheurecargaison,
-            "importateur":data.importateur.nomimportateur,
-            "entrepot":data.entrepot.nomentrepot,
-            "immatriculation":data.immatriculation,
-        }
-        list.append(context)
-    return Response(list, status=status.HTTP_200_OK)
+    data = Cargaison.objects.filter(user=user)
+    serializer = CargaisonSerializer(data, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
