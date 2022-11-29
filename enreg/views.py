@@ -74,6 +74,7 @@ class GestionCargaison():
                 instance = form.save(commit=False)
                 qrcode = str(uuid.uuid4())
                 instance.qrcode = qrcode
+                instance.user = u
                 instance.etat = "En attente requisition"
                 instance.save()
                 return JsonResponse(qrcode, status=200, safe=False)

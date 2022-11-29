@@ -179,6 +179,7 @@ class Cargaison(models.Model):
 
     #Date et heure d'analyse
     dateHeureAnalyseLabo = models.DateTimeField(blank=True,null=True)
+    dateDechargement = models.DateTimeField(blank=True,null=True)
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})

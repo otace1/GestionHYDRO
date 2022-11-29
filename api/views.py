@@ -49,6 +49,12 @@ class AddCargo(APIView):
     serializer_class = CargaisonSerializer
 
     def post(self, request):
+        apiToken = request.META.get('HTTP_AUTHORIZATION')
+        try:
+            user = Token.objects.get(key=apiToken)
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         data = request.data
         voie = Voie.objects.get(nomvoie=data['voie'])
         voie = voie.idvoie
@@ -74,6 +80,7 @@ class AddCargo(APIView):
         volume20 = data['volume20']
         tonnagevide = data['tonnagevide']
         tonnageair = data['tonnageair']
+        user = user.user_id
 
         if volume15:
             if volume20:
@@ -96,7 +103,8 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user':user
                         }
                     else:
                         volume15 = decimal.Decimal(data['volume15'])
@@ -115,6 +123,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
+                            'user': user
                         }
                 else:
                     if tonnageair:
@@ -133,7 +142,8 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'volume20': volume20,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         volume15 = decimal.Decimal(data['volume15'])
@@ -150,6 +160,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'volume20': volume20,
+                            'user': user
                         }
             else:
                 if tonnagevide:
@@ -169,7 +180,8 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'tonnagevide': tonnagevide,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         volume15 = decimal.Decimal(data['volume15'])
@@ -186,6 +198,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'tonnagevide': tonnagevide,
+                            'user': user
                         }
                 else:
                     if tonnageair:
@@ -202,7 +215,8 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'volume15': volume15,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         volume15 = decimal.Decimal(data['volume15'])
@@ -217,6 +231,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'volume15': volume15,
+                            'user': user
                         }
         else:
             if volume20:
@@ -237,7 +252,8 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         volume20 = decimal.Decimal(data['volume20'])
@@ -254,6 +270,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
+                            'user': user
                         }
                 else:
                     if tonnageair:
@@ -270,7 +287,8 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'volume20': volume20,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         data = {
@@ -283,6 +301,7 @@ class AddCargo(APIView):
                             'immatriculation': immatriculation,
                             'produit': produit,
                             'volume': volume,
+                            'user': user
                         }
             else:
                 if tonnagevide:
@@ -300,7 +319,8 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'tonnagevide': tonnagevide,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         tonnagevide = decimal.Decimal(data['tonnagevide'])
@@ -315,6 +335,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'tonnagevide': tonnagevide,
+                            'user': user
                         }
                 else:
                     if tonnageair:
@@ -329,7 +350,8 @@ class AddCargo(APIView):
                             'immatriculation': immatriculation,
                             'produit': produit,
                             'volume': volume,
-                            'tonnageair': tonnageair
+                            'tonnageair': tonnageair,
+                            'user': user
                         }
                     else:
                         data = {
@@ -342,6 +364,7 @@ class AddCargo(APIView):
                             'immatriculation': immatriculation,
                             'produit': produit,
                             'volume': volume,
+                            'user': user
                         }
 
         serializer = CargaisonSerializer(data=data)
@@ -506,19 +529,19 @@ def verificationQrCode(request):
             e=Entrepot_echantillon.objects.get(idcargaison=c)
             dateEchantillonnage = e.dateechantillonage
         except:
-            dateEchantillonnage = 'Cargaison non échantillonner'
+            dateEchantillonnage = "Pas d'infos"
 
         try:
             l=LaboReception.objects.get(idcargaison=c)
             dateReceptionLabo = l.datereceptionlabo
         except:
-            dateReceptionLabo = 'Echantillon non réceptionné au Labo'
+            dateReceptionLabo = "Pas d'infos"
 
         try:
             i=Inspection.objects.get(idcargaison=c)
             dateInspection = i.dateinspection
         except:
-            dateInspection = 'Cargaison non inspecter'
+            dateInspection = "Pas d'infos"
 
         data = {
                     'date':c.dateheurecargaison,
@@ -529,7 +552,34 @@ def verificationQrCode(request):
                     'dateInspection':dateInspection,
                 }
     except:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        c = "Pas d'infos"
+        try:
+            e=Entrepot_echantillon.objects.get(idcargaison=c)
+            dateEchantillonnage = e.dateechantillonage
+        except:
+            dateEchantillonnage = "Pas d'infos"
+
+        try:
+            l=LaboReception.objects.get(idcargaison=c)
+            dateReceptionLabo = l.datereceptionlabo
+        except:
+            dateReceptionLabo = "Pas d'infos"
+
+        try:
+            i=Inspection.objects.get(idcargaison=c)
+            dateInspection = i.dateinspection
+        except:
+            dateInspection = "Pas d'infos"
+
+        data = {
+                    'date':c.dateheurecargaison,
+                    'fournisseur':c.importateur.nomimportateur,
+                    'volume':c.volume,
+                    'dateEchantillonnage':dateEchantillonnage,
+                    'dateReceptionLabo':dateReceptionLabo,
+                    'dateInspection':dateInspection,
+                }
+        return Response(data, status=status.HTTP_200_OK)
     return Response(data, status=status.HTTP_200_OK)
 
 
@@ -541,7 +591,7 @@ def showDataSaved(request):
         u = Token.objects.get(key=apiToken)
     except:
         return Response(status=status.HTTP_200_OK)
-    c = Cargaison.objects.filter(user=u.user)
+    c = Cargaison.objects.filter(user=u.user_id)
     serializer = CargaisonSerializer(c, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
