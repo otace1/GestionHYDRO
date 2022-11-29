@@ -583,14 +583,14 @@ def verificationQrCode(request):
 def showDataSaved(request):
     user = request.user.id
     c = Cargaison.objects.filter(user=user)
-    for data in c:
-        context = {
+    context = {}
+    for i, data in enumerate(c):
+        context[i] = {
             "dateheurecargaison":data.dateheurecargaison,
             "importateur":data.importateur.nomimportateur,
             "entrepot":data.entrepot.nomentrepot,
             "immatriculation":data.immatriculation,
         }
-    # serializer = CargaisonSerializer(context, many=True)
     return Response(context, status=status.HTTP_200_OK)
 
 

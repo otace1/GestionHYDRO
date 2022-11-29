@@ -65,7 +65,7 @@ class GestionCargaison():
     def enregCargaison(request):
         user = request.user
         role = user.role_id
-        u = user.username
+        u = user.id
 
         if role == 2 or role == 1 or role == 7:
             template = 'cargaison/form.html'
