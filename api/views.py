@@ -590,8 +590,8 @@ def showDataSaved(request):
             "entrepot":data.entrepot.nomentrepot,
             "immatriculation":data.immatriculation,
         }
-    serializer = CargaisonSerializer(context, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    # serializer = CargaisonSerializer(context, many=True)
+    return Response(context, status=status.HTTP_200_OK)
 
 
 
