@@ -26,4 +26,7 @@ urlpatterns = [
     #Verification API
     path('verificationQrCode/', verificationQrCode, name='verificationQrCode'),
 
+    #ShowPer user saved Data
+    path('showDataSaved/', showDataSaved, name='showDataSaved'),
+
 ]

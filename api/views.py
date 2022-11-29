@@ -581,12 +581,8 @@ def verificationQrCode(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def showDataSaved(request):
-    apiToken = request.META.get('HTTP_AUTHORIZATION')
-    try:
-        u = Token.objects.get(key=apiToken)
-    except:
-        return Response(status=status.HTTP_200_OK)
-    c = Cargaison.objects.filter(user=u.user)
+    user = request.user.id
+    c = Cargaison.objects.filter(user=user)
     serializer = CargaisonSerializer(c, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
