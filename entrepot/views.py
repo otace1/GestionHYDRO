@@ -2339,7 +2339,8 @@ def meterafter(request,pk):
                 if meterafter == '':
                     meterafter = 0
                 cargaison.etat = 'Cargaison dechargee'
-                cargaison.save(update_fields=['etat'])
+                cargaison.dateDechargement = datetime.datetime.today()
+                cargaison.save(update_fields=['etat','dateDechargement'])
 
                 inspection.meterafter = meterafter
                 inspection.save(update_fields=['meterafter','meterbefore'])

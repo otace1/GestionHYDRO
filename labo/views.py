@@ -88,7 +88,7 @@ class GestionLaboratoire():
 
             # Sauvegarde de l'instruction dans la Table LaboReception
             codelabo = codeLabo(v, pk)
-            p = LaboReception(idcargaison_id=pk, datereceptionlabo=date_today, codelabo=codelabo,
+            p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
                               numcertificatqualite=numcertificatqualite)
             p.save()
             return redirect('labo')
@@ -1519,7 +1519,8 @@ class GestionValidation():
             c.etat = "Conforme aux exigences"
             c.conformite = "Conforme aux exigences"
             c.impression = "0"
-            c.save(update_fields=['etat', 'impression', 'conformite'])
+            c.dateHeureAnalyseLabo = datetime.now()
+            c.save(update_fields=['etat', 'impression', 'conformite','dateHeureAnalyseLabo'])
             return redirect('validation2')
         else:
             return redirect('logout')
@@ -1535,7 +1536,8 @@ class GestionValidation():
             a = LaboReception.objects.get(idcargaison=pk)
             c.etat = "Non conforme aux exigences"
             c.impression = "0"
-            c.save(update_fields=['etat', 'impression'])
+            c.dateHeureAnalyseLabo = datetime.now()
+            c.save(update_fields=['etat', 'impression','dateHeureAnalyseLabo'])
             return redirect('validation2')
         else:
             return redirect('logout')

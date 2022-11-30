@@ -541,38 +541,25 @@ def verificationQrCode(request):
         data = {
                     'date':c.dateheurecargaison,
                     'fournisseur':c.importateur.nomimportateur,
+                    'entrepot': c.entrepot.nomentrepot,
                     'volume':c.volume,
                     'dateEchantillonnage':dateEchantillonnage,
                     'dateReceptionLabo':dateReceptionLabo,
+                    'dateHeureAnalyseLabo':c.dateHeureAnalyseLabo,
+                    'dateDechargement':c.dateDechargement,
                     'dateInspection':dateInspection,
                 }
     except:
-        c = "Pas d'infos"
-        try:
-            e=Entrepot_echantillon.objects.get(idcargaison=c)
-            dateEchantillonnage = e.dateechantillonage
-        except:
-            dateEchantillonnage = "Pas d'infos"
-
-        try:
-            l=LaboReception.objects.get(idcargaison=c)
-            dateReceptionLabo = l.datereceptionlabo
-        except:
-            dateReceptionLabo = "Pas d'infos"
-
-        try:
-            i=Inspection.objects.get(idcargaison=c)
-            dateInspection = i.dateinspection
-        except:
-            dateInspection = "Pas d'infos"
-
         data = {
-                    'date':c.dateheurecargaison,
-                    'fournisseur':c.importateur.nomimportateur,
-                    'volume':c.volume,
-                    'dateEchantillonnage':dateEchantillonnage,
-                    'dateReceptionLabo':dateReceptionLabo,
-                    'dateInspection':dateInspection,
+                    'date':"Pas d'infos",
+                    'fournisseur':"Pas d'infos",
+                    'entrepot': "Pas d'infos",
+                    'volume':"Pas d'infos",
+                    'dateEchantillonnage':"Pas d'infos",
+                    'dateReceptionLabo':"Pas d'infos",
+                    'dateHeureAnalyseLabo':"Pas d'infos",
+                    'dateDechargement':"Pas d'infos",
+                    'dateInspection':"Pas d'infos",
                 }
         return Response(data, status=status.HTTP_200_OK)
     return Response(data, status=status.HTTP_200_OK)

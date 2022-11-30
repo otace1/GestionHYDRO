@@ -204,12 +204,10 @@ class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.PROTECT, primary_key=True)
     numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True)
     codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ")
-    datereceptionlabo = models.DateField(verbose_name="Date reception")
-
+    datereceptionlabo = models.DateTimeField(auto_now_add=True)
 
     def get_absolute_url(self):
         return reverse('reception', kwargs={'pk': self.idcargaison})
-
     def natural_key(self):
         return self.my_natural_key
 
