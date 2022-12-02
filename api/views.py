@@ -7,10 +7,14 @@ from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework.authtoken.models import Token
 from rest_framework_api_key.models import APIKey
 from accounts.models import MyUser
+from django.db.models import Q
 from django_countries.data import COUNTRIES
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
+
+from entrepot.numrappech import numRappEch
+from entrepot.calculs import *
 import uuid
 import decimal
 import datetime
@@ -561,7 +565,7 @@ def verificationQrCode(request):
                     'dateDechargement':"Pas d'infos",
                     'dateInspection':"Pas d'infos",
                 }
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(data, status=status.HTTP_404_NOT_FOUND)
     return Response(data, status=status.HTTP_200_OK)
 
 
@@ -580,6 +584,100 @@ def showDataSaved(request):
         }
         list.append(context)
     return Response(list, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def attenteEchantillonnage(request):
+    user = request.user.id
+    c = Cargaison.objects.filter(etat="En attente d'echantillonage", entrepot__affectationentrepot__username_id=user).count()
+    context = {'count':c}
+    return Response(context, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def attenteInspection(request):
+    user = request.user.id
+    c = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).count()
+    context = {'count':c}
+    return Response(context, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def attenteDechargement(request):
+    user = request.user.id
+    c = Cargaison.objects.filter(
+                Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
+                entrepot__affectationentrepot__username_id=user).count()
+    context = {'count':c}
+    return Response(context, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def attenteRequisitionListe(request):
+    user = request.user.id
+    c = Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    serializer = CargaisonSerializer(c, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def scanEchantillonnage(request):
+    user = request.user.id
+    qrCode = request.data['qrCode']
+    try:
+        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
+        if c.etat == "En attente d'echantillonage":
+            context = {'id':c.idcargaison}
+            return Response(context,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def scanEchantillonnage(request):
+    user = request.user.id
+    qrCode = request.data['qrCode']
+    try:
+        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
+        if c.etat == "En attente d'echantillonage":
+            context = {'id':c.idcargaison}
+            return Response(context,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def enregistrementEchantillonnage(request):
+    # user = request.user.id
+    id = request.data['id']
+    matriculeAgent = request.data['matriculeAgent']
+    methodeUtilisee = request.data['methodeUtilisee']
+    qte = request.data['qte']
+    try:
+        c=Cargaison.objects.get(idcargaison=id)
+        ville = c.entrepot.ville
+        numrappech = numRappEch(id,ville)
+        numrappechauto = numrappech
+        c.rapechctrl = 1
+        c.etatInspection = True
+        c.etat = "Echantillonner"
+        c.save(update_fields=['etat', 'rapechctrl', 'etatInspection'])
+        e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matriculeAgent,
+                                 methodeutilisee=methodeUtilisee, qte=qte)
+        e.save()
+        return Response(status=status.HTTP_200_OK)
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
