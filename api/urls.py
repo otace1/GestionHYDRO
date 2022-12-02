@@ -28,6 +28,7 @@ urlpatterns = [
     path('attenteInspection/', attenteInspection, name='attenteInspection'),  # ShowPer user saved Data
     path('attenteDechargement/', attenteDechargement, name='attenteDechargement'),  # ShowPer user saved Data
     path('attenteRequisitionListe/', attenteRequisitionListe, name='attenteRequisitionListe'),  # ShowPer user saved Data
+    path('scanEchantillonnage/', scanEchantillonnage, name='scanEchantillonnage'),  # ShowPer user saved Data
     path('enregistrementEchantillonnage/', enregistrementEchantillonnage, name='enregistrementEchantillonnage'),  # ShowPer user saved Data
 
 ]
