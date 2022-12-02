@@ -622,23 +622,7 @@ def attenteRequisitionListe(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def scanEchantillonnage(request):
-    user = request.user.id
-    qrCode = request.data['qrCode']
-    try:
-        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
-        if c.etat == "En attente d'echantillonage":
-            context = {'id':c.idcargaison}
-            return Response(context,status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-    except:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def scanEchantillonnage(request):
     user = request.user.id
