@@ -654,7 +654,7 @@ def scanEchantillonnage(request):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def enregistrementEchantillonnage(request):
     # user = request.user.id
@@ -674,7 +674,19 @@ def enregistrementEchantillonnage(request):
         e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matriculeAgent,
                                  methodeutilisee=methodeUtilisee, qte=qte)
         e.save()
-        return Response(status=status.HTTP_200_OK)
+        context = {
+            'numDossier':c.numdos,
+            'numRappEch': numrappech,
+            'nomClient':c.importateur.nomimportateur,
+            'natureMarchandise':'PRODUIT PETROLIER',
+            'marqueProduit': c.produit.nomproduit,
+            'qteMarchandise': c.volume,
+            'origine':c.provenance.name,
+            'immatriculation':c.immatriculation,
+            'methodeEchantillonnage':methodeUtilisee,
+            'matriculeAgent':matriculeAgent,
+        }
+        return Response(context,status=status.HTTP_200_OK)
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
