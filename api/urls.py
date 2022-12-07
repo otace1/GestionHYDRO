@@ -31,4 +31,9 @@ urlpatterns = [
     path('scanEchantillonnage/', scanEchantillonnage, name='scanEchantillonnage'),  # ShowPer user saved Data
     path('enregistrementEchantillonnage/', enregistrementEchantillonnage, name='enregistrementEchantillonnage'),  # ShowPer user saved Data
 
+    path('CargaisonInspectionList/', CargaisonInspectionList.as_view(), name='CargaisonInspectionList'),  # ShowPer user saved Data
+    path('CargaisonDechargementList/', CargaisonDechargementList.as_view(), name='CargaisonDechargementList'),  # ShowPer user saved Data
+    path('CargaisonEchantillonnageList/', CargaisonEchantillonnageList.as_view(), name='CargaisonEchantillonnageList'),  # ShowPer user saved Data
+
+
 ]
