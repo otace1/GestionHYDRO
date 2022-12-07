@@ -33,7 +33,7 @@ urlpatterns = [
 
     path('cargaisonInspectionList/', CargaisonInspectionList.as_view(), name='cargaisonInspectionList'),  # ShowPer user saved Data
     path('cargaisonDechargementList/', CargaisonDechargementList.as_view(), name='cargaisonDechargementList'),  # ShowPer user saved Data
-    path('cargaisonEchantillonnageList/', CargaisonEchantillonnageList.as_view(), name='cargaisonEchantillonnageList'),  # ShowPer user saved Data
+    path('cargaisonEchantillonnageList/', cargaisonEchantillonnageList, name='cargaisonEchantillonnageList'),  # ShowPer user saved Data
 
 
 ]
