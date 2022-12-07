@@ -697,6 +697,7 @@ class CargaisonDechargementList(APIView):
         data = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
                                               Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
                                               entrepot__affectationentrepot__username_id=user)
+
         serializer = CargaisonSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -709,7 +710,16 @@ class CargaisonEchantillonnageList(APIView):
     def get(self, request):
         user = request.user.id
         data = Cargaison.objects.filter(etat="En attente d'echantillonage", entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-        serializer = CargaisonSerializer(data, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        list = []
+        for values in data:
+            context = {
+                "dateheurecargaison": values.dateheurecargaison,
+                "importateur": values.importateur.nomimportateur,
+                "immatriculation": values.immatriculation,
+                "produit": values.produit.nomproduit,
+                "volume": values.volume,
+            }
+            list.append(context)
+        return Response(context, status=status.HTTP_200_OK)
 
 
