@@ -720,6 +720,6 @@ class CargaisonEchantillonnageList(APIView):
                 "volume": values.volume,
             }
             list.append(context)
-        return Response(context, status=status.HTTP_200_OK)
+        return Response(list, status=status.HTTP_200_OK)
 
 
