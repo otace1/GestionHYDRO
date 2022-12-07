@@ -730,3 +730,21 @@ def cargaisonInspectionList(request):
         }
         list.append(context)
     return Response(list, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cargaisonRequisitionList(request):
+    user = request.user.id
+    data = Cargaison.objects.filter(etat="En attente requisition",entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    list = []
+    for values in data:
+        context = {
+            "id":values.idcargaison,
+            "dateheurecargaison": values.dateheurecargaison,
+            "importateur": values.importateur.nomimportateur,
+            "immatriculation": values.immatriculation,
+            "produit": values.produit.nomproduit,
+            "volume": values.volume,
+        }
+        list.append(context)
+    return Response(list, status=status.HTTP_200_OK)
