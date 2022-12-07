@@ -675,54 +675,6 @@ def enregistrementEchantillonnage(request):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class CargaisonInspectionList(APIView):
-    queryset = Cargaison.objects.filter(etatInspection=True)
-    serializer_class = CargaisonSerializer
-
-    def get(self, request):
-        user = request.user.id
-        data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user)
-        serializer = CargaisonSerializer(data, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-class CargaisonDechargementList(APIView):
-    queryset = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
-                                              Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False)
-    serializer_class = CargaisonSerializer
-
-    def get(self, request):
-        user = request.user.id
-        data = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
-                                              Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
-                                              entrepot__affectationentrepot__username_id=user)
-
-        serializer = CargaisonSerializer(data, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-class CargaisonEchantillonnageList(APIView):
-    queryset = Cargaison.objects.filter(etat="En attente d'echantillonage").order_by('-dateheurecargaison')
-    serializer_class = CargaisonSerializer
-
-    def get(self, request):
-        user = request.user.id
-        data = Cargaison.objects.filter(etat="En attente d'echantillonage", entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-        list = []
-        for values in data:
-            context = {
-                "dateheurecargaison": values.dateheurecargaison,
-                "importateur": values.importateur.nomimportateur,
-                "immatriculation": values.immatriculation,
-                "produit": values.produit.nomproduit,
-                "volume": values.volume,
-            }
-            list.append(context)
-        return Response(list, status=status.HTTP_200_OK)
-
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonEchantillonnageList(request):
@@ -732,11 +684,49 @@ def cargaisonEchantillonnageList(request):
     list = []
     for values in data:
         context = {
+            "id":values.idcargaison,
             "dateheurecargaison": values.dateheurecargaison,
             "importateur": values.importateur.nomimportateur,
             "immatriculation": values.immatriculation,
             "produit": values.produit.nomproduit,
             "volume": values.volume,
+        }
+        list.append(context)
+    return Response(list, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cargaisonDechargementList(request):
+    user = request.user.id
+    data = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
+                                              Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
+                                              entrepot__affectationentrepot__username_id=user)
+    list = []
+    for values in data:
+        context = {
+            "id":values.idcargaison,
+            "dateheurecargaison": values.dateheurecargaison,
+            "importateur": values.importateur.nomimportateur,
+            "immatriculation": values.immatriculation,
+            "produit": values.produit.nomproduit,
+        }
+
+        list.append(context)
+    return Response(list, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cargaisonInspectionList(request):
+    user = request.user.id
+    data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user)
+    list = []
+    for values in data:
+        context = {
+            "id":values.idcargaison,
+            "dateheurecargaison": values.dateheurecargaison,
+            "importateur": values.importateur.nomimportateur,
+            "immatriculation": values.immatriculation,
+            "produit": values.produit.nomproduit,
         }
         list.append(context)
     return Response(list, status=status.HTTP_200_OK)
