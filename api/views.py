@@ -581,6 +581,7 @@ def showDataSaved(request):
             "importateur":data.importateur.nomimportateur,
             "entrepot":data.entrepot.nomentrepot,
             "immatriculation":data.immatriculation,
+            "volume":data.volume,
         }
         list.append(context)
     return Response(list, status=status.HTTP_200_OK)
