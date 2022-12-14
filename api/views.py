@@ -573,7 +573,7 @@ def verificationQrCode(request):
 @permission_classes([IsAuthenticated])
 def showDataSaved(request):
     user = request.user.id
-    c = Cargaison.objects.filter(user=user)
+    c = Cargaison.objects.filter(user=user).order_by('-dateheurecargaison')
     list = []
     for data in c:
         context = {
