@@ -6,7 +6,7 @@ from .forms import *
 from django.contrib.auth.decorators import login_required
 from labo.utils import render_to_pdf
 from django.http import HttpResponse
-from django.db.models import Q
+from django.db.models import Case, Value, When,Q
 from django_tables2.paginators import LazyPaginator
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
@@ -3338,9 +3338,8 @@ def affichageDetailsResultats(request,pk):
 
     template = 'laboDetailsResultat.html'
 
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
-    	                IF (r.valeurResultat  > a.valeurMax , "Hors norme", \
-    		            IF (r.valeurResultat < a.valeurMin, "Hors norme","Conforme")) as etatValeur \
+    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
+    	                IF (r.valeurResultat  > a.valeurMax , 'Hors norme', IF (r.valeurResultat < a.valeurMin, 'Hors norme','Conforme')) as etatValeur \
                         FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
                         WHERE c.idcargaison = r.idcargaison_id \
     	                AND r.idParametre_id = p.idParametre \
@@ -3355,7 +3354,7 @@ def affichageDetailsResultats(request,pk):
                         AND ev.idville = aa.ville_id \
                         AND aa.username_id = %s \
                         AND c.idcargaison = %s \
-                        AND c.etat = "Validation en cours 1"', [user,pk, ])
+                        AND c.etat = 'Validation en cours 1'", [user,pk, ])
 
     table = AffichageDetailResultat(qs,prefix='_1')
     RequestConfig(request, paginate={"per_page": 50}).configure(table)
