@@ -3291,8 +3291,8 @@ def saisieResultat(request,pk):
             LEFT JOIN hydro_occ.enreg_resultatanalyse r \
             ON pa.idParametre = r.idParametre_id \
             AND r.idcargaison_id = c.idcargaison \
-            WHERE c.idcargaison = %s \
-            AND c.etat = "Analyse Labo en cours" \
+            WHERE c.etat = "Analyse Labo en cours" \
+            AND c.idcargaison = %s \
             ORDER BY a.id ASC' ,[pk,])
 
     table = SaisieResultat(qs,prefix='_1')
