@@ -766,3 +766,25 @@ def sealsInspection(request):
     }
     return Response(context,status=status.HTTP_200_OK)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def tankerInspection(request):
+    id = request.data['id']
+    densite = request.data['densite']
+    temperature = request.data['temperature']
+    try:
+        innageIn = request.data['innageIn']
+    except:
+        innageIn = 'N/A'
+    volumeIn = request.data['volumeIn']
+    tempIn = request.data['volumeIn']
+    weightIn = request.data['volumeIn']
+
+    i = Inspection(dens=densite,temp=temperature,innagein=innageIn, volumein=volumeIn, tempin=tempIn,weightin=weightIn)
+    i.save()
+    context = {
+        'id':id
+    }
+    return Response(context,status=status.HTTP_200_OK)
+
