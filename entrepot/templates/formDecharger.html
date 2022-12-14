@@ -1,0 +1,24 @@
+{% extends 'entrepot/formsDecharger.html' %}
+{% load crispy_forms_tags %}
+
+
+{% block extrahead %}
+{{ form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+{% crispy form %}
+
+    <script>
+  $(function () {
+    $("#id_date").datepicker({
+      format:'dd/mm/yyyy',
+    });
+  });
+
+</script>
+
+{% endblock %}
+

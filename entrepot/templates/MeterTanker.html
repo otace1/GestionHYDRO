@@ -1,0 +1,16 @@
+{% extends 'entrepot/SealInspectionForm.html' %}
+{% load crispy_forms_tags %}
+
+{% block extra_js%}
+    <script src="https://unpkg.com/htmx.org@1.7.0" integrity="sha384-EzBXYPt0/T6gxNp0nuPtLkmRpmDBbjg6WmCUZRLXBBwYYmwAUxzlSGej0ARHX0Bo" crossorigin="anonymous" defer></script>
+{% endblock %}
+
+
+{% block content %}
+<form action="" method="post">
+{% csrf_token %}
+{{ formset }}
+<button type="submit">Save</button>
+</form>
+{% endblock %}
+

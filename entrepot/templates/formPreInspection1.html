@@ -1,0 +1,21 @@
+{% extends 'entrepot/SealInspectionForm.html' %}
+{% load crispy_forms_tags %}
+
+
+
+{% block content %}
+    <h2>Enregistrement des SEALS pour la cargaison {{ cargaison.idcargaison }}</h2>
+    <br>
+        <button hx-get="{% url 'seal-inspection' %}" hx-swap="beforeend" hx-target="#seal" class="btn btn-success">++SEALS</button>
+    <br>
+    <br>
+    <div id="seal">
+    </div>
+    <div align="right">
+    <a href="{% url 'tanker-inspection' %}" class="btn btn-primary">SUIVANT</a>
+{#        <button href="{% url 'tanker-inspection' %}" class="btn btn-primary">Suivant</button>#}
+    </div>
+{% endblock %}
+
+
+

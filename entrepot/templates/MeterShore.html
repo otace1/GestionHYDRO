@@ -1,0 +1,15 @@
+{% extends 'entrepot/SealInspectionForm.html' %}
+{% load crispy_forms_tags %}
+
+
+{% block extrahead %}
+{{ form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+{% crispy form %}
+
+{% endblock %}
+

@@ -1,0 +1,20 @@
+{% extends 'entrepot/ShoreInspection.html' %}
+{% load crispy_forms_tags %}
+
+
+
+{% block content %}
+    <h2>TANK de la cargaison SHORE {{ cargaison.idcargaison }} (BEFORE)</h2>
+    <br>
+        <button hx-get="{% url 'shore-insp' %}" hx-swap="beforeend" hx-target="#tank" class="btn btn-success">++TANK</button>
+    <br>
+    <br>
+    <div id="tank">
+    </div>
+    <div align="right">
+    <a href="{% url 'dechargement' %}" class="btn btn-primary">SUIVANT</a>
+    </div>
+{% endblock %}
+
+
+

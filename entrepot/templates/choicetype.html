@@ -1,0 +1,9 @@
+{% extends 'entrepot/formsDecharger.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+    {% csrf_token %}
+    {% crispy form %}
+{% endblock %}
+
+
+
