@@ -3293,7 +3293,7 @@ def saisieResultat(request,pk):
             AND r.idcargaison_id = c.idcargaison \
             # WHERE c.etat = "Analyse Labo en cours" \
             WHERE c.idcargaison = %s \
-            AND c.idcargaison = "Analyse Labo en cours" \
+            AND c.etat = "Analyse Labo en cours" \
             ORDER BY a.id ASC' ,[pk,])
 
     table = SaisieResultat(qs,prefix='_1')
