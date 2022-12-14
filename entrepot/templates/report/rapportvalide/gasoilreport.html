@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Mogas</title>
+    <style>
+        hr {
+            display: block;
+            margin-top: 0em;
+            margin-bottom: 0em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
+        }
+    </style>
+</head>
+
+<div align="right">EQF 300.000.26 Rev.00 Du 16.09.14</div>
+
+<table style="width:100%;">
+    <tbody>
+    <tr>
+        <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
+        <td align="center" style="font-size:13px; width: 90%">
+            <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
+            <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
+            <b>DIRECTION PROVINCIALE DU {{ province }}</b><br/>            DIVISION LABORATOIRE/LUBUMBASHI
+        </td>
+        <td style="width: 10%">Page 1/1</td>
+    </tr>
+    </tbody>
+</table>
+
+<hr>
+<br/>
+<table cellspacing="0.5" cellpadding="0.5" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+
+    <tbody>
+    <tr>
+        <td align="center" colspan="4" style="width: 100%;font-family: 'Times New Roman';font-size: 10px">
+            <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
+            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/><br/>
+        </td>
+    </tr>
+    {#    </tbody>#}
+
+
+    {##}
+    {#<table cellspacing="2" cellpadding="1" border="0"#}
+    {#       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
+    <tr>
+        <td style="font-size:10.5px;font-family:'Times New Roman';" colspan="3" width="50%">
+            <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
+            <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
+        </td>
+        <td style="font-size:10.5px;font-family:'Times New Roman';" width="50%">
+            <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
+            <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+            <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
+        </td>
+
+    </tr>
+    <tr>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
+        </td>
+
+    </tr>
+    <tr>
+        <td colspan="2"
+            style="width:35%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
+            <span><b>II.2. Marque d'identification:</b></span><br/>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
+            <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
+            <span><b>II.5. Quantité marchandise:</b> - </span>
+        </td>
+        <td colspan="2"
+            style="width:65%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
+            <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
+            <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
+            <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
+            <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
+            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
+        </td>
+
+    </tr>
+    <tr>
+        <td colspan="2">
+        </td>
+
+    </tr>
+
+    <td style="width:30%;font-size:10px; border: 0.10px solid black;">
+        <span><b>III. ESSAI + UNITES DE MESURE</b></span>
+    </td>
+    <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+        <span><b>EXIGENCES</b></span>
+    </td>
+    <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+        <span><b>RESULTATS</b></span>
+    </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span><b>METHODES ASTM</b></span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+            <span><u>ORGANOLEPTIQUES</u></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Couleur</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman' ">
+            <span>4.0 Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ couleurastm }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D1500</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+            <span><u>COMPOSITION</u></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Acidité totale mg KOH/g</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>0,5 Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ aciditetotal }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D974</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Soufre total en % poids</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>0.05 Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ soufre }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D4294</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+            <span><u>VOLATILITE</u></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Masse volumique à 20°C (kg/l)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>-</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ massevolumique }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D4052</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Masse volumique à 15°C (kg/l)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>0,81 - 0,87</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ massevolumique15 }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D4052</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Distillation </span>
+        </td>
+        <td style="width:20%;font-size:10px; border-top: 0.10px solid black; border-bottom: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span></span>
+        </td>
+        <td style="width:20%;font-size:10px; border-top: 0.10px solid black; border-bottom: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span></span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black; border-top: 0.10px solid black; border-bottom: 0.10px solid black; text-align:center; font-family: 'Times New Roman'">
+            <span> 	</span>
+        </td>
+    </tr>
+
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- Point initial(°C) </span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ pointinitial }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- récup à 10% vol(°C) </span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>Report</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ distillation10 }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- récup à 20% vol(°C) </span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>Report</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ distillation20 }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- récup à 50% vol(°C) </span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>Report</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ distillation50 }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- récup à 90% vol(°C) </span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>Report</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ distillation90 }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- récup % vol à 362°C</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>90 min</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ recuperation362 }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span> &nbsp;&nbsp;&nbsp;- Point final °C</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ pointfinal }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span> ASTM D86	</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Point d'éclair (Pensky. M. en v.c)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>60 min</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ pointeclair }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D93</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+            <span><u>FLUIDITE</u></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Viscosité cinématique à 40°C (Cst)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>2,0 - 6,0</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ viscosite }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D445</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Point d'écoulement °C</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>+5 Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ pointecoulement }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D97</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+            <span><u>CONTAMINANTS</u></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Teneur en eau % (v/v)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>0.05Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ teneureau }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D95</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Sédiments par extraction % poids</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>0.01Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ sediment }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D473</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-left: 0.10px solid black;border-top: 0.10px solid black;">
+            <span><u>COMBUSTION</u></span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:8px; border-right: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Corrosion sur lamme de Cu (3h à 100°C)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>1 b Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ corrosion }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D130</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-left: 0.10px solid black;">
+            <span>Indice de cétane calculé</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>47 min</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ indicecetane }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D976</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="width:30%;font-size:10px; border-right: 0.10px solid black;border: 0.10px solid black;">
+            <span>Cendres%(m/m)</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>0.01Max</span>
+        </td>
+        <td style="width:20%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>{{ cendre }}</span>
+        </td>
+
+        <td style="width:30%;font-size:10px; border: 0.10px solid black;text-align:center; font-family: 'Times New Roman'">
+            <span>ASTM D482</span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3" style="font-size:10px;">
+            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués. </span><br/>
+            <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
+            <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
+            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <img src="/media/rc.png" width="100px" height="100px"/>
+        </td>
+
+        <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
+        </td>
+
+        <td style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
+            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
+            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
+            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <img src="/media/rc.png" width="90px" height="90px"/>
+        </td>
+
+    </tr>
+
+    </div>
+    </tbody>
+
+</table>
+<br/>
+
+<div id="footerContent" style="text-align:center">
+    <tr>
+        <td><span style="font-size: 9px">Fin Rapport.</span><br/>
+            <hr>
+            <span style="font-size:8px; text-align:center;"><i>R.C.KIN.84.534 N°Ident.Nat.A-04900-B-225, Bd M'SIRI B.P:1236 L'SHI | Email: occ_ic-lubum.cd</i></span>
+            <span style="font-size:8px; text-align:center;"><i>OCC: Membre de l'Organisation Internationale de Normalisation (ISO), Membre des pays affiliés à la Commission</i></span>
+            <span style="font-size:8px; text-align:center;"><i>Electrotechnique Internationale (CEI) et Membre de l'Organisation Régionale de Normalisation (ORAN)</i></span>
+        </td>
+    </tr>
+
+</div>
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Report</title>
+    <style>
+        hr {
+            display: block;
+            margin-top: 0em;
+            margin-bottom: 0em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
+        }
+    </style>
+</head>
+
+<table cellspacing="4" cellpadding="4" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tbody>
+    <tr>
+        <td align="center" style="width: 40%">
+            <b>
+                <center>REPUBLIQUE DEMOCRATIQUE DU CONGO</center>
+            </b>
+            <b>
+                <center>OFFICE CONGOLAIS DE CONTROLE</center>
+            </b>
+            <img src="/media/occ.png" width="150px" height="150px"/><br/>
+            <b>DIRECTION PROVINCIALE DU KATANGA</b><br/>
+        </td>
+        <td colspan="3"
+            style="width:60%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <span><b>MATRC.  TRUCK / TOWED : </b>{{ immatriculation }}</span><br/>
+            <span><b>ENTRANCE : </b>{{ entrance }}</span><br/>
+            <span><b>ARRIVAL DATE :</b>{{ arrivaldate }}</span><br/>
+            <span><b>ORIGIN : </b>{{ origin }}</span><br/>
+            <span><b>PROVENANCE : </b>{{ provenance }}</span><br/>
+            <span><b>PRODUCT : </b>{{ product }}</span><br/>
+            <span><b>OPERATION DATE : </b>{{ operationdate }}</span><br/>
+            <span><b>RECEIVER : </b>{{ receiver }}</span><br/>
+            <span><b>CONSIGNER : </b>{{ consigner }}</span>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 100%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>INSPECTION CERTIFICATE N°: </b></td>
+    </tr>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3px" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>LAST THREE CARGO</b></td>
+        <td align="center"
+            style="width: 60%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>LOWER SEAL</b></td>
+    </tr>
+</table>
+<table cellspacing="1" cellpadding="3px" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>FIRST LAST: </b>{{ flast }}</td>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SEAL ONE: </b></td>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SEAL FOUR: </b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SECOND LAST: </b>{{ slast }}</td>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SEAL TWO:</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>THIRD LAST: </b>{{ tlast }}</td>
+        <td align="left"
+            style="width: 30%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SEAL THREE:</b></td>
+
+    </tr>
+</table>
+
+<br/>
+
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>VOLUME IN: Cu.Mtrs</b></td>
+        <td align="center"
+            style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>WEIGHT IN: M/T</b></td>
+        <td align="center"
+            style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>TEMP.IN: C°</b></td>
+        <td align="center"
+            style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>TABLE USED: 54B</b></td>
+        <td align="center"
+            style="width: 20%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>INNAGE IN: CM</b></td>
+    </tr>
+</table>
+<br/>
+
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 42.5%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>ON ARRIVAL AND TO BE DISCHARGED</b></td>
+    </tr>
+</table>
+
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>COMP</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>UPPER SEAL</b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>INNAGE</b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV</b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>TEMP.C°</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>DEN.AT 15°C</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>V.C.F.T.54B</b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV</b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTA</b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.1</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ govjaugee }}</b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ temperature }}</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ densiteentrepot }}</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ vcf }}</b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gsv }}</b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ mta }}</b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.2</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.3</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.4</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.5</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.6</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.7</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.8</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.9</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>C.10</b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+    <tr>
+        <td align="center"
+            style="width: 8%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>TOTAL</b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gov }}</b></td>
+        <td align="center"
+            style="width: 10%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 15%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 12%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gsv }}</b></td>
+        <td align="center"
+            style="width: 13%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ mta }}</b></td>
+    </tr>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 33.4%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>SPECIFICATIONS</b></td>
+        <td align="center"
+            style="width: 33.4%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>L.T. QUANTITY</b></td>
+        <td align="center"
+            style="width: 33.4%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>RECEIVER METER READ IN CUBIC METER</b></td>
+    </tr>
+</table>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>DENSITY/T° OBS</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ densitelabo }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ ltgov }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>METER BEFORE</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ meterbefore }}</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>COLOR</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ color }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>METER AFTER</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ meterafter }}</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>ASPECT</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ aspect }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV METER</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ govmeter }}</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>ODOR</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ odor }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTA</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV METER</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gsvmeter }}</b></td>
+    </tr>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 33.4%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>DIFFERENCE L.T./TANKER</b></td>
+        <td align="center"
+            style="width: 33.4%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>CERTIFIED QUANTITY</b></td>
+        <td align="center"
+            style="width: 33.4%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>DIFFERENCE TANKER/METER</b></td>
+    </tr>
+</table>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ govlttanker }}</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gov }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ govtankermeter }}</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gsv }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ gsvtankermeter }}</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTV</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTA</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ mta }}</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTA</b></td>
+        <td align="left"
+            style="width: 16.7%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ mtatankermeter }}</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTA</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="center"
+            style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>DIFFERENCE L.T./METER</b></td>
+    </tr>
+</table>
+<table cellspacing="1" cellpadding="3" border="0"
+       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GOV</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ govltmeter }}</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>CUBIC METER PRICE IN $</b></td>
+        <td align="center"
+            style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>FRAIS OCC A PAYER</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>GSV</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="center"
+            style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>11 USD</b></td>
+        <td align="center"
+            style="width: 33.3%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>{{ frais }} USD</b></td>
+    </tr>
+    <tr>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b>MTA</b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+        <td align="left"
+            style="width: 11.11%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <b></b></td>
+    </tr>
+</table>
+<br/>
+Remarks
+
+<table>
+    <tr>
+        <td align="center" style="width: 50%;font-size: 8px;font-family: 'Times New Roman'"><b>RECEIVER
+            REPRESENTATIVE</b></td>
+        <td align="center" style="width: 50%;font-size: 8px;font-family: 'Times New Roman'"><b>INSPECTOR</b></td>
+    </tr>
+    <tr>
+        <td align="center" style="width: 50%;font-size: 8px;font-family: 'Times New Roman'"><b>(Name & Signature)</b>
+        </td>
+        <td align="center" style="width: 50%;font-size: 8px;font-family: 'Times New Roman'"><b>(Name & Signature)</b>
+        </td>
+    </tr>
+</table>
+</html>
