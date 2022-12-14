@@ -3281,14 +3281,14 @@ def saisieResultat(request,pk):
     request.session['pk'] = pk
 
     qs = ParametresProduits.objects.raw('SELECT pa.idParametre,c.idcargaison, p.nomproduit, pa.nomParametre, r.valeurResultat \
-            FROM enreg_cargaison c \
-            LEFT JOIN enreg_produit p \
+            FROM hydro_occ.enreg_cargaison c \
+            LEFT JOIN hydro_occ.enreg_produit p \
             ON c.produit_id = p.idproduit \
-            LEFT JOIN enreg_affectationparametre a \
+            LEFT JOIN hydro_occ.enreg_affectationparametre a \
             ON p.idproduit = a.idproduit_id \
-            LEFT JOIN enreg_parametresproduits pa \
+            LEFT JOIN hydro_occ.enreg_parametresproduits pa \
             ON a.idParametre_id = pa.idParametre \
-            LEFT JOIN enreg_resultatanalyse r \
+            LEFT JOIN hydro_occ.enreg_resultatanalyse r \
             ON pa.idParametre = r.idParametre_id \
             AND r.idcargaison_id = c.idcargaison \
             WHERE c.idcargaison = %s \
