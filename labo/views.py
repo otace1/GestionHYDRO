@@ -71,14 +71,7 @@ class GestionLaboratoire():
         role = user.role_id
         if role == 4 or role == 1:
             # Getting current Year & Month
-            now = datetime.today()
-            date_today = now.date()
-            month = now.month
-            year = now.year
-
-            # if request.method == 'POST':
-            #     pk = request.POST.get('pk', None)
-
+            now = datetime.now()
             numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
 
             # Changement de l'etat de la cargaison
@@ -89,7 +82,7 @@ class GestionLaboratoire():
             # Sauvegarde de l'instruction dans la Table LaboReception
             codelabo = codeLabo(v, pk)
             p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
-                              numcertificatqualite=numcertificatqualite)
+                              numcertificatqualite=numcertificatqualite,datereceptionlabo=now)
             p.save()
             return redirect('labo')
         else:

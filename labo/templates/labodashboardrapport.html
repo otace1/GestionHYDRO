@@ -1,0 +1,29 @@
+{% extends 'base_labdashboardrapport_layout.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+{% load crispy_forms_tags %}
+{% block extrahead %}
+    {{ form.media }}
+{% endblock %}
+
+{% block buttons %}
+    <div class="row col-md-3">
+          <div class="col-md-6">
+        <a href="{% url 'validation1' %}">
+            <button class="btn btn-danger"><i class="fa fa-backward"></i>Retour</button>
+        </a>
+    </div>
+    <br>
+    <br>
+    <div class="col-md-3">
+        <a href="{% querystring '_export'='xlsx' %}">
+            <button class="btn btn-success"><i class="fa fa-download"></i>Telech.</button>
+        </a>
+    </div>
+{% endblock %}
+
+
+{% block content%}
+    {% render_table table %}
+{% endblock %}
+
