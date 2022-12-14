@@ -749,3 +749,20 @@ def cargaisonRequisitionList(request):
         }
         list.append(context)
     return Response(list, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sealsInspection(request):
+    id = request.data['id']
+    manifoldnumber = request.data['manifoldnumber']
+    sealstate = request.data['sealstate']
+    cargaison = Cargaison.objects.get(idcargaison=id)
+    sealState = SealState.objects.get(sealstate=sealstate)
+    a = InspectionSeal(manifoldnumber=manifoldnumber,sealstate=sealState,idcargaison=cargaison)
+    a.save()
+    context = {
+        'id':id
+    }
+    return Response(context,status=status.HTTP_200_OK)
+
