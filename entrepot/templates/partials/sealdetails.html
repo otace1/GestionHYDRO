@@ -1,0 +1,11 @@
+<div hx-target="this" hx-swap="outerHTML">
+    <h3>{{ seals.manifoldnumber }}</h3>
+    <p>Seal State:{{ seals.sealstate }}</p>
+    <form method="GET">
+    <button hx-get="{% url 'sealsupdate' seals.pk %}" class="btn btn-success">Update</button>
+    </form>
+    <form method="POST">
+    {% csrf_token %}
+    <button hx-post="{% url 'sealsdelete' seals.pk %}" class="btn btn-danger">Delete</button>
+    </form>
+</div>

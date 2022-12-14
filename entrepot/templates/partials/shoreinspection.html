@@ -1,0 +1,17 @@
+{% load crispy_forms_tags %}
+
+<div hx-target="this" hx-swap="outerHTML">
+    <form method="POST">
+        {% csrf_token %}
+        {{ form|crispy }}
+        {% if seal %}
+            <button hx-post="{% url 'shore-update' shore.pk %}">Submit</button>
+        {% else %}
+            <button hx-post="" class="btn btn-success">Submit</button>
+        {% endif %}
+    </form>
+</div>
+
+
+
+
