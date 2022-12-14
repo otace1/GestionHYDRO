@@ -3272,7 +3272,7 @@ def natureProduitLabo(request, pk):
         context = {'form': form}
         return render(request, template, context)
 
-
+# TEst
 
 #Saisie saisieResultat
 @login_required(login_url='login')
