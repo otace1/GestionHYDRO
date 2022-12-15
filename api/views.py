@@ -798,6 +798,8 @@ def compartimentInspection(request):
     tempComp = request.data['tempComp']
     compartDenom = request.data['compartDenom']
     sealNumber = request.data['sealNumber']
+    sealState = request.data['sealstate']
+    sealState = SealState.objects.get(sealstate=sealState)
     innage = request.data['innage']
     gov = request.data['gov']
 
@@ -810,7 +812,7 @@ def compartimentInspection(request):
     m = mtv(g,d) #MTV
     a = mta(g,d) #MTA
 
-    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,
+    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,sealstate=sealState,
                                     gsv=g,vcf=v,mtv=m,mta=a)
     compartimentData.save()
     context = {
@@ -818,3 +820,15 @@ def compartimentInspection(request):
     }
     return Response(context,status=status.HTTP_200_OK)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def marquageInspection(request):
+    id = request.data['id']
+    c = Cargaison.objects.get(idcargaison=id)
+    c.etatInspection = False
+    c.save(update_fields=['etatInspection'])
+    context = {
+        'id': id
+    }
+    return Response(context, status=status.HTTP_200_OK)
