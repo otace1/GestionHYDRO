@@ -832,3 +832,136 @@ def marquageInspection(request):
         'id': id
     }
     return Response(context, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def rapportInspection(request):
+    id = request.data['id']
+
+    cargaison = Cargaison.objects.get(idcargaison=id)
+    inspection = Inspection.objects.get(idcargaison=id)
+    if inspection.meterbefore is None:
+        inspection.meterbefore = 0
+    if inspection.meterafter is None:
+        inspection.meterafter = 0
+    seal = InspectionSeal.objects.filter(idcargaison=id)
+    if Resultat.objects.filter(idcargaison_id=id).exists():
+        resultat_data = Resultat.objects.get(idcargaison_id=id)
+
+    compartiment = Compartiment.objects.filter(
+        idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
+    govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)), 3))  # gov Total Tanker
+    gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)), 3))  # gsv Total Tanker
+    mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)), 3))  # mta Total Tanker
+    mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)), 3))  # mtv Total Tanker
+
+    densite = densite15(inspection.temp, inspection.dens)  # densite 15c
+    govMeter = round((inspection.meterafter - inspection.meterbefore) / 1000, 3)  # govmeter
+    vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
+    gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
+    mtaMeter = mta(gsvMeter, densite)  # mta Meter
+
+    govLt = float(cargaison.volume)  # gov LT
+    vcfLt = vcf(densite, inspection.temp)  # VCF LT
+    gsvLt = (cargaison.volume15)  # GSV LT
+    if gsvLt is None:
+        gsvLt = 0
+    # gsvLt = gsv(vcfLt, govLt)  # GSV LT
+    mtvLt = (cargaison.tonnagevide)  # MTV LT
+    if mtvLt is None:
+        mtvLt = 0
+    # mtvLt = mtv(gsvLt, densite)  # MTV LT
+    mtaLt = (cargaison.tonnageair)  # MTA LT
+    if mtaLt is None:
+        mtaLt = 0
+    # mtaLt = mta(gsvLt, densite)  # MTA LT
+
+    govLtTanker = round((govLt - float(govTotal)), 3)  # Difference LT/Tanker
+    gsvLtTanker = round((float(gsvLt) - float(gsvTotal)), 3)  # Difference GSV LT/Tanker
+    mtvLtTanker = round((float(mtvLt) - float(mtvTotal)), 3)  # Difference mtv LT/Tanker
+    mtaLtTanker = round((float(mtaLt) - float(mtaTotal)), 3)  # Difference mtv LT/Tanker
+    prLtTanker = round((govLtTanker * 100) / govLt, 3)
+    if gsvLt == 0:
+        gsvLt = 1
+    prGsvLtTanker = round((gsvLtTanker * 100) / float(gsvLt), 3)
+    if mtaLt == 0:
+        mtaLt = 1
+    prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100), 3)
+    if mtvLt == 0:
+        mtvLt = 1
+    prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100), 3)
+
+    govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
+    gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
+    mtaTankerMeter = round((float(mtaTotal) - mtaMeter), 3)  # Difference MTA Tanker/Meter
+    prTankerMeter = round((govTankerMeter * 100) / float(govTotal), 3)
+
+    govLtMeter = govLt - govMeter  # Diff LT/Meter
+    gsvLtMeter = round((float(gsvLt) - gsvMeter), 3)  # Diff GSV LT/Meter
+    mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
+    if govLt == 0:
+        govLt = 1
+    prLtMeter = round((govLtMeter * 100) / govLt, 3)
+    if gsvLt == 0:
+        gsvLt = 1
+    prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt), 3)
+    if mtaLt == 0:
+        mtaLt = 1
+    prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt), 3)
+
+    # Certified Quantity
+    if govMeter > 0:
+        govMax = govMeter
+        gsvMax = gsvMeter
+        mtaMax = mtaMeter
+    else:
+        if float(govTotal) > 0:
+            govMax = govTotal
+            gsvMax = gsvTotal
+            mtaMax = mtaTotal
+        else:
+            if govLt > 0:
+                govMax = govLt
+                gsvMax = gsvLt
+                mtaMax = mtaLt
+
+    # govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
+    # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
+    # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
+
+    fraisOcc = round((11 * float(gsvMax)), 3)  # Frais occ a Payer
+
+
+    context = {
+        'immatriculation':cargaison.immatriculation,
+        'entrance':cargaison.frontiere.nomville,
+        'dateArrivee':cargaison.dateheurecargaison,
+        'origin':cargaison.provenance.name,
+        'produit':cargaison.produit.nomproduit,
+        'dateInspection':inspection.dateinspection,
+        'fournisseur':cargaison.importateur.nomimportateur,
+        'entrepot':cargaison.entrepot.nomentrepot,
+        #Jaugeage
+        'govTotal':govTotal,
+        'densite':densite,
+        'gsvTotal':gsvTotal,
+        'mtaTotal':mtaTotal,
+        #LT
+        'govLt':govLt,
+        'gsvLt':gsvLt,
+        'mtvLt':mtvLt,
+        'mtaLt':mtaLt,
+        #Meter
+        'govMeter':govMeter,
+        'gsvMeter':gsvMeter,
+        #certified Qty
+        'govMax':govMax,
+        'gsvMax':gsvMax,
+        'mtaMax':mtaMax,
+        #Frais
+        'fraisOcc':fraisOcc,
+
+    }
+
+    return Response(context, status=status.HTTP_200_OK)
