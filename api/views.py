@@ -771,6 +771,7 @@ def sealsInspection(request):
 @permission_classes([IsAuthenticated])
 def tankerInspection(request):
     id = request.data['id']
+    cargaison = Cargaison.objects.get(idcargaison=id)
     densite = request.data['densite']
     temperature = request.data['temperature']
     try:
@@ -781,8 +782,37 @@ def tankerInspection(request):
     tempIn = request.data['volumeIn']
     weightIn = request.data['volumeIn']
 
-    i = Inspection(dens=densite,temp=temperature,innagein=innageIn, volumein=volumeIn, tempin=tempIn,weightin=weightIn)
+    i = Inspection(idcargaison=cargaison,dens=densite,temp=temperature,innagein=innageIn, volumein=volumeIn, tempin=tempIn,weightin=weightIn)
     i.save()
+    context = {
+        'id':id
+    }
+    return Response(context,status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def compartimentInspection(request):
+    id = request.data['id']
+    inspection = Inspection.objects.get(idcargaison=id)
+    tempComp = request.data['tempComp']
+    compartDenom = request.data['compartDenom']
+    sealNumber = request.data['sealNumber']
+    innage = request.data['innage']
+    gov = request.data['gov']
+
+    #Calcul dens a 15
+    densite = inspection.dens
+    temperature = inspection.temp
+    d = densite15(temperature,densite) #Den a 15
+    v = vcf(d,tempComp) #VFC
+    g = gsv(v, gov) #GSV
+    m = mtv(g,d) #MTV
+    a = mta(g,d) #MTA
+
+    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,
+                                    gsv=g,vcf=v,mtv=m,mta=a)
+    compartimentData.save()
     context = {
         'id':id
     }

@@ -38,6 +38,7 @@ urlpatterns = [
 
     path('sealsInspection/', sealsInspection, name='sealsInspection'),  # ShowPer user saved Data
     path('tankerInspection/', tankerInspection, name='tankerInspection'),  # ShowPer user saved Data
+    path('compartimentInspection/', compartimentInspection, name='compartimentInspection'),  # ShowPer user saved Data
 
 
 
