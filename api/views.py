@@ -699,8 +699,7 @@ def cargaisonEchantillonnageList(request):
 @permission_classes([IsAuthenticated])
 def cargaisonDechargementList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
-                                              Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
+    data = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),before=False,
                                               entrepot__affectationentrepot__username_id=user)
     list = []
     for values in data:
@@ -961,7 +960,36 @@ def rapportInspection(request):
         'mtaMax':mtaMax,
         #Frais
         'fraisOcc':fraisOcc,
-
     }
-
     return Response(context, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def dechargementCargaison(request):
+    id = request.data['id']
+    try:
+        inspection = Inspection.objects.get(idcargaison=id)
+        cargaison = Cargaison.objects.get(idcargaison=id)
+        meterafter = request.data['meterAfter']
+        meterbefore = request.data['meterBefore']
+        if meterbefore == '':
+            meterbefore = 0
+        if meterafter == '':
+            meterafter = 0
+        cargaison.etat = 'Cargaison dechargee'
+        cargaison.dateDechargement = datetime.datetime.today()
+        cargaison.save(update_fields=['etat', 'dateDechargement'])
+
+        inspection.meterafter = meterafter
+        inspection.save(update_fields=['meterafter', 'meterbefore'])
+        context = {
+            'id':id
+        }
+        return Response(context, status=status.HTTP_200_OK)
+    except:
+        context = {
+            'id':id
+        }
+        return Response(context,status=status.HTTP_400_BAD_REQUEST)
+

@@ -41,6 +41,7 @@ urlpatterns = [
     path('compartimentInspection/', compartimentInspection, name='compartimentInspection'),  # ShowPer user saved Data
     path('marquageInspection/', marquageInspection, name='marquageInspection'),  # ShowPer user saved Data
     path('rapportInspection/', rapportInspection, name='rapportInspection'),  # ShowPer user saved Data
+    path('dechargementCargaison/', dechargementCargaison, name='dechargementCargaison'),  # ShowPer user saved Data
 
 
 
