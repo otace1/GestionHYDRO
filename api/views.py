@@ -697,7 +697,7 @@ def cargaisonEchantillonnageList(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def cargaisonDechargementList(request):
+def cargaisonListeDechargement(request):
     user = request.user.id
     data = Cargaison.objects.filter(etat='Conforme aux exigences',before=False,
                                               entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
