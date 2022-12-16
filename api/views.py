@@ -700,7 +700,7 @@ def cargaisonEchantillonnageList(request):
 def cargaisonDechargementList(request):
     user = request.user.id
     data = Cargaison.objects.filter(etat='Conforme aux exigences',before=False,
-                                              entrepot__affectationentrepot__username_id=user)
+                                              entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
     list = []
     for values in data:
         context = {
@@ -718,7 +718,7 @@ def cargaisonDechargementList(request):
 @permission_classes([IsAuthenticated])
 def cargaisonInspectionList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user)
+    data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
     list = []
     for values in data:
         context = {
