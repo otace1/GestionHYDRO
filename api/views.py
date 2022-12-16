@@ -699,7 +699,7 @@ def cargaisonEchantillonnageList(request):
 @permission_classes([IsAuthenticated])
 def cargaisonDechargementList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),before=False,
+    data = Cargaison.objects.filter(etat='Conforme aux exigences',before=False,
                                               entrepot__affectationentrepot__username_id=user)
     list = []
     for values in data:
