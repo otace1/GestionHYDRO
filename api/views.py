@@ -663,6 +663,8 @@ def enregistrementEchantillonnage(request):
             'numDossier':c.numdos,
             'numRappEch': numrappech,
             'nomClient':c.importateur.nomimportateur,
+            'entrepot': c.entrepot.nomentrepot,
+            'qteLabo': qte,
             'natureMarchandise':'PRODUIT PETROLIER',
             'marqueProduit': c.produit.nomproduit,
             'qteMarchandise': c.volume,
