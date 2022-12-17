@@ -814,7 +814,7 @@ def compartimentInspection(request):
     m = mtv(g,d) #MTV
     a = mta(g,d) #MTA
 
-    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,sealstate=sealState,
+    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,sealstate=sealState.idsealstate,
                                     gsv=g,vcf=v,mtv=m,mta=a)
     compartimentData.save()
     context = {
