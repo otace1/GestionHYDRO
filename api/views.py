@@ -800,7 +800,7 @@ def compartimentInspection(request):
     tempComp = request.data['tempComp']
     compartDenom = request.data['compartDenom']
     sealNumber = request.data['sealNumber']
-    sealState = request.data['sealstate']
+    sealState = request.data['sealState']
     sealState = SealState.objects.get(sealstate=sealState)
     innage = request.data['innage']
     gov = request.data['gov']
@@ -814,7 +814,7 @@ def compartimentInspection(request):
     m = mtv(g,d) #MTV
     a = mta(g,d) #MTA
 
-    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,sealstate=sealState.idsealstate,
+    compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,sealstate=sealState,
                                     gsv=g,vcf=v,mtv=m,mta=a)
     compartimentData.save()
     context = {
