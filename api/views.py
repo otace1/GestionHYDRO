@@ -815,7 +815,7 @@ def compartimentInspection(request):
     a = mta(g,d) #MTA
 
     compartimentData = Compartiment(idinspection=inspection,tempcomp=tempComp,compart=compartDenom,sealNumber=sealNumber,innage=innage,sealstate=sealState,
-                                    gsv=g,vcf=v,mtv=m,mta=a)
+                                    gsv=g,vcf=v,mtv=m,mta=a,gov=gov)
     compartimentData.save()
     context = {
         'id':id
