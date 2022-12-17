@@ -936,6 +936,7 @@ def rapportInspection(request):
 
 
     context = {
+        'qrCode':cargaison.qrcode,
         'immatriculation':cargaison.immatriculation,
         'entrance':cargaison.frontiere.nomville,
         'dateArrivee':cargaison.dateheurecargaison,
