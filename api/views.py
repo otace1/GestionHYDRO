@@ -660,6 +660,7 @@ def enregistrementEchantillonnage(request):
                                  methodeutilisee=methodeUtilisee, qte=qte)
         e.save()
         context = {
+            'qrCode':c.qrcode,
             'numDossier':c.numdos,
             'numRappEch': numrappech,
             'nomClient':c.importateur.nomimportateur,
