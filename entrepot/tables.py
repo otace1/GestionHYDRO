@@ -45,6 +45,11 @@ A = """
             """
 
 
+NONCONFORME = """
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">CONSIGNATION</a>
+    <a href="{%url 'printcert' record.pk%}" class="btn btn-danger">REFOULEMENT</a>
+            """
+
 class EchantillonTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     importateur = tables.Column(verbose_name='FOURNISSEUR')
@@ -336,12 +341,17 @@ class NonConformeOrganoleptique(tables.Table):
 
 
 class NonConformeLaboratoire(tables.Table):
-    idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
+    # idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    dateechantillonage = tables.Column(verbose_name="DATE ECH.")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__provenance = tables.Column(verbose_name="PROVENANCE")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION.")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT")
-    idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+    idcargaison__volume = tables.Column(verbose_name='VOL. DECL.')
+    actions = tables.TemplateColumn(NONCONFORME, verbose_name='')
 
     # volume = tables.Column(verbose_name="VOLUME DECL.")
     class Meta:

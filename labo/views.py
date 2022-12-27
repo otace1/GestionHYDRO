@@ -209,8 +209,8 @@ class GestionAnalyse():
                 '-datereceptionlabo')
             table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
-            RequestConfig(request, paginate={"per_page": 16}).configure(table1)
-            RequestConfig(request, paginate={"per_page": 16}).configure(table2)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table1)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table2)
             return render(request, 'labo_analyse.html', {
                 'analyse': table1,
                 'refaire': table2,

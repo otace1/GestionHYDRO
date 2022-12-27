@@ -375,76 +375,63 @@
         </div>
     </aside>
 
+
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-    <section class="content-header">
-  <div class="container-fluid">
-    <div class="row mb-2">
-      <div class="col-sm-6">
-          <h1><b>ENCODAGE</b></h1>
-      </div>
-      <div class="col-sm-6">
-        <ol class="breadcrumb float-sm-right">
-          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-          <li class="breadcrumb-item"><a href="#">Laboratoire</a></li>
-          <li class="breadcrumb-item active"><a href="#">Encodage des resultats</a></li>
-        </ol>
-      </div>
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0">ENCODAGE</h1>
+          </div><!-- /.col -->
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+              <li class="breadcrumb-item">Laboratoire</li>
+                <li class="breadcrumb-item active"><a href="#">Encodage des resultats</a></li>
+            </ol>
+          </div><!-- /.col -->
+        </div><!-- /.row -->
+      </div><!-- /.container-fluid -->
     </div>
-  </div>
-</section>
-
+    <!-- /.content-header -->
 
         <!-- /.content-header -->
         <section class="content">
             <div class="container-fluid">
-            <div class="col-md-6">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <a class="btn btn-danger" href="{% url 'analyse' %}" role="button"> << RETOUR << </a>
                         <a class="btn btn-primary" href="{% url 'validationResulat' %}" role="button">>> VALIDER >> </a>
                     </div>
                 </div>
-            </div>
             <br/>
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-6">
-                    <div class="card">
-                        <div class="card-header bg-gradient-dark">
-                            <h1 class="card-title"><b></b></h1>
-                            <div class="card-tools">
-                        </div>
-                        </div>
-                        <div class="card-body table-responsive p-0">
-                            {% block content %}
-
-                            {% endblock %}
-                        </div>
-                    </div>
+                <div class="col-md-6">
+                        <div class="card">
+                          <div class="card-body table-responsive p-0">
+                              {% block content %}{% endblock %}
+                          </div>
+                          <!-- /.card-body -->
+                        </div><!-- /.card -->
                 </div>
             </div>
-            </div>
-    </section>
+        </section>
         <!-- /.content -->
-    </div>
     <!-- /.content-wrapper -->
 
-<footer class="main-footer">
-    <div class="float-right d-none d-sm-block">
-      <b>Version</b> 3.2.0
-    </div>
-    <strong>Copyright &copy; {% now 'Y' %} <a href="https://www.cgworldwide.org">Compass Green WorldWide
-            SARL</a>.</strong> All rights reserved.
-  </footer>
+ <footer class="footer-bottom">
 
-  <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-  </aside>
-  <!-- /.control-sidebar -->
+    <div class="float-right d-none d-sm-inline-block">
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
+    All rights reserved.
+      <b>Version</b> 3.0
+    </div>
+
+  </footer>
+    </div>
 </div>
+
 <!-- ./wrapper -->
 
 <!-- jQuery -->

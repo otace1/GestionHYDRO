@@ -185,7 +185,7 @@ class AffichageAnalyse(tables.Table):
 
 
 class AffichageAnalyseRefaire(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE2, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
     codelabo = tables.Column(verbose_name='CODE LABO')
     produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
@@ -421,7 +421,7 @@ class SaisieResultat(tables.Table):
     saisieValeur = tables.TemplateColumn(champSaisieValeurResultat, verbose_name='')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped",
+        attrs = {"class": "table table-hover text-nowrap",
                  "id": "table1"}
         template_name = "django_tables2/bootstrap4.html"
 
