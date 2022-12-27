@@ -1506,7 +1506,7 @@ class GestionValidation():
         url = request.session['url']
         pk = request.session['pk']
 
-        if role == 1 or role == "ad":
+        if role == 1 or role == 10:
             c = Cargaison.objects.get(idcargaison=pk)
             a = LaboReception.objects.get(idcargaison=pk)
             c.etat = "Conforme aux exigences"
@@ -1524,7 +1524,7 @@ class GestionValidation():
         user = request.user
         id = user.id
         role = user.role_id
-        if role == 1 or role == "ad":
+        if role == 1 or role == 10:
             c = Cargaison.objects.get(idcargaison=pk)
             a = LaboReception.objects.get(idcargaison=pk)
             c.etat = "Non conforme aux exigences"
