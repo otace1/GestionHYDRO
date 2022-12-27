@@ -397,23 +397,18 @@
         <!-- /.content-header -->
         <section class="content">
             <div class="container-fluid">
-            <div class="col-md-12">
-                <div class="row">
-                        <div class="col-md-12">
-                            <a class="btn btn-danger" href="{% url 'validation1' %}" role="button"> << RETOUR << </a>
-                            <a class="btn btn-success" href="{% url 'conforme' %}" role="button">>> CONFORME >> </a>
-                            <a class="btn btn-danger" href="{% url 'nonconforme' %}" role="button">>> NON CONFORME >> </a>
-                            <a class="btn btn-outline-danger" href="{% url 'refaire' %}" role="button">>> A REFAIRE >> </a>
-                        </div>
-                  </div>
+            <div class="col-sm-6">
+                   <h1 class="m-0 text-dark"><b>Validation & contrôle des résultats</b></h1>
                </div>
             <br/>
             <!-- /.row -->
             <div class="row">
-                <div class="col-6">
+                {% block search %}
+                {% endblock %}
+                <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-gradient-dark">
-                            <h1 class="card-title"><b></b></h1>
+                            <h1 class="card-title"><b>Résultats en attente de validation</b></h1>
                             <div class="card-tools">
                         </div>
                         </div>
