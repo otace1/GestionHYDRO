@@ -1548,7 +1548,7 @@ class GestionValidation():
         mo = d.month
         yr = d.year
         form = RapportLabo()
-        if role == 5 or role == 1 or role == 6:
+        if role == 5 or role == 1 or role == 6 or role == 10:
             qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Validation en cours 2",
                                          idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
                 'datereceptionlabo')

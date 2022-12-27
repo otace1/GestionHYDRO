@@ -27,40 +27,42 @@ def login_user(request):
             if user.is_active:
                 login(request, user)
                 re = request.user
+                role = re.role_id
+
                 # Roles frontière
-                if re.role_id == 2:
+                if role == 2:
                     return redirect('cargaison')
                 else:
                     # Rôle administration
-                    if re.role_id == 1 or re.role_id == 8 :
+                    if role == 1 or role == 8:
                         return redirect('dashboard')
                     else:
                         # rôle HYDROCARBURES
-                        if re.role_id == 7:
+                        if role == 7:
                             return redirect('dashboard')
                         else:
                             # rôle Encodeur entrepot
-                            if re.role_id == 3 :
+                            if role == 3:
                                 return redirect('entrepot')
                             else:
                                 # rôle reception au labo
-                                if re.role_id == 4:
+                                if role == 4:
                                     return redirect('labo')
                                 else:
                                     # rôle encodage labo
-                                    if re.role_id == 5:
+                                    if role == 5:
                                         return redirect('analyse')
                                     else:
                                         # rôle validation chef de service labo
-                                        if re.role_id == 6:
+                                        if role == 6:
                                             return redirect('validation1')
                                         else:
                                             # rôle validation chef de division labo
-                                            if re.role_id == 10:
+                                            if role == 10:
                                                 return redirect('validation2')
                                             else:
                                                 # rôle particulier
-                                                if re.role_id == 9 :
+                                                if role == 9:
                                                     return redirect('entrepot')
     context = {
         'form': form
