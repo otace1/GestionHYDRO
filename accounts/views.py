@@ -56,7 +56,7 @@ def login_user(request):
                                             return redirect('validation1')
                                         else:
                                             # rôle validation chef de division labo
-                                            if re.role_id == 'v2':
+                                            if re.role_id == 10:
                                                 return redirect('validation2')
                                             else:
                                                 # rôle particulier
