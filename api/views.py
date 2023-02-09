@@ -641,6 +641,43 @@ def scanEchantillonnage(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def scanInspection(request):
+    user = request.user.id
+    qrCode = request.data['qrCode']
+    try:
+        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
+        # qs = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by(
+        #     '-dateheurecargaison')
+        if c.etatInspection is True:
+            context = {'id':c.idcargaison}
+            return Response(context,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def scanDechargement(request):
+    user = request.user.id
+    qrCode = request.data['qrCode']
+    try:
+        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
+        # qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
+        #                               Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
+        #                               entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+        if c.etat == "En attente de dechargement":
+            context = {'id':c.idcargaison}
+            return Response(context,status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def enregistrementEchantillonnage(request):
     # user = request.user.id
     id = request.data['id']

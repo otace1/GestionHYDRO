@@ -5,6 +5,8 @@ from django.core.exceptions import BadRequest
 from accounts.models import *
 from .forms import *
 from labo.utils import render_to_pdf
+from xhtml2pdf import pisa
+from io import BytesIO, StringIO
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 import math
@@ -656,10 +658,12 @@ def echantillonage(request, pk):
                 # 'numplombh': numplombh,
                 'numrappechauto': numrappechauto,
             }
-
             # Render PDF Files
             pdf = render_to_pdf(template, data)
-            return HttpResponse(pdf, content_type='application/pdf')
+
+            response = HttpResponse(pdf, content_type="application/pdf")
+            response["Content-Disposition"] = 'filename=”home_page.pdf"'
+            return response
         else:
             c = Cargaison.objects.get(idcargaison=pk)
             ville = c.entrepot.ville
@@ -713,6 +717,7 @@ def echantillonage(request, pk):
                 # 'numplombh': numplombh,
                 'numrappechauto': numrappechauto,
             }
+
             # Render PDF Files
             pdf = render_to_pdf(template, data)
             return HttpResponse(pdf, content_type='application/pdf')

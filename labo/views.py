@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect
 from enreg.models import *
-from accounts.models import AffectationVille, AffectationEntrepot
+from accounts.models import AffectationVille
 from .tables import *
 from .forms import *
 from django.contrib.auth.decorators import login_required
 from labo.utils import render_to_pdf
 from django.http import HttpResponse
-from django.db.models import Case, Value, When,Q
 from django_tables2.paginators import LazyPaginator
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
@@ -14,6 +13,9 @@ from datetime import datetime
 from django.http import JsonResponse
 from .codeLabo import codeLabo
 from .numCq import numCq
+
+
+from django.core.mail import send_mail #Sending Email
 
 
 # Class de gestion pouir le laboratoire
@@ -1509,11 +1511,28 @@ class GestionValidation():
         if role == 1 or role == 10:
             c = Cargaison.objects.get(idcargaison=pk)
             a = LaboReception.objects.get(idcargaison=pk)
+
+            cqNumber = a.numcertificatqualite
+            dateReception = a.datereceptionlabo
+            mailSubject = 'Transmission_'+'CQ_'+str(cqNumber)+str(dateReception)
+
             c.etat = "Conforme aux exigences"
             c.conformite = "Conforme aux exigences"
             c.impression = "0"
             c.dateHeureAnalyseLabo = datetime.now()
             c.save(update_fields=['etat', 'impression', 'conformite','dateHeureAnalyseLabo'])
+
+            #Envoi des mails au client
+            send_mail(
+                mailSubject,
+                'Test email',
+                'otace1@gmail.com',
+                ['cedric@malabar-group.com'],
+                fail_silently=False,
+            )
+
+            print('OK')
+
             return redirect('validation2')
         else:
             return redirect('logout')
@@ -3339,7 +3358,7 @@ def affichageDetailsResultats(request,pk):
     template = 'laboDetailsResultat.html'
 
     qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
-    	                IF (r.valeurResultat  > a.valeurMax , 'Hors norme', IF (r.valeurResultat < a.valeurMin, 'Hors norme','Conforme')) as etatValeur \
+    	                IF (r.valeurResultat  > a.valeurMax , 'Non Conforme', IF (r.valeurResultat < a.valeurMin, 'Non Conforme','Conforme')) as etatValeur \
                         FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
                         WHERE c.idcargaison = r.idcargaison_id \
     	                AND r.idParametre_id = p.idParametre \
@@ -3372,8 +3391,8 @@ def affichageDetailsResultatsDroite(request,pk):
     template = 'laboDetailsResultatDroite.html'
 
     qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
-    	                IF (r.valeurResultat  > a.valeurMax , 'Hors norme', \
-    		            IF (r.valeurResultat < a.valeurMin, 'Hors norme','Conforme')) as etatValeur \
+    	                IF (r.valeurResultat  > a.valeurMax , 'Non Conforme', \
+    		            IF (r.valeurResultat < a.valeurMin, 'Non Conforme','Conforme')) as etatValeur \
                         FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
                         WHERE c.idcargaison = r.idcargaison_id \
     	                AND r.idParametre_id = p.idParametre \

@@ -29,6 +29,11 @@ urlpatterns = [
     path('attenteDechargement/', attenteDechargement, name='attenteDechargement'),  # ShowPer user saved Data
     path('attenteRequisitionListe/', attenteRequisitionListe, name='attenteRequisitionListe'),  # ShowPer user saved Data
     path('scanEchantillonnage/', scanEchantillonnage, name='scanEchantillonnage'),  # ShowPer user saved Data
+    path('scanInspection/', scanInspection, name='scanInspection'),  # ShowPer user saved Data
+    path('scanDechargement/', scanDechargement, name='scanDechargement'),  # ShowPer user saved Data
+
+
+
     path('enregistrementEchantillonnage/', enregistrementEchantillonnage, name='enregistrementEchantillonnage'),  # ShowPer user saved Data
 
     path('cargaisonInspectionList/', cargaisonInspectionList, name='cargaisonInspectionList'),  # ShowPer user saved Data
