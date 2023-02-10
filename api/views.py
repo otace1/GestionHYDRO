@@ -645,7 +645,7 @@ def scanInspection(request):
     user = request.user.id
     qrCode = request.data['qrCode']
     try:
-        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
+        c=Cargaison.objects.get(qrcode=qrCode)
         # qs = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by(
         #     '-dateheurecargaison')
         if c.etatInspection is True:
@@ -663,7 +663,7 @@ def scanDechargement(request):
     user = request.user.id
     qrCode = request.data['qrCode']
     try:
-        c=Cargaison.objects.get(qrcode=qrCode,entrepot__affectationentrepot__username_id=user)
+        c=Cargaison.objects.get(qrcode=qrCode)
         # qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
         #                               Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
         #                               entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
