@@ -667,7 +667,7 @@ def scanDechargement(request):
         # qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
         #                               Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
         #                               entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
-        if c.etat == "En attente de dechargement":
+        if c.etat == "En attente de dechargement" or c.etat == 'Conforme aux exigences':
             context = {'id':c.idcargaison}
             return Response(context,status=status.HTTP_200_OK)
         else:
