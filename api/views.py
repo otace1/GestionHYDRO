@@ -658,7 +658,7 @@ def scanInspection(request):
 
 
 @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def scanDechargement(request):
     user = request.user.id
     qrCode = request.data['qrCode']
