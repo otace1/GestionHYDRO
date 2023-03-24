@@ -15,3 +15,5 @@
 #/manage.py
 #/requirements.txt
 #/test.png
+/hydrocarbures/firebaseData.json
+/hydrocarbures/settings.py
