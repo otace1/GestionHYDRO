@@ -61,6 +61,8 @@ E = """<a href="{%url 'reprintact' record.pk%}" class="btn btn-success">Ré-Impr
 
 regularisationButtons = """
  <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-success">CHANGEMENT DE DESTINATION</a>
+ <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-primary">TRANSBORDEMENT</a>
+ <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-danger">PERTE</a>
 """
 
 

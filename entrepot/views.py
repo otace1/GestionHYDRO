@@ -21,6 +21,10 @@ from .numrappech import numRappEch
 from .calculs import *
 
 
+#Sending email
+from django.core.mail import send_mail, EmailMessage
+from django.core.cache import cache
+
 
 # Gestion des echantillonages
 class GestionEchantillonage():
@@ -661,9 +665,43 @@ def echantillonage(request, pk):
             # Render PDF Files
             pdf = render_to_pdf(template, data)
 
-            response = HttpResponse(pdf, content_type="application/pdf")
-            response["Content-Disposition"] = 'filename=”home_page.pdf"'
-            return response
+            # Save PDF data in session with expiration time of 1 minute
+            cache.set('pdf_data', pdf.getvalue(), timeout=60)
+
+            # Create an email message
+            subject = 'OCC Sampling Report'+ str(numrappech) + str(today.year)
+            message = 'Please find attached the Sampling Report'
+            # email_from = settings.EMAIL_HOST_USER
+            email_from = 'otace1@gmail.com'
+            recipient_list = ['cedric@malabar-group.com']
+            email = EmailMessage(subject, message, email_from, recipient_list)
+
+            # Add the PDF report as an attachment
+            filename = 'SamplingReport.pdf'
+            email.attach(filename, pdf.getvalue(), 'application/pdf')
+
+            # Send the email
+            email.send()
+
+            # Open the PDF in a new browser window
+            html = """
+                <html>
+                    <head>
+                        <title>PDF report</title>
+                        <script type="text/javascript">
+                            function openPDF() {
+                                var pdf_url = '/entrepot/view_pdf/';
+                                window.open(pdf_url, '_blank');
+                                window.location.href = '/entrepot/';
+                            }
+                        </script>
+                    </head>
+                    <body onload="openPDF()">
+                        <p>PDF report has been sent.</p>
+                    </body>
+                </html>
+                """
+            return HttpResponse(html)
         else:
             c = Cargaison.objects.get(idcargaison=pk)
             ville = c.entrepot.ville
@@ -720,9 +758,59 @@ def echantillonage(request, pk):
 
             # Render PDF Files
             pdf = render_to_pdf(template, data)
-            return HttpResponse(pdf, content_type='application/pdf')
+
+            # Save PDF data in session with expiration time of 1 minute
+            cache.set('pdf_data', pdf.getvalue(), timeout=60)
+
+            # Create an email message
+            subject = 'OCC Sampling Report'+ str(numrappech) + str(today.year)
+            message = 'Please find attached the Sampling Report'
+            # email_from = settings.EMAIL_HOST_USER
+            email_from = 'otace1@gmail.com'
+            recipient_list = ['cedric@malabar-group.com']
+            email = EmailMessage(subject, message, email_from, recipient_list)
+
+            # Add the PDF report as an attachment
+            filename = 'SamplingReport.pdf'
+            email.attach(filename, pdf.getvalue(), 'application/pdf')
+
+            # Send the email
+            email.send()
+
+            # Open the PDF in a new browser window
+            html = """
+                            <html>
+                                <head>
+                                    <title>PDF report</title>
+                                    <script type="text/javascript">
+                                        function openPDF() {
+                                            var pdf_url = '/entrepot/view_pdf/';
+                                            window.open(pdf_url, '_blank');
+                                            window.location.href = '/entrepot/';
+                                        }
+                                    </script>
+                                </head>
+                                <body onload="openPDF()">
+                                    <p>PDF report has been sent.</p>
+                                </body>
+                            </html>
+                            """
+
+            return HttpResponse(html)
     else:
         return render(request, template, {'form': form})
+
+
+@login_required(login_url='login')
+def view_pdf(request):
+    # Get PDF data from cache
+    pdf_data = cache.get('pdf_data')
+
+    # Return PDF as response
+    response = HttpResponse(pdf_data, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="report.pdf"'
+    return response
+
 
 
 @login_required(login_url='login')

@@ -4,12 +4,12 @@
 
 {% block search %}
 {#    <form action="" method="POST" title="Filter">#}
-{#        {% csrf_token %}#}
-{#        {% crispy form %}#}
+{#        <input type="text" placeholder="Search..">#}
 {#    </form>#}
 {% endblock %}
 
 {% block export %}
+    <input type="text" placeholder="Search..">
     <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>
 {% endblock %}
 

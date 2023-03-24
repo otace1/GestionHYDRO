@@ -1,0 +1,9 @@
+{% extends 'base_entrepotList.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+{% load bootstrap4 %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    {% render_table entrepot %}
+{% endblock %}

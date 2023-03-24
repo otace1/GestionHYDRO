@@ -81,6 +81,7 @@ class Importateur(models.Model):
     nomimportateur = models.CharField(max_length=100)
     adresseimportateur = models.CharField(max_length=100, blank=True)
     nifimportateur = models.CharField(max_length=100, blank=True)
+    email = models.EmailField(blank=True)
 
     def __str__(self):
         return self.nomimportateur
@@ -94,9 +95,9 @@ class Importateur(models.Model):
 
 class Entrepot(models.Model):
     identrepot = models.AutoField(primary_key=True, auto_created=True)
-    nomentrepot = models.CharField(max_length=100)
-    adresseentrepot = models.CharField(max_length=100)
-    ville = models.ForeignKey(Ville, on_delete=models.PROTECT)
+    nomentrepot = models.CharField(max_length=100, verbose_name="NOM ENTREPOT")
+    adresseentrepot = models.CharField(max_length=100, verbose_name="ADRESSE PHYSIQUE")
+    ville = models.ForeignKey(Ville, on_delete=models.PROTECT, verbose_name="VILLE")
 
     def __str__(self):
         return self.nomentrepot

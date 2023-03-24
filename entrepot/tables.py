@@ -95,7 +95,7 @@ class CargaisonEnAttenteRequisition(tables.Table):
         model = Cargaison
         sequence = ['idcargaison', 'declaration', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume',
                     'immatriculation']
-        exclude = ['valeurfacture', 'origine', 'rapechctrl', 'requisitionack',
+        exclude = ['etatInspection','dateHeureAnalyseLabo','dateDechargement','valeurfacture', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',

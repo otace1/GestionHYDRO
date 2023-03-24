@@ -3,8 +3,8 @@ from django_tables2.export.views import ExportMixin
 from enreg.models import Entrepot, Importateur, Ville, Produit, Dechargement, Cargaison, LaboReception, Resultat,Liquidation, Paiement
 
 TEMPLATE = """
-<a href="{%url 'edit_entrepot' record.pk%}" aria-hidden="true"> Modifier  |</a>
-<a href="{%url 'del_entrepot' record.pk%}" aria-hidden="true"> |  Effacer</a> 
+<a href="{%url 'edit_entrepot' record.pk%}" class="btn btn-success">Modifier</a>
+<a href="{%url 'del_entrepot' record.pk%}" class="btn btn-danger">Effacer</a> 
  """
 
 TEMPLATE1 = """
@@ -25,11 +25,16 @@ TEMPLATE3 = """
 
 class EntrepotTable(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE)
+    identrepot = tables.Column(verbose_name='ID')
+    nomentrepot = tables.Column(verbose_name='NOM ENTREPOT')
+    adresseentrepot = tables.Column(verbose_name='ADRESSE PHYSIQUE')
+    ville = tables.Column(verbose_name='VILLE')
+
     class Meta:
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = Entrepot
-        sequence = ['identrepot', 'nomentrepot', 'adresseentrepot']
+        sequence = ['identrepot', 'nomentrepot', 'adresseentrepot', 'ville']
 
 
 class ImportateurTable(tables.Table):

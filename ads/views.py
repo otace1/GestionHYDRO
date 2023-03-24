@@ -4023,9 +4023,9 @@ def gestionentrepot(request):
     role = user.role_id
 
     if role == 1:
-        template = 'entrepot/entrepotlist.html'
+        template = 'entrepotList.html'
         table = EntrepotTable(Entrepot.objects.order_by('identrepot'))
-        table.paginate(page=request.GET.get('page', 1), per_page=15)
+        table.paginate(page=request.GET.get('page', 1), per_page=5)
         return render(request, template, {'entrepot': table})
 
     else:
@@ -4074,7 +4074,7 @@ def editentrepot(request, pk):
     role = user.role_id
 
     if role == 1:
-        template = 'entrepot/editentrepot.html'
+        template = 'entrepotEdit.html'
         instance = get_object_or_404(Entrepot, identrepot=pk)
         form = EntrepotEditForm(request.POST or None, instance=instance)
 

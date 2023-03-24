@@ -143,9 +143,9 @@ class PreInspectionForm1(forms.Form):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Row("",
-                Column('meter', css_class='form-group col-md-4 mb-0'),
-                Column('tanker', css_class='form-group col-md-4 mb-0'),
-                Column('shore', css_class='form-group col-md-4 mb-0'),
+                Column('meter', css_class='form-group col-md-6 mb-0'),
+                Column('tanker', css_class='form-group col-md-6 mb-0'),
+                Column('shore', css_class='form-group col-md-6 mb-0'),
                 css_class='form-row'
                 ),
             FormActions(

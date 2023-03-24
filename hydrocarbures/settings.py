@@ -13,12 +13,17 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 import sys
 import sentry_sdk
+import json
 from sentry_sdk.integrations.django import DjangoIntegration
 from django.core.management.utils import get_random_secret_key
 # import mysql.connector.django as mysql
 from django.contrib.messages import constants as messages
+from datetime import timedelta
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import api.authentication
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -73,6 +78,12 @@ INSTALLED_APPS = [
     'tailwind',
     'django_browser_reload',
     'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
+    "rest_framework_api_key",
+
+    'push_notifications', #Push Notification
 
     # 'django-pandas',
     # 'jquery',
@@ -90,27 +101,76 @@ INSTALLED_APPS = [
     'ads',
     'facturations',
     'theme',
-
+    'api',
+    # 'verification',
 ]
+
+PUSH_NOTIFICATIONS_SETTINGS = {
+        "FCM_API_KEY": "[your api key]",
+        "GCM_API_KEY": "[your api key]",
+        "APNS_CERTIFICATE": "/path/to/your/certificate.pem",
+        "APNS_TOPIC": "com.example.push_test",
+        "WNS_PACKAGE_SECURITY_ID": "[your package security id, e.g: 'ms-app://e-3-4-6234...']",
+        "WNS_SECRET_KEY": "[your app secret key, e.g.: 'KDiejnLKDUWodsjmewuSZkk']",
+        "WP_PRIVATE_KEY": "/path/to/your/private.pem",
+        "WP_CLAIMS": {'sub': "mailto: development@example.com"}
+}
+
+
+#Email Host
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = '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'
+
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        # "rest_framework_api_key.permissions.HasAPIKey",
+        # 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+        # 'rest_framework.permissions.IsAuthenticated',
+    ],
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'api.authentication.SafeJWTAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
+
+# API KEY Secret
+API_KEY_SECRET = '4tkn445o.PmzVxjmNoUbyNTxKV2Nxm1fAokaAy5FU'
+
 
 IMPORT_EXPORT_USE_TRANSACTIONS = True
 
 MESSAGE_TAGS = {
-
     messages.ERROR: 'danger'
-
 }
+
 
 BOOTSTRAP3 = {
     'include_jquery': True,
 }
 
-DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap4.html"
+DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap-responsive.html"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django_session_timeout.middleware.SessionTimeoutMiddleware',
+
+
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -119,14 +179,13 @@ MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'django_browser_reload.middleware.BrowserReloadMiddleware',
-]
+    ]
 
 SESSION_EXPIRE_SECONDS = 1200
 SESSION_EXPIRE_AFTER_LAST_ACTIVITY = True
 SESSION_EXPIRE_AFTER_LAST_ACTIVITY_GRACE_PERIOD = 20
 
 # SECURE_SSL_REDIRECT = True
-
 
 ROOT_URLCONF = 'hydrocarbures.urls'
 
@@ -192,7 +251,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
-LANGUAGE_CODE = 'fr-FR'
+LANGUAGE_CODE = 'en-US'
 
 # TIME_ZONE = 'Africa/Lubumbashi'
 # #
@@ -235,3 +294,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 #     # django.contrib.auth) you may enable sending PII data.
 #     send_default_pii=True
 # )
+
+CORS_ALLOW_ALL_ORIGINS = True

@@ -1,5 +1,5 @@
 from django import forms
-from enreg.models import Entrepot, Importateur, Ville, Produit, Cargaison, Paiement, Liquidation
+from enreg.models import *
 from bootstrap_datepicker_plus.widgets import DatePickerInput
 from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
@@ -16,9 +16,40 @@ class EntrepotForm(forms.ModelForm):
 
 # Formulaire d'edition des entrepots
 class EntrepotEditForm(forms.ModelForm):
+    nomentrepot = forms.CharField()
+    adresseentrepot = forms.CharField()
+
     class Meta:
         model = Entrepot
         fields = ['nomentrepot', 'adresseentrepot', 'ville']
+
+    def __init__(self, *args, **kwargs):
+        super(EntrepotEditForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'POST'
+        self.helper.form_show_labels = True
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-md-6'
+        self.helper.field_class = 'col-md-6'
+        self.helper.layout = Layout(
+            Row("",
+                Column('nomentrepot', css_class='form-group col-md-6'),
+                css_class='form-row'
+                ),
+            Row("",
+                Column('adresseentrepot', css_class='form-group col-md-6'),
+                css_class='form-row'
+                ),
+            Row("",
+                Column('ville', css_class='form-group col-md-6'),
+                css_class='form-row'
+                ),
+
+            FormActions(
+                Submit('soumettre', 'soumettre', css_class='btn btn-primary'),
+                Reset('annuler', 'annuler', css_class='btn btn-danger'),
+            ),
+        )
 
 
 # Formulaire pour Ajout d'importateur
