@@ -211,7 +211,7 @@
                                 <li class="nav-item">
                                     <a href="{% url 'codification' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>GESTION</p>
+                                        <p>TRACABILITE</p>
                                     </a>
                                 </li>
                             <li class="nav-item">
@@ -274,101 +274,7 @@
                             </ul>
                         </li>
 
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-warehouse"></i>
-                                <p>
-                                    ENTREPOTS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
 
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_entrepot' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'ENTREPOTS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-user-circle"></i>
-                                <p>
-                                    IMPORTATEURS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_importateur' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT IMPORTATEUR</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_importateur' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTES D'IMPORTATEURS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-border"></i>
-                                <p>
-                                    POINTS D'ENTREES
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_frontiere' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT FRONTIERE</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_frontiere' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE DES FRONTIERES</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-product-hunt"></i>
-                                <p>
-                                    PRODUITS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_produit' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT PRODUITS</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_produit' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTES PRODUITS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
                     {% endif %}
 
                     <li class="nav-item has-treeview">

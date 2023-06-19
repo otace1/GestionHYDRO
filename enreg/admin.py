@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import *
+from accounts.models import *
 
 # Register your models here.
 
@@ -24,3 +25,5 @@ admin.site.register(ShoreTank)
 admin.site.register(ParametresProduits)
 admin.site.register(AffectationParametre)
 admin.site.register(ResultatAnalyse)
+admin.site.register(ListeLaboratoire)
+admin.site.register(AffectationLaboratoire)

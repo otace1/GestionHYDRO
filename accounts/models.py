@@ -175,10 +175,30 @@ class AffectationEntrepot(models.Model):
 # Tables des affectations aux villes
 class AffectationVille(models.Model):
     idaffectation_ville = models.AutoField(primary_key=True, auto_created=True)
-    username = models.ForeignKey(MyUser, on_delete=models.CASCADE)
-    ville = models.ForeignKey(Ville, on_delete=models.CASCADE)
+    username = models.ForeignKey(MyUser, on_delete=models.PROTECT)
+    ville = models.ForeignKey(Ville, on_delete=models.PROTECT)
 
 
-# Gestion des signatures electroniques
-class SignatureModel(JSignatureFieldsMixin):
-    username = models.IntegerField(null=True, blank=True)
+# # Gestion des signatures electroniques
+# class SignatureModel(JSignatureFieldsMixin):
+#     username = models.IntegerField(null=True, blank=True)
+
+
+class ListeLaboratoire(models.Model):
+    idLaboratoire = models.AutoField(primary_key=True, auto_created=True)
+    denominationLaboratoire = models.CharField(max_length=64, blank=True, null=True)
+    adresseLaboratoire = models.CharField(max_length=64, blank=True, null=True)
+    typeLaboratoire = models.CharField(max_length=64, blank=True, null=True)
+
+    def __str__(self):
+        return self.denominationLaboratoire
+
+
+
+class AffectationLaboratoire(models.Model):
+    idAffectation = models.AutoField(primary_key=True, auto_created=True)
+    idLaboratoire = models.ForeignKey(ListeLaboratoire, on_delete=models.PROTECT)
+    userId = models.ForeignKey(MyUser, on_delete=models.PROTECT)
+    ville = models.ForeignKey(Ville,on_delete=models.PROTECT)
+    signGauche = models.BooleanField(null=True, blank=True)
+

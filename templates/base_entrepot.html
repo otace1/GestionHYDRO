@@ -189,7 +189,7 @@
                                 <li class="nav-item">
                                     <a href="{% url 'codification' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>GESTION</p>
+                                        <p>TRACABILITE</p>
                                     </a>
                                 </li>
                             <li class="nav-item">
@@ -252,101 +252,7 @@
                             </ul>
                         </li>
 
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-warehouse"></i>
-                                <p>
-                                    ENTREPOTS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
 
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_entrepot' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'ENTREPOTS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-user-circle"></i>
-                                <p>
-                                    IMPORTATEURS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_importateur' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT IMPORTATEUR</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_importateur' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTES D'IMPORTATEURS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-border"></i>
-                                <p>
-                                    POINTS D'ENTREES
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_frontiere' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT FRONTIERE</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_frontiere' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE DES FRONTIERES</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-product-hunt"></i>
-                                <p>
-                                    PRODUITS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_produit' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT PRODUITS</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_produit' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTES PRODUITS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
                     {% endif %}
 
                     <li class="nav-item has-treeview">
@@ -451,6 +357,26 @@
                 </div>
             </div>
             <br/>
+
+{#        Modal form#}
+
+         <div class="modal fade" id="modal-lg">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3 class="modal-title">ENREGISTREMENT DE L'ECHANTILLON</h3>
+            </div>
+            <div class="modal-body">
+              {% block form %}
+              {% endblock %}
+            </div>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+
             <!-- /.row -->
             <div class="row">
                 {% block search %}
@@ -461,16 +387,16 @@
                             <h1 class="card-title"><b>CARGAISON EN ATTENTE D'ECHANTILLONAGE</b></h1>
                             <div class="card-tools">
                                 <form method="get" action="{% url 'rechercher' %}">
-                                <div class="input-group input-group-sm" style="width: 500px;">
-                                    <input type="text" name="q" class="form-control float-right"
-                                           placeholder="SCANNER LE QRCODE ICI">
-                                    <div class="input-group-append">
-                                        <button type="submit" class="btn btn-default"><i class="fas fa-search"></i>
-                                        </button>
+                                    <div class="input-group input-group-sm" style="width: 500px;">
+                                        <input type="text" name="q" class="form-control float-right"
+                                               placeholder="SCANNER LE QRCODE ICI">
+                                        <div class="input-group-append">
+                                            <button type="submit" class="btn btn-default"><i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </form>
-                        </div>
+                                </form>
+                            </div>
                         </div>
                         <div class="card-body table-responsive p-0">
                             {% block content %}
@@ -509,6 +435,28 @@
 <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
 <!-- AdminLTE for demo purposes -->
 {#<script src="../../dist/js/demo.js"></script>#}
+
+<script>
+    var Id;
+    var rowId;
+    $(document).ready(function () {
+
+        {% block javascript %}
+        {% endblock %}
+    })
+</script>
+  <script>
+      function getRowId(button) {
+  var row = button.closest('tr');
+
+  if (row) {
+    rowId = row.id;
+    {#console.log('Row ID:', rowId);#}
+    // Perform further actions with the row ID, such as making an AJAX request
+  }
+}
+  </script>
+
 </body>
 </html>
 

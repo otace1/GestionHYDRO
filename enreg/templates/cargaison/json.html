@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.js" integrity="sha512-6DC1eE3AWg1bgitkoaRM1lhY98PxbMIbhgYCGV107aZlyzzvaWCW1nJW2vDuYQm06hXrW0As6OGKcIaAVWnHJw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js" integrity="sha512-pumBsjNRGGqkPzKHndZMaAG+bir374sORyzM3uulLV14lN5LyykqNk8eEeUlUkB3U0M4FApyaHraT65ihJhDpQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+        <table id="example1" class="table table-bordered table-striped">
+            <thead>
+                 <tr>
+                 <th>DATE & HEURE</th>
+                 <th>IMPORTATEUR</th>
+                 <th>ENTREPOT</th>
+                 <th>IMMATRICULATION</th>
+                 <th>VOL.AMBIANT</th>
+                 <th>VOL.15°C</th>
+                 <th>VOL.20°C</th>
+                 <th>TONNAGE VIDE</th>
+                 <th>TONNAGE AIR</th>
+                 <th>ACTIONS</th>
+                 </tr>
+            </thead>
+{#            JSON Response#}
+        </table>
+
+
+</body>
+<script>
+    //Diplay data into Table with Ajax
+        setInterval(function (){
+                $.ajax({
+                    type:'GET',
+                    url: "{% url 'getCargaison' %}",
+                    succes: function (response){
+                        console.log(response);
+                        {#$("#display").empty();#}
+                        {#for (var key in response.cargaison)#}
+                        {#{#}
+                        {#    var temp = "<tr>"+"<th>"+response.cargaison[key].dateheurecargaison+"</th>"+"</tr>";#}
+                        {#    $("#display").append(temp);#}
+                        //{#}#}
+                    },
+                    error: function (response){
+                        alert('An error occured')
+                    }
+                });
+            },1000);
+</script>
+</html>

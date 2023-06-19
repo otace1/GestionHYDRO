@@ -81,7 +81,7 @@ class Importateur(models.Model):
     nomimportateur = models.CharField(max_length=100)
     adresseimportateur = models.CharField(max_length=100, blank=True)
     nifimportateur = models.CharField(max_length=100, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True,null=True)
 
     def __str__(self):
         return self.nomimportateur
@@ -529,7 +529,10 @@ class ControlNatureProduit(models.Model):
 
 class ParametresProduits(models.Model):
     idParametre = models.AutoField(primary_key=True, auto_created=True)
-    nomParametre = models.CharField(max_length=20,blank=True,null=True)
+    nomParametre = models.CharField(max_length=64,blank=True,null=True)
+
+    def __str__(self):
+        return self.nomParametre
 
 class AffectationParametre(models.Model):
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
@@ -542,6 +545,15 @@ class ResultatAnalyse(models.Model):
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
     idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
     valeurResultat = models.FloatField(blank=True,null=True)
+
+
+class ImpressionResultat(models.Model):
+    idImpression = models.AutoField(primary_key=True, auto_created=True)
+    idcargaison = models.ForeignKey(Cargaison,on_delete=models.PROTECT)
+    printDate = models.DateField(auto_now_add=True,blank=True,null=True)
+    isConforme = models.BooleanField(null=True,blank=True)
+    isPrinted = models.BooleanField(null=True,blank=True)
+
 
 
 

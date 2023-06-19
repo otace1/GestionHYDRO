@@ -13,6 +13,36 @@ from accounts.models import *
 from .tables import CargaisonTable
 
 
+
+#Function
+@login_required(login_url='login')
+def getCargaison(request):
+    user = request.user
+    today = date.today()
+    qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=user.id, dateheurecargaison__year=today.year)
+    data = list(qs.values())
+    # return JsonResponse(cargaisonList,safe=False)
+    response = {'data':data}
+    return JsonResponse(response)
+
+
+#Affichage du Tableau
+@login_required(login_url='login')
+def showTableauTemplate(request):
+    user = request.user
+    today = date.today()
+    qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=user.id, dateheurecargaison__year=today.year)
+    form = Ajoutcargaison()
+    table = CargaisonTable(qs)
+    template = 'cargaison/cargaison.html'
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 12}).configure(table)
+    context = {
+        'table':table,
+        'form':form,
+    }
+    return render(request,template,context)
+
+
 # Create your views here.
 class GestionCargaison():
     # Affichage du Tableaux des caragisons enregistrer
@@ -45,19 +75,34 @@ class GestionCargaison():
         form = Ajoutcargaison()
         today = date.today()
         if role == 2:
-            table = CargaisonTable(Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,
-                                                                                            dateheurecargaison__year=today.year))
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-            return render(request, 'cargaison/cargaison.html', {'cargaison': table,
-                                                                'form': form})
+            if request.method == 'GET':
+                qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,dateheurecargaison__year=today.year)
+                table = CargaisonTable(qs)
+                data = list(qs.values())
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+                # return JsonResponse({'data': data})
+                #
+                return render(request, 'cargaison/cargaison.html', {
+                    'cargaison': table,
+                    'form': form,
+                    'data': data,
+                })
         else:
             if role == 1:
-                form = Ajoutcargaison()
-                table = CargaisonTable(
-                    Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison'))
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-                return render(request, 'cargaison/cargaison.html', {'cargaison': table,
-                                                                    'form': form})
+                if request.method == 'GET':
+                    form = Ajoutcargaison()
+                    qs = Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison')
+                    table = CargaisonTable(qs)
+                    data = list(qs.values())
+                    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+                    # return JsonResponse({'data': data})
+
+                    return render(request, 'cargaison/cargaison.html', {
+                        'cargaison': table,
+                        'form': form,
+                        'data': data,
+                    })
             else:
                 return redirect('logout')
 
@@ -173,3 +218,6 @@ class GestionCargaison():
 
         else:
             return redirect('logout')
+
+
+

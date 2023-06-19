@@ -4,6 +4,7 @@
 {% load django_tables2 %}
 {% load qr_code %}
 
+
 {% block extra_js %}
     <script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>
     <script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
@@ -12,7 +13,58 @@
 
 {% block content %}
 
-    {% render_table cargaison %}
+        {% render_table table %}
+{##}
+{#     <div class="table-responsive">#}
+{#        <table id="myTable" class="table table-bordered table-striped" style="text-align: center;">#}
+{#            <thead class="table-success">#}
+{#                 <tr>#}
+{#                 <th>DATE & HEURE</th>#}
+{#                 <th>IMPORTATEUR</th>#}
+{#                 <th>ENTREPOT</th>#}
+{#                 <th>IMMATRICULATION</th>#}
+{#                 <th>VOL.AMBIANT</th>#}
+{#                 <th>VOL.15°C</th>#}
+{#                 <th>VOL.20°C</th>#}
+{#                 <th>TONNAGE VIDE</th>#}
+{#                 <th>TONNAGE AIR</th>#}
+{#                 <th class="table-danger">ACTIONS</th>#}
+{#                 </tr>#}
+{#            </thead>#}
+{#            <tbody >#}
+{#            {% for data in data %}#}
+{#                <tr>#}
+{#                    <td>{{ data.dateheurecargaison }}</td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                    <td></td>#}
+{#                </tr>#}
+{#            {% endfor %}#}
+{#            </tbody>#}
+{#            <tfoot>#}
+{#                  <tr>#}
+{#                    <th>DATE & HEURE</th>#}
+{#                    <th>IMPORTATEUR</th>#}
+{#                    <th>ENTREPOT</th>#}
+{#                    <th>IMMATRICULATION</th>#}
+{#                    <th>VOL.AMBIANT</th>#}
+{#                    <th>VOL.15°C</th>#}
+{#                    <th>VOL.20°C</th>#}
+{#                    <th>TONNAGE VIDE</th>#}
+{#                    <th>TONNAGE AIR</th>#}
+{#                    <th>ACTIONS</th>#}
+{#                  </tr>#}
+{#            </tfoot>#}
+{#        </table>#}
+{#    </div>#}
+
 
     <div class="modal fade" id="modal-xl">
         <div class="modal-dialog modal-xl">
@@ -59,10 +111,37 @@
     </div>
 
 
+
 {% endblock %}
 
 <script>
+
+</script>
+
+<script>
+
     {% block javascript %}
+        //Function for populating the Table
+        //Diplay data into Table with Ajax
+        setInterval(function (){
+                $.ajax({
+                    type:'GET',
+                    url: "{% url 'getCargaison' %}",
+                    succes: function (response){
+                        console.log(response);
+                        {#$("#display").empty();#}
+                        {#for (var key in response.cargaison)#}
+                        {#{#}
+                        {#    var temp = "<tr>"+"<th>"+response.cargaison[key].dateheurecargaison+"</th>"+"</tr>";#}
+                        {#    $("#display").append(temp);#}
+                        //{#}#}
+                    },
+                    error: function (response){
+                        alert('An error occured')
+                    }
+                });
+            },1000);
+
         // using jQuery
         function getCookie(name) {
             var cookieValue = null;
@@ -150,6 +229,8 @@
 
     {% endblock %}
 </script>
+
+
 
 
 

@@ -13,7 +13,7 @@ urlpatterns = [
     path('c1/', views.GestionEchantillonage.c1, name='c1'),
     path('c2/', views.GestionEchantillonage.c2, name='c2'),
 
-    path('echantillonage/<int:pk>', views.echantillonage, name='echantillonage'),  # Echantillonnage nouveau formulaire
+    path('echantillonage/', views.echantillonage, name='echantillonage'),  # Echantillonnage nouveau formulaire
     # path('decharger/<int:pk>', views.dechargement, name='decharger'),  # Echantillonnage nouveau formulaire
 
     # Rapport d'echantillonage
@@ -74,7 +74,7 @@ urlpatterns = [
     #Inspection
     path('inspection/<int:pk>', views.inspection, name='inspection'),
     path('affichageInspection/', views.affichageInspection, name='affichageInspection'), #En Attente d'inspection
-    path('marquageInspection/', views.marquageInspection, name='marquageInspection'), #Marquer comme Inspecter
+    path('marquageInspectionWeb/', views.marquageInspection, name='marquageInspectionWeb'), #Marquer comme Inspecter
 
     #View pdf data
     path('view_pdf/', views.view_pdf, name='view_pdf'),

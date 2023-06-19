@@ -60,12 +60,32 @@ E = """<a href="{%url 'reprintact' record.pk%}" class="btn btn-success">Ré-Impr
 
 
 regularisationButtons = """
- <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-success">CHANGEMENT DE DESTINATION</a>
- <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-primary">TRANSBORDEMENT</a>
- <a href="{%url 'regularisationDestination' record.pk%}" class="btn btn-danger">PERTE</a>
+                <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-dest">
+                  RE-ROUTAGE
+                </button>
+                <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-trans">
+                  TRANSBORDEMENT
+                </button>
+                <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-nat">
+                  NATURE PRODUIT
+                </button>
+ <a href="{%url 'pertes' record.pk%}" class="btn btn-danger" onclick="return confirmAction();">PERTE</a>
 """
 
+# <button type="button" onclick="getRowId(this)" class="btn btn-default" id="record" data-toggle="modal" data-target="#modal-default">
+#                   CHANGEMENT DE DESTINATION
+#                 </button>
 
+rapportButtons = """
+    <a href="{%url 'rapportRe' record.pk%}" class="btn btn-success" onclick="return confirmAction();">RAPP.ECH</a>
+    <a href="{%url 'rapportIs' record.pk%}" class="btn btn-warning" onclick="return confirmAction();">RAPP.INSP</a>
+"""
+
+nonConforme = """
+    <a href="" class="btn btn-success" onclick="return confirmAction();">CONSIGNATION</a>
+    <a href="" class="btn btn-warning" onclick="return confirmAction();">REFOULEMENT</a>
+
+"""
 
 class CodificationTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
@@ -81,17 +101,11 @@ class CodificationTable(tables.Table):
     buttons = tables.TemplateColumn(A3, verbose_name='')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
-        # model = Cargaison
-        # sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'produit', 'volume', 'immatriculation',
-        #             'declaration', 'numreq',
-        #             'numreqi']
-        # exclude = ['idcargaison', 'etatInspection','valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-        #            'typeunitetransport', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-        #            'requisitiondackdate', 'numdos', 'voie', 'provenance', 'poids',
-        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-        #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'controlOrganoleptique']
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 class ModificationCodification(tables.Table):
@@ -132,21 +146,6 @@ class ResultatGoLabo(tables.Table):
                    'numact', 'printactdate']
 
 
-# class Avarie(tables.Table):
-#     actions = tables.TemplateColumn(C)
-#     numdossier = tables.Column(verbose_name='# Dos')
-#     codecargaison = tables.Column(verbose_name='# Camion')
-#     class Meta:
-#         attrs = {"class": "table table-hover text-nowrap table-striped"}
-#         template_name = "django_tables2/bootstrap4.html"
-#         model = Cargaison
-#         sequence = ['numdossier','importateur', 'entrepot', 'immatriculation', 'produit']
-#         exclude = ['dateheurecargaison','etat','codecargaison','idcargaison', 'declarant', 'tempcargaison', 'densitecargaison', 'idchauffeur', 't1d', 't1e',
-#                    'nationalite', 'nomchauffeur'
-#             , 'qrcode', 'poids', 'transporteur', 'voie', 'frontiere',
-#                    'provenance', 'impression', 'volume','numdeclaration','manifestdgda','fournisseur','numbtfh','valeurfacture', 'volume_decl15', 'etat', 'dateheurecargaison', 'user',
-#                    'tampon', 'numact', 'printactdate','l_control']
-
 class NonConformeOrganoleptique(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
@@ -178,10 +177,10 @@ class NonConformeLaboratoire(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 
@@ -198,32 +197,31 @@ class EnAttenteEchantillonage(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
-
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 
 class EnAttenteDechargement(tables.Table):
-    idcargaison__idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
-    idcargaison__idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
-    idcargaison__idcargaison__idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
-    idcargaison__idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
-    idcargaison__idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
-    idcargaison__idcargaison__idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
-    idcargaison__idcargaison__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
-    idcargaison__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
-    dateanalyse = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "red"}})
+    numdos = tables.Column(verbose_name="#.DOS")
+    declaration = tables.Column(verbose_name="#.DECL.")
+    nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    nomproduit = tables.Column(verbose_name="PRODUIT")
+    immatriculation = tables.Column(verbose_name="IMMAT.")
+    requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
+    dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+    printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "red"}})
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 class EnAttenteResultatLabo(tables.Table):
@@ -239,10 +237,10 @@ class EnAttenteResultatLabo(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 
@@ -259,18 +257,19 @@ class RapportActivite(tables.Table):
     requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "yellow"}})
     dateechantillonage = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
     datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
-    dateanalyse = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
+    printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
     dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}})
     volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
     volConst = tables.Column(verbose_name="VOL.CONST", attrs={"td": {"bgcolor": "red"}})
     gsvT = tables.Column(verbose_name='GSV', attrs={"td": {"bgcolor": "green"}})
+    actions = tables.TemplateColumn(rapportButtons,verbose_name='')
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 class Regularisation(tables.Table):
@@ -284,5 +283,12 @@ class Regularisation(tables.Table):
     actions = tables.TemplateColumn(regularisationButtons, verbose_name='')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        row_attrs = {
+            "id": lambda record: record.pk
+        }
+        # template_name = "django_tables2/bootstrap4.html"
+

@@ -5,21 +5,6 @@ TEMPLATE = """
             <a href="{%url 'reception' record.pk%}" class="btn btn-success">RECEPTION</a>
            """
 
-# <button type="button" class="btn btn-danger" data-id="{{record.pk}}">
-#                   Réception
-# </button>
-
-#
-# <button type="button" class="btn btn-success" data-id={{record.pk}} data-toggle="modal" data-target="#modal-default">
-#                   Réception
-#                 </button>
-
-
-# RECEPTIONNER = """
-#                 <button type="button" class="btn btn-warning" data-id={{record.pk}} data-toggle="modal" data-target="#modal-modifier">
-#                   Modifier
-#                 </button>
-#                 """
 
 date = """
  <form method=post action="{% url 'codecq' record.pk%}">
@@ -52,20 +37,11 @@ numerore = """
  </form>
 
 """
-#
-# TEMPLATE1 = """
-# <a class="btn btn-primary" href="{%url 'mogas' record.pk%}" role="button">MOGAS</a>
-# <a class="btn btn-primary" href="{%url 'gasoil' record.pk%}" role="button">GASOIL</a>
-# <a class="btn btn-primary" href="{%url 'jeta1' record.pk%}" role="button">JET A1</a>
-# <a class="btn btn-primary" href="{%url 'petrole' record.pk%}" role="button">PETROLE</a>
-#             """
 
 
 TEMPLATE1 = """
-<a class="btn btn-success" href="{%url 'saisieResultat' record.pk%}" role="button">ENCODAGE DES RESULTATS</a>
+<a class="btn btn-success" href="{%url 'saisieResultat' record.pk%}" role="button">SAISIE DES RESULTATS</a>
             """
-
-
 
 
 TEMPLATE2 = """
@@ -75,12 +51,6 @@ TEMPLATE2 = """
 <a class="btn btn-primary" href="{%url 'petroler' record.pk%}" role="button">PETROLE</a>
             """
 
-# VALIDATION1 = """
-# <a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
-# <a href="{%url 'conforme' record.pk%}" class="btn btn-success">CONFORME</a>
-# <a href="{%url 'nonconforme' record.pk%}" class="btn btn-danger">NON CONFORME</a>
-# <a href="{%url 'refaire' record.pk%}" class="btn btn-light">A REFAIRE</a>
-# """
 
 VALIDATION1 = """
 <a href="{%url 'affichageDetailsResultats' record.pk%}" class="btn btn-warning">AFFICHER</a>
@@ -98,15 +68,9 @@ VALIDATION2 = """
 <a href="{%url 'affichageDetailsResultatsDroite' record.pk%}" class="btn btn-warning">AFFICHER</a>
 """
 
-#
-# VALIDATION2 = """
-# <a href="{%url 'rapportvalidationpdf' record.pk%}" class="btn btn-warning">AFFICHER</a>
-# <a href="{%url 'conforme2' record.pk%}" class="btn btn-success">CONFORME</a>
-# <a href="{%url 'nonconforme2' record.pk%}" class="btn btn-danger">NON CONFORME</a>
-# """
 
 IMPRESSION = """
-    <a href="{%url 'print' record.pk%}" class="btn btn-info">IMPRESSION CERTIFICAT</a>
+    <a href="{%url 'print' record.pk%}" class="btn btn-info">PRINT</a>
     """
 
 REIMPRESSION = """
@@ -122,7 +86,7 @@ GO = """
              """
 
 class LaboratoireReception(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE, verbose_name='ACTIONS')
     idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE D'ENTREE")
     dateechantillonage = tables.Column(verbose_name="DATE D'ECHANTILLONNAGE")
     idcargaison__entrepot = tables.Column(verbose_name='ENTREPOT')
@@ -168,7 +132,7 @@ class TableauEchantillonRecu(tables.Table):
 
 
 class AffichageAnalyse(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='ACTIONS')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
     codelabo = tables.Column(verbose_name='CODE LABO')
     produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
@@ -185,7 +149,7 @@ class AffichageAnalyse(tables.Table):
 
 
 class AffichageAnalyseRefaire(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE1, verbose_name='ACTIONS')
     numrappechauto = tables.Column(accessor='idcargaison.numrappechauto', verbose_name="NUM.RE")
     codelabo = tables.Column(verbose_name='CODE LABO')
     produit = tables.Column(accessor='idcargaison.idcargaison.produit', verbose_name='NATURE PRODUIT.')
@@ -201,7 +165,7 @@ class AffichageAnalyseRefaire(tables.Table):
 
 
 class AffichageValidation1(tables.Table):
-    actions = tables.TemplateColumn(VALIDATION1, verbose_name='')
+    actions = tables.TemplateColumn(VALIDATION1, verbose_name='ACTIONS')
     # certificat = tables.TemplateColumn(CQ, verbose_name='C.Q')
     datereceptionlabo = tables.Column(verbose_name='DATE REC.')
     codelabo = tables.Column(verbose_name="CODE LABO")
@@ -247,9 +211,7 @@ class DetailsAnalyse(tables.Table):
 
 
 class AffichageValidation2(tables.Table):
-    actions = tables.TemplateColumn(VALIDATION2, verbose_name='')
-    # certificat = tables.TemplateColumn(CQ, verbose_name='C.Q')
-    # idcargaison__numrappechauto = tables.Column(verbose_name='Numéro RE')
+    actions = tables.TemplateColumn(VALIDATION2, verbose_name='ACTIONS')
     datereceptionlabo = tables.Column(verbose_name='DATE REC.')
     codelabo = tables.Column(verbose_name="CODE LABO")
     numcertificatqualite = tables.Column(verbose_name="NUM.CQ")
@@ -266,7 +228,7 @@ class AffichageValidation2(tables.Table):
 
 
 class AffichageValidation2Go(tables.Table):
-    actions = tables.TemplateColumn(GO)
+    actions = tables.TemplateColumn(GO, verbose_name='ACTIONS')
     numrappech = tables.Column(accessor='idcargaison.numrappech', verbose_name='Numéro RE')
     codelabo = tables.Column(accessor='codelabo')
     numcertificatqualite = tables.Column(accessor='numcertificatqualite', verbose_name='Numéro CQ')
@@ -294,12 +256,12 @@ class AffichageValidation2Go(tables.Table):
 
 
 class AffichageTableauImpression(tables.Table):
-    datereceptionlabo = tables.Column(verbose_name='DATE RECEPTION')
+    # datereceptionlabo = tables.Column(verbose_name='DATE RECEPTION')
     codelabo = tables.Column(verbose_name='CODE LABO')
     numcertificatqualite = tables.Column(verbose_name='NUMERO CQ')
-    produit = tables.Column(verbose_name='NATURE PRODUIT')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    entrepot = tables.Column(verbose_name='ENTREPROT')
+    nomproduit = tables.Column(verbose_name='NATURE PRODUIT')
+    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    nomentrepot = tables.Column(verbose_name='ENTREPROT')
     certificat = tables.TemplateColumn(IMPRESSION, verbose_name='')
 
     class Meta:
@@ -308,7 +270,7 @@ class AffichageTableauImpression(tables.Table):
 
 
 class AffichageTableauReImpression(tables.Table):
-    certificat = tables.TemplateColumn(REIMPRESSION, verbose_name='')
+    certificat = tables.TemplateColumn(REIMPRESSION, verbose_name='ACTIONS')
     # fiches = tables.TemplateColumn(IMPRESSION1)
     numrappech = tables.Column(accessor='idcargaison.idcargaison.numrappech', verbose_name='# RE')
     codelabo = tables.Column(accessor='idcargaison.codelabo', verbose_name='Code Labo')
@@ -337,7 +299,7 @@ class AffichageTableauReImpression(tables.Table):
 
 
 class TableEnvoiGo(tables.Table):
-    actions = tables.TemplateColumn(GO)
+    actions = tables.TemplateColumn(GO, verbose_name='ACTIONS')
     numrappech = tables.Column(accessor='idcargaison.idcargaison.numrappech', verbose_name='Num. RE')
     codelabo = tables.Column(accessor='idcargaison.codelabo')
     numcertificatqualite = tables.Column(accessor='idcargaison.numcertificatqualite', verbose_name='Num. CQ')
@@ -418,7 +380,7 @@ class SaisieResultat(tables.Table):
     nomproduit = tables.Column(verbose_name='PRODUIT')
     nomParametre = tables.Column(verbose_name='PARAMETRE(S)')
     valeurResultat = tables.Column(verbose_name='VALEUR RESULTAT')
-    saisieValeur = tables.TemplateColumn(champSaisieValeurResultat, verbose_name='')
+    saisieValeur = tables.TemplateColumn(champSaisieValeurResultat, verbose_name='ACTIONS')
 
     class Meta:
         attrs = {"class": "table table-hover text-nowrap",

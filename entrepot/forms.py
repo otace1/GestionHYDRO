@@ -84,7 +84,8 @@ class Echantilloner(forms.Form):
         super(Echantilloner, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_class = 'form-horizontal'
-        self.helper.form_id = 'registration-form'
+        self.helper.form_id = 'sampling-form'
+        # self.helper.form_action = 'echantillonage'
         self.helper.label_class = 'col-md-12'
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(

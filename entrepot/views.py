@@ -34,6 +34,7 @@ class GestionEchantillonage():
         user = request.user
         role = user.role_id
         id = user.id
+        template = 'entrepot.html'
         today = date.today()
         request.session['url'] = request.get_full_path()
         form = Echantilloner(request.POST or None)
@@ -57,7 +58,7 @@ class GestionEchantillonage():
             i = Cargaison.objects.filter(etatInspection=True,entrepot__affectationentrepot__username_id=id).count()
             x= ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,conformiteProduit=False).count()
 
-            return render(request, 'entrepot.html', {
+            return render(request, template, {
                 'cargaison': table,
                 'cargaison2': table2,
                 'form': form,
@@ -577,7 +578,7 @@ def impressionRapport(request, pk):
 
 
 @login_required(login_url='login')
-def echantillonage(request, pk):
+def echantillonage(request):
     # Getting Logged in user detail for filtering
     user = request.user
     id = user.id
@@ -585,138 +586,28 @@ def echantillonage(request, pk):
 
     # Getting current Year & Month
     today = datetime.datetime.now()
-    template = 'form.html'
-    form = Echantilloner()
-    pk = pk
+    # template = 'form.html'
+    # # form = Echantilloner()
 
     if request.method == 'POST':
-        formSave = Echantilloner(request.POST)
-        if formSave.is_valid():
-            matricule = formSave.cleaned_data['matricule']
-            methodeutilisee = formSave.cleaned_data['methodeutilisee']
-            qte = formSave.cleaned_data['qte']
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk', None)
+            matricule = request.POST.get('matricule', None)
+            methodeutilisee = request.POST.get('methodeutilisee', None)
+            qte = request.POST.get('qte', None)
 
-        if role == 9:
             c = Cargaison.objects.get(idcargaison=pk)
             ville = c.entrepot.ville
-            numrappech = numRappEch(pk,
-                                    ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
-            numrappechauto = numrappech
-            c.rapechctrl = 1
-            c.etat = "Echantillonner"
-            c.save(update_fields=['etat', 'rapechctrl'])
-
-            e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
-                                     dateechantillonage=today,
-                                     methodeutilisee=methodeutilisee, qte=qte)
-            e.save()
-
-            # Sauvegarde de l'info dans la table Labo reception pour la prise en charge au dechargement des entites sans labo
-            m = Entrepot_echantillon.objects.get(idcargaison_id=pk)
-            m = m.idcargaison_id
-            codelabo = 0
-            l = LaboReception(idcargaison_id=m, codelabo=codelabo, datereceptionlabo=today)
-            l.save()
-
-            # Sauvegarde dans la table resultat
-            r = LaboReception.objects.get(idcargaison_id=pk)
-            r = r.idcargaison_id
-            r = Resultat(idcargaison_id=r)
-            r.save()
-
-            # Generer le rapport d'echantillonage
-            template = 'rapportechantillonage.html'
-
-            e = Entrepot_echantillon.objects.get(idcargaison=pk)
-            entrepot = c.entrepot
-            dateechantillonage = e.dateechantillonage
-            dateech = dateechantillonage
-            numdos = c.numdos
-            importateur = c.importateur
-            adresseimportateur = c.importateur_id
-            adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-            # declarant = c.declarant
-            produit = c.produit
-            volume = c.volume
-            provenance = c.provenance.name
-            voie = c.voie.nomvoie
-            immatriculation = c.immatriculation
-            qtelabo = e.qte
-            # numplombh = e.numplombh
-            # numrappechauto = e.numrappechauto
-
-            data = {
-                'dateechantillonage': dateechantillonage,
-                'dateech': dateech,
-                'entrepot': entrepot,
-                'numdos': numdos,
-                'importateur': importateur,
-                'adresseimportateur': adresseimportateur,
-                # 'declarant': declarant,
-                'produit': produit,
-                'volume': volume,
-                'provenance': provenance,
-                'voie': voie,
-                'immatriculation': immatriculation,
-                'qtelabo': qtelabo,
-                # 'numplombh': numplombh,
-                'numrappechauto': numrappechauto,
-            }
-            # Render PDF Files
-            pdf = render_to_pdf(template, data)
-
-            # Save PDF data in session with expiration time of 1 minute
-            cache.set('pdf_data', pdf.getvalue(), timeout=60)
-
-            # Create an email message
-            subject = 'OCC Sampling Report'+ str(numrappech) + str(today.year)
-            message = 'Please find attached the Sampling Report'
-            # email_from = settings.EMAIL_HOST_USER
-            email_from = 'otace1@gmail.com'
-            recipient_list = ['cedric@malabar-group.com']
-            email = EmailMessage(subject, message, email_from, recipient_list)
-
-            # Add the PDF report as an attachment
-            filename = 'SamplingReport.pdf'
-            email.attach(filename, pdf.getvalue(), 'application/pdf')
-
-            # Send the email
-            email.send()
-
-            # Open the PDF in a new browser window
-            html = """
-                <html>
-                    <head>
-                        <title>PDF report</title>
-                        <script type="text/javascript">
-                            function openPDF() {
-                                var pdf_url = '/entrepot/view_pdf/';
-                                window.open(pdf_url, '_blank');
-                                window.location.href = '/entrepot/';
-                            }
-                        </script>
-                    </head>
-                    <body onload="openPDF()">
-                        <p>PDF report has been sent.</p>
-                    </body>
-                </html>
-                """
-            return HttpResponse(html)
-        else:
-            c = Cargaison.objects.get(idcargaison=pk)
-            ville = c.entrepot.ville
-            numrappech = numRappEch(pk,
-                                    ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
+            print(ville)
+            numrappech = numRappEch(pk,ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
             numrappechauto = numrappech
             c.rapechctrl = 1
             c.etatInspection = True
             c.etat = "Echantillonner"
             c.save(update_fields=['etat', 'rapechctrl','etatInspection'])
 
-            e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
-                                     methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
+            e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
             e.save()
-
 
             # Generer le rapport d'echantillonage
             template = 'rapportechantillonage.html'
@@ -724,18 +615,18 @@ def echantillonage(request, pk):
             entrepot = c.entrepot
             dateechantillonage = e.dateechantillonage
             dateech = dateechantillonage
+            methodeutilisee = e.methodeutilisee
+            matricule = e.matricule
             numdos = c.numdos
             importateur = c.importateur
             adresseimportateur = c.importateur_id
             adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-            # declarant = c.declarant
             produit = c.produit
             volume = c.volume
             provenance = c.provenance.name
             voie = c.voie.nomvoie
             immatriculation = c.immatriculation
             qtelabo = e.qte
-            # numplombh = e.numplombh
             numrappechauto = e.numrappechauto
 
             data = {
@@ -743,31 +634,27 @@ def echantillonage(request, pk):
                 'dateech': dateech,
                 'entrepot': entrepot,
                 'numdos': numdos,
+                'methodeutilisee': methodeutilisee,
                 'importateur': importateur,
                 'adresseimportateur': adresseimportateur,
-                # 'declarant': declarant,
                 'produit': produit,
                 'volume': volume,
                 'provenance': provenance,
                 'voie': voie,
                 'immatriculation': immatriculation,
+                'matricule':matricule,
                 'qtelabo': qtelabo,
-                # 'numplombh': numplombh,
                 'numrappechauto': numrappechauto,
             }
 
             # Render PDF Files
             pdf = render_to_pdf(template, data)
 
-            # Save PDF data in session with expiration time of 1 minute
-            cache.set('pdf_data', pdf.getvalue(), timeout=60)
-
             # Create an email message
-            subject = 'OCC Sampling Report'+ str(numrappech) + str(today.year)
+            subject = 'OCC Sampling Report ' + str(numrappech) + str(today.year)
             message = 'Please find attached the Sampling Report'
-            # email_from = settings.EMAIL_HOST_USER
-            email_from = 'otace1@gmail.com'
-            recipient_list = ['cedric@malabar-group.com']
+            email_from = 'otace1@gmail.com'  # Replace with your email address
+            recipient_list = ['cedric@malabar-group.com']  # Replace with recipient email address(es)
             email = EmailMessage(subject, message, email_from, recipient_list)
 
             # Add the PDF report as an attachment
@@ -776,29 +663,11 @@ def echantillonage(request, pk):
 
             # Send the email
             email.send()
-
-            # Open the PDF in a new browser window
-            html = """
-                            <html>
-                                <head>
-                                    <title>PDF report</title>
-                                    <script type="text/javascript">
-                                        function openPDF() {
-                                            var pdf_url = '/entrepot/view_pdf/';
-                                            window.open(pdf_url, '_blank');
-                                            window.location.href = '/entrepot/';
-                                        }
-                                    </script>
-                                </head>
-                                <body onload="openPDF()">
-                                    <p>PDF report has been sent.</p>
-                                </body>
-                            </html>
-                            """
-
-            return HttpResponse(html)
+            return JsonResponse({'status': 'success'})
+        else:
+            return redirect('entrepot')
     else:
-        return render(request, template, {'form': form})
+        return redirect('entrepot')
 
 
 @login_required(login_url='login')

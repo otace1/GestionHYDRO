@@ -218,7 +218,7 @@
                                 <li class="nav-item">
                                     <a href="{% url 'codification' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>GESTION</p>
+                                        <p>TRACABILITE</p>
                                     </a>
                                 </li>
                             <li class="nav-item">
@@ -281,101 +281,7 @@
                             </ul>
                         </li>
 
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-warehouse"></i>
-                                <p>
-                                    ENTREPOTS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
 
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_entrepot' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'ENTREPOTS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-user-circle"></i>
-                                <p>
-                                    IMPORTATEURS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_importateur' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT IMPORTATEUR</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_importateur' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTES D'IMPORTATEURS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-border"></i>
-                                <p>
-                                    POINTS D'ENTREES
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_frontiere' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT FRONTIERE</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_frontiere' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE DES FRONTIERES</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-product-hunt"></i>
-                                <p>
-                                    PRODUITS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'add_produit' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>AJOUT PRODUITS</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'gest_produit' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTES PRODUITS</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
                     {% endif %}
 
                     <li class="nav-item has-treeview">
@@ -414,64 +320,76 @@
         <!-- /.content-header -->
 
         <section class="content">
-            <div class="container-fluid">
-{#                <div class="col-sm-6">#}
-{#                    <div class="box-header">#}
-{#                            <h3 class="m-0 text-dark">ENCODAGE DES RESULTATS</h3>#}
-{#                    </div>#}
-{#                    <h1 class="m-0 text-dark"><b>Validation & contrôle des résultats</b></h1>#}
-{#                </div>#}
-
-               <!-- Main content -->
-               <div class="row">
-                   <div class="col-6">
-                       <div class="card card-default bg-gradient-dark">
-                           <div class="card-header" style="background-color: darkgreen">
-                               <h3 class="card-title" style="color: white"><b>EN ATTENTE D'ANALYSE ET ENCODAGE</b></h3>
-                               <div class="card-tools">
-                                   <form method="get" action="{% url 'rechercheenc1' %}">
-                                      <div class="input-group input-group-sm" style="width: 600px;">
-                                        <input type="text" name="codelabo" class="form-control float-right" placeholder="Recherche par Code Labo ...">
+      <div class="container-fluid">
+        <div class="row">
+            <div class="col-6">
+            <div class="card">
+              <div class="card-header">
+                  <h3 class="card-title"><b>EN ATTENTE D'ANALYSE ET ENCODAGE</b></h3>
+                <div class="card-tools">
+                  <form method="get" action="{% url 'rechercheenc1' %}">
+                                      <div class="input-group input-group-sm" style="width: 400px;">
+                                        <input type="text" name="codelabo" class="form-control float-right" placeholder="Recherche par Code Labo">
                                         <div class="input-group-append">
-                                          <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
+                                          <button type="submit" class="btn btn-default">
+                                            <i class="fas fa-search"></i>
+                                          </button>
+                                            <button type="cancel" class="btn btn-danger">
+                                            <i class="fas fa-window-close"></i>
+                                          </button>
                                         </div>
                                       </div>
-                                   </form>
-                               </div>
-                           </div>
-                       </div>
-                            <div class="card-body table-responsive p-0">
-                                      {% block content %}
-                                      {% endblock %}
-                            </div>
-                   </div>
-                    <div class="col-6">
-                       <div class="card card-default bg-gradient-dark">
-                           <div class="card-header" style="background-color: darkgreen">
-                               <h3 class="card-title style="color: white"><b>ANALYSE A REFAIRE (OU CORRIGER)</b></h3>
-                               <div class="card-tools">
-                                   <form method="get" action="{% url 'rechercheenc2' %}">
-                                      <div class="input-group input-group-sm" style="width: 600px;">
-                                        <input type="text" name="codelabo" class="form-control float-right" placeholder="Recherche par Code Labo ...">
-                                        <div class="input-group-append">
-                                          <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
-                                        </div>
-                                      </div>
-                                   </form>
-                               </div>
-                           </div>
-                       </div>
-                            <div class="card-body table-responsive p-0">
-                                      {% block content1 %}
-                                      {% endblock %}
-                            </div>
-                   </div>
-               </div>
+                  </form>
+                </div>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body table-responsive p-0">
+                  {% block content %}
+                {% endblock %}
+              </div>
+              <!-- /.card-body -->
             </div>
-           <!-- /.row -->
-    </section>
+            <!-- /.card -->
+          </div>
+
+
+        <div class="col-6">
+            <div class="card">
+              <div class="card-header">
+                  <h3 class="card-title"><b>ANALYSE A REFAIRE (OU CORRIGER)</b></h3>
+                <div class="card-tools">
+                  <form method="get" action="{% url 'rechercheenc2' %}">
+                                      <div class="input-group input-group-sm" style="width: 400px;">
+                                        <input type="text" name="codelabo" class="form-control float-right" placeholder="Recherche par Code Labo">
+                                        <div class="input-group-append">
+                                          <button type="submit" class="btn btn-default">
+                                            <i class="fas fa-search"></i>
+                                          </button>
+                                            <button type="cancel" class="btn btn-danger">
+                                            <i class="fas fa-window-close"></i>
+                                          </button>
+                                        </div>
+                                      </div>
+                  </form>
+                </div>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body table-responsive p-0">
+                  {% block content1 %}
+                {% endblock %}
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+          </div>
+
+        </div>
+
+      </div>
+        </section>
     <!-- /.content -->
     <!-- /.content -->
+
   </div>
  <!-- /.content-wrapper -->
  <footer class="main-footer">

@@ -1,6 +1,8 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 from enreg.models import *
 from accounts.models import *
+from entrepot.calculs import densite15, vcf, gsv, mta
 from .tables import *
 from .forms import *
 from django.contrib.auth.decorators import login_required
@@ -29,6 +31,16 @@ class GestionCodification():
                 qs = request.GET['search']
                 if qs == "":
                     request.session['url'] = request.get_full_path()
+
+                    e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                                 entrepot__ville__affectationville__username_id=id).count()
+                    d = ImpressionResultat.objects.filter(isConforme=True, idcargaison__etat="Conforme aux exigences",
+                                                          idcargaison__entrepot__ville__affectationville__username_id=id).count()
+                    l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+                                                 entrepot__ville__affectationville__username_id=id).count()
+                    n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
+                                                            conformiteProduit=False).count()
+
                     table = CodificationTable(
                         Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="1_")
@@ -37,9 +49,24 @@ class GestionCodification():
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
+                        'e':e,
+                        'd':d,
+                        'l':l,
+                        'n':n
+
                     })
                 else:
                     request.session['url'] = request.get_full_path()
+
+                    e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                                 entrepot__ville__affectationville__username_id=id).count()
+                    d = ImpressionResultat.objects.filter(isConforme=True, idcargaison__etat="Conforme aux exigences",
+                                                          idcargaison__entrepot__ville__affectationville__username_id=id).count()
+                    l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+                                                 entrepot__ville__affectationville__username_id=id).count()
+                    n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
+                                                            conformiteProduit=False).count()
+
                     qs_temp = Entrepot.objects.get(nomentrepot=qs)
                     id_ent = qs_temp.identrepot
                     table = CodificationTable(
@@ -50,12 +77,17 @@ class GestionCodification():
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
+                        'e':e,
+                        'd':d,
+                        'l':l,
+                        'n':n
+
                     })
             else:
                 request.session['url'] = request.get_full_path()
 
                 e = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=id).count()
-                d = Cargaison.objects.filter(etat="Conforme aux exigences",entrepot__ville__affectationville__username_id=id).count()
+                d = ImpressionResultat.objects.filter(isConforme=True,idcargaison__etat="Conforme aux exigences",idcargaison__entrepot__ville__affectationville__username_id=id).count()
                 l = Cargaison.objects.filter(etat="Analyse Labo en cours",entrepot__ville__affectationville__username_id=id).count()
                 n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
                                                         conformiteProduit=False).count()
@@ -185,24 +217,18 @@ class GestionResultatLabo():
     def affichageNonConforme(request):
         user = request.user
         id = user.id
-        # try:
-        #     ville = AffectationVille.objects.get(username=id)
-        # except:
-        #     template = 'error.html'
-        #     context = {}
-        #     return render(request, template, context)
         role = user.role_id
         if role == 7 or role == 1:
-            qs = ControlNatureProduit.objects.filter(idcargaison__entrepot__ville__affectationville__username=id, conformiteProduit=False)
+            # qs = ControlNatureProduit.objects.filter(idcargaison__entrepot__ville__affectationville__username=id, conformiteProduit=False)
             qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
                                                       idcargaison__entrepot__ville__affectationville__username=id)
 
-            table = NonConformeOrganoleptique(qs)
+            # table = NonConformeOrganoleptique(qs)
             table1 = NonConformeLaboratoire(qs1)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table1)
             context = {
-                'table': table,
+                # 'table': table,
                 'table1': table1,
             }
             return render(request, 'shydro_avarie.html', context)
@@ -523,7 +549,18 @@ def enAttenteEchantillonnage(request):
 def enAttenteDechargement(request):
     user = request.user.id
     template = 'enAttenteDechargement.html'
-    qs = Resultat.objects.filter(idcargaison__idcargaison__idcargaison__etat="Conforme aux exigences",idcargaison__idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    # qs = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",idcargaison__entrepot__ville__affectationville__username_id=user)
+    qs = ImpressionResultat.objects.raw("SELECT ei.idImpression ,ei.idcargaison_id, ec.numdos, ec.declaration , i.nomimportateur, ec.immatriculation, ee.nomentrepot, ep.nomproduit, ec.requisitiondackdate, eee.dateechantillonage, el.datereceptionlabo, ei.printDate \
+            FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_entrepot_echantillon eee, enreg_laboreception el, accounts_affectationville aa  \
+            WHERE ei.idcargaison_id = ec.idcargaison \
+            AND ec.importateur_id = i.idimportateur \
+            AND ec.entrepot_id = ee.identrepot \
+            AND ec.produit_id = ep.idproduit \
+            AND ec.idcargaison = eee.idcargaison_id \
+            AND eee.idcargaison_id = el.idcargaison_id \
+            AND ec.etat = 'Conforme aux exigences' \
+            AND aa.username_id = %s",[user,])
+
     table = EnAttenteDechargement(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {'table':table}
@@ -545,36 +582,37 @@ def enAttenteResultatLabo(request):
 def rapportActivite(request):
     user = request.user.id
     template = 'rapportActivite.html'
-    form = SearchByDate(request.POST or None)
+    form = Filters(user=user)
 
     # qs = Cargaison.objects.select_related('entrepot_echantillon').filter(entrepot__ville__affectationville__username_id=user)
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                FROM enreg_cargaison c \
-                                    LEFT JOIN enreg_entrepot_echantillon e \
-                                    ON c.idcargaison = e.idcargaison_id \
-                                    LEFT JOIN enreg_laboreception l \
-                                    ON e.idcargaison_id = l.idcargaison_id \
-                                    LEFT JOIN enreg_resultat r \
-                                    ON l.idcargaison_id = r.idcargaison_id \
-                                    LEFT JOIN enreg_inspection i \
-                                    ON i.idcargaison_id = c.idcargaison \
-                                    LEFT JOIN enreg_compartiment co \
-                                    ON co.idinspection_id = i.idinspection \
-                                    LEFT JOIN enreg_produit p \
-                                    ON p.idproduit = c.produit_id \
-                                    LEFT JOIN enreg_importateur a \
-                                    ON a.idimportateur = c.importateur_id \
-                                    LEFT JOIN enreg_entrepot ee \
-                                    ON ee.identrepot = c.entrepot_id \
-                                    LEFT JOIN enreg_ville ev \
-                                    ON ev.idville = ee.ville_id \
-                                    LEFT JOIN accounts_affectationville v \
-                                    ON v.ville_id = ev.idville \
-                                WHERE v.username_id= %s \
-                                GROUP BY c.idcargaison \
-                                ORDER BY i.dateinspection DESC',[user,])
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                                FROM enreg_cargaison c \
+                                                    LEFT JOIN enreg_entrepot_echantillon e \
+                                                    ON c.idcargaison = e.idcargaison_id \
+                                                    LEFT JOIN enreg_laboreception l \
+                                                    ON e.idcargaison_id = l.idcargaison_id \
+                                                    LEFT JOIN enreg_impressionresultat r \
+                                                    ON l.idcargaison_id = r.idcargaison_id \
+                                                    LEFT JOIN enreg_inspection i \
+                                                    ON i.idcargaison_id = c.idcargaison \
+                                                    LEFT JOIN enreg_compartiment co \
+                                                    ON co.idinspection_id = i.idinspection \
+                                                    LEFT JOIN enreg_produit p \
+                                                    ON p.idproduit = c.produit_id \
+                                                    LEFT JOIN enreg_importateur a \
+                                                    ON a.idimportateur = c.importateur_id \
+                                                    LEFT JOIN enreg_entrepot ee \
+                                                    ON ee.identrepot = c.entrepot_id \
+                                                    LEFT JOIN enreg_ville ev \
+                                                    ON ev.idville = ee.ville_id \
+                                                    LEFT JOIN accounts_affectationville v \
+                                                    ON v.ville_id = ev.idville \
+                                                    WHERE v.username_id= %s \
+                                                    GROUP BY c.idcargaison \
+                                                    ORDER BY i.dateinspection DESC', [user, ])
+
     table = RapportActivite(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -591,30 +629,1021 @@ def rapportActivite(request):
 def regularisation(request):
     user = request.user.id
     template ='regularisation.html'
-    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).order_by('-dateheurecargaison')
+    form = ChangementDestination()
+    form1 = Transbordement()
+    form2 = ChangementNatureProduit()
+    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).filter(Q(etat='En attente requisition')| Q(etat="En attente d'echantillonage") | Q(etat='Echantillonner') | Q(etat='Analyse Labo en cours')).order_by('-dateheurecargaison')
     table = Regularisation(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
-    context = {'table':table}
+    context = {
+        'table':table,
+        'form':form,
+        'form1':form1,
+        'form2':form2,
+    }
     return render(request,template,context)
 
 
 @login_required(login_url='login')
-def regularisationDestination(request,pk):
-    template = 'regularisationDestination.html'
-    form = ChangementDestination(request.POST or None)
-    cargaison = Cargaison.objects.get(idcargaison=pk)
+def regularisationDestination(request):
+    # template = 'regularisationDestination.html'
+    # form = ChangementDestination(request.POST or None)
+    # Getting Logged in user detail for filtering
+    user = request.user
+    id = user.id
+    role = user.role_id
+
+    # cargaison = Cargaison.objects.get(idcargaison=pk)
     if request.method == 'POST':
-        entrepot = request.POST['nouvelleDestination']
-        entrepot = Entrepot.objects.get(identrepot=entrepot)
-        cargaison.entrepot = entrepot
-        cargaison.save(update_fields=['entrepot'])
-        return redirect('regularisation')
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk',None)
+            nouvelleDestination = request.POST.get('nouvelleDestination',None)
+            print(pk)
+            print(nouvelleDestination)
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            entrepot = Entrepot.objects.get(identrepot=nouvelleDestination)
+            cargaison.entrepot = entrepot
+            cargaison.save(update_fields=['entrepot'])
+            # Return a JSON response indicating success
+            return JsonResponse({'status': 'success'})
+        else:
+            return redirect('regularisation')
     else:
-        context = {'form':form}
+        return redirect('regularisation')
+
+
+@login_required(login_url='login')
+def transbordement(request):
+    # template = 'regularisationDestination.html'
+    # form = ChangementDestination(request.POST or None)
+    # Getting Logged in user detail for filtering
+    user = request.user
+    id = user.id
+    role = user.role_id
+
+    # cargaison = Cargaison.objects.get(idcargaison=pk)
+    if request.method == 'POST':
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk',None)
+            nouvelleImmatriculation = request.POST.get('nouvelleImmatriculation',None)
+            nouveauVolume = request.POST.get('nouveauVolume',None)
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            cargaison.immatriculation = nouvelleImmatriculation
+            cargaison.volume = nouveauVolume
+            cargaison.save(update_fields=['immatriculation','volume'])
+            # Return a JSON response indicating success
+            return JsonResponse({'status': 'success'})
+        else:
+            return redirect('regularisation')
+    else:
+        return redirect('regularisation')
+
+
+@login_required(login_url='login')
+def changementNature(request):
+    # template = 'regularisationDestination.html'
+    # form = ChangementDestination(request.POST or None)
+    # Getting Logged in user detail for filtering
+    user = request.user
+    id = user.id
+    role = user.role_id
+
+    # cargaison = Cargaison.objects.get(idcargaison=pk)
+    if request.method == 'POST':
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk',None)
+            nouvelleNatureProduit = request.POST.get('nouvelleNatureProduit',None)
+            p = Produit.objects.get(idproduit=nouvelleNatureProduit)
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            cargaison.produit = p
+            cargaison.save(update_fields=['produit'])
+            # Return a JSON response indicating success
+            return JsonResponse({'status': 'success'})
+        else:
+            return redirect('regularisation')
+    else:
+        return redirect('regularisation')
+
+
+@login_required(login_url='login')
+def pertes(request,pk):
+    Cargaison.objects.get(idcargaison=pk).delete()
+    return redirect('regularisation')
+
+
+@login_required(login_url='login')
+def rapportActiviteFiltre(request):
+    user = request.user.id
+    template = 'rapportActivite.html'
+    form = Filters(user=user)
+
+    if request.method == 'POST':
+        fournisseur = request.POST['fournisseur']
+        entrepot = request.POST['entrepot']
+        dateDebut = request.POST['dateDebut']
+        dateFin = request.POST['dateFin']
+
+        if fournisseur and entrepot and dateDebut and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND c.entrepot_id = %s \
+                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateDebut,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and entrepot and dateDebut:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND c.entrepot_id = %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateDebut, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and entrepot and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND c.entrepot_id = %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and entrepot:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND c.entrepot_id = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and dateDebut and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,dateDebut,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and dateDebut :
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,dateDebut, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.importateur_id = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,fournisseur, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if entrepot and dateDebut and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.entrepot_id = %s \
+                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,entrepot,dateDebut,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if entrepot and dateDebut:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.entrepot_id = %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,entrepot,dateDebut, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if entrepot and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.entrepot_id = %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,entrepot,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if entrepot:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND c.entrepot_id = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,entrepot, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if dateDebut and dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,dateDebut,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if dateDebut:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,dateDebut, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if dateFin:
+            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                AND DATE(c.dateheurecargaison) = %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user,dateFin, ])
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+                                            FROM enreg_cargaison c \
+                                                LEFT JOIN enreg_entrepot_echantillon e \
+                                                ON c.idcargaison = e.idcargaison_id \
+                                                LEFT JOIN enreg_laboreception l \
+                                                ON e.idcargaison_id = l.idcargaison_id \
+                                                LEFT JOIN enreg_impressionresultat r \
+                                                ON l.idcargaison_id = r.idcargaison_id \
+                                                LEFT JOIN enreg_inspection i \
+                                                ON i.idcargaison_id = c.idcargaison \
+                                                LEFT JOIN enreg_compartiment co \
+                                                ON co.idinspection_id = i.idinspection \
+                                                LEFT JOIN enreg_produit p \
+                                                ON p.idproduit = c.produit_id \
+                                                LEFT JOIN enreg_importateur a \
+                                                ON a.idimportateur = c.importateur_id \
+                                                LEFT JOIN enreg_entrepot ee \
+                                                ON ee.identrepot = c.entrepot_id \
+                                                LEFT JOIN enreg_ville ev \
+                                                ON ev.idville = ee.ville_id \
+                                                LEFT JOIN accounts_affectationville v \
+                                                ON v.ville_id = ev.idville \
+                                                WHERE v.username_id= %s \
+                                                GROUP BY c.idcargaison \
+                                                ORDER BY i.dateinspection DESC', [user, ])
+
+        table = RapportActivite(qs)
+        RequestConfig(request, paginate={"per_page": 15}).configure(table)
+        export_format = request.GET.get("_export", None)
+        if TableExport.is_valid_format(export_format):
+            exporter = TableExport(export_format, table)
+            return exporter.response("table.{}".format(export_format))
+
+        context = {
+            'table':table,
+            'form':form
+            }
         return render(request,template,context)
+    else:
+        return redirect('rapportActivite')
 
 
+@login_required(login_url='login')
+def rapportRe(request,pk):
+    c = Cargaison.objects.get(idcargaison=pk)
+    ville = c.entrepot.ville
+    # print(ville)
+    # numrappech = numRappEch(pk,
+    #                         ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
+    # numrappechauto = numrappech
+    # c.rapechctrl = 1
+    # c.etatInspection = True
+    # c.etat = "Echantillonner"
+    # c.save(update_fields=['etat', 'rapechctrl', 'etatInspection'])
+    #
+    # e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
+    #                          methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
+    # e.save()
 
+    # Generer le rapport d'echantillonage
+    template = 'rapportechantillonage.html'
+    e = Entrepot_echantillon.objects.get(idcargaison=pk)
+    entrepot = c.entrepot
+    dateechantillonage = e.dateechantillonage
+    dateech = dateechantillonage
+    methodeutilisee = e.methodeutilisee
+    matricule = e.matricule
+    numdos = c.numdos
+    importateur = c.importateur
+    adresseimportateur = c.importateur_id
+    adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
+    produit = c.produit
+    volume = c.volume
+    provenance = c.provenance.name
+    voie = c.voie.nomvoie
+    immatriculation = c.immatriculation
+    qtelabo = e.qte
+    numrappechauto = e.numrappechauto
+
+    data = {
+        'dateechantillonage': dateechantillonage,
+        'dateech': dateech,
+        'entrepot': entrepot,
+        'numdos': numdos,
+        'methodeutilisee': methodeutilisee,
+        'importateur': importateur,
+        'adresseimportateur': adresseimportateur,
+        'produit': produit,
+        'volume': volume,
+        'provenance': provenance,
+        'voie': voie,
+        'immatriculation': immatriculation,
+        'matricule': matricule,
+        'qtelabo': qtelabo,
+        'numrappechauto': numrappechauto,
+    }
+
+    # Render PDF Files
+    pdf = render_to_pdf(template, data)
+    return HttpResponse(pdf, content_type='application/pdf')
+
+
+@login_required(login_url='login')
+def rapportIs(request, pk):
+    user = request.user
+    ville = AffectationVille.objects.get(username_id=user.id)
+    ville = ville.ville_id
+    province = Ville.objects.get(idville=ville)
+    province = province.province
+    province = province.upper()
+
+    template = 'rapport.html'
+
+
+    # Request to fecth data into database
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+    inspection = Inspection.objects.get(idcargaison=pk)
+    if inspection.meterbefore is None:
+        inspection.meterbefore = 0
+    if inspection.meterafter is None:
+        inspection.meterafter = 0
+    seal = InspectionSeal.objects.filter(idcargaison=pk)
+    if Resultat.objects.filter(idcargaison_id=pk).exists():
+        resultat_data = Resultat.objects.get(idcargaison_id=pk)
+
+    compartiment = Compartiment.objects.filter(
+        idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
+    govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)),3))  # gov Total Tanker
+    gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)),3))  # gsv Total Tanker
+    mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)),3))  # mta Total Tanker
+    mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)),3))  # mtv Total Tanker
+
+    densite = densite15(inspection.temp, inspection.dens)  # densite 15c
+    govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
+    vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
+    gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
+    mtaMeter = mta(gsvMeter, densite)  # mta Meter
+
+    govLt = float(cargaison.volume)  # gov LT
+    vcfLt = vcf(densite, inspection.temp)  # VCF LT
+    gsvLt = (cargaison.volume15)# GSV LT
+    if gsvLt is None:
+        gsvLt = 0
+    # gsvLt = gsv(vcfLt, govLt)  # GSV LT
+    mtvLt = (cargaison.tonnagevide)  # MTV LT
+    if mtvLt is None:
+        mtvLt = 0
+    # mtvLt = mtv(gsvLt, densite)  # MTV LT
+    mtaLt = (cargaison.tonnageair)  # MTA LT
+    if mtaLt is None:
+        mtaLt = 0
+    # mtaLt = mta(gsvLt, densite)  # MTA LT
+
+    govLtTanker = round((govLt - float(govTotal)),3)  # Difference LT/Tanker
+    gsvLtTanker = round((float(gsvLt) - float(gsvTotal)),3)  # Difference GSV LT/Tanker
+    mtvLtTanker = round((float(mtvLt) - float(mtvTotal)),3)  # Difference mtv LT/Tanker
+    mtaLtTanker = round((float(mtaLt) - float(mtaTotal)),3)  # Difference mtv LT/Tanker
+    prLtTanker = round((govLtTanker * 100) / govLt,3)
+    if gsvLt==0:
+        gsvLt=1
+    prGsvLtTanker = round((gsvLtTanker * 100)/ float(gsvLt),3)
+    if mtaLt==0:
+        mtaLt=1
+    prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100),3)
+    if mtvLt==0:
+        mtvLt=1
+    prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
+
+    govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
+    gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
+    mtaTankerMeter = round((float(mtaTotal) - mtaMeter),3)  # Difference MTA Tanker/Meter
+    prTankerMeter = round((govTankerMeter * 100) / float(govTotal),3)
+
+    govLtMeter = govLt - govMeter  # Diff LT/Meter
+    gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
+    mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
+    if govLt==0:
+        govLt=1
+    prLtMeter = round((govLtMeter * 100) / govLt,3)
+    if gsvLt==0:
+        gsvLt=1
+    prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt),3)
+    if mtaLt==0:
+        mtaLt=1
+    prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
+
+    #Certified Quantity
+    if govMeter > 0:
+        govMax = govMeter
+        gsvMax = gsvMeter
+        mtaMax = mtaMeter
+    else:
+        if float(govTotal) > 0:
+            govMax = govTotal
+            gsvMax = gsvTotal
+            mtaMax = mtaTotal
+        else:
+            if govLt > 0:
+                govMax = govLt
+                gsvMax = gsvLt
+                mtaMax = mtaLt
+
+    # govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
+    # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
+    # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
+
+    fraisOcc = round((11 * float(gsvMax)),3)  # Frais occ a Payer
+
+    # Getting data from laboratory
+    if Resultat.objects.filter(idcargaison_id=pk).exists():
+        labo_data = Resultat.objects.get(idcargaison=pk)
+        color = labo_data.couleurastm
+        aspect = labo_data.aspect
+        odor = labo_data.odeur
+    else:
+        color = '-'
+        aspect = '-'
+        odor = '-'
+
+    # Last 3 Cargo Data Fetch
+    lastthreecargo = Cargaison.objects.filter(immatriculation=cargaison.immatriculation).order_by(
+        '-dateheurecargaison')[:3]
+
+    data = {
+        'cargaison': cargaison,
+        'inspection': inspection,
+        'densite': densite,
+        'prGsvLtTanker':prGsvLtTanker,
+        'prMtaLtTanker':prMtaLtTanker,
+        'prMtvLtTanker':prMtvLtTanker,
+        'prGsvLtMeter':prGsvLtMeter,
+        'prMtaLtMeter':prMtaLtMeter,
+        'prLtTanker':prLtTanker,
+        'prTankerMeter':prTankerMeter,
+        'prLtMeter':prLtMeter,
+        'govmeter': govMeter,
+        'govTotal': govTotal,
+        'gsvTotal': gsvTotal,
+        'mtaTotal': mtaTotal,
+        'gsvMeter': gsvMeter,
+        'govLt': govLt,
+        'govLtTanker': govLtTanker,
+        'govTankerMeter': govTankerMeter,
+        'gsvTankerMeter': gsvTankerMeter,
+        'mtaTankerMeter': mtaTankerMeter,
+        'govLtMeter': govLtMeter,
+        'gsvLtTanker': gsvLtTanker,
+        'mtvLtTanker': mtvLtTanker,
+        'mtaLtTanker': mtaLtTanker,
+        'gsvLtMeter': gsvLtMeter,
+        'mtaLtMeter': mtaLtMeter,
+        'gsvLt': gsvLt,
+        'mtvLt': mtvLt,
+        'mtaLt': mtaLt,
+        'govMax': govMax,
+        'gsvMax': gsvMax,
+        'mtaMax': mtaMax,
+        'fraisOcc': fraisOcc,
+        'seal': seal,
+        'lastthreecargo': lastthreecargo,
+        # 'flast': flast,
+        # 'slast': slast,
+        # 'tlast': tlast,
+        'color': color,
+        'aspect': aspect,
+        'odor': odor,
+        'compartiment': compartiment,
+        'province':province,
+
+    }
+    # Render PDF Files
+    pdf = render_to_pdf(template, data)
+    return HttpResponse(pdf, content_type='application/pdf')
 
 
 

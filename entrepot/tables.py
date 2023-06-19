@@ -13,8 +13,10 @@ TEMPLATE6 = """
             <a href="{%url 'meterafter' record.pk%}" class="btn btn-primary">DECHARGEMENT</a>
            """
 
-TEMPLATE = """
-            <a href="{%url 'echantillonage' record.pk%}" class="btn btn-primary">ECHANTILLONNAGE</a>
+TEMPLATE = """  
+                <button type="button" onclick="getRowId(this)" class="btn btn-default" id="sample" data-toggle="modal" data-target="#modal-lg">
+                  ECHANTILLONNAGE
+                </button>
            """
 
 TEMPLATE1 = """
@@ -65,6 +67,9 @@ class EchantillonTable(tables.Table):
         attrs = {
             "class": "table table-hover text-nowrap table-striped",
             "id": "example2"
+        }
+        row_attrs = {
+            "id": lambda record: record.pk
         }
         template_name = "django_tables2/bootstrap4.html"
         # model = Cargaison

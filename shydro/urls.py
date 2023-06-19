@@ -26,9 +26,18 @@ urlpatterns = [
     path('enAttenteResultatLabo/', views.enAttenteResultatLabo, name='enAttenteResultatLabo'),
     path('rapportActivite/', views.rapportActivite, name='rapportActivite'),
     path('rapportActiviteExport/', views.rapportActivite, name='rapportActiviteExport'),
+    path('rapportActiviteFiltre/', views.rapportActiviteFiltre, name='rapportActiviteFiltre'),
+    path('rapportRe/<int:pk>', views.rapportRe, name='rapportRe'),
+    path('rapportIs/<int:pk>', views.rapportIs, name='rapportIs'),
+
 
     path('regularisation/', views.regularisation, name='regularisation'),
-    path('regularisationDestination/<int:pk>', views.regularisationDestination, name='regularisationDestination'),
+    path('regularisationDestination/', views.regularisationDestination, name='regularisationDestination'),
+    path('changementNature/', views.changementNature, name='changementNature'),
+    path('transbordement/', views.transbordement, name='transbordement'),
+    path('pertes/<int:pk>', views.pertes, name='pertes'),
+
+
 
 
 ]

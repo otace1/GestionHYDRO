@@ -4,13 +4,5 @@
 {% load querystring from django_tables2 %}
 
 {% block content %}
-{#    <div class="card-header bg-gradient-dark">#}
-{#        <h3 class="card-title "><b>Encodage {{ nom }}</b></h3>#}
-{#    </div>#}
-{#    <!-- /.card-header -->#}
-{#    <div class="card-body bg-gradient-dark">#}
-{#        {% crispy form %}#}
-{#    </div>#}
     {% render_table table %}
-
 {% endblock %}

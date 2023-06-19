@@ -26,7 +26,7 @@
             <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
             <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
             <b>DIRECTION PROVINCIALE DU {{ province }}</b><br/>
-            DIVISION LABORATOIRE/LUBUMBASHI
+            {{ laboratoireData }}
         </td>
         <td style="width: 10%">Page 1/1</td>
     </tr>
@@ -36,7 +36,6 @@
 <hr>
 
 <table>
-
     <tbody>
     <tr>
         <td>
@@ -46,7 +45,7 @@
         <td style="width: 20%"></td>
         <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
             <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
-            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/>
+            <span><b>RAPPORT D'ESSAI N° PP {{ laboratoire.numcertificatqualite }}/{{ annee }}</b></span>
         </td>
         <td align="right" style="width: 20%;"></td>
     </tr>
@@ -58,46 +57,43 @@
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
         <td colspan="2" style="width:10%;font-size:10.5px;font-family:'Times New Roman';">
-            <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
-            <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
+            <span><b>Date: {{ laboratoire.datereceptionlabo.date }}</b></span><br>
+{#            <span><b>Date d'analyse: {{ laboratoire.datereceptionlabo }}</b></span>#}
         </td>
         <td colspan="2" style="width:90%;font-size:10.5px;font-family:'Times New Roman';">
-            <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
+            <span><b><u>Client : </u>{{ cargaison.importateur }} </b></span><br/>
             <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
         </td>
     </tr>
     <tr>
         <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ cargaison.produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
-
     </tr>
     <tr>
         <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
+            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ echantillon.numrappechauto }}</b> <b>du {{ echantillon.dateechantillonage }}</b></span>
         </td>
-
-
     </tr>
 
     <tr>
         <td colspan="2"
-            style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
+            style="width:10%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <span><b>II.1. Provenance: </b>{{ cargaison.provenance.name }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
-            <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
-            <span><b>II.5. Quantité marchandise:</b> - </span>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ echantillon.qte }} L</span><br/>
+            <span><b>II.4. Date de réception au Labo: </b>{{ laboratoire.datereceptionlabo }}</span><br/>
+            <span><b>II.5. Quantité marchandise:</b> {{ cargaison.volume }} </span>
         </td>
         <td colspan="2"
-            style="width:80%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
-            <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
-            <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
-            <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
+            style="width:90%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            <span><b>II.6. Lieu/Date prélèvement: </b> {{ cargaison.entrepot }} / Le {{ echantillon.dateechantillonage }}</span><br/>
+            <span><b>II.7. Prélevé et soumis par:</b> OCC </span><br/>
+            <span><b>II.8. Code Labo: </b>{{ laboratoire.codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
             <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
-            <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. N° de dossier: </b>{{ cargaison.numdos }}</span><br/>
+            <span><b>II.10. Camion:</b> {{ cargaison.immatriculation }}</span>
         </td>
 
     </tr>
@@ -485,26 +481,26 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués.</span><br/>
+        <td colspan="2" style="font-size:10px;">
+            <span>Conformités aux exigences: {% if impressionData.isConforme == True %} conforme aux exigences des paramètres effectués.{% else %}non conforme aux exigences des paramètres effectués. {% endif %}</span><br/>
             <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
         </td>
     </tr>
     </br>
     <tr>
         <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
-            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
-            <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
-            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <span style="text-align: center;">{{ signGauche.poste}}</span><br/>
+            <span style="text-align: center;"><b>{{ signGauche.first_name }} {{ signGauche.last_name }}</b></span><br/>
+            <span style="text-align: center;"><b>{{ signGauche.fonction }}</b></span><br/>
         </td>
 
         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
         </td>
 
         <td style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
-            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
-            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
-            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <span style="text-align: center;">{{ signDroite.poste}}</span><br/>
+            <span style="text-align: center;"><b>{{ signDroite.first_name }} {{ signDroite.last_name }}</b></span><br/>
+            <span style="text-align: center;"><b>{{ signDroite.fonction }}</b></span><br/>
         </td>
 
     </tr>
@@ -515,7 +511,6 @@
 </table>
 <br>
 <br>
-
 
 <div id="footerContent" style="text-align:center">
     <tr>
@@ -529,6 +524,7 @@
 
 </div>
 </body>
+</html>
 
 
 <!DOCTYPE html>
@@ -555,11 +551,11 @@
     <tbody>
     <tr>
         <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
-        <td align="center" style="font-size:11.5px; width: 90%">
+        <td align="center" style="font-size:13px; width: 90%">
             <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
             <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
             <b>DIRECTION PROVINCIALE DU {{ province }}</b><br/>
-            DIVISION LABORATOIRE/LUBUMBASHI
+            {{ laboratoireData }}
         </td>
         <td style="width: 10%">Page 1/1</td>
     </tr>
@@ -569,7 +565,6 @@
 <hr>
 
 <table>
-
     <tbody>
     <tr>
         <td>
@@ -579,7 +574,7 @@
         <td style="width: 20%"></td>
         <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
             <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
-            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/>
+            <span><b>RAPPORT D'ESSAI N° PP {{ laboratoire.numcertificatqualite }}/{{ annee }}</b></span>
         </td>
         <td align="right" style="width: 20%;"></td>
     </tr>
@@ -591,46 +586,43 @@
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
         <td colspan="2" style="width:10%;font-size:10.5px;font-family:'Times New Roman';">
-            <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
-            <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
+            <span><b>Date: {{ laboratoire.datereceptionlabo.date }}</b></span><br>
+{#            <span><b>Date d'analyse: {{ laboratoire.datereceptionlabo }}</b></span>#}
         </td>
         <td colspan="2" style="width:90%;font-size:10.5px;font-family:'Times New Roman';">
-            <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
+            <span><b><u>Client : </u>{{ cargaison.importateur }} </b></span><br/>
             <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
         </td>
     </tr>
     <tr>
         <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
-            <br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ cargaison.produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
-
     </tr>
     <tr>
         <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
+            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ echantillon.numrappechauto }}</b> <b>du {{ echantillon.dateechantillonage }}</b></span>
         </td>
-
-
     </tr>
 
     <tr>
         <td colspan="2"
-            style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
+            style="width:10%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <span><b>II.1. Provenance: </b>{{ cargaison.provenance.name }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
-            <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
-            <span><b>II.5. Quantité marchandise:</b> - </span>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ echantillon.qte }} L</span><br/>
+            <span><b>II.4. Date de réception au Labo: </b>{{ laboratoire.datereceptionlabo }}</span><br/>
+            <span><b>II.5. Quantité marchandise:</b> {{ cargaison.volume }} </span>
         </td>
         <td colspan="2"
-            style="width:80%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
-            <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
-            <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
-            <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
+            style="width:90%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            <span><b>II.6. Lieu/Date prélèvement: </b> {{ cargaison.entrepot }} / Le {{ echantillon.dateechantillonage }}</span><br/>
+            <span><b>II.7. Prélevé et soumis par:</b> OCC </span><br/>
+            <span><b>II.8. Code Labo: </b>{{ laboratoire.codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
             <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
-            <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. N° de dossier: </b>{{ cargaison.numdos }}</span><br/>
+            <span><b>II.10. Camion:</b> {{ cargaison.immatriculation }}</span>
         </td>
 
     </tr>
@@ -1018,26 +1010,26 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués.</span><br/>
+        <td colspan="2" style="font-size:10px;">
+            <span>Conformités aux exigences: {% if impressionData.isConforme == True %} conforme aux exigences des paramètres effectués.{% else %}non conforme aux exigences des paramètres effectués. {% endif %}</span><br/>
             <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
         </td>
     </tr>
     </br>
     <tr>
         <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
-            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
-            <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
-            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <span style="text-align: center;">{{ signGauche.poste}}</span><br/>
+            <span style="text-align: center;"><b>{{ signGauche.first_name }} {{ signGauche.last_name }}</b></span><br/>
+            <span style="text-align: center;"><b>{{ signGauche.fonction }}</b></span><br/>
         </td>
 
         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
         </td>
 
         <td style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
-            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
-            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
-            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <span style="text-align: center;">{{ signDroite.poste}}</span><br/>
+            <span style="text-align: center;"><b>{{ signDroite.first_name }} {{ signDroite.last_name }}</b></span><br/>
+            <span style="text-align: center;"><b>{{ signDroite.fonction }}</b></span><br/>
         </td>
 
     </tr>
@@ -1048,7 +1040,6 @@
 </table>
 <br>
 <br>
-
 
 <div id="footerContent" style="text-align:center">
     <tr>
@@ -1062,7 +1053,7 @@
 
 </div>
 </body>
-
+</html>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -1088,11 +1079,11 @@
     <tbody>
     <tr>
         <td align="left" style="width: 10%"><img src="/media/occ.png" width="150px" height="150px"/></td>
-        <td align="center" style="font-size:11.5px; width: 90%">
+        <td align="center" style="font-size:13px; width: 90%">
             <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
             <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
             <b>DIRECTION PROVINCIALE DU {{ province }}</b><br/>
-            DIVISION LABORATOIRE/LUBUMBASHI
+            {{ laboratoireData }}
         </td>
         <td style="width: 10%">Page 1/1</td>
     </tr>
@@ -1102,7 +1093,6 @@
 <hr>
 
 <table>
-
     <tbody>
     <tr>
         <td>
@@ -1112,7 +1102,7 @@
         <td style="width: 20%"></td>
         <td align="center" style="width: 80%;font-family: 'Times New Roman';font-size: 11px">
             <span><b>LABORATOIRE D'ANALYSE DES PRODUITS PETROLIERS</b></span><br>
-            <span><b>RAPPORT D'ESSAI N° PP {{ numcertificatqualite }}/{{ annee }}</b></span><br/>
+            <span><b>RAPPORT D'ESSAI N° PP {{ laboratoire.numcertificatqualite }}/{{ annee }}</b></span>
         </td>
         <td align="right" style="width: 20%;"></td>
     </tr>
@@ -1124,46 +1114,43 @@
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
         <td colspan="2" style="width:10%;font-size:10.5px;font-family:'Times New Roman';">
-            <span><b>Date de saisie: {{ dateanalyse }}</b></span><br>
-            <span><b>Date d'analyse: {{ datereceptionlabo }}</b></span>
+            <span><b>Date: {{ laboratoire.datereceptionlabo.date }}</b></span><br>
+{#            <span><b>Date d'analyse: {{ laboratoire.datereceptionlabo }}</b></span>#}
         </td>
         <td colspan="2" style="width:90%;font-size:10.5px;font-family:'Times New Roman';">
-            <span><b><u>Client : </u>{{ importateur }} </b></span><br/>
+            <span><b><u>Client : </u>{{ cargaison.importateur }} </b></span><br/>
             <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
         </td>
     </tr>
     <tr>
         <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
-            <br/><span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ cargaison.produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
-
     </tr>
     <tr>
         <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
+            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ echantillon.numrappechauto }}</b> <b>du {{ echantillon.dateechantillonage }}</b></span>
         </td>
-
-
     </tr>
 
     <tr>
         <td colspan="2"
-            style="width:20%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
+            style="width:10%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <span><b>II.1. Provenance: </b>{{ cargaison.provenance.name }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
-            <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
-            <span><b>II.5. Quantité marchandise:</b> - </span>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ echantillon.qte }} L</span><br/>
+            <span><b>II.4. Date de réception au Labo: </b>{{ laboratoire.datereceptionlabo }}</span><br/>
+            <span><b>II.5. Quantité marchandise:</b> {{ cargaison.volume }} </span>
         </td>
         <td colspan="2"
-            style="width:80%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
-            <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
-            <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
-            <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
+            style="width:90%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            <span><b>II.6. Lieu/Date prélèvement: </b> {{ cargaison.entrepot }} / Le {{ echantillon.dateechantillonage }}</span><br/>
+            <span><b>II.7. Prélevé et soumis par:</b> OCC </span><br/>
+            <span><b>II.8. Code Labo: </b>{{ laboratoire.codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
             <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
-            <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.10. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. N° de dossier: </b>{{ cargaison.numdos }}</span><br/>
+            <span><b>II.10. Camion:</b> {{ cargaison.immatriculation }}</span>
         </td>
 
     </tr>
@@ -1551,26 +1538,26 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="font-size:10.5px;font-family:'Times New Roman';">
-            <span>Conformités aux exigences: conforme aux exigences des paramètres effectués.</span><br/>
+        <td colspan="2" style="font-size:10px;">
+            <span>Conformités aux exigences: {% if impressionData.isConforme == True %} conforme aux exigences des paramètres effectués.{% else %}non conforme aux exigences des paramètres effectués. {% endif %}</span><br/>
             <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
         </td>
     </tr>
     </br>
     <tr>
         <td colspan="2" style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
-            <span style="text-align: center;">CHEF DE SCE GENIE CH ET P. PETROLIERS</span><br/>
-            <span style="text-align: center;"><b>KASENG LUKANU TSIRTSUM</b></span><br/>
-            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <span style="text-align: center;">{{ signGauche.poste}}</span><br/>
+            <span style="text-align: center;"><b>{{ signGauche.first_name }} {{ signGauche.last_name }}</b></span><br/>
+            <span style="text-align: center;"><b>{{ signGauche.fonction }}</b></span><br/>
         </td>
 
         <td style="width:20%;font-size:10.5px;font-family:'Times New Roman';">
         </td>
 
         <td style="width:40%;font-size:10.5px;font-family:'Times New Roman';" align="center">
-            <span style="text-align: center;">CHEF DE DIVISION</span><br/>
-            <span style="text-align: center;"><b>Ir Lucie NDAYA MUTAKA</b></span><br/>
-            <span style="text-align: center;"><b>Sous-Directeur</b></span><br/>
+            <span style="text-align: center;">{{ signDroite.poste}}</span><br/>
+            <span style="text-align: center;"><b>{{ signDroite.first_name }} {{ signDroite.last_name }}</b></span><br/>
+            <span style="text-align: center;"><b>{{ signDroite.fonction }}</b></span><br/>
         </td>
 
     </tr>
@@ -1581,7 +1568,6 @@
 </table>
 <br>
 <br>
-
 
 <div id="footerContent" style="text-align:center">
     <tr>
@@ -1595,6 +1581,7 @@
 
 </div>
 </body>
+</html>
 
 
 <!DOCTYPE html>
@@ -1602,6 +1589,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Rapport Mogas</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 25;
+        }
+
+    </style>
 </head>
 
 <table style="width:100%;">
@@ -1618,7 +1612,7 @@
             <b>REPUBLIQUE DEMOCRATIQUE DU CONGO</b><br/>
             <b>OFFICE CONGOLAIS DE CONTROLE</b><br/>
             <b>DIRECTION PROVINCIALE DU {{ province }}</b><br/>
-            DIVISION LABORATOIRE/LUBUMBASHI
+            {{ laboratoireData }}
         </td>
         <td></td>
     </tr>
@@ -1628,7 +1622,7 @@
 <hr>
 
 <div style="font-size:12px" align="center">
-    <span><b>LABORATOIRE DE CHIMIE ET DE MICROBIOLOGIE DE LUBUMBASHI</b></span><br/>
+    <span><b>LABORATOIRE DE CHIMIE ET DE MICROBIOLOGIE</b></span><br/>
 </div>
 
 <table style="width:100%;border:0.2px solid black;border-collapse:collapse;text-align:center">
@@ -1662,37 +1656,44 @@
 
 
     <tr>
-        <td colspan="4" style="font-size:10px;font-family: 'Times New Roman';">
-            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ produit }}</b></span><br/>
+        <td colspan="2" style="width:10%;font-size:10.5px;font-family:'Times New Roman';">
+            <span><b>Date: {{ laboratoire.datereceptionlabo.date }}</b></span><br>
+{#            <span><b>Date d'analyse: {{ laboratoire.datereceptionlabo }}</b></span>#}
+        </td>
+        <td colspan="2" style="width:90%;font-size:10.5px;font-family:'Times New Roman';">
+            <span><b><u>Client : </u>{{ cargaison.importateur }} </b></span><br/>
+            <span><b><u>Déclarant : </u>{{ declarant }}</b></span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b><u>I. IDENTIFICATION DU PRODUIT: </u>{{ cargaison.produit }}</b></span><br/>
             <span><b><u>II. IDENTIFICATION DE L'ECHANTILLON: </u></b></span>
         </td>
-
     </tr>
     <tr>
-        <td colspan="4" style="font-size:10px;font-family: 'Times New Roman';">
-            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ numrappech }}</b> <b>du {{ dateechantillonage }}</b></span>
+        <td colspan="4" style="font-size:10.5px;font-family:'Times New Roman';">
+            <span><b>Document de réference: Rapport d'échantillonnage n°: {{ echantillon.numrappechauto }}</b> <b>du {{ echantillon.dateechantillonage }}</b></span>
         </td>
-
-
     </tr>
 
     <tr>
         <td colspan="2"
-            style="width:20%;font-size:10px;font-family: 'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <span><b>II.1. Provenance: </b>{{ provenance }}</span><br/>
+            style="width:10%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.10px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
+            <span><b>II.1. Provenance: </b>{{ cargaison.provenance.name }}</span><br/>
             <span><b>II.2. Marque d'identification:</b></span><br/>
-            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ qte }} L</span><br/>
-            <span><b>II.4. Date de réception au Labo: </b>{{ datereceptionlabo }}</span><br/>
-            <span><b>II.5. Quantité marchandise:</b> - </span>
+            <span><b>II.3. Nombre d'échantillon de Labo: </b>{{ echantillon.qte }} L</span><br/>
+            <span><b>II.4. Date de réception au Labo: </b>{{ laboratoire.datereceptionlabo }}</span><br/>
+            <span><b>II.5. Quantité marchandise:</b> {{ cargaison.volume }} </span>
         </td>
         <td colspan="2"
-            style="width:80%;font-size:10px;font-family: 'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
-            <span><b>II.6. Lieu/Date prélèvement: </b> {{ entrepot }} / Le {{ dateechantillonage }}</span><br/>
-            <span><b>II.7. Prélevé et soumis par:</b> OCC / Lubumbashi</span><br/>
-            <span><b>II.8. Code Labo: </b>{{ codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
+            style="width:90%;font-size:10.5px;font-family:'Times New Roman'; border-right: 0.10px solid black;border-bottom: 0.10px solid black;border-top: 0.10px solid black; border-left:0.10px solid black;">
+            <span><b>II.6. Lieu/Date prélèvement: </b> {{ cargaison.entrepot }} / Le {{ echantillon.dateechantillonage }}</span><br/>
+            <span><b>II.7. Prélevé et soumis par:</b> OCC </span><br/>
+            <span><b>II.8. Code Labo: </b>{{ laboratoire.codelabo }}/PP/2/{{ mois }}/{{ annee }}</span><br/>
             <span><b>II.9. Type d'emballage: </b>Boite Métallique</span><br/>
-            <span><b>II.10. N° de dossier: </b>{{ numdossier }}</span><br/>
-            <span><b>II.11. Camion:</b> {{ immatriculation }}</span>
+            <span><b>II.10. N° de dossier: </b>{{ cargaison.numdos }}</span><br/>
+            <span><b>II.10. Camion:</b> {{ cargaison.immatriculation }}</span>
         </td>
 
     </tr>
@@ -2083,19 +2084,14 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2" style="text-align:left;border-top: 1.5px" ;
-        ">
-        <span>Conformités aux exigences: conforme aux exigences des paramètres effectués.</span><br/>
-        <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
+        <td colspan="2" style="font-size:10px;">
+            <span>Conformités aux exigences: {% if impressionData.isConforme == True %} conforme aux exigences des paramètres effectués.{% else %}non conforme aux exigences des paramètres effectués. {% endif %}</span><br/>
+            <span>Les résultats obtenus concernent l'objet soumis aux essais.</span>
         </td>
     </tr>
-    </br>
-
-
-    </div>
 
 </table>
-<br>
+
 
 <table style="width:100%;border:0.2px solid black;border-collapse:collapse;text-align:center">
     <tr>

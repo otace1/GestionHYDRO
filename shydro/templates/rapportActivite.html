@@ -1,12 +1,41 @@
 {% extends 'shydro/rapportActivite.html' %}
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
+{% load bootstrap4 %}
+{% bootstrap_css %}
+{% bootstrap_javascript jquery='full' %}
+{#{% bootstrap_datepicker_plus_css %}#}
+{#{% bootstrap_datepicker_plus_js %}#}
 
-{% block search %}
-    <form action="" method="POST" title="Filter">
-        {% csrf_token %}
-        {% crispy form %}
-    </form>
+{#{% block search %}#}
+{#    <form action="" method="POST" title="Filter">#}
+{#        {% csrf_token %}#}
+{#        {% crispy form %}#}
+{#    </form>#}
+{#{% endblock %}#}
+
+{% block modal %}
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Filtres</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+              <form action="{% url 'rapportActiviteFiltre' %}" method="post">
+            <div class="modal-body">
+                {% csrf_token %}
+                {% crispy form %}
+            </div>
+              </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
 {% endblock %}
 
 {% block export %}

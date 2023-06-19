@@ -1,0 +1,215 @@
+{% extends 'base_carg_layout.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load django_tables2 %}
+{% load qr_code %}
+
+
+{% block extra_js %}
+    <script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>
+    <script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="table-responsive">
+        <table id="example1" class="table table-bordered table-striped">
+            <thead>
+                 <tr>
+                 <th>DATE & HEURE</th>
+                 <th>IMPORTATEUR</th>
+                 <th>ENTREPOT</th>
+                 <th>IMMATRICULATION</th>
+                 <th>VOL.AMBIANT</th>
+                 <th>VOL.15°C</th>
+                 <th>VOL.20°C</th>
+                 <th>TONNAGE VIDE</th>
+                 <th>TONNAGE AIR</th>
+                 <th>ACTIONS</th>
+                 </tr>
+            </thead>
+            <tbody >
+                    <tr id="display">
+                    </tr>
+            </tbody>
+            <tfoot>
+                  <tr>
+                    <th>DATE & HEURE</th>
+                    <th>IMPORTATEUR</th>
+                    <th>ENTREPOT</th>
+                    <th>IMMATRICULATION</th>
+                    <th>VOL.AMBIANT</th>
+                    <th>VOL.15°C</th>
+                    <th>VOL.20°C</th>
+                    <th>TONNAGE VIDE</th>
+                    <th>TONNAGE AIR</th>
+                    <th>ACTIONS</th>
+                  </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="modal fade" id="modal-xl">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content bg-gradient-dark">
+                <div class="modal-header bg-gradient-dark">
+                    <h4 class="modal-title">FORMULAIRE D'ENREGISTREMENT</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="post-form" method="post" action="">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {% crispy form %}
+                    </div>
+                    <div id="submit-control" class="modal-footer justify-content-between">
+                        <button type="reset" id="closemodal" class="btn btn-danger" data-dismiss="modal">FERMER</button>
+                        <button id="submitButton" class="btn btn-success">ENREGISTRER</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+
+
+    <div class="modal fade" id="modal_qrcode">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">QR Code</h4>
+                </div>
+                    <div class="modal-body">
+                        <div id="codeQR"></div>
+                    </div>
+                     <div class="modal-footer justify-content-between">
+
+                    </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+
+
+{% endblock %}
+
+<script>
+    {% block javascript %}
+
+        //Diplay data into Table with Ajax
+        setInterval(function (){
+                $.ajax({
+                    type:'GET',
+                    url: "{% url 'getCargaison' %}",
+                    succes: function (response){
+                        {#console.log(response);#}
+                        $("#display").empty();
+                        for (var key in response.cargaison)
+                        {
+                            var temp = "<tr>"+"<th>"+response.cargaison[key].dateheurecargaison+"</th>"+"</tr>";
+                            $("#display").append(temp);
+                        }
+                    },
+                    error: function (response){
+                        alert('An error occured')
+                    }
+                });
+            },1000);
+
+        // using jQuery
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        var csrftoken = getCookie('csrftoken');
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+
+        //script for submitting data in ajax
+        $('.btn.btn-info').click(function () {
+            Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
+        });
+
+
+        $('.btn.btn-success').click((function (e) {
+            e.preventDefault()
+            //Disable our button
+            $('.btn.btn-success').attr("disabled", true);
+            var APIurl = "{% url 'nouvelle' %}";
+            var SerializedData = $("#post-form").serialize();
+            console.log(SerializedData);
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                dateType: "json",
+                success: function (data) {
+                    console.log(data)
+                    var qrcode = new QRCode(document.getElementById("codeQR"), {
+                        text: data,
+                        width: 250,
+                        height: 250,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+                    $('#modal-xl').modal('hide');
+                    alert("Données sauvegardées");
+
+                    $('#modal_qrcode').modal('show');
+                    var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Fermer</button>';
+                    $('.modal-footer').html(modalFooter);
+                },
+
+                error: function (vol) {
+                    console.log(vol);
+                    alert('Echec! Veuillez verifier le volume introduit');
+                    $('.btn.btn-success').attr("disabled", false);
+                    location.reload();
+                },
+
+                error: function (vide) {
+                    console.log(vide);
+                    alert('Echec! Verifier les champs obligatoires et la valeur du volume introduite');
+                    $('.btn.btn-success').attr("disabled", false);
+                    location.reload();
+                },
+
+            })
+        }))
+
+    {% endblock %}
+</script>
+
+
+
+
+
+
