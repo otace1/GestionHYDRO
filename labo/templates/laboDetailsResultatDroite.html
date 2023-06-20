@@ -11,26 +11,15 @@
 
 {% block javascript %}
     <script>
-        {#function resultFormatting() {#}
-        {#  var rows = document.getElementById("table1").getElementsByTagName('tr');#}
-        {#  for (var i = 0; i < rows[0].children.length && rows[0].children[i].innerHTML !== "OBSERVATION(S)"; i++);#}
-        {#  for (var j = 1; j < rows.length; j++) {#}
-        {#    rows[j].classList.add(rows[j].children[i].innerHTML === "Conforme" ? 'selected' : 'bad');#}
-        {#  }#}
-        {#};#}
-        {#resultFormatting();#}
-
-        {#function myFunction() {#}
-        {#    document.getElementById("Hors norme").style.backgroundColor = "red";#}
-        {#}#}
-        {#myFunction();#}
             $(document).ready(function(){
               $('table td').each(
                 function(){
                   var td_value = $(this).text();
                   if (td_value == "Hors norme" ) {
                     $(this).css('background', 'red');
-                  }
+                  } else {
+                      $(this).css('background', 'green')
+                  };
                 }
               );
             });

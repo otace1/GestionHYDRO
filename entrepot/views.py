@@ -1,3 +1,5 @@
+import base64
+
 from django.shortcuts import render, redirect
 from .tables import *
 from enreg.models import *
@@ -365,52 +367,76 @@ class GestionDechargement():
         user = request.user
         id = user.id
         role = user.role_id
-        # affectation_entrepot = AffectationEntrepot.objects.get(username=id)
-        # affectation_entrepot = affectation_entrepot.entrepot
         request.session['url'] = request.get_full_path()
-        today = date.today()
+        # today = date.today()
+        form = MeterAfter()
 
-        if role == 9:
-            qs = Cargaison.objects.filter(etat='Echantillonner',entrepot__affectationentrepot__username_id=id).order_by(
-                '-dateheurecargaison')
-            table = CargaisonDechargement2(qs, prefix='2_')
-
-            qs1 = Dechargement.objects.filter(
-                idcargaison__idcargaison__idcargaison__idcargaison__etat='Cargaison dechargee',
-                idcargaison__idcargaison__idcargaison__idcargaison__entrepot__affectationentrepot__username_id=id).order_by(
-                '-datedechargement')
-            table1 = CargaisonDechargee(qs1, prefix='1_')
-
+        if role == 3 or role == 1:
+            qs = ImpressionResultat.objects.raw('SELECT ei.idImpression, ei.isConforme, ei.idcargaison_id, ec.numdos, i.nomimportateur, ee.nomentrepot, ec.immatriculation,ep.nomproduit, ec.requisitiondackdate, eee.dateechantillonage, el.datereceptionlabo, ei.printDate \
+                    FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_entrepot_echantillon eee, enreg_laboreception el, accounts_affectationville aa \
+                    WHERE ei.idcargaison_id = ec.idcargaison \
+                    AND ec.importateur_id = i.idimportateur \
+                    AND ec.entrepot_id = ee.identrepot \
+                    AND ec.produit_id = ep.idproduit \
+                    AND ec.idcargaison = eee.idcargaison_id \
+                    AND eee.idcargaison_id = el.idcargaison_id \
+                    AND ei.isConforme = TRUE \
+                    AND ec.etat = "Conforme aux exigences" \
+                    AND aa.username_id = %s',[id,])
+            table = CargaisonDechargement(qs)
             RequestConfig(request, paginate={"per_page": 10}).configure(table)
-            RequestConfig(request, paginate={"per_page": 10}).configure(table1)
-            return render(request, 'entrepot_dechargement.html', {'cargaison': table,
-                                                                  'rapport': table1,
+            return render(request, 'entrepot_dechargement.html', {
+                'cargaison': table,
+                'form':form,
                                                                   })
         else:
-            if role == 3 or role == 1:
-                qs = Cargaison.objects.filter(Q(etat='Conforme aux exigences') | Q(etat='En attente de dechargement'),
-                                              Q(voie__idvoie=1) | Q(voie__idvoie=2) | Q(voie__idvoie=3), before=False,
-                                              entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
-                table = CargaisonDechargement(qs, prefix='1_')
+            return redirect('logout')
 
-                # affichage des tanker cabotteurs
-                qs1 = Cargaison.objects.filter(before=True, entrepot__affectationentrepot__username_id=id).order_by(
-                    '-dateheurecargaison')
-                table1 = TankerCabotteur(qs1, prefix='2_')
 
-                # qs1 = Dechargement.objects.filter(
-                #     idcargaison__idcargaison__idcargaison__idcargaison__etat='Cargaison dechargee',
-                #     idcargaison__idcargaison__idcargaison__idcargaison__entrepot=affectation_entrepot).order_by(
-                #     '-datedechargement')
-                # table1 = CargaisonDechargee(qs1, prefix='1_')
+@login_required(login_url='login')
+def impressionRe(request,pk):
+    # Generer le rapport d'echantillonage
+    c = Cargaison.objects.get(idcargaison=pk)
+    template = 'rapportechantillonage.html'
+    e = Entrepot_echantillon.objects.get(idcargaison=pk)
+    entrepot = c.entrepot
+    dateechantillonage = e.dateechantillonage
+    dateech = dateechantillonage
+    methodeutilisee = e.methodeutilisee
+    matricule = e.matricule
+    numdos = c.numdos
+    importateur = c.importateur
+    adresseimportateur = c.importateur_id
+    adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
+    produit = c.produit
+    volume = c.volume
+    provenance = c.provenance.name
+    voie = c.voie.nomvoie
+    immatriculation = c.immatriculation
+    qtelabo = e.qte
+    numrappechauto = e.numrappechauto
 
-                RequestConfig(request, paginate={"per_page": 10}).configure(table)
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
-                return render(request, 'entrepot_dechargement.html', {'cargaison': table,
-                                                                      'rapport': table1,
-                                                                      })
-            else:
-                return redirect('logout')
+    data = {
+        'dateechantillonage': dateechantillonage,
+        'dateech': dateech,
+        'entrepot': entrepot,
+        'numdos': numdos,
+        'methodeutilisee': methodeutilisee,
+        'importateur': importateur,
+        'adresseimportateur': adresseimportateur,
+        'produit': produit,
+        'volume': volume,
+        'provenance': provenance,
+        'voie': voie,
+        'immatriculation': immatriculation,
+        'matricule': matricule,
+        'qtelabo': qtelabo,
+        'numrappechauto': numrappechauto,
+    }
+
+    # Render PDF Files
+    pdf = render_to_pdf(template, data)
+    return HttpResponse(pdf, content_type='application/pdf')
 
 
 @login_required(login_url='login')
@@ -650,20 +676,22 @@ def echantillonage(request):
             # Render PDF Files
             pdf = render_to_pdf(template, data)
 
-            # Create an email message
-            subject = 'OCC Sampling Report ' + str(numrappech) + str(today.year)
-            message = 'Please find attached the Sampling Report'
-            email_from = 'otace1@gmail.com'  # Replace with your email address
-            recipient_list = ['cedric@malabar-group.com']  # Replace with recipient email address(es)
-            email = EmailMessage(subject, message, email_from, recipient_list)
-
-            # Add the PDF report as an attachment
-            filename = 'SamplingReport.pdf'
-            email.attach(filename, pdf.getvalue(), 'application/pdf')
-
-            # Send the email
-            email.send()
-            return JsonResponse({'status': 'success'})
+            # # Create an email message
+            # subject = 'OCC Sampling Report ' + str(numrappech) + str(today.year)
+            # message = 'Please find attached the Sampling Report'
+            # email_from = 'otace1@gmail.com'  # Replace with your email address
+            # recipient_list = ['cedric@malabar-group.com']  # Replace with recipient email address(es)
+            # email = EmailMessage(subject, message, email_from, recipient_list)
+            #
+            # # Add the PDF report as an attachment
+            # filename = 'SamplingReport.pdf'
+            # email.attach(filename, pdf.getvalue(), 'application/pdf')
+            #
+            # # Send the email
+            # email.send()
+            # Convert PDF content to Base64-encoded string
+            pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+            return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
         else:
             return redirect('entrepot')
     else:
@@ -1338,34 +1366,30 @@ def updatecompartiment(request, pk):
 
 
 @login_required(login_url='login')
-def meterafter(request,pk):
-    template = 'meterafter.html'
-    try:
-        inspection = Inspection.objects.get(idcargaison=pk)
-        cargaison = Cargaison.objects.get(idcargaison=pk)
-        form = MeterAfter(request.POST or None)
-        if request.method == 'POST':
-            if form.is_valid():
-                meterafter = request.POST['meterafter']
-                meterbefore = request.POST['meterbefore']
+def meterafter(request):
+    if request.method == 'POST':
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk', None)
+            meterafter = request.POST.get('meterafter', None)
+            meterbefore = request.POST.get('meterbefore', None)
+            impression = ImpressionResultat.objects.get(idImpression=pk)
+            cargaison = Cargaison.objects.get(idcargaison=impression.idcargaison_id)
+            try:
                 if meterbefore == '':
                     meterbefore = 0
                 if meterafter == '':
                     meterafter = 0
+                inspection = Inspection.objects.filter(idcargaison=cargaison)
+                inspection.meterafter = meterafter
+                inspection.save(update_fields=['meterafter', 'meterbefore'])
                 cargaison.etat = 'Cargaison dechargee'
                 cargaison.dateDechargement = datetime.datetime.today()
-                cargaison.save(update_fields=['etat','dateDechargement'])
-
-                inspection.meterafter = meterafter
-                inspection.save(update_fields=['meterafter','meterbefore'])
-                return redirect('dechargement')
-        context = {'form': form}
-        return render(request, template, context)
-    except:
-        template = 'error_inspection.html'
-        context = {}
-        return render(request,template,context)
-
+                cargaison.save(update_fields=['etat', 'dateDechargement'])
+                return JsonResponse({'status': 'success'})
+            except (Inspection.DoesNotExist):
+                return JsonResponse({'status': 'error', 'message': 'ImpressionResultat or Cargaison object does not exist.'})
+        return redirect('dechargement')
+    return redirect('dechargement')
 
 
 @login_required(login_url='login')
@@ -1579,14 +1603,14 @@ def shoreupdateafter(request, pk):
 def tableaurapports(request):
     user = request.user.id
     template = 'tableauRapport.html'
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, ei.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
                                 FROM enreg_cargaison c \
                                     LEFT JOIN enreg_entrepot_echantillon e \
                                     ON c.idcargaison = e.idcargaison_id \
                                     LEFT JOIN enreg_laboreception l \
                                     ON e.idcargaison_id = l.idcargaison_id \
-                                    LEFT JOIN enreg_resultat r \
-                                    ON l.idcargaison_id = r.idcargaison_id \
+                                    LEFT JOIN enreg_impressionresultat ei \
+                                    ON l.idcargaison_id = ei.idcargaison_id \
                                     LEFT JOIN enreg_inspection i \
                                     ON i.idcargaison_id = c.idcargaison \
                                     LEFT JOIN enreg_compartiment co \
@@ -1608,8 +1632,8 @@ def tableaurapports(request):
     qs1 = Cargaison.objects.filter(voie__idvoie=3)
     table = RapportInspectionCamion(qs, prefix='1_')
     table1 = RapportInspectionTanker(qs1, prefix='2_')
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table1)
+    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
+    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table1)
 
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):

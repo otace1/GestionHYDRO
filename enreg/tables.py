@@ -7,11 +7,6 @@ TEMPLATE = """
       
  """
 
-# TEMPLATE1 = """
-#                       <button href="{%url 'showqrcode' record.pk%}" type="button" class="btn btn-success">
-#                           QRCODE
-#                       </button>
-# """
 
 
 class CargaisonTable(tables.Table):
@@ -29,9 +24,11 @@ class CargaisonTable(tables.Table):
     produit = tables.Column(verbose_name='PRODUIT')
 
     class Meta:
-        # attrs = {"class": "table table-hover text-nowrap table-striped",
-        #          "id": "cargaison"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume','print']
         exclude = ['dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',

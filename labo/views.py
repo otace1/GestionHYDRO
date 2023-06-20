@@ -29,14 +29,6 @@ class GestionLaboratoire():
     def affichageenchantillon(request):
         user = request.user
         id = user.id
-        # try:
-        #     ville = AffectationVille.objects.get(username_id=id)
-        # except:
-        #     template = 'error.html'
-        #     context = {}
-        #     return render(request, template, context)
-        #
-        # ville = ville.ville_id
         role = user.role_id
         if role == 4 or role == 1:
             qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner", idcargaison__entrepot__ville__affectationville__username_id=id,
@@ -47,13 +39,11 @@ class GestionLaboratoire():
                 '-datereceptionlabo')
             table1 = TableauEchantillonRecu(qs1, prefix='2_')
 
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
+            # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
             return render(request, 'labo.html', {
                 'labo': table,
                 'labo1': table1,
-                # 'form': form,
-                # 'form1': form1,
             })
         else:
             return redirect('logout')
@@ -213,8 +203,8 @@ class GestionAnalyse():
                 '-datereceptionlabo')
             table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
-            RequestConfig(request, paginate={"per_page": 10}).configure(table1)
-            RequestConfig(request, paginate={"per_page": 10}).configure(table2)
+            # RequestConfig(request, paginate={"per_page": 10}).configure(table1)
+            # RequestConfig(request, paginate={"per_page": 10}).configure(table2)
             return render(request, 'labo_analyse.html', {
                 'analyse': table1,
                 'refaire': table2,
@@ -2397,7 +2387,6 @@ class GestionImpressionLabo():
 
             table = AffichageTableauImpression(qs, prefix='2_')
 
-            RequestConfig(request, paginate={"per_page": 10}).configure(table)
             return render(request, 'labo_impression.html',
                           {
                               'labo': table,
@@ -4097,7 +4086,7 @@ def saisieResultat(request,pk):
             ORDER BY a.id ASC' ,[pk,])
 
     table = SaisieResultat(qs,prefix='_1')
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {
         'table': table,
         'codeLabo':a,

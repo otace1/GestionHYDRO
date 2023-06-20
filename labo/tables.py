@@ -97,9 +97,11 @@ class LaboratoireReception(tables.Table):
     numrappechauto = tables.Column(verbose_name="RAPPORT D'ECHANTILLONNAGE")
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped",
-                 "id": "table1"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon
         sequence = ['idcargaison__dateheurecargaison','dateechantillonage','idcargaison__entrepot','idcargaison__immatriculation','idcargaison__produit','numrappechauto', 'idcargaison__numdos',
                     ]
@@ -121,9 +123,11 @@ class TableauEchantillonRecu(tables.Table):
     numcertificatqualite = tables.Column(verbose_name="Numéro CQ Attribué")
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped",
-                 "id": "table1"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
         model = LaboReception
         sequence = ['datereceptionlabo', 'idcargaison__numrappech', 'idcargaison__idcargaison__numdos',
                     'idcargaison__idcargaison__immatriculation', 'codelabo', 'numcertificatqualite']
@@ -141,8 +145,10 @@ class AffichageAnalyse(tables.Table):
     numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
         model = LaboReception
         sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit']
         exclude = ['numcertificatqualite', 'idcargaison']
@@ -157,8 +163,10 @@ class AffichageAnalyseRefaire(tables.Table):
     numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example2"
+        }
         model = LaboReception
         sequence = ['datereceptionlabo', 'codelabo', 'numrappechauto', 'produit']
         exclude = ['numcertificatqualite', 'idcargaison']
@@ -174,8 +182,10 @@ class AffichageValidation1(tables.Table):
     idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
 
     class Meta:
-        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
         model = LaboReception
         sequence = ['datereceptionlabo', 'codelabo', 'numcertificatqualite',
                     'idcargaison__idcargaison__produit__nomproduit', 'idcargaison__idcargaison__entrepot__nomentrepot'
@@ -219,8 +229,10 @@ class AffichageValidation2(tables.Table):
     idcargaison__idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
 
     class Meta:
-        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
         model = LaboReception
         sequence = ['datereceptionlabo','codelabo','numcertificatqualite','idcargaison__idcargaison__produit__nomproduit','idcargaison__idcargaison__entrepot__nomentrepot'
                     ]
@@ -265,8 +277,10 @@ class AffichageTableauImpression(tables.Table):
     certificat = tables.TemplateColumn(IMPRESSION, verbose_name='')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
 
 
 class AffichageTableauReImpression(tables.Table):
@@ -383,9 +397,11 @@ class SaisieResultat(tables.Table):
     saisieValeur = tables.TemplateColumn(champSaisieValeurResultat, verbose_name='ACTIONS')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap",
-                 "id": "table1"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 class AffichageDetailResultat(tables.Table):

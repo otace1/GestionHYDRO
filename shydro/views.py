@@ -1417,60 +1417,50 @@ def rapportActiviteFiltre(request):
 def rapportRe(request,pk):
     c = Cargaison.objects.get(idcargaison=pk)
     ville = c.entrepot.ville
-    # print(ville)
-    # numrappech = numRappEch(pk,
-    #                         ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
-    # numrappechauto = numrappech
-    # c.rapechctrl = 1
-    # c.etatInspection = True
-    # c.etat = "Echantillonner"
-    # c.save(update_fields=['etat', 'rapechctrl', 'etatInspection'])
-    #
-    # e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,
-    #                          methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
-    # e.save()
-
     # Generer le rapport d'echantillonage
     template = 'rapportechantillonage.html'
-    e = Entrepot_echantillon.objects.get(idcargaison=pk)
-    entrepot = c.entrepot
-    dateechantillonage = e.dateechantillonage
-    dateech = dateechantillonage
-    methodeutilisee = e.methodeutilisee
-    matricule = e.matricule
-    numdos = c.numdos
-    importateur = c.importateur
-    adresseimportateur = c.importateur_id
-    adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-    produit = c.produit
-    volume = c.volume
-    provenance = c.provenance.name
-    voie = c.voie.nomvoie
-    immatriculation = c.immatriculation
-    qtelabo = e.qte
-    numrappechauto = e.numrappechauto
+    try:
+        e = Entrepot_echantillon.objects.get(idcargaison=pk)
+        entrepot = c.entrepot
+        dateechantillonage = e.dateechantillonage
+        dateech = dateechantillonage
+        methodeutilisee = e.methodeutilisee
+        matricule = e.matricule
+        numdos = c.numdos
+        importateur = c.importateur
+        adresseimportateur = c.importateur_id
+        adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
+        produit = c.produit
+        volume = c.volume
+        provenance = c.provenance.name
+        voie = c.voie.nomvoie
+        immatriculation = c.immatriculation
+        qtelabo = e.qte
+        numrappechauto = e.numrappechauto
 
-    data = {
-        'dateechantillonage': dateechantillonage,
-        'dateech': dateech,
-        'entrepot': entrepot,
-        'numdos': numdos,
-        'methodeutilisee': methodeutilisee,
-        'importateur': importateur,
-        'adresseimportateur': adresseimportateur,
-        'produit': produit,
-        'volume': volume,
-        'provenance': provenance,
-        'voie': voie,
-        'immatriculation': immatriculation,
-        'matricule': matricule,
-        'qtelabo': qtelabo,
-        'numrappechauto': numrappechauto,
-    }
+        data = {
+            'dateechantillonage': dateechantillonage,
+            'dateech': dateech,
+            'entrepot': entrepot,
+            'numdos': numdos,
+            'methodeutilisee': methodeutilisee,
+            'importateur': importateur,
+            'adresseimportateur': adresseimportateur,
+            'produit': produit,
+            'volume': volume,
+            'provenance': provenance,
+            'voie': voie,
+            'immatriculation': immatriculation,
+            'matricule': matricule,
+            'qtelabo': qtelabo,
+            'numrappechauto': numrappechauto,
+        }
 
-    # Render PDF Files
-    pdf = render_to_pdf(template, data)
-    return HttpResponse(pdf, content_type='application/pdf')
+        # Render PDF Files
+        pdf = render_to_pdf(template, data)
+        return HttpResponse(pdf, content_type='application/pdf')
+    except:
+        return redirect('rapportActivite')
 
 
 @login_required(login_url='login')
@@ -1487,164 +1477,166 @@ def rapportIs(request, pk):
 
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
-    inspection = Inspection.objects.get(idcargaison=pk)
-    if inspection.meterbefore is None:
-        inspection.meterbefore = 0
-    if inspection.meterafter is None:
-        inspection.meterafter = 0
-    seal = InspectionSeal.objects.filter(idcargaison=pk)
-    if Resultat.objects.filter(idcargaison_id=pk).exists():
-        resultat_data = Resultat.objects.get(idcargaison_id=pk)
+    try:
+        inspection = Inspection.objects.get(idcargaison=pk)
+        if inspection.meterbefore is None:
+            inspection.meterbefore = 0
+        if inspection.meterafter is None:
+            inspection.meterafter = 0
+        seal = InspectionSeal.objects.filter(idcargaison=pk)
+        if Resultat.objects.filter(idcargaison_id=pk).exists():
+            resultat_data = Resultat.objects.get(idcargaison_id=pk)
 
-    compartiment = Compartiment.objects.filter(
-        idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
-    govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)),3))  # gov Total Tanker
-    gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)),3))  # gsv Total Tanker
-    mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)),3))  # mta Total Tanker
-    mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)),3))  # mtv Total Tanker
+        compartiment = Compartiment.objects.filter(
+            idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
+        govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)),3))  # gov Total Tanker
+        gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)),3))  # gsv Total Tanker
+        mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)),3))  # mta Total Tanker
+        mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)),3))  # mtv Total Tanker
 
-    densite = densite15(inspection.temp, inspection.dens)  # densite 15c
-    govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
-    vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
-    gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
-    mtaMeter = mta(gsvMeter, densite)  # mta Meter
+        densite = densite15(inspection.temp, inspection.dens)  # densite 15c
+        govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
+        vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
+        gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
+        mtaMeter = mta(gsvMeter, densite)  # mta Meter
 
-    govLt = float(cargaison.volume)  # gov LT
-    vcfLt = vcf(densite, inspection.temp)  # VCF LT
-    gsvLt = (cargaison.volume15)# GSV LT
-    if gsvLt is None:
-        gsvLt = 0
-    # gsvLt = gsv(vcfLt, govLt)  # GSV LT
-    mtvLt = (cargaison.tonnagevide)  # MTV LT
-    if mtvLt is None:
-        mtvLt = 0
-    # mtvLt = mtv(gsvLt, densite)  # MTV LT
-    mtaLt = (cargaison.tonnageair)  # MTA LT
-    if mtaLt is None:
-        mtaLt = 0
-    # mtaLt = mta(gsvLt, densite)  # MTA LT
+        govLt = float(cargaison.volume)  # gov LT
+        vcfLt = vcf(densite, inspection.temp)  # VCF LT
+        gsvLt = (cargaison.volume15)# GSV LT
+        if gsvLt is None:
+            gsvLt = 0
+        # gsvLt = gsv(vcfLt, govLt)  # GSV LT
+        mtvLt = (cargaison.tonnagevide)  # MTV LT
+        if mtvLt is None:
+            mtvLt = 0
+        # mtvLt = mtv(gsvLt, densite)  # MTV LT
+        mtaLt = (cargaison.tonnageair)  # MTA LT
+        if mtaLt is None:
+            mtaLt = 0
+        # mtaLt = mta(gsvLt, densite)  # MTA LT
 
-    govLtTanker = round((govLt - float(govTotal)),3)  # Difference LT/Tanker
-    gsvLtTanker = round((float(gsvLt) - float(gsvTotal)),3)  # Difference GSV LT/Tanker
-    mtvLtTanker = round((float(mtvLt) - float(mtvTotal)),3)  # Difference mtv LT/Tanker
-    mtaLtTanker = round((float(mtaLt) - float(mtaTotal)),3)  # Difference mtv LT/Tanker
-    prLtTanker = round((govLtTanker * 100) / govLt,3)
-    if gsvLt==0:
-        gsvLt=1
-    prGsvLtTanker = round((gsvLtTanker * 100)/ float(gsvLt),3)
-    if mtaLt==0:
-        mtaLt=1
-    prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100),3)
-    if mtvLt==0:
-        mtvLt=1
-    prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
+        govLtTanker = round((govLt - float(govTotal)),3)  # Difference LT/Tanker
+        gsvLtTanker = round((float(gsvLt) - float(gsvTotal)),3)  # Difference GSV LT/Tanker
+        mtvLtTanker = round((float(mtvLt) - float(mtvTotal)),3)  # Difference mtv LT/Tanker
+        mtaLtTanker = round((float(mtaLt) - float(mtaTotal)),3)  # Difference mtv LT/Tanker
+        prLtTanker = round((govLtTanker * 100) / govLt,3)
+        if gsvLt==0:
+            gsvLt=1
+        prGsvLtTanker = round((gsvLtTanker * 100)/ float(gsvLt),3)
+        if mtaLt==0:
+            mtaLt=1
+        prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100),3)
+        if mtvLt==0:
+            mtvLt=1
+        prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
 
-    govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
-    gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
-    mtaTankerMeter = round((float(mtaTotal) - mtaMeter),3)  # Difference MTA Tanker/Meter
-    prTankerMeter = round((govTankerMeter * 100) / float(govTotal),3)
+        govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
+        gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
+        mtaTankerMeter = round((float(mtaTotal) - mtaMeter),3)  # Difference MTA Tanker/Meter
+        prTankerMeter = round((govTankerMeter * 100) / float(govTotal),3)
 
-    govLtMeter = govLt - govMeter  # Diff LT/Meter
-    gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
-    mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
-    if govLt==0:
-        govLt=1
-    prLtMeter = round((govLtMeter * 100) / govLt,3)
-    if gsvLt==0:
-        gsvLt=1
-    prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt),3)
-    if mtaLt==0:
-        mtaLt=1
-    prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
+        govLtMeter = govLt - govMeter  # Diff LT/Meter
+        gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
+        mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
+        if govLt==0:
+            govLt=1
+        prLtMeter = round((govLtMeter * 100) / govLt,3)
+        if gsvLt==0:
+            gsvLt=1
+        prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt),3)
+        if mtaLt==0:
+            mtaLt=1
+        prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
 
-    #Certified Quantity
-    if govMeter > 0:
-        govMax = govMeter
-        gsvMax = gsvMeter
-        mtaMax = mtaMeter
-    else:
-        if float(govTotal) > 0:
-            govMax = govTotal
-            gsvMax = gsvTotal
-            mtaMax = mtaTotal
+        #Certified Quantity
+        if govMeter > 0:
+            govMax = govMeter
+            gsvMax = gsvMeter
+            mtaMax = mtaMeter
         else:
-            if govLt > 0:
-                govMax = govLt
-                gsvMax = gsvLt
-                mtaMax = mtaLt
+            if float(govTotal) > 0:
+                govMax = govTotal
+                gsvMax = gsvTotal
+                mtaMax = mtaTotal
+            else:
+                if govLt > 0:
+                    govMax = govLt
+                    gsvMax = gsvLt
+                    mtaMax = mtaLt
 
-    # govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
-    # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
-    # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
+        # govMax = round((max(govTotal, govMeter, govLt)),3)  # Max value of GOV
+        # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
+        # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
 
-    fraisOcc = round((11 * float(gsvMax)),3)  # Frais occ a Payer
+        fraisOcc = round((11 * float(gsvMax)),3)  # Frais occ a Payer
 
-    # Getting data from laboratory
-    if Resultat.objects.filter(idcargaison_id=pk).exists():
-        labo_data = Resultat.objects.get(idcargaison=pk)
-        color = labo_data.couleurastm
-        aspect = labo_data.aspect
-        odor = labo_data.odeur
-    else:
-        color = '-'
-        aspect = '-'
-        odor = '-'
+        # Getting data from laboratory
+        if Resultat.objects.filter(idcargaison_id=pk).exists():
+            labo_data = Resultat.objects.get(idcargaison=pk)
+            color = labo_data.couleurastm
+            aspect = labo_data.aspect
+            odor = labo_data.odeur
+        else:
+            color = '-'
+            aspect = '-'
+            odor = '-'
 
-    # Last 3 Cargo Data Fetch
-    lastthreecargo = Cargaison.objects.filter(immatriculation=cargaison.immatriculation).order_by(
-        '-dateheurecargaison')[:3]
+        # Last 3 Cargo Data Fetch
+        lastthreecargo = Cargaison.objects.filter(immatriculation=cargaison.immatriculation).order_by(
+            '-dateheurecargaison')[:3]
 
-    data = {
-        'cargaison': cargaison,
-        'inspection': inspection,
-        'densite': densite,
-        'prGsvLtTanker':prGsvLtTanker,
-        'prMtaLtTanker':prMtaLtTanker,
-        'prMtvLtTanker':prMtvLtTanker,
-        'prGsvLtMeter':prGsvLtMeter,
-        'prMtaLtMeter':prMtaLtMeter,
-        'prLtTanker':prLtTanker,
-        'prTankerMeter':prTankerMeter,
-        'prLtMeter':prLtMeter,
-        'govmeter': govMeter,
-        'govTotal': govTotal,
-        'gsvTotal': gsvTotal,
-        'mtaTotal': mtaTotal,
-        'gsvMeter': gsvMeter,
-        'govLt': govLt,
-        'govLtTanker': govLtTanker,
-        'govTankerMeter': govTankerMeter,
-        'gsvTankerMeter': gsvTankerMeter,
-        'mtaTankerMeter': mtaTankerMeter,
-        'govLtMeter': govLtMeter,
-        'gsvLtTanker': gsvLtTanker,
-        'mtvLtTanker': mtvLtTanker,
-        'mtaLtTanker': mtaLtTanker,
-        'gsvLtMeter': gsvLtMeter,
-        'mtaLtMeter': mtaLtMeter,
-        'gsvLt': gsvLt,
-        'mtvLt': mtvLt,
-        'mtaLt': mtaLt,
-        'govMax': govMax,
-        'gsvMax': gsvMax,
-        'mtaMax': mtaMax,
-        'fraisOcc': fraisOcc,
-        'seal': seal,
-        'lastthreecargo': lastthreecargo,
-        # 'flast': flast,
-        # 'slast': slast,
-        # 'tlast': tlast,
-        'color': color,
-        'aspect': aspect,
-        'odor': odor,
-        'compartiment': compartiment,
-        'province':province,
+        data = {
+            'cargaison': cargaison,
+            'inspection': inspection,
+            'densite': densite,
+            'prGsvLtTanker':prGsvLtTanker,
+            'prMtaLtTanker':prMtaLtTanker,
+            'prMtvLtTanker':prMtvLtTanker,
+            'prGsvLtMeter':prGsvLtMeter,
+            'prMtaLtMeter':prMtaLtMeter,
+            'prLtTanker':prLtTanker,
+            'prTankerMeter':prTankerMeter,
+            'prLtMeter':prLtMeter,
+            'govmeter': govMeter,
+            'govTotal': govTotal,
+            'gsvTotal': gsvTotal,
+            'mtaTotal': mtaTotal,
+            'gsvMeter': gsvMeter,
+            'govLt': govLt,
+            'govLtTanker': govLtTanker,
+            'govTankerMeter': govTankerMeter,
+            'gsvTankerMeter': gsvTankerMeter,
+            'mtaTankerMeter': mtaTankerMeter,
+            'govLtMeter': govLtMeter,
+            'gsvLtTanker': gsvLtTanker,
+            'mtvLtTanker': mtvLtTanker,
+            'mtaLtTanker': mtaLtTanker,
+            'gsvLtMeter': gsvLtMeter,
+            'mtaLtMeter': mtaLtMeter,
+            'gsvLt': gsvLt,
+            'mtvLt': mtvLt,
+            'mtaLt': mtaLt,
+            'govMax': govMax,
+            'gsvMax': gsvMax,
+            'mtaMax': mtaMax,
+            'fraisOcc': fraisOcc,
+            'seal': seal,
+            'lastthreecargo': lastthreecargo,
+            # 'flast': flast,
+            # 'slast': slast,
+            # 'tlast': tlast,
+            'color': color,
+            'aspect': aspect,
+            'odor': odor,
+            'compartiment': compartiment,
+            'province':province,
 
-    }
-    # Render PDF Files
-    pdf = render_to_pdf(template, data)
-    return HttpResponse(pdf, content_type='application/pdf')
-
+        }
+        # Render PDF Files
+        pdf = render_to_pdf(template, data)
+        return HttpResponse(pdf, content_type='application/pdf')
+    except:
+        return redirect('rapportActivite')
 
 
 

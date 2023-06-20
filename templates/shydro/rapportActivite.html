@@ -457,6 +457,29 @@
   $(function () {
     $("#example1").DataTable({
        dom: 'Bfrtip',
+      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 5, // Set the pagination to 10 records per page
+      "buttons": [
+          {
+      extend: 'excelHtml5',
+      text: 'Export to Excel',
+      exportOptions: {
+        format: {
+          body: function (data, row, column, node) {
+            // Replace "," with "." for decimal numbers during export
+            if (typeof data === 'string' && data.includes(',')) {
+              data = data.replace(',', '.');
+            }
+            return data;
+          }
+        }
+      }
+    },
+    'print'
+      ]
+    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+
+    $("#DechargementTable").DataTable({
+       dom: 'Bfrtip',
       "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
       "buttons": [
           {
@@ -477,6 +500,7 @@
     'print'
       ]
     }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+
     $('#example2').DataTable({
       "paging": true,
       "lengthChange": false,

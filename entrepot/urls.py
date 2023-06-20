@@ -8,6 +8,7 @@ urlpatterns = [
     path('rechercherre/', views.GestionEchantillonage.rechercherre, name='rechercherre'),
     path('dechargement/', views.GestionDechargement.tableaudechargement, name='dechargement'),
     path('rapport/<int:pk>', views.impressionRapport, name='rapport'),
+    path('impressionRe/<int:pk>', views.impressionRe, name='impressionRe'),
 
     # Compteur
     path('c1/', views.GestionEchantillonage.c1, name='c1'),
@@ -35,7 +36,7 @@ urlpatterns = [
     path('compartimentinspection/', views.compartimentinspection, name='compartiment-inspection'),
     path('compartiment/delete/<int:pk>', views.compartimentdelete, name='compartimentdelete'),
     path('compartiment/update/<int:pk>', views.updatecompartiment, name='compartimentupdate'),
-    path('meterafter/<int:pk>', views.meterafter, name='meterafter'),
+    path('meterafter/', views.meterafter, name='meterafter'),
     # path('compartiment/', views.compartiment, name='compartiment'),
     # path('compartiment/details/<int:pk>', views.detailcompartiment, name='compartiment-details'),
     #

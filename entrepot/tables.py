@@ -9,8 +9,17 @@ from django.utils.safestring import mark_safe
 #            """
 
 
+# < a
+# href = "{%url 'meterafter' record.pk%}"
+#
+#
+# class ="btn btn-primary" > DECHARGEMENT < / a >
+
+
 TEMPLATE6 = """
-            <a href="{%url 'meterafter' record.pk%}" class="btn btn-primary">DECHARGEMENT</a>
+            <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-dech">
+                  DECHARGEMENT
+                </button>
            """
 
 TEMPLATE = """  
@@ -37,8 +46,7 @@ TEMPLATE3 = """
             """
 
 TEMPLATE5 = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RE</a>
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">CQ</a>
+    <a href="{%url 'impressionRe' record.pk%}" class="btn btn-danger">RE</a>
     <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
             """
 
@@ -48,8 +56,7 @@ A = """
 
 
 NONCONFORME = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">CONSIGNATION</a>
-    <a href="{%url 'printcert' record.pk%}" class="btn btn-danger">REFOULEMENT</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">DECHARGEMENT EN CONSIGNATION</a>
             """
 
 class EchantillonTable(tables.Table):
@@ -65,20 +72,12 @@ class EchantillonTable(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
         row_attrs = {
             "id": lambda record: record.pk
         }
-        template_name = "django_tables2/bootstrap4.html"
-        # model = Cargaison
-        # sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation', 'numdos', 'declaration']
-        # exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-        #            'typeunitetransport', 'entrepot', 'volume15', 'volume20', 'tonnagevide', 'tonnageair',
-        #            'requisitiondackdate', 'voie', 'provenance', 'poids', 'numreq',
-        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-        #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'volume', 'controlOrganoleptique']
 
 
 class CargaisonEnAttenteRequisition(tables.Table):
@@ -93,10 +92,10 @@ class CargaisonEnAttenteRequisition(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         sequence = ['idcargaison', 'declaration', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume',
                     'immatriculation']
@@ -119,49 +118,34 @@ class RapportEchantillonage(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
-        # model = Cargaison
-        # sequence = ['dateheurecargaison', 'importateur', 'produit', 'immatriculation',
-        #             'numreq', 'numdos']
-        # exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-        #            'typeunitetransport',
-        #            'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
-        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-        #            'tampon', 'printactdate', 'l_control']
 
 
 class CargaisonDechargement(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE6, verbose_name='')
-    produit = tables.Column(verbose_name='PRODUIT')
+    nomproduit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
-    conformite = tables.Column(verbose_name='DECISION DU LABORATOIRE',attrs={"td": {"bgcolor": "green"}})
+    # isConforme = tables.Column(verbose_name='CONFORMITE',attrs={"td": {"bgcolor": "green"}})
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "DechargementTable"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
+        # template_name = "django_tables2/bootstrap4.html"
         row_attrs = {
             "id": lambda record: record.pk
         }
-        sequence = ['importateur',
+        sequence = ['nomimportateur',
                     'numdos',
                     'immatriculation',
-                    'produit',
-                    'conformite']
-        exclude = ['idcargaison', 'etatInspection','valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
-                   'dateheurecargaison', 'entrepot','declaration',
-                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
-                   'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'controlOrganoleptique']
+                    'nomproduit',
+                    # 'isConforme'
+                    ]
 
 
 class EnAttenteInspection(tables.Table):
@@ -177,10 +161,10 @@ class EnAttenteInspection(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 class CargaisonDechargement2(tables.Table):
@@ -192,7 +176,7 @@ class CargaisonDechargement2(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
+            "class": "table table-bordered table-striped",
             "id": "DechargementTable"
         }
         template_name = "django_tables2/bootstrap4.html"
@@ -221,10 +205,10 @@ class TankerCabotteur(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
+            "class": "table table-bordered table-striped",
             "id": "DechargementTable"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         row_attrs = {
             "id": lambda record: record.pk
@@ -280,23 +264,23 @@ class RapportInspectionCamion(tables.Table):
     produit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     declaration = tables.Column(verbose_name='N.DECL.')
-    dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
-    requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
+    # dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
+    # requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
     dateechantillonage = tables.Column(verbose_name='DATE ECH.')
     dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
     datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
-    dateanalyse = tables.Column(verbose_name='DATE ANALYSE')
-    # dateDech = tables.Column(verbose_name="DATE DECH.")
+    printDate = tables.Column(verbose_name='DATE ANALYSE')
+    dateDech = tables.Column(verbose_name="DATE DECH.")
     volConst = tables.Column(verbose_name='GOV')
     gsvT = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 class RapportInspectionTanker(tables.Table):
@@ -307,7 +291,7 @@ class RapportInspectionTanker(tables.Table):
     dateechantillonage = tables.Column(verbose_name='DATE ECH.')
     dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
     dateReceptionLabo = tables.Column(verbose_name='DATE REC.LABO')
-    dateAnalyse = tables.Column(verbose_name='DATE ANALYSE')
+    printDate = tables.Column(verbose_name='DATE ANALYSE')
     dateDech = tables.Column(verbose_name="DATE DECH.")
     GOV = tables.Column(verbose_name='GOV')
     MTA = tables.Column(verbose_name='MTA')
@@ -319,10 +303,10 @@ class RapportInspectionTanker(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 class NonConformeOrganoleptique(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
@@ -338,10 +322,10 @@ class NonConformeOrganoleptique(tables.Table):
 
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
 
 
@@ -361,8 +345,8 @@ class NonConformeLaboratoire(tables.Table):
     # volume = tables.Column(verbose_name="VOLUME DECL.")
     class Meta:
         attrs = {
-            "class": "table table-hover text-nowrap table-striped",
-            "id": "example2"
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 

@@ -223,6 +223,7 @@ class MeterAfter(forms.Form):
     def __init__(self, *args, **kwargs):
         super(MeterAfter, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
+        self.helper.form_id = 'meter-after'
         self.helper.layout = Layout(
             Row(
                 Column('meterbefore', css_class='form-group col-md-12 mb-0'),

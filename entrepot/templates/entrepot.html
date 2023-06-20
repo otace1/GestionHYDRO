@@ -76,23 +76,37 @@
          var SerializedData = $("#sampling-form").serialize();
          console.log(SerializedData);
          $.ajax({
-             url: APIurl,
-             type: "POST",
-             data: SerializedData,
-             dataType: 'json',
+    url: APIurl,
+    type: "POST",
+    data: SerializedData,
+    dataType: 'json',
 
-             success: function () {
-                 alert("Données sauvegardées");
-                 location.reload();
-             },
+    success: function (response) {
+        alert("Données sauvegardées");
 
-             error: function () {
-                 console.log('Erreur');
-                 alert("An error occured");
-                 $('.btn.btn-success').attr("disabled", false);
-                 location.reload();
-             }
-         });
+        // Decode the PDF content from the response
+        var pdfContent = atob(response.pdf_base64);
+
+        // Create a Blob object from the decoded PDF content
+        var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
+
+        // Create a URL for the Blob object
+        var pdfURL = URL.createObjectURL(pdfBlob);
+
+        // Open the PDF in a new browser window
+        window.open(pdfURL);
+
+        location.reload();
+    },
+
+    error: function () {
+        console.log('Erreur');
+        alert("An error occurred");
+        $('.btn.btn-success').attr("disabled", false);
+        location.reload();
+    }
+});
+
         })
 
     {% endblock %}

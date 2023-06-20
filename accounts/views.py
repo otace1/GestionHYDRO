@@ -85,7 +85,7 @@ def listeutilisateurs(request):
     if role == 1:
         template = 'accounts/userslist.html'
         table = ListeUtilisateurs(MyUser.objects.all())
-        table.paginate(page=request.GET.get('page', 1), per_page=10)
+        # table.paginate(page=request.GET.get('page', 1), per_page=10)
         return render(request, template, {'users': table})
     else:
         return redirect('logout')

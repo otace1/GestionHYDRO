@@ -83,9 +83,9 @@ rapportButtons = """
 
 nonConforme = """
     <a href="" class="btn btn-success" onclick="return confirmAction();">CONSIGNATION</a>
-    <a href="" class="btn btn-warning" onclick="return confirmAction();">REFOULEMENT</a>
-
 """
+
+
 
 class CodificationTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
@@ -173,6 +173,7 @@ class NonConformeLaboratoire(tables.Table):
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+    actions = tables.TemplateColumn(nonConforme,verbose_name='')
     # volume = tables.Column(verbose_name="VOLUME DECL.")
 
     class Meta:

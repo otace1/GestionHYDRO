@@ -33,8 +33,11 @@ class ListeUtilisateurs(tables.Table):
 
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
         model = MyUser
         sequence = ['id', 'first_name', 'last_name', 'username','fonction','poste', 'role', 'last_login']
         exclude = ['password', 'is_admin', 'is_staff', 'entrepot', 'ville']

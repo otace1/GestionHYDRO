@@ -2,9 +2,9 @@
 {% load django_tables2 %}
 {% load crispy_forms_tags %}
 
-{% block export %}
-    <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>
-{% endblock %}
+{#{% block export %}#}
+{#    <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>#}
+{#{% endblock %}#}
 
 {% block content %}
     {% render_table table %}
