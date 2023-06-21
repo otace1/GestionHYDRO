@@ -56,13 +56,13 @@ A = """
 
 
 NONCONFORME = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">CONSIGNATION</a>
+    <a href="{%url 'consignatedOk' record.pk%}" class="btn btn-success">CONSIGNATION</a>
             """
 
 
 
 NONCONFORME1 = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">REFOULEMENT</a>
+    <a href="{%url 'refouleOk' record.pk%}" class="btn btn-success">REFOULEMENT</a>
             """
 
 

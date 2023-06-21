@@ -54,10 +54,9 @@ class GestionEchantillonage():
 
             # #Compteur de la page principale de l'entrepot
             n = Cargaison.objects.filter(etat='En attente requisition',entrepot__affectationentrepot__username_id=id).count()
-            d = Cargaison.objects.filter(Q(etat='En attente de dechargement') | Q(Q(etat='Conforme aux exigences'))).filter(
-                entrepot__affectationentrepot__username_id=id).count()
-            i = Cargaison.objects.filter(etatInspection=True,entrepot__affectationentrepot__username_id=id).count()
-            x= ImpressionResultat.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,idcargaison__isConsignated=1).count()
+            d = Cargaison.objects.filter(impressionresultat__isConforme=1,entrepot__affectationentrepot__username_id=id).count()
+            i = Cargaison.objects.filter(etatInspection=1,entrepot__affectationentrepot__username_id=id).count()
+            x= ImpressionResultat.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id).filter(Q(idcargaison__toBeConsignated=1)|Q(idcargaison__toBeRefouler=1)).filter(Q(idcargaison__isRefouler=0)|Q(idcargaison__isConsignated=0)).count()
 
             return render(request, template, {
                 'cargaison': table,
@@ -379,8 +378,7 @@ class GestionDechargement():
                     AND ec.produit_id = ep.idproduit \
                     AND ec.idcargaison = eee.idcargaison_id \
                     AND eee.idcargaison_id = el.idcargaison_id \
-                    AND ei.isConforme = TRUE \
-                    AND ec.etat = "Conforme aux exigences" \
+                    AND ei.isConforme = 1 \
                     AND aa.username_id = %s',[id,])
             table = CargaisonDechargement(qs)
             RequestConfig(request, paginate={"per_page": 10}).configure(table)
@@ -1681,9 +1679,9 @@ def affichageProduitNonConforme(request):
     template = 'affichageProduitNonConforme.html'
 
     # qs = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,conformiteProduit=False)
-    qs = Entrepot_echantillon.objects.filter(idcargaison__toBeRefouler=1,
+    qs = Entrepot_echantillon.objects.filter(idcargaison__toBeRefouler=1, idcargaison__isRefouler=0,
                                               idcargaison__entrepot__affectationentrepot__username_id=id)
-    qs1 = Entrepot_echantillon.objects.filter(idcargaison__toBeConsignated=1,
+    qs1 = Entrepot_echantillon.objects.filter(idcargaison__toBeConsignated=1, idcargaison__isConsignated=0,
                                               idcargaison__entrepot__affectationentrepot__username_id=id)
 
     table = NonConformeOrganoleptique(qs,prefix='1')
@@ -1761,6 +1759,24 @@ def marquageInspection(request):
     c.etatInspection = False
     c.save(update_fields=['etatInspection'])
     return redirect('entrepot')
+
+
+@login_required(login_url='login')
+def consignatedOk(request,pk):
+    c = Cargaison.objects.get(idcargaison=pk)
+    c.isConsignated = 1
+    c.toBeConsignated = 0
+    c.save(update_fields=['isConsignated','toBeConsignated'])
+    return redirect('affichageProduitNonConforme')
+
+
+@login_required(login_url='login')
+def refouleOk(request,pk):
+    c = Cargaison.objects.get(idcargaison=pk)
+    c.isRefouler = 1
+    c.toBeRefouler = 0
+    c.save(update_fields=['isRefouler','toBeRefouler'])
+    return redirect('affichageProduitNonConforme')
 
 
 

@@ -554,6 +554,7 @@ class ImpressionResultat(models.Model):
     printDate = models.DateField(auto_now_add=True,blank=True,null=True)
     isConforme = models.BooleanField(null=True,blank=True)
     isPrinted = models.BooleanField(null=True,blank=True)
+    control = models.BooleanField(default=0)
 
 
 

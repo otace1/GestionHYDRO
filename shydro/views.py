@@ -39,7 +39,7 @@ class GestionCodification():
                     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                                  entrepot__ville__affectationville__username_id=id).count()
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                            isConforme=0, idcargaison__isConsignated=0).count()
+                                                            isConforme=0, control=1).count()
 
                     table = CodificationTable(
                         Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
@@ -65,7 +65,7 @@ class GestionCodification():
                     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                                  entrepot__ville__affectationville__username_id=id).count()
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                            isConforme=0, idcargaison__isConsignated=0).count()
+                                                            isConforme=0, control=1).count()
 
                     qs_temp = Entrepot.objects.get(nomentrepot=qs)
                     id_ent = qs_temp.identrepot
@@ -93,7 +93,7 @@ class GestionCodification():
                 l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                              entrepot__ville__affectationville__username_id=id).count()
                 n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                      isConforme=0, idcargaison__isConsignated=0).count()
+                                                      isConforme=0, control=0).count()
 
                 table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
@@ -224,10 +224,8 @@ class GestionResultatLabo():
         if role == 7 or role == 1:
             qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
                                                       idcargaison__entrepot__ville__affectationville__username=id,
-                                                      idcargaison__impressionresultat__isConforme=0,
-                                                      idcargaison__toBeConsignated = 0,
-                                                      idcargaison__isRefouler = 0,
-                                                      )
+                                                      idcargaison__impressionresultat__isConforme=0, idcargaison__impressionresultat__control=0)
+
 
             # table = NonConformeOrganoleptique(qs)
             table1 = NonConformeLaboratoire(qs1)
@@ -1647,7 +1645,10 @@ def rapportIs(request, pk):
 
 def consignation(request,pk):
     c = Cargaison.objects.get(idcargaison=pk)
+    i = ImpressionResultat.objects.get(idcargaison=c)
+    i.control = 1
     c.toBeConsignated = 1
+    i.save(update_fields=['control'])
     c.save(update_fields=['toBeConsignated'])
     return redirect('affichageNonConforme')
 

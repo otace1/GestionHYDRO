@@ -80,4 +80,8 @@ urlpatterns = [
     #View pdf data
     path('view_pdf/', views.view_pdf, name='view_pdf'),
 
+    #NonConformeGestion
+    path('consignatedOk/<int:pk>', views.consignatedOk, name='consignatedOk'),
+    path('refouleOk/<int:pk>', views.refouleOk, name='refouleOk'),
+
 ]
