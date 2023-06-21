@@ -30,6 +30,10 @@ urlpatterns = [
     path('rapportRe/<int:pk>', views.rapportRe, name='rapportRe'),
     path('rapportIs/<int:pk>', views.rapportIs, name='rapportIs'),
 
+    path('consignation/<int:pk>', views.consignation, name='consignation'),
+
+
+
 
     path('regularisation/', views.regularisation, name='regularisation'),
     path('regularisationDestination/', views.regularisationDestination, name='regularisationDestination'),

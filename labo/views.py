@@ -1471,6 +1471,12 @@ class GestionValidation():
             c.conformite = "Conforme aux exigences"
             c.impression = "0"
             c.save(update_fields=['etat', 'conformite', 'impression'])
+
+            # i = ImpressionResultat.objects.get(idcargaison_id=c.idcargaison)
+            # i.isConforme = True
+            # i.isPrinted = False
+            # i.save(update_fields=['isConforme','isPrinted'])
+
             return redirect(url)
         else:
             return redirect('logout')
@@ -1484,7 +1490,7 @@ class GestionValidation():
         pk = request.session['pk']
         if role == "v2" or role == 1 or role == 6:
             c = Cargaison.objects.get(idcargaison=pk)
-            c.etat = "Non conforme aux exigences"
+            c.etat = "Validation en cours 2"
             c.conformite = "Non conforme aux exigences"
             c.impression = "0"
             c.save(update_fields=['etat', 'conformite', 'impression'])
@@ -1504,7 +1510,7 @@ class GestionValidation():
             c = Cargaison.objects.get(idcargaison=pk)
 
             #Updated Method
-            i=ImpressionResultat(printDate=datetime.now,isConforme=True,isPrinted=False,idcargaison=c)
+            i=ImpressionResultat(printDate=datetime.now,isConforme=1,isPrinted=0,idcargaison=c)
             i.save()
 
             # A supprimer
@@ -2305,7 +2311,7 @@ class GestionValidation():
             a = LaboReception.objects.get(idcargaison=pk)
 
             #Updated Method
-            i=ImpressionResultat(printDate=datetime.now,isConforme=False,isPrinted=False,idcargaison=c)
+            i=ImpressionResultat(printDate=datetime.now,isConforme=0,isPrinted=0,idcargaison=c)
             i.save()
 
 

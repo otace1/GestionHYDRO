@@ -415,7 +415,9 @@ class AffichageDetailResultat(tables.Table):
         row_attrs = {
             'id':lambda record:record.etatValeur,
         }
-        attrs = {"class": "table table-hover text-nowrap table-striped",
-                 "id": "table1"}
-        template_name = "django_tables2/bootstrap4.html"
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
 

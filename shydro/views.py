@@ -34,12 +34,12 @@ class GestionCodification():
 
                     e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                                  entrepot__ville__affectationville__username_id=id).count()
-                    d = ImpressionResultat.objects.filter(isConforme=True, idcargaison__etat="Conforme aux exigences",
+                    d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
                                                           idcargaison__entrepot__ville__affectationville__username_id=id).count()
                     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                                  entrepot__ville__affectationville__username_id=id).count()
-                    n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
-                                                            conformiteProduit=False).count()
+                    n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                            isConforme=0, idcargaison__isConsignated=0).count()
 
                     table = CodificationTable(
                         Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
@@ -60,12 +60,12 @@ class GestionCodification():
 
                     e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                                  entrepot__ville__affectationville__username_id=id).count()
-                    d = ImpressionResultat.objects.filter(isConforme=True, idcargaison__etat="Conforme aux exigences",
+                    d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
                                                           idcargaison__entrepot__ville__affectationville__username_id=id).count()
                     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                                  entrepot__ville__affectationville__username_id=id).count()
-                    n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
-                                                            conformiteProduit=False).count()
+                    n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                            isConforme=0, idcargaison__isConsignated=0).count()
 
                     qs_temp = Entrepot.objects.get(nomentrepot=qs)
                     id_ent = qs_temp.identrepot
@@ -86,11 +86,14 @@ class GestionCodification():
             else:
                 request.session['url'] = request.get_full_path()
 
-                e = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=id).count()
-                d = ImpressionResultat.objects.filter(isConforme=True,idcargaison__etat="Conforme aux exigences",idcargaison__entrepot__ville__affectationville__username_id=id).count()
-                l = Cargaison.objects.filter(etat="Analyse Labo en cours",entrepot__ville__affectationville__username_id=id).count()
-                n = ControlNatureProduit.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id,
-                                                        conformiteProduit=False).count()
+                e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                             entrepot__ville__affectationville__username_id=id).count()
+                d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+                                                      idcargaison__entrepot__ville__affectationville__username_id=id).count()
+                l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+                                             entrepot__ville__affectationville__username_id=id).count()
+                n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                      isConforme=0, idcargaison__isConsignated=0).count()
 
                 table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
@@ -219,9 +222,12 @@ class GestionResultatLabo():
         id = user.id
         role = user.role_id
         if role == 7 or role == 1:
-            # qs = ControlNatureProduit.objects.filter(idcargaison__entrepot__ville__affectationville__username=id, conformiteProduit=False)
             qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
-                                                      idcargaison__entrepot__ville__affectationville__username=id)
+                                                      idcargaison__entrepot__ville__affectationville__username=id,
+                                                      idcargaison__impressionresultat__isConforme=0,
+                                                      idcargaison__toBeConsignated = 0,
+                                                      idcargaison__isRefouler = 0,
+                                                      )
 
             # table = NonConformeOrganoleptique(qs)
             table1 = NonConformeLaboratoire(qs1)
@@ -1639,7 +1645,11 @@ def rapportIs(request, pk):
         return redirect('rapportActivite')
 
 
-
+def consignation(request,pk):
+    c = Cargaison.objects.get(idcargaison=pk)
+    c.toBeConsignated = 1
+    c.save(update_fields=['toBeConsignated'])
+    return redirect('affichageNonConforme')
 
 
 

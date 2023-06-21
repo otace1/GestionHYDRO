@@ -82,7 +82,8 @@ rapportButtons = """
 """
 
 nonConforme = """
-    <a href="" class="btn btn-success" onclick="return confirmAction();">CONSIGNATION</a>
+    <a href="{%url 'consignation' record.pk%}" class="btn btn-success" onclick="return confirmAction();">AUTORISATION DE CONSIGNATION</a>
+    <a href="" class="btn btn-success" onclick="return confirmAction();">REFOULEMENT</a>
 """
 
 

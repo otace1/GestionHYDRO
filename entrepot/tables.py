@@ -56,8 +56,16 @@ A = """
 
 
 NONCONFORME = """
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">DECHARGEMENT EN CONSIGNATION</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">CONSIGNATION</a>
             """
+
+
+
+NONCONFORME1 = """
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-success">REFOULEMENT</a>
+            """
+
+
 
 class EchantillonTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
@@ -309,15 +317,17 @@ class RapportInspectionTanker(tables.Table):
         # template_name = "django_tables2/bootstrap4.html"
 
 class NonConformeOrganoleptique(tables.Table):
+    idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
+    dateechantillonage = tables.Column(verbose_name="DATE ECH.")
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
-    idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
-    idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
-    natureProduitEntrepot = tables.Column(verbose_name="PRODUIT CONST. ENTREPOT", attrs={"td": {"bgcolor": "red"}})
-    natureProduitLabo = tables.Column(verbose_name="PRODUIT CONST. LABORATOIRE", attrs={"td": {"bgcolor": "green"}})
-    action = tables.TemplateColumn(A, verbose_name='')
+    idcargaison__provenance = tables.Column(verbose_name="PROVENANCE")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION.")
+    idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__volume = tables.Column(verbose_name='VOL. DECL.')
+    actions = tables.TemplateColumn(NONCONFORME1, verbose_name='')
 
 
     class Meta:
@@ -331,8 +341,8 @@ class NonConformeOrganoleptique(tables.Table):
 
 class NonConformeLaboratoire(tables.Table):
     idcargaison__dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
-    # idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     dateechantillonage = tables.Column(verbose_name="DATE ECH.")
+    idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")

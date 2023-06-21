@@ -162,11 +162,6 @@ class Cargaison(models.Model):
     tonnagevide = models.FloatField(blank=True, null=True)
     tonnageair = models.FloatField(blank=True, null=True)
 
-    # l_control = models.IntegerField(null=True)
-    # printactdate = models.DateField(auto_now_add=True)
-
-    # # Control d'affichage conformite organoleptique
-    # controlOrganoleptique = models.BooleanField(default=0)
 
     # Shore Inspection
     before = models.BooleanField(default=0, verbose_name='SHORE BEFORE')
@@ -181,6 +176,12 @@ class Cargaison(models.Model):
     #Date et heure d'analyse
     dateHeureAnalyseLabo = models.DateTimeField(blank=True,null=True)
     dateDechargement = models.DateTimeField(blank=True,null=True)
+
+    #For the Consignation
+    toBeRefouler = models.BooleanField(default=False)
+    toBeConsignated = models.BooleanField(default=False)
+    isConsignated = models.BooleanField(default=False)
+    isRefouler = models.BooleanField(default=False)
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
