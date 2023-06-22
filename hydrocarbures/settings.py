@@ -98,7 +98,7 @@ INSTALLED_APPS = [
     'accounts',
     'ads',
     'facturations',
-    'theme',
+    # 'theme',
     'api',
     # 'verification',
 ]
