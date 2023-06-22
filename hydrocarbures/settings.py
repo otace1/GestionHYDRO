@@ -247,22 +247,6 @@ elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
     }
 
 
-#
-# DATABASES = {
-#     'default': {
-#         'NAME': 'hydro_occ',
-#         'ENGINE': 'django.db.backends.mysql',
-#         # 'ENGINE': 'django.db.backends.mysql',
-#         'USER': 'hydro_occ',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#         'PASSWORD': 'Rt_4v9rjOb9CH(xE',
-#         'OPTIONS': {
-#             'autocommit': True,
-#         },
-#     }
-# }
-
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 DJANGO_TABLES2_TEMPLATE = 'django_tables2/bootstrap-responsive.html'
 TAILWIND_APP_NAME = 'theme'
