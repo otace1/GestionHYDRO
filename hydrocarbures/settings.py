@@ -32,15 +32,29 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
+# SECRET_KEY = '%t(w0ix8nx()z01fq@fjbm3w+59ij53qp%h%3g2a4k3cm+)ls)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
+# DEBUG = True
 
+# ALLOWED HOST
+# ENV_ALLOWED_HOST = os.environ.get('DJANGO_ALLOWED_HOST') or None
 # ALLOWED_HOSTS = ['*']
+# if ENV_ALLOWED_HOST is not None:
+#     ALLOWED_HOSTS = [ ENV_ALLOWED_HOST ]
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
-# DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
-DEVELOPMENT_MODE = True
+
+
+# Random Key = fac2k*ytpgy7ve77hvw7hs(kh713bvmhn*onw_gs5jswu2a+=u
+
+DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
+# DEVELOPMENT_MODE = True
+
+
+# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+# # ALLOWED_HOSTS = ['*']
 
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -67,7 +81,7 @@ INSTALLED_APPS = [
     'bootstrap_datepicker_plus',
     'django_htmx',
     'formtools',
-    # 'tailwind',
+    'tailwind',
     'django_browser_reload',
     'rest_framework',
     'rest_framework.authtoken',
@@ -81,7 +95,7 @@ INSTALLED_APPS = [
     'ajax_datatable',
 
     #Compressor
-    'compressor',
+    # 'compressor',
 
     # 'django-pandas',
     # 'jquery',
@@ -98,7 +112,7 @@ INSTALLED_APPS = [
     'accounts',
     'ads',
     'facturations',
-    # 'theme',
+    'theme',
     'api',
     # 'verification',
 ]
@@ -107,9 +121,8 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     # other finders..
-    'compressor.finders.CompressorFinder',
+    # 'compressor.finders.CompressorFinder',
 )
-
 
 PUSH_NOTIFICATIONS_SETTINGS = {
         "FCM_API_KEY": "[your api key]",
@@ -249,8 +262,7 @@ elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 DJANGO_TABLES2_TEMPLATE = 'django_tables2/bootstrap-responsive.html'
-# TAILWIND_APP_NAME = 'theme'
-
+TAILWIND_APP_NAME = 'theme'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -277,7 +289,8 @@ LANGUAGE_CODE = 'fr-FR'
 
 TIME_ZONE = 'Africa/Lubumbashi'
 USE_L10N = True
-
+#
+# USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
@@ -289,10 +302,10 @@ STATICFILES_DIRS = (
 )
 
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-MEDIA_URL = '/media/'
+#
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+#
+# MEDIA_URL = '/media/'
 
 # DB Primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
