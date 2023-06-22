@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import sys
+import dj_database_url
 import sentry_sdk
 import json
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -31,24 +32,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
-# SECRET_KEY = '%t(w0ix8nx()z01fq@fjbm3w+59ij53qp%h%3g2a4k3cm+)ls)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.getenv("DEBUG", "False") == "True"
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# ALLOWED HOST
-# ENV_ALLOWED_HOST = os.environ.get('DJANGO_ALLOWED_HOST') or None
-ALLOWED_HOSTS = ['*']
-# if ENV_ALLOWED_HOST is not None:
-#     ALLOWED_HOSTS = [ ENV_ALLOWED_HOST ]
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
-
-# Random Key = fac2k*ytpgy7ve77hvw7hs(kh713bvmhn*onw_gs5jswu2a+=u
-
-
-# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-# # ALLOWED_HOSTS = ['*']
+DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
+# DEVELOPMENT_MODE = True
 
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -85,6 +77,12 @@ INSTALLED_APPS = [
 
     'push_notifications', #Push Notification
 
+    #Ajax#
+    'ajax_datatable',
+
+    #Compressor
+    'compressor',
+
     # 'django-pandas',
     # 'jquery',
     # 'django_filters',
@@ -105,6 +103,14 @@ INSTALLED_APPS = [
     # 'verification',
 ]
 
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    # other finders..
+    'compressor.finders.CompressorFinder',
+)
+
+
 PUSH_NOTIFICATIONS_SETTINGS = {
         "FCM_API_KEY": "[your api key]",
         "GCM_API_KEY": "[your api key]",
@@ -119,10 +125,11 @@ PUSH_NOTIFICATIONS_SETTINGS = {
 
 #Email Host
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_USER = os.getenv("API_USER")
+EMAIL_HOST_PASSWORD = os.getenv("API_KEY")
 
 
 REST_FRAMEWORK = {
@@ -146,6 +153,7 @@ REST_FRAMEWORK = {
 }
 
 # API KEY Secret
+API_KEY_SECRET = os.getenv("API_SECRET")
 
 
 IMPORT_EXPORT_USE_TRANSACTIONS = True
@@ -159,7 +167,7 @@ BOOTSTRAP3 = {
     'include_jquery': True,
 }
 
-DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap-responsive.html"
+DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap4-responsive.html"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -208,9 +216,9 @@ WSGI_APPLICATION = 'hydrocarbures.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
+if DEVELOPMENT_MODE is True:
+    DATABASES = {
+        'default': {
         'NAME': 'hydro_occ',
         'ENGINE': 'django.db.backends.mysql',
         # 'ENGINE': 'django.db.backends.mysql',
@@ -220,9 +228,40 @@ DATABASES = {
         'PASSWORD': 'Rt_4v9rjOb9CH(xE',
         'OPTIONS': {
             'autocommit': True,
-        },
+            },
+        }
     }
-}
+elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
+    if os.getenv("DATABASE_HOST", None) is None:
+        raise Exception("DATABASE_HOST environment variable not defined")
+    DATABASES = {
+            'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv("DATABASE_NAME"),
+            'USER': os.getenv("DATABASE_USERNAME"),
+            'PASSWORD': os.getenv("DATABASE_PASSWORD"),
+            'HOST': os.getenv("DATABASE_HOST"),
+            'PORT': os.getenv("DATABASE_PORT"),
+            'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
+        }
+    }
+
+
+#
+# DATABASES = {
+#     'default': {
+#         'NAME': 'hydro_occ',
+#         'ENGINE': 'django.db.backends.mysql',
+#         # 'ENGINE': 'django.db.backends.mysql',
+#         'USER': 'hydro_occ',
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#         'PASSWORD': 'Rt_4v9rjOb9CH(xE',
+#         'OPTIONS': {
+#             'autocommit': True,
+#         },
+#     }
+# }
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 DJANGO_TABLES2_TEMPLATE = 'django_tables2/bootstrap-responsive.html'
@@ -249,15 +288,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-US'
+LANGUAGE_CODE = 'fr-FR'
 
-# TIME_ZONE = 'Africa/Lubumbashi'
-# #
-# USE_I18N = True
-#
+TIME_ZONE = 'Africa/Lubumbashi'
 USE_L10N = True
-#
-# USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
