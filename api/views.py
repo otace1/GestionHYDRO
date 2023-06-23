@@ -12,6 +12,7 @@ from django_countries.data import COUNTRIES
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
+from django.http import QueryDict
 
 from entrepot.numrappech import numRappEch
 from entrepot.calculs import *
@@ -25,8 +26,10 @@ import datetime
 @permission_classes([AllowAny])
 def loginApiView(request):
     data = request.data
-    username = data['username']
-    password = data['password']
+    username = data.get('username')
+    password = data.get('password')
+    print(username)
+    print(password)
     response = Response()
     if (username is None) or (password is None):
         raise exceptions.AuthenticationFailed('The login details are incorrect or required')
@@ -38,6 +41,7 @@ def loginApiView(request):
 
     access_token = user.token
     apiKey = Token.objects.filter(user=user).first()
+    print(apiKey)
     apiKey = apiKey.key
 
     response.set_cookie(key="jwt", value=access_token, httponly=True)
