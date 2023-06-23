@@ -12,6 +12,7 @@ import jwt
 import firebase_admin
 from firebase_admin import credentials, auth
 import datetime
+import os
 
 from enreg.models import Entrepot, Ville
 
@@ -124,7 +125,20 @@ class MyUser(AbstractBaseUser):
                         date set to 60 days into the future.
         """
         if not firebase_admin._apps:
-            cred = credentials.Certificate('./api/serviceAccount.json')
+            crt = {
+                  "type": os.getenv("TYPE"),
+                  "project_id": os.getenv("POJECT_ID"),
+                  "private_key_id": os.getenv("PRIVATE_KEY_ID"),
+                  "private_key": os.getenv("PRIVATE_KEY"),
+                  "client_email": os.getenv("CLIENT_EMAIL"),
+                  "client_id": os.getenv("CLIENT_ID"),
+                  "auth_uri": os.getenv("AUTH_URL"),
+                  "token_uri": os.getenv("TOKEN_URL"),
+                  "auth_provider_x509_cert_url": os.getenv("AUTH_PROVIDER"),
+                  "client_x509_cert_url": os.getenv("CLIENT_X509")
+                }
+
+            cred = credentials.Certificate(crt)
             default_app = firebase_admin.initialize_app(cred)
 
         additional_claims = {
