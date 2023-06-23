@@ -454,6 +454,7 @@ class TypeProduit(APIView):
 
     def get(self, request):
         data = Produit.objects.all()
+        print(data)
         serializer = ProduitSerializer(data, many=True)
         return Response(serializer.data)
 
