@@ -10,7 +10,7 @@ if settings.DEBUG:
     import debug_toolbar
 
 urlpatterns = [
-                  path('__debug__/', include(debug_toolbar.urls)),
+                  # path('__debug__/', include(debug_toolbar.urls)),
                   # path('sentry-debug/', trigger_error),
                   path('admin/', admin.site.urls),
                   path('ads/', include('ads.urls')),
