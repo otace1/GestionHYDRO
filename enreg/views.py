@@ -35,7 +35,7 @@ def showTableauTemplate(request):
     form = Ajoutcargaison()
     table = CargaisonTable(qs)
     template = 'cargaison/cargaison.html'
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 12}).configure(table)
+    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 12}).configure(table)
     context = {
         'table':table,
         'form':form,
@@ -79,7 +79,7 @@ class GestionCargaison():
                 qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,dateheurecargaison__year=today.year)
                 table = CargaisonTable(qs)
                 data = list(qs.values())
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+                # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
 
                 # return JsonResponse({'data': data})
                 #
@@ -95,7 +95,7 @@ class GestionCargaison():
                     qs = Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison')
                     table = CargaisonTable(qs)
                     data = list(qs.values())
-                    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+                    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
                     # return JsonResponse({'data': data})
 
                     return render(request, 'cargaison/cargaison.html', {
