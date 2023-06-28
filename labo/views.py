@@ -2375,29 +2375,29 @@ class GestionImpressionLabo():
         ville = ville.ville_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1:
-            #calcul pr affichages des pastilles
-            cqNotPrinted = ImpressionResultat.objects.filter(isPrinted=False, idcargaison__entrepot__ville=ville).count()
-            cqPrinted = ImpressionResultat.objects.filter(isPrinted=True,idcargaison__entrepot__ville=ville).count()
-
+            # calcul pr affichages des pastilles
+            cqNotPrinted = ImpressionResultat.objects.filter(isPrinted=False,
+                                                             idcargaison__entrepot__ville=ville).count()
+            cqPrinted = ImpressionResultat.objects.filter(isPrinted=True, idcargaison__entrepot__ville=ville).count()
 
             qs = Cargaison.objects.raw('SELECT ec.idcargaison, ei.idImpression, el.numcertificatqualite, el.codelabo, ep.nomproduit, i.nomimportateur, ee.nomentrepot \
-                    FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_laboreception el, enreg_produit ep, enreg_importateur i, enreg_entrepot ee, enreg_ville ev \
-                    WHERE ei.idcargaison_id = ec.idcargaison \
-                    AND ec.idcargaison = el.idcargaison_id \
-                    AND ec.produit_id = ep.idproduit \
-                    AND ec.importateur_id = i.idimportateur \
-                    AND ec.entrepot_id = ee.identrepot \
-                    AND ee.ville_id = ev.idville \
-                    AND ev.idville = %s \
-                    AND ei.isPrinted = FALSE',[ville,])
+                                        FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_laboreception el, enreg_produit ep, enreg_importateur i, enreg_entrepot ee, enreg_ville ev \
+                                        WHERE ei.idcargaison_id = ec.idcargaison \
+                                        AND ec.idcargaison = el.idcargaison_id \
+                                        AND ec.produit_id = ep.idproduit \
+                                        AND ec.importateur_id = i.idimportateur \
+                                        AND ec.entrepot_id = ee.identrepot \
+                                        AND ee.ville_id = ev.idville \
+                                        AND ev.idville = %s \
+                                        AND ei.isPrinted = 0', [ville, ])
 
             table = AffichageTableauImpression(qs, prefix='2_')
 
             return render(request, 'labo_impression.html',
                           {
                               'labo': table,
-                              'cqNotPrinted':cqNotPrinted,
-                              'cqPrinted':cqPrinted,
+                              'cqNotPrinted': cqNotPrinted,
+                              'cqPrinted': cqPrinted,
                           })
         else:
             return redirect('logout')
@@ -2424,7 +2424,7 @@ class GestionImpressionLabo():
                         AND ee.ville_id = ev.idville \
                         AND ev.idville = %s \
                         AND el.codelabo = %s \
-                        AND ei.isPrinted = FALSE', [ville,numcode, ])
+                        AND ei.isPrinted = 0', [ville,numcode, ])
 
                 table = AffichageTableauImpression(qs, prefix='2_')
                 RequestConfig(request, paginate={"per_page": 10}).configure(table)
@@ -2441,23 +2441,27 @@ class GestionImpressionLabo():
         user = request.user
         id = user.id
         role = user.role_id
+        ville = AffectationVille.objects.get(username_id=user.id)
+        ville = ville.ville_id
         request.session['url'] = request.get_full_path()
         if role == 5 or role == 1 or role == "v1" or role == "v2":
             numcode = request.GET.get('codelabo')
             if numcode != "":
-                table = AffichageTableauImpression(Resultat.objects.raw('SELECT r.idcargaison_id, r.dateanalyse, l.numcertificatqualite, c.produit_id, l.codelabo, e.numrappech, c.importateur_id \
-                                                                                FROM hydro_occ.enreg_resultat r, hydro_occ.enreg_cargaison c, hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e \
-                                                                                WHERE r.idcargaison_id = c.idcargaison \
-                                                                                AND c.idcargaison = l.idcargaison_id \
-                                                                                AND l.idcargaison_id = e.idcargaison_id \
-                                                                                AND c.conformite = "Conforme aux exigences" \
-                                                                                AND c.impression = 1 \
-                                                                                AND l.codelabo = %s \
-                                                                                ORDER BY r.dateanalyse DESC',
-                                                                        [numcode, ]), prefix='2_')
+                qs = Cargaison.objects.raw('SELECT ec.idcargaison, ei.idImpression, el.numcertificatqualite, el.codelabo, ep.nomproduit, i.nomimportateur, ee.nomentrepot \
+                        FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_laboreception el, enreg_produit ep, enreg_importateur i, enreg_entrepot ee, enreg_ville ev \
+                        WHERE ei.idcargaison_id = ec.idcargaison \
+                        AND ec.idcargaison = el.idcargaison_id \
+                        AND ec.produit_id = ep.idproduit \
+                        AND ec.importateur_id = i.idimportateur \
+                        AND ec.entrepot_id = ee.identrepot \
+                        AND ee.ville_id = ev.idville \
+                        AND ev.idville = %s \
+                        AND el.codelabo = %s \
+                        AND ei.isPrinted = 1', [ville,numcode, ])
+
+                table = AffichageTableauImpression(qs)
 
                 RequestConfig(request, paginate={"per_page": 10}).configure(table)
-                # RequestConfig(request, paginate={"per_page": 10}).configure(table1)
 
                 return render(request, 'labo_impression.html',
                               {
@@ -2521,6 +2525,11 @@ class GestionImpressionLabo():
             echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
             laboratoire = LaboReception.objects.get(idcargaison=pk)
 
+            printed = ImpressionResultat.objects.get(idcargaison=pk)
+            printed.isPrinted = 1
+            printed.save(update_fields=['isPrinted'])
+
+
 
             # Test pour afficher les differents rapports
             if produit == 'GASOIL':
@@ -2528,7 +2537,7 @@ class GestionImpressionLabo():
 
                 # Resultat Gasoil Fetching data into Database
                 try:
-                    couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultat
+                    couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
                 except:
                     couleurastm = ''
                 try:
@@ -2660,15 +2669,15 @@ class GestionImpressionLabo():
                     template = 'report/Report1/mogasreport.html'
                     # Resultat Gasoil Fetching data into Database
                     try:
-                        aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultat
+                        aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
                     except:
                         aspect=''
                     try:
-                        odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultat
+                        odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
                     except:
                         odeur=''
                     try:
-                        couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultat
+                        couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
                     except:
                         couleursaybolt=''
                     try:
@@ -2773,12 +2782,12 @@ class GestionImpressionLabo():
                         # Resultat Gasoil Fetching data into Database
                         try:
                             aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
-                                0].valeurResultat
+                                0].valeurResultatChar
                         except:
                             aspect=''
                         try:
                             couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                                0].valeurResultat
+                                0].valeurResultatChar
                         except:
                             couleursaybolt=''
                         try:
@@ -2982,12 +2991,12 @@ class GestionImpressionLabo():
                             # Resultat Gasoil Fetching data into Database
                             try:
                                 aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                                    0].valeurResultat
+                                    0].valeurResultatChar
                             except:
                                 aspect = ''
                             try:
                                 couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[
-                                    0].valeurResultat
+                                    0].valeurResultatChar
                             except:
                                 couleursaybolt = ''
                             try:
@@ -4077,7 +4086,7 @@ def saisieResultat(request,pk):
     a = LaboReception.objects.get(idcargaison=e)
     a = a.codelabo
 
-    qs = ParametresProduits.objects.raw('SELECT pp.idParametre, c.idcargaison, p.nomproduit, pp.nomParametre, r.valeurResultat \
+    qs = ParametresProduits.objects.raw('SELECT pp.idParametre, c.idcargaison, p.nomproduit, pp.nomParametre, r.valeurResultat, r.valeurResultatChar \
             FROM enreg_cargaison c \
             LEFT JOIN enreg_produit p \
             ON c.produit_id = p.idproduit \
@@ -4108,17 +4117,30 @@ def saisieResultatParametre(request,pk):
     parametre = ParametresProduits.objects.get(idParametre=pk)
     if request.method == 'POST':
         valeurResultat = request.POST['valeurResultat']
-        try:
-            r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
-            r.valeurResultat = valeurResultat
-            r.save(update_fields=['valeurResultat'])
-            # print('OK')
-            return redirect('saisieResultat', id)
-        except:
-            r = ResultatAnalyse(valeurResultat=valeurResultat, idParametre=parametre, idcargaison=cargaison)
-            r.save()
-            # print('OK')
-            return redirect('saisieResultat',id)
+        if parametre.idParametre == 2 or parametre.idParametre == 8 or parametre.idParametre == 22:
+            try:
+                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
+                r.valeurResultatChar = valeurResultat
+                r.save(update_fields=['valeurResultatChar'])
+                # print('OK')
+                return redirect('saisieResultat', id)
+            except:
+                r = ResultatAnalyse(valeurResultatChar=valeurResultat, idParametre=parametre, idcargaison=cargaison)
+                r.save()
+                # print('OK')
+                return redirect('saisieResultat',id)
+        else:
+            try:
+                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
+                r.valeurResultat = valeurResultat
+                r.save(update_fields=['valeurResultat'])
+                # print('OK')
+                return redirect('saisieResultat', id)
+            except:
+                r = ResultatAnalyse(valeurResultat=valeurResultat, idParametre=parametre, idcargaison=cargaison)
+                r.save()
+                # print('OK')
+                return redirect('saisieResultat',id)
     else:
         return redirect('saisieResultat',id)
 
@@ -4140,7 +4162,7 @@ def affichageDetailsResultats(request,pk):
 
     template = 'laboDetailsResultat.html'
 
-    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultat, \
+    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultatChar ,r.valeurResultat, \
     	                IF (r.valeurResultat  > a.valeurMax , 'Non Conforme', IF (r.valeurResultat < a.valeurMin, 'Non Conforme','Conforme')) as etatValeur \
                         FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
                         WHERE c.idcargaison = r.idcargaison_id \

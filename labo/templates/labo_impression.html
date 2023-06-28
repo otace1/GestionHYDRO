@@ -2,10 +2,10 @@
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 
-{% block dashboard%}
+{% block formsearch %}
  <div class="row">
         <div class="col-md-2">
-                            <a href="" data-toggle="modal" data-target="#modal-default" class="btn btn-info" role="button">Recherche de CQ Archivés</a>
+                            <a href="" data-toggle="modal" data-target="#modal-default" class="btn btn-info" role="button">Re-impression</a>
         </div>
          <div class="col-md-2">
             <a href="{% url 'impression' %}"><button class="btn btn-danger"><i class="fa fa-backward"></i>Retour</button></a>

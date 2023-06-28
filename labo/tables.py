@@ -393,7 +393,8 @@ champSaisieValeurResultat = """
 class SaisieResultat(tables.Table):
     nomproduit = tables.Column(verbose_name='PRODUIT')
     nomParametre = tables.Column(verbose_name='PARAMETRE(S)')
-    valeurResultat = tables.Column(verbose_name='VALEUR RESULTAT')
+    valeurResultat = tables.Column(verbose_name='VALEUR RESULTAT NUM.')
+    valeurResultatChar = tables.Column(verbose_name='VALEUR RESULTAT ALP.')
     saisieValeur = tables.TemplateColumn(champSaisieValeurResultat, verbose_name='ACTIONS')
 
     class Meta:
@@ -407,7 +408,8 @@ class SaisieResultat(tables.Table):
 class AffichageDetailResultat(tables.Table):
     codelabo = tables.Column(verbose_name='CODE LABO')
     nomParametre = tables.Column(verbose_name='NOM PARAMETRE(S)')
-    valeurResultat = tables.Column(verbose_name='RESULTAT(S)')
+    valeurResultatChar = tables.Column(verbose_name='RESULTAT(S) ALPH.')
+    valeurResultat = tables.Column(verbose_name='RESULTAT(S) NUM')
     etatValeur = tables.Column(verbose_name='OBSERVATION(S)')
 
     class Meta:

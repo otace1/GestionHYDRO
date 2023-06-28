@@ -546,6 +546,7 @@ class ResultatAnalyse(models.Model):
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
     idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
     valeurResultat = models.FloatField(blank=True,null=True)
+    valeurResultatChar = models.CharField(max_length=64,blank=True,null=True)
 
 
 class ImpressionResultat(models.Model):
