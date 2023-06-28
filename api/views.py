@@ -93,6 +93,7 @@ class AddCargo(APIView):
         tonnagevide = data['tonnagevide']
         tonnageair = data['tonnageair']
         declaration = data['declaration']
+        transitaire = data['transitaire']
 
         if volume15:
             if volume20:
@@ -117,6 +118,7 @@ class AddCargo(APIView):
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire':transitaire,
                             'user': user,
                         }
                     else:
@@ -137,6 +139,7 @@ class AddCargo(APIView):
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                 else:
@@ -158,6 +161,7 @@ class AddCargo(APIView):
                             'volume20': volume20,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -176,6 +180,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'volume20': volume20,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
             else:
@@ -198,6 +203,7 @@ class AddCargo(APIView):
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -216,6 +222,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'tonnagevide': tonnagevide,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                 else:
@@ -235,6 +242,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -251,6 +259,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
         else:
@@ -274,6 +283,7 @@ class AddCargo(APIView):
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -292,6 +302,7 @@ class AddCargo(APIView):
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                 else:
@@ -311,6 +322,7 @@ class AddCargo(APIView):
                             'volume20': volume20,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -325,6 +337,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
             else:
@@ -345,6 +358,7 @@ class AddCargo(APIView):
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -361,6 +375,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'tonnagevide': tonnagevide,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                 else:
@@ -378,6 +393,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'tonnageair': tonnageair,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
                     else:
@@ -392,6 +408,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'declaration': declaration,
+                            'transitaire': transitaire,
                             'user': user,
                         }
 
