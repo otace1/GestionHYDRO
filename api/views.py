@@ -71,13 +71,13 @@ class AddCargo(APIView):
         a = COUNTRIES
         key = [k for k, v in a.items() if v == provenance]
         provenance = key[0]
-        print(data['voie'])
-        print(data['frontiere'])
-        print(data['typeunitetransport'])
-        print(data['provenance'])
-        print(data['importateur'])
-        print(data['entrepot'])
-        print(data['produit'])
+        print('VOIE: ',data['voie'])
+        print('FRONTIERE: ',data['frontiere'])
+        print('UNITE: ',data['typeunitetransport'])
+        print('PROVE: ',data['provenance'])
+        print('IMPORT: ',data['importateur'])
+        print('ENTREPOT: ',data['entrepot'])
+        print('PROD: ',data['produit'])
 
 
         importateur = Importateur.objects.get(nomimportateur=data['importateur'])
