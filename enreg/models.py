@@ -172,6 +172,7 @@ class Cargaison(models.Model):
 
     transitaire = models.CharField(max_length=255, blank=True, null=True)  #Transitaire
 
+
     #Champ de control pour l'inspection
     etatInspection = models.BooleanField(default=False)
 
