@@ -4100,6 +4100,7 @@ def saisieResultat(request,pk):
     return render(request,template,context)
 
 
+
 @login_required(login_url='login')
 def saisieResultatParametre(request,pk):
     id = request.session['pk']
