@@ -168,7 +168,9 @@ class Cargaison(models.Model):
     after = models.BooleanField(default=0, verbose_name='SHORE AFTER')
 
     # Champ ajouter apres la mission de l'EST
-    declaration = models.CharField(max_length=255, blank=True, null=True)  # Numero de declaration
+    declaration = models.CharField(max_length=255, blank=True, null=True)  #Numero de declaration
+
+    transitaire = models.CharField(max_length=255, blank=True, null=True)  #Transitaire
 
     #Champ de control pour l'inspection
     etatInspection = models.BooleanField(default=False)

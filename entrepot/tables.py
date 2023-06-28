@@ -108,7 +108,7 @@ class CargaisonEnAttenteRequisition(tables.Table):
         sequence = ['idcargaison', 'declaration', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume',
                     'immatriculation']
         exclude = ['etatInspection','dateHeureAnalyseLabo','dateDechargement','valeurfacture', 'origine', 'rapechctrl', 'requisitionack',
-                   'typeunitetransport',
+                   'typeunitetransport','transitaire','toBeRefouler','toBeConsignated','isConsignated','isRefouler',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair'
@@ -198,8 +198,8 @@ class CargaisonDechargement2(tables.Table):
                     'produit']
         exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
-                   'dateheurecargaison',
-                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
+                   'dateheurecargaison','transitaire','toBeRefouler','toBeConsignated','isConsignated',
+                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids','isRefouler',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'before', 'after']
 
@@ -227,8 +227,8 @@ class TankerCabotteur(tables.Table):
                     'produit']
         exclude = ['idcargaison', 'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'volume15', 'volume', 'volume20', 'tonnagevide', 'tonnageair',
-                   'dateheurecargaison', 'before', 'after',
-                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids',
+                   'dateheurecargaison', 'before', 'after','transitaire','toBeRefouler','toBeConsignated','isConsignated',
+                   'requisitiondackdate', 'numreq', 'voie', 'provenance', 'poids','isRefouler',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'entrepot']
 
@@ -242,6 +242,7 @@ class EchantillonEnregistrer(tables.Table):
         exclude = ['idcargaison', 'declarant', 'voie', 'tempcargaison', 'densitecargaison', 'idchauffeur', 'nationalite'
             , 'qrcode', 'poids', 'transporteur', 'numdeclaration', 'manifestdgda', 'fournisseur', 'numbtfh',
                    'valeurfacture', 'etat', 'frontiere', 'entrepot', 'impression', 'volume', 'volume_decl15',
+        'transitaire', 'toBeRefouler', 'toBeConsignated', 'isConsignated','isRefouler',
                    'nomchauffeur', 'conformite', 'provenance', 'numact', 'user', 'tampon', 'printactdate', 'numdossier',
                    'codecargaison', 'printactdate','l_control']
 
