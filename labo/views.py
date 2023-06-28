@@ -4077,16 +4077,16 @@ def saisieResultat(request,pk):
     a = LaboReception.objects.get(idcargaison=e)
     a = a.codelabo
 
-    qs = ParametresProduits.objects.raw('SELECT pa.idParametre,c.idcargaison, p.nomproduit, pa.nomParametre, r.valeurResultat \
-            FROM hydro_occ.enreg_cargaison c \
-            LEFT JOIN hydro_occ.enreg_produit p \
+    qs = ParametresProduits.objects.raw('SELECT pp.idParametre, c.idcargaison, p.nomproduit, pp.nomParametre, r.valeurResultat \
+            FROM enreg_cargaison c \
+            LEFT JOIN enreg_produit p \
             ON c.produit_id = p.idproduit \
-            LEFT JOIN hydro_occ.enreg_affectationparametre a \
+            LEFT JOIN enreg_affectationparametre a \
             ON p.idproduit = a.idproduit_id \
-            LEFT JOIN hydro_occ.enreg_parametresproduits pa \
-            ON a.idParametre_id = pa.idParametre \
-            LEFT JOIN hydro_occ.enreg_resultatanalyse r \
-            ON pa.idParametre = r.idParametre_id \
+            LEFT JOIN enreg_parametresproduits pp \
+            ON a.idParametre_id = pp.idParametre \
+            LEFT JOIN enreg_resultatanalyse r \
+            ON pp.idParametre = r.idParametre_id \
             AND r.idcargaison_id = c.idcargaison \
             WHERE c.idcargaison = %s \
             ORDER BY a.id ASC' ,[pk,])
