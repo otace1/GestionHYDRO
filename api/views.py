@@ -71,7 +71,6 @@ class AddCargo(APIView):
         a = COUNTRIES
         key = [k for k, v in a.items() if v == provenance]
         provenance = key[0]
-        print(provenance)
         print(data['voie'])
         print(data['frontiere'])
         print(data['typeunitetransport'])
@@ -93,6 +92,7 @@ class AddCargo(APIView):
         volume20 = data['volume20']
         tonnagevide = data['tonnagevide']
         tonnageair = data['tonnageair']
+        declaration = data['declaration']
 
         if volume15:
             if volume20:
@@ -116,6 +116,7 @@ class AddCargo(APIView):
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -135,6 +136,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
+                            'declaration': declaration,
                             'user': user,
                         }
                 else:
@@ -155,6 +157,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'volume20': volume20,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -172,6 +175,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'volume20': volume20,
+                            'declaration': declaration,
                             'user': user,
                         }
             else:
@@ -193,6 +197,7 @@ class AddCargo(APIView):
                             'volume15': volume15,
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -210,6 +215,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'tonnagevide': tonnagevide,
+                            'declaration': declaration,
                             'user': user,
                         }
                 else:
@@ -228,6 +234,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume15': volume15,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -243,6 +250,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'volume15': volume15,
+                            'declaration': declaration,
                             'user': user,
                         }
         else:
@@ -265,6 +273,7 @@ class AddCargo(APIView):
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -282,6 +291,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume20': volume20,
                             'tonnagevide': tonnagevide,
+                            'declaration': declaration,
                             'user': user,
                         }
                 else:
@@ -300,6 +310,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'volume20': volume20,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -313,6 +324,7 @@ class AddCargo(APIView):
                             'immatriculation': immatriculation,
                             'produit': produit,
                             'volume': volume,
+                            'declaration': declaration,
                             'user': user,
                         }
             else:
@@ -332,6 +344,7 @@ class AddCargo(APIView):
                             'volume': volume,
                             'tonnagevide': tonnagevide,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -347,6 +360,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'tonnagevide': tonnagevide,
+                            'declaration': declaration,
                             'user': user,
                         }
                 else:
@@ -363,6 +377,7 @@ class AddCargo(APIView):
                             'produit': produit,
                             'volume': volume,
                             'tonnageair': tonnageair,
+                            'declaration': declaration,
                             'user': user,
                         }
                     else:
@@ -376,6 +391,7 @@ class AddCargo(APIView):
                             'immatriculation': immatriculation,
                             'produit': produit,
                             'volume': volume,
+                            'declaration': declaration,
                             'user': user,
                         }
 
