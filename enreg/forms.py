@@ -9,7 +9,7 @@ class AjoutCargaison(forms.ModelForm):
     class Meta:
         model = Cargaison
         fields = ('voie', 'frontiere', 'typeunitetransport', 'immatriculation', 'provenance', 'produit', 'declaration',
-                  'entrepot',
+                  'entrepot','transitaire',
                   'importateur', 'entrepot', 'produit', 'volume', 'volume15', 'volume20', 'tonnagevide', 'tonnageair')
 
         def __init__(self, *args, **kwargs):
@@ -23,9 +23,10 @@ class AjoutCargaison(forms.ModelForm):
                     css_class='form-row'
                 ),
                 Row(
-                    Column('immatriculation', css_class='form-group col-md-4 mb-0'),
-                    Column('provenance', label='PROVENANCE', css_class='form-group col-md-4 mb-0'),
-                    Column('importateur', css_class='form-group col-md-4 mb-0'),
+                    Column('immatriculation', css_class='form-group col-md-3 mb-0'),
+                    Column('transitaire', css_class='form-group col-md-3 mb-0'),
+                    Column('provenance', label='PROVENANCE', css_class='form-group col-md-3 mb-0'),
+                    Column('importateur', css_class='form-group col-md-3 mb-0'),
                     css_class='form-row'
                 ),
                 Row(
@@ -68,6 +69,7 @@ class Ajoutcargaison(forms.Form):
     numbtfh = forms.CharField(label="NUMERO BT/LT/FICHE CHAUFFEUR", required=False)
     manifestdgda = forms.CharField(label='# MANIFESTE', required=False)
     immatriculation = forms.CharField(label="IMMATRICULATION")
+    transitaire = forms.CharField(label='TRANSITAIRE')
 
     # Nouveau ajout sur le formulaire d'enregistrement a l'entree
     typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport'),
@@ -89,9 +91,10 @@ class Ajoutcargaison(forms.Form):
                 css_class='form-row'
             ),
             Row(
-                Column('immatriculation', css_class='form-group col-md-4 mb-0'),
-                Column('provenance', label='PROVENANCE', css_class='form-group col-md-4 mb-0'),
-                Column('importateur', css_class='form-group col-md-4 mb-0'),
+                Column('immatriculation', css_class='form-group col-md-3 mb-0'),
+                Column('transitaire', css_class='form-group col-md-3 mb-0'),
+                Column('provenance', label='PROVENANCE', css_class='form-group col-md-3 mb-0'),
+                Column('importateur', css_class='form-group col-md-3 mb-0'),
                 css_class='form-row'
             ),
             Row(
