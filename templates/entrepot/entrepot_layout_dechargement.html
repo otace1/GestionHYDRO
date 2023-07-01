@@ -142,12 +142,13 @@
                     <!-- Add icons to the links using the .nav-icon class
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 8 %}
-                        <li class="nav-item has-treeview menu-open">
+                        <li class="header" style="color: red">DEPARTEMENT</li>
+<li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-                        </li>
+</li>
 
                     {% endif %}
 
