@@ -12475,6 +12475,7 @@ def synthese_production(request):
     date_d = request.session['date_d']
     date_f = request.session['date_f']
 
+
     # R1
     if frontiere == "":
         if produit == "":
