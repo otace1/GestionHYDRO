@@ -1,6 +1,7 @@
 from django import forms
 from enreg.models import *
 from bootstrap_datepicker_plus.widgets import DatePickerInput
+# from bootstrap_daterangepicker import widgets, fields
 from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
 from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
@@ -96,15 +97,17 @@ class ProduitEditForm(forms.ModelForm):
 
 # Formulaire de recherche statistique
 class RechercheStat(forms.Form):
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all(), label="Entité de prise en charge :",
+    ville = forms.ModelChoiceField(queryset=Ville.objects.all(), label="ENTITE:",
                                        required=False)
-    produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="Nature du produit :", required=False)
-    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="Nom de l'importateur :",
+    produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="PRODUIT:", required=False)
+    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="IMPORTATEUR:",
                                          required=False)
-    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all(), label="Entrepot de destination :",
+    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all(), label="ENTREPOT:",
                                       required=False)
-    date_d = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de début :")
-    date_f = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), required=False, label="Date de fin :")
+    date_d = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE DEBUT',required=False)
+    date_f = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE FIN',required=False)
+
+
 
 
 

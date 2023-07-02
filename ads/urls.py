@@ -5,7 +5,7 @@ urlpatterns = [
 
     path('', views.Dashboard.chartjs, name='dashboard'),
 
-    path('statistiques/', views.Dashboard.statistiquesimportations, name='statistiques'),
+    # path('statistiques/', views.Dashboard.statistiquesimportations, name='statistiques'),
     path('statj/', views.statj, name='statj'),
     path('statProduct/', views.statproduction, name='statProd'),
     path('statEncaissement/', views.statencaissement, name='statencaissement'),
@@ -41,5 +41,9 @@ urlpatterns = [
     path('upload-cvs/importateur', views.uploadimportateur, name='upload_importateur'),
     path('upload-cvs/entrepot', views.uploadentrepot, name='upload_entrepot'),
     path('upload-cvs/ville', views.uploadville, name='upload_ville'),
+
+    path('rapport/brut/', views.rapportBrut, name='rapportBrut'),
+
+
 
 ]

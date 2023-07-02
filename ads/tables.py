@@ -66,32 +66,31 @@ class ProduitTable(tables.Table):
 
 class StatistiquesTable(tables.Table):
     export_formats = ['csv', 'xlsx', 'xls']
-    dateheurecargaison = tables.Column(verbose_name='Date & Heure')
-    volume = tables.Column(verbose_name='Vol. Décl.')
-    densitecargaison = tables.Column(verbose_name='Dens.')
-    importateur_id__nomimportateur = tables.Column(verbose_name='Importateur')
-    frontiere_id__nomville = tables.Column(verbose_name='Frontiere')
-    entrepot_id__nomentrepot = tables.Column(verbose_name='Entrepot')
-    produit_id__nomproduit = tables.Column(verbose_name='Produit')
+    dateheurecargaison = tables.Column(verbose_name='DATE')
+    frontiere_id__nomville = tables.Column(verbose_name='FRONTIERE')
+    importateur_id__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit_id__nomproduit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL.DECL')
+    densitecargaison = tables.Column(verbose_name='DENSIT')
+    entrepot_id__nomentrepot = tables.Column(verbose_name='ENTREPOT')
 
     class Meta:
         attrs = {
-            "id": "stat",
-            "class": "table table-hover text-nowrap table-striped",
+            "class": "table table-bordered table-striped",
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['dateheurecargaison', 'fournisseur', 'importateur_id__nomimportateur', 'frontiere_id__nomville',
-                    'entrepot_id__nomentrepot', 'produit_id__nomproduit', 'volume',
-                    'immatriculation', 't1e', 't1d', 'numbtfh', 'numdeclaration', 'manifestdgda']
-        exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo',
-                   'dateanalyse', 'numcertificatqualite', 'valeurfacture',
-                   'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
-                   'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
-                   'produit',
-                   'temperature', 'codecargaison', 'numdossier', 'importateur', 'numact', 'datedechargement', 'gov',
-                   'gsv', 'entrepot',
-                   'l_control', 'poids', 'frontiere']
+
+    # model = Cargaison
+    # sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume']
+    # exclude = ['dateHeureAnalyseLabo', 'idcargaison', 'etatInspection', 'valeurfacture', 'frontiere', 'origine',
+    #            'rapechctrl', 'requisitionack',
+    #            'typeunitetransport', 'controlOrganoleptique', 'dateDechargement', 'volume15',
+    #            'volume20', 'tonnagevide', 'toBeRefouler', 'toBeConsignated', 'isConsignated', 'isRefouler',
+    #            'tonnageair', 'transitaire',
+    #            'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
+    #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+    #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration']
+
 
 
 class StatistiquesJour(tables.Table):
@@ -192,49 +191,52 @@ class EncaissementTable(tables.Table):
 
 
 class SyntheseImportation(tables.Table):
-    importateur__nomimportateur = tables.Column(verbose_name="Importateur")
-    nombredecl = tables.Column(verbose_name="Nombre de camions import.")
-    mogas = tables.Column(verbose_name="Vol. MOGAS Decl.")
-    gasoil = tables.Column(verbose_name="Vol. GASOIl Decl.")
-    jet = tables.Column(verbose_name="Vol. JETA1 Decl.")
-    petrole = tables.Column(verbose_name="Vol. PETROLE Decl.")
-    total = tables.Column(verbose_name="Total Volume Decl.")
+    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    nombredecl = tables.Column(verbose_name="Nbr. CAMION(S)")
+    mogas = tables.Column(verbose_name="VOL. MOGAS DECL.")
+    gasoil = tables.Column(verbose_name="VOL. GASOIL DECL.")
+    jet = tables.Column(verbose_name="VOL. JETA1 DECL.")
+    petrole = tables.Column(verbose_name="VOL. PETROLE DECL.")
+    total = tables.Column(verbose_name="TOTAL VOL. DECL.")
 
     class Meta:
-        attrs = {"id": "myTable"}
-        template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['importateur__nomimportateur', 'nombredecl', 'mogas', 'gasoil', 'jet', 'petrole', 'total']
-        exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo', 'poids',
-                   'immatriculation', 'valeurfacture', 'numbtfh', 'numdeclaration', 'manifestdgda', 't1e', 't1d',
-                   'dateanalyse', 'numcertificatqualite', 'fournisseur', 'entrepot',
-                   'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
-                   'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
-                   'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
-                   'l_control', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume']
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # model = Cargaison
+        # sequence = ['importateur__nomimportateur', 'nombredecl', 'mogas', 'gasoil', 'jet', 'petrole', 'total']
+        # exclude = ['idcargaison', 'tempcargaison', 'volume_decl15', 'voie', 'provenance', 'datereceptionlabo', 'poids',
+        #            'immatriculation', 'valeurfacture', 'numbtfh', 'numdeclaration', 'manifestdgda', 't1e', 't1d',
+        #            'dateanalyse', 'numcertificatqualite', 'fournisseur', 'entrepot',
+        #            'transporteur', 'declarant', 'idchauffeur', 'densitecargaison', 'nationalite', 'nomchauffeur',
+        #            'qrcode', 'impression', 'etat', 'user', 'tampon', 'conformite', 'printactdate', 'densite15',
+        #            'temperature', 'codecargaison', 'numdossier', 'numact', 'datedechargement', 'gov', 'gsv',
+        #            'l_control', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume']
 
 
 class SyntheseProduction(tables.Table):
     export_formats = ['csv', 'xlsx', 'xls']
-    idcargaison__idcargaison__idcargaison__idcargaison__importateur__nomimportateur = tables.Column(
-        verbose_name='Importateur')
-    gasoilGOV = tables.Column(verbose_name='Total GOV Gasoil')
-    mogasGOV = tables.Column(verbose_name='Total GOV Mogas')
-    jetGOV = tables.Column(verbose_name='Total GOV JETA1')
-    petroleGOV = tables.Column(verbose_name='Total GOV Petrole')
-    gasoilGSV = tables.Column(verbose_name='Total GSV Gasoil')
-    mogasGSV = tables.Column(verbose_name='Total GSV Mogas')
-    jetGSV = tables.Column(verbose_name='Total GSV JETA1')
-    petroleGSV = tables.Column(verbose_name='Total GSV Petrole')
-    gsvtotal = tables.Column(verbose_name='Total GSV')
+    idinspection__idcargaison__importateur__nomimportateur = tables.Column(
+        verbose_name='FOURNISSEUR')
+    gasoilGOV = tables.Column(verbose_name='GOV GASOIL')
+    mogasGOV = tables.Column(verbose_name='GOV MOGAS')
+    jetGOV = tables.Column(verbose_name='GOV JETA1')
+    petroleGOV = tables.Column(verbose_name='GOV PETROLE')
+    gasoilGSV = tables.Column(verbose_name='GSV GASOIL')
+    mogasGSV = tables.Column(verbose_name='GSV MOGAS')
+    jetGSV = tables.Column(verbose_name='GSV JETA1')
+    petroleGSV = tables.Column(verbose_name='GSV PETROLE')
+    gsvtotal = tables.Column(verbose_name='TOTAL GSV')
 
     class Meta:
-        attrs = {"class": "table table-hover text-nowrap table-striped"}
-        template_name = "django_tables2/bootstrap4.html"
-        model = Dechargement
-        sequence = ['idcargaison__idcargaison__idcargaison__idcargaison__importateur__nomimportateur', 'gasoilGOV',
-                    'mogasGOV', 'jetGOV', 'petroleGOV', 'gasoilGSV', 'mogasGSV', 'jetGSV', 'petroleGSV', 'gsvtotal']
-        exclude = ['datedechargement', 'idcargaison', 'temperature', 'mta', 'mtv', 'densite15', 'gov', 'gsv']
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # sequence = ['idcargaison__idcargaison__idcargaison__idcargaison__importateur__nomimportateur', 'gasoilGOV',
+        #             'mogasGOV', 'jetGOV', 'petroleGOV', 'gasoilGSV', 'mogasGSV', 'jetGSV', 'petroleGSV', 'gsvtotal']
+        # exclude = ['datedechargement', 'idcargaison', 'temperature', 'mta', 'mtv', 'densite15', 'gov', 'gsv']
 
 
 class SyntheseEncaissement(tables.Table):
@@ -251,3 +253,42 @@ class SyntheseEncaissement(tables.Table):
         model = Dechargement
         sequence = ['nomimportateur', 'total_vol_decharge', 'total_vol_paye', 'cgw_p', 'occ_q']
         exclude = ['datedechargement', 'idcargaison', 'temperature', 'mta', 'mtv', 'densite15', 'gov', 'gsv']
+
+
+
+class RapportBrut(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    declaration = tables.Column(verbose_name='N.DECL.')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    dateEch = tables.Column(verbose_name='DATE ECH.')
+    dateLabo = tables.Column(verbose_name='DATE REC. LABO')
+    printDate = tables.Column(verbose_name='DATE ANALYSE')
+    # isConforme = tables.Column(verbose_name='CONFORMITE')
+    dateInsp = tables.Column(verbose_name="DATE INSPEC.")
+    dateDech = tables.Column(verbose_name='DATE DECH.')
+    nomproduit = tables.Column(verbose_name='PRODUIT')
+    dens = tables.Column(verbose_name='DENSITE')
+    volume = tables.Column(verbose_name='VOL. DECL.')
+    volJauge = tables.Column(verbose_name='VOL. JAUGE')
+    gsvJauge = tables.Column(verbose_name='GSV JAUGE')
+    govMeter = tables.Column(verbose_name='VOL. METER.')
+    gsvMeter = tables.Column(verbose_name='GSV METER')
+    fraisOcc = tables.Column(verbose_name='FRAIS A PAYER')
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # model = Cargaison
+        # sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume']
+        # exclude = ['dateHeureAnalyseLabo', 'idcargaison', 'etatInspection', 'valeurfacture', 'frontiere', 'origine',
+        #            'rapechctrl', 'requisitionack',
+        #            'typeunitetransport', 'controlOrganoleptique', 'dateDechargement', 'volume15',
+        #            'volume20', 'tonnagevide', 'toBeRefouler', 'toBeConsignated', 'isConsignated', 'isRefouler',
+        #            'tonnageair', 'transitaire',
+        #            'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
+        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
+        #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration']

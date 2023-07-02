@@ -315,6 +315,9 @@
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                            <li class="breadcrumb-item"><a href="#">Departement</a></li>
+                            <li class="breadcrumb-item"><a href="#">Rapport</a></li>
+                            <li class="breadcrumb-item"><a href="#">Synthese</a></li>
 {#                            <li class="breadcrumb-item active"></li>#}
                         </ol>
                     </div><!-- /.col -->
@@ -325,44 +328,28 @@
 
     <!-- Main content -->
         <section class="content">
-            <div class="container-fluid">
-                <div class="row col-6">
-                    {% block extra %}
-                    {% endblock %}
-                </div>
-
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-body">
-                                {% block dashboard %}
-                                {% endblock %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                {% block reception %}
-                
-                {% endblock %}
-            </div>
-        </div>
+        <div class="row">
+                    <a class="btn btn-app bg-warning" href="{% url 'dashboard' %}">
+                  <span class="badge bg-success"></span>
+                  <i class="fas fa-file"></i> Retour
+                </a>
 
           <div class="container-fluid">
       <div class="row">
+      <div class="col-12">
+      <div class="card">
+      <div class="card-body">
               {% block content %}
-
-
               {% endblock %}
+      </div>
+      </div>
+      </div>
       </div>
               <!-- /.box-body -->
           </div>
         <!-- /.box -->
 
         <!-- /.col -->
-    </div>
 
         {#   </div>#}
         {#</div>#}

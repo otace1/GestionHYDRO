@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect, HttpResponse
 from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation, \
-    Entrepot_echantillon, LaboReception
-from django.db.models import Q, F, Func, Value, CharField, Count
+    Entrepot_echantillon, LaboReception, Compartiment
+from django.db.models import Q, F, Func, Value, CharField, Count, ExpressionWrapper, FloatField
 from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
     DerniersEnregistrements, ProductionTable, EncaissementTable, StatistiquesJour, SyntheseImportation, \
-    SyntheseProduction, SyntheseEncaissement
+    SyntheseProduction, SyntheseEncaissement, RapportBrut
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat, RechercheEncaissement
 import json
@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django_tables2.export.export import TableExport
+from django.utils.timezone import timedelta
 import math
 from datetime import date
 from .exp_excel import export_excel
@@ -39,3982 +40,3726 @@ class Dashboard():
         user = request.user
         role = user.role_id
         if role == 1 or role == 'st' or role == 7 or role == 8:
-            d = date.today()
-            month = d.month
-            year = d.year
-            day = d.day
-
-            dt = d.today()
-
+            today = date.today()
             template = 'admin.html'
-            # Gasoil
-            gvolume = Cargaison.objects.filter(produit=2, dateheurecargaison__month=month,
-                                               dateheurecargaison__year=year).aggregate(Sum('volume'))
-            g1data = gvolume['volume__sum']
 
-            # Mogas
-            mvolume = Cargaison.objects.filter(produit=1, dateheurecargaison__month=month,
-                                               dateheurecargaison__year=year).aggregate(Sum('volume'))
-            g2data = mvolume['volume__sum']
+            form1 = RechercheStat()
+            form2 = RechercheStat()
 
-            # JETA1
-            jvolume = Cargaison.objects.filter(produit=3, dateheurecargaison__month=month,
-                                               dateheurecargaison__year=year).aggregate(Sum('volume'))
-            g3data = jvolume['volume__sum']
+            #Nouveau travail Journalier
+            j = Cargaison.objects.filter(dateheurecargaison__date=today, etat="En attente requisition").count()
+            k = Cargaison.objects.filter(dateheurecargaison__date=today, etat="En attente d'echantillonage").count()
+            l = Cargaison.objects.filter(dateheurecargaison__date=today, etat="Analyse Labo en cours").count()
+            m = Cargaison.objects.filter(dateheurecargaison__date=today, etatInspection=1).count()
 
-            # Petrole Lampant
-            pvolume = Cargaison.objects.filter(produit=4, dateheurecargaison__month=month,
-                                               dateheurecargaison__year=year).aggregate(Sum('volume'))
-            g4data = pvolume['volume__sum']
-
-            dataset = Cargaison.objects \
-                .extra(select={'month': 'EXTRACT(month from dateheurecargaison)'}) \
-                .values('month') \
-                .filter(dateheurecargaison__year=year) \
-                .annotate(gasoil=Sum('volume', filter=Q(produit=2)),
-                          mogas=Sum('volume', filter=Q(produit=1)),
-                          jeta1=Sum('volume', filter=Q(produit=3)),
-                          petrole=Sum('volume', filter=Q(produit=4))) \
-                .order_by('month')
-
-            categories_list = list()
-            gasoil_list = list()
-            mogas_list = list()
-            jeta1_list = list()
-            petrole_list = list()
-
-            # Valeur du Dictionnaires dataset
-            for data in dataset:
-                categories_list.append(data['month'])
-                gasoil_list.append(data['gasoil'])
-                mogas_list.append(data['mogas'])
-                jeta1_list.append(data['jeta1'])
-                petrole_list.append(data['petrole'])
-
-            categories = json.dumps(categories_list)
-            gasoil_list = simplejson.dumps(gasoil_list)
-            mogas_list = simplejson.dumps(mogas_list)
-            jeta1_list = simplejson.dumps(jeta1_list)
-            petrole_list = simplejson.dumps(petrole_list)
-
-            form = RechercheStat()
-            form1 = RechercheEncaissement()
-
-            # Statistiques des TOP 10 importateurs
-            importateur = Cargaison.objects.select_related().filter(dateheurecargaison__year=year).values(
-                'importateur').annotate(Sum('volume')).order_by('-volume__sum')[:5]
-            frontiere = Cargaison.objects.select_related().filter(dateheurecargaison__year=year).values(
-                'frontiere').annotate(Sum('volume')).order_by('-volume__sum')[:5]
-
-            # récupération des classements par volume
-            vol = list()
-            imp = list()
-
-            # # A activer en debut d'annee
-            # if not vol:
-            #     vol = [1,1,1,1,1]
-            #     imp = [1,1,1,1,1]
-
-            for volume in importateur:
-                vol.append(volume['volume__sum'])
-                i = Importateur.objects.filter(idimportateur=volume['importateur'])
-                imp.append(i[0])
-
-            # Exception management temp fix for empty value
-
-            try:
-                v1 = vol[0]
-                v2 = vol[1]
-                v3 = vol[2]
-                v4 = vol[3]
-                v5 = vol[4]
-            except:
-                v1 = 0
-                v2 = 0
-                v3 = 0
-                v4 = 0
-                v5 = 0
-                i1 = 0
-                i2 = 0
-                i3 = 0
-                i4 = 0
-                i5 = 0
-
-            #
-            # if vol[0]:
-            #     if vol[1]:
-            #         if vol[2]:
-            #             if vol[3]:
-            #                 if vol[4]:
-            #                     v1 = vol[0]
-            #                     v2 = vol[1]
-            #                     v3 = vol[2]
-            #                     v4 = vol[3]
-            #                     v5 = vol[4]
-            #                 else:
-            #                     v1 = vol[0]
-            #                     v2 = vol[1]
-            #                     v3 = vol[2]
-            #                     v4 = vol[3]
-            #                     v5 = 0
-            #             else:
-            #                 v1 = vol[0]
-            #                 v2 = vol[1]
-            #                 v3 = vol[2]
-            #                 v4 = 0
-            #                 v5 = 0
-            #         else:
-            #             v1 = vol[0]
-            #             v2 = vol[1]
-            #             v3 = 0
-            #             v4 = 0
-            #             v5 = 0
-            #     else:
-            #         v1 = vol[0]
-            #         v2 = 0
-            #         v3 = 0
-            #         v4 = 0
-            #         v5 = 0
-            # else:
-            #     v1 = 0
-            #     v2 = 0
-            #     v3 = 0
-            #     v4 = 0
-            #     v5 = 0
-            # 
-            # if imp[0]:
-            #     if imp[1]:
-            #         if imp[2]:
-            #             if imp[3]:
-            #                 if imp[4]:
-            #                     i1 = imp[0]
-            #                     i2 = imp[1]
-            #                     i3 = imp[2]
-            #                     i4 = imp[3]
-            #                     i5 = imp[4]
-            #                 else:
-            #                     i1 = imp[0]
-            #                     i2 = imp[1]
-            #                     i3 = imp[2]
-            #                     i4 = imp[3]
-            #                     i5 = 0
-            #             else:
-            #                 i1 = imp[0]
-            #                 i2 = imp[1]
-            #                 i3 = imp[2]
-            #                 i4 = 0
-            #                 i5 = 0
-            #         else:
-            #             i1 = imp[0]
-            #             i2 = imp[1]
-            #             i3 = 0
-            #             i4 = 0
-            #             i5 = 0
-            #     else:
-            #         i1 = imp[0]
-            #         i2 = 0
-            #         i3 = 0
-            #         i4 = 0
-            #         i5 = 0
-            # else:
-            #     i1 = 0
-            #     i2 = 0
-            #     i3 = 0
-            #     i4 = 0
-            #     i5 = 0
-            # 
-            #     # Total year Stats
-            #     
-
-            ytotal = Cargaison.objects.select_related().filter(dateheurecargaison__year=year).aggregate(Sum('volume'))
-            total = ytotal['volume__sum']
-
-            if total == 0:
-                total == 1
-
-            pourcentage = list()
-
-            # if not pourcentage :
-            #     pourcentage = [1,1,1,1,1]
-            #     volume = [1,1,1,1,1]
-
-            for data in importateur:
-                volume = data['volume__sum']
-                pourcent = (volume * 100) / total
-                pourcentage.append(pourcent)
-                # taille = len(pourcentage)
-
-            try:
-                # Récupération des pourcentage
-                p1 = math.ceil(pourcentage[0])
-            except:
-                p1 = 1
-
-            try:
-                p2 = math.ceil(pourcentage[1])
-            except:
-                p2 = 1
-
-            try:
-                p3 = math.ceil(pourcentage[2])
-            except:
-                p3 = 1
-
-            try:
-                p4 = math.ceil(pourcentage[3])
-            except:
-                p4 = 1
-
-            try:
-                p5 = math.ceil(pourcentage[4])
-            except:
-                p5 = 1
-
-            # Tableau des derniers enregistrements
-            table = DerniersEnregistrements(Cargaison.objects.all().order_by('-idcargaison')[:20])
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-
-            # Activité journalier donut chart
-            n = Cargaison.objects.filter(dateheurecargaison__date=d, etat="En attente requisition").count()
-            e = Entrepot_echantillon.objects.filter(dateechantillonage=d).count()
-            d = Cargaison.objects.all().count()
-            l = LaboReception.objects.filter(datereceptionlabo=dt).count()
-            r = Cargaison.objects.all().aggregate(Sum('volume'))
-            r = r['volume__sum']
-            v = Cargaison.objects.filter(dateheurecargaison__year=year).aggregate(Sum('volume'))
-            v = v['volume__sum']
-
-            return render(request, template,
-                          {
-                              'categories': categories,
-                              'gasoil_list': gasoil_list,
-                              'mogas_list': mogas_list,
-                              'jeta1_list': jeta1_list,
-                              'petrole_list': petrole_list,
-                              'g1data': g1data,
-                              'g2data': g2data,
-                              'g3data': g3data,
-                              'g4data': g4data,
-                              'form': form,
-                              'form1':form1,
-                              'importateur':importateur,
-                              'total':total,
-                              'volume':volume,
-                              'pourcentage':pourcentage,
-                              'p1': p1,
-                              'p2': p2,
-                              'p3': p3,
-                              'p4': p4,
-                              'p5': p5,
-                              'v1': v1,
-                              'v2': v2,
-                              'v3': v3,
-                              'v4': v4,
-                              'v5': v5,
-                              # 'i1': i1,
-                              # 'i2': i2,
-                              # 'i3': i3,
-                              # 'i4': i4,
-                              # 'i5': i5,
-                              'n': n,
-                              'e': e,
-                              'd': d,
-                              'l': l,
-                              'r': r,
-                              'v': v,
-                              'table': table,
-                          })
-
+            context = {
+                "j":j,
+                "k":k,
+                "l":l,
+                "m":m,
+                'form1':form1,
+                'form2':form2,
+            }
+            return render(request,template,context)
         else:
             return redirect('logout')
-
-    # Fonction Recherche Statistique Detaillé
-    def statistiquesimportations(request):
-        template = 'stats.html'
-        user = request.user
-        role = user.role_id
-        if role == 1 or role == 'st' or role == 7 or role == 8:
-
-            if request.method == 'POST':
-                template = 'stats.html'
-                frontiere = request.POST['frontiere']
-                produit = request.POST['produit']
-                importateur = request.POST['importateur']
-                entrepot = request.POST['entrepot']
-                date_d = request.POST['date_d']
-                date_f = request.POST['date_f']
-
-                request.session['frontiere'] = frontiere
-                request.session['produit'] = produit
-                request.session['importateur'] = importateur
-                request.session['entrepot'] = entrepot
-                request.session['date_d'] = date_d
-                request.session['date_f'] = date_f
-
-                # request.session['frontiere'] = frontiereqs
-                # request.session['produit'] = produitqs
-                # request.session['importateur'] = importateurqs
-                # request.session['entrepot'] = entrepotqs
-                # request.session['date_d'] = date_d
-                # request.session['date_f'] = date_f
-
-                # R1
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison')
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-
-                                        return render(request, 'stats.html', {
-                                            'cargaison': table
-                                        })
-
-                # R2
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R3
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R4
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.values('dateheurecargaison', 'fournisseur',
-                                                                      'frontiere_id__nomville',
-                                                                      'entrepot_id__nomentrepot',
-                                                                      'importateur_id__nomimportateur',
-                                                                      'produit_id__nomproduit', 'volume',
-                                                                      'immatriculation', 't1e', 't1d', 'numbtfh',
-                                                                      'numdeclaration', 'manifestdgda').filter(
-                                            dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R5
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R6
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R7
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R8
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R9
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R10
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R11
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R12
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R13
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R14
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R15
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R16
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R17
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R18
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R19
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R20
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R21
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R22
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R23
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R24
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R25
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R26
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R26
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R27
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R28
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R29
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R30
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R31
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R32
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R32
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R33
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R34
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R35
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R35
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R36
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startwith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R37
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R40
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R41
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R42
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R43
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R44
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R45
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R46
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R47
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R48
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R49
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R50
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R51
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R52
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R53
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R54
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R55
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R56
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R57
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R58
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R58
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R59
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R60
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R61
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-                # R62
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        df = pd.DataFrame(qs)
-                                        df = df.to_json()
-                                        request.session['df'] = df
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-            if request.method == 'GET':
-
-                frontiere = request.session['frontiere']
-                produit = request.session['produit']
-                importateur = request.session['importateur']
-                entrepot = request.session['entrepot']
-                date_d = request.session['date_d']
-                date_f = request.session['date_f']
-
-                # R1
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison')
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-
-                                        return render(request, 'stats.html', {
-                                            'cargaison': table
-                                        })
-
-                # R2
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(
-                                            dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R3
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R4
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'voie_id__nomvoie',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').filter(
-                                            dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R5
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R6
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R7
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R8
-                if frontiere == "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R9
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R10
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R11
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R12
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R13
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R14
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R15
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R16
-                if frontiere == "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R17
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R18
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R19
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R20
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R21
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R22
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R23
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R24
-                if frontiere == "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R25
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R26
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R26
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R27
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R28
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R29
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R30
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R31
-                if frontiere == "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R32
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R32
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R33
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R34
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get("_export", None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response("table.{}".format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R35
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R35
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R36
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startwith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R37
-                if frontiere != "":
-                    if produit == "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R40
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R41
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R42
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R43
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur,
-                                                                          entrepot=entrepot).order_by(
-                                            '-dateheurecargaison')
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R44
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R45
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R46
-                if frontiere != "":
-                    if produit == "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          importateur=importateur, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R47
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R48
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R49
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R50
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R51
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit,
-                                                                          dateheurecargaison__startswith=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R52
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R53
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R54
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R55
-                if frontiere != "":
-                    if produit != "":
-                        if importateur == "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R56
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R57
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R58
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R58
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot == "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R59
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R60
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d == "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-
-                # R61
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f == "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__startswith=date_d)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {'cargaison': table})
-                # R62
-                if frontiere != "":
-                    if produit != "":
-                        if importateur != "":
-                            if entrepot != "":
-                                if date_d != "":
-                                    if date_f != "":
-                                        qs = Cargaison.objects.select_related().values('dateheurecargaison',
-                                                                                       'fournisseur',
-                                                                                       'frontiere_id__nomville',
-                                                                                       'entrepot_id__nomentrepot',
-                                                                                       'importateur_id__nomimportateur',
-                                                                                       'produit_id__nomproduit',
-                                                                                       'volume', 'immatriculation',
-                                                                                       't1e', 't1d', 'numbtfh',
-                                                                                       'numdeclaration',
-                                                                                       'manifestdgda').order_by(
-                                            '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
-                                                                          produit=produit, importateur=importateur,
-                                                                          entrepot=entrepot,
-                                                                          dateheurecargaison__gte=date_d,
-                                                                          dateheurecargaison__lte=date_f)
-                                        table = StatistiquesTable(qs)
-                                        RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                                                         "per_page": 20}).configure(table)
-                                        # export_format = request.GET.get('_export', None)
-                                        # if TableExport.is_valid_format(export_format):
-                                        #     exporter = TableExport(export_format, table)
-                                        #     return exporter.response('table.{}'.format(export_format))
-                                        return render(request, 'stats.html', {
-                                            'cargaison': table
-                                        })
-
-        else:
-            return redirect('logout')
+            
+
+    # @login_required(login_url='login')
+    # # Fonction Recherche Statistique Detaillé
+    # def statistiquesimportations(request):
+    #     user = request.user
+    #     role = user.role_id
+    #     template = "rapports.html"
+    #     qs = Cargaison.objects.all()
+    #     table = StatistiquesTable(qs)
+    #     context = {
+    #         'table':table,
+    #     }
+    #     return render(request,template,context)
+    #
+    #
+    #     # if role == 1 or role == 'st' or role == 7 or role == 8:
+    #     #     template = 'rapports.html'
+    #     #     if request.method == 'POST':
+    #     #         frontiere = request.POST['frontiere']
+    #     #         produit = request.POST['produit']
+    #     #         importateur = request.POST['importateur']
+    #     #         entrepot = request.POST['entrepot']
+    #     #         date_d = request.POST['date_d']
+    #     #         date_f = request.POST['date_f']
+    #     #
+    #     #         request.session['frontiere'] = frontiere
+    #     #         request.session['produit'] = produit
+    #     #         request.session['importateur'] = importateur
+    #     #         request.session['entrepot'] = entrepot
+    #     #         request.session['date_d'] = date_d
+    #     #         request.session['date_f'] = date_f
+    #     #
+    #     #         # request.session['frontiere'] = frontiereqs
+    #     #         # request.session['produit'] = produitqs
+    #     #         # request.session['importateur'] = importateurqs
+    #     #         # request.session['entrepot'] = entrepotqs
+    #     #         # request.session['date_d'] = date_d
+    #     #         # request.session['date_f'] = date_f
+    #     #
+    #     #         # R1
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison')
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #
+    #     #                                 return render(request, template, {
+    #     #                                     'cargaison': table
+    #     #                                 })
+    #     #
+    #     #         # R2
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R3
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R4
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.values('dateheurecargaison',
+    #     #                                                               'frontiere_id__nomville',
+    #     #                                                               'entrepot_id__nomentrepot',
+    #     #                                                               'importateur_id__nomimportateur',
+    #     #                                                               'produit_id__nomproduit', 'volume',
+    #     #                                                               'immatriculation',
+    #     #                                                               'declaration','transitaire' ).filter(
+    #     #                                     dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R5
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R6
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R7
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R8
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R9
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R10
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R11
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R12
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R13
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R14
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R15
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R16
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R17
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R18
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R19
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R20
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R21
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R22
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R23
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R24
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R25
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R26
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R26
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R27
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R28
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R29
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R30
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R31
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R32
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R32
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R33
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R34
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R35
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R35
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R36
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startwith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R37
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R40
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R41
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R42
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R43
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R44
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R45
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R46
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R47
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R48
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R49
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R50
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R51
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R52
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R53
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R54
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R55
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R56
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R57
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R58
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R58
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R59
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R60
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R61
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #         # R62
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 df = pd.DataFrame(qs)
+    #     #                                 df = df.to_json()
+    #     #                                 request.session['df'] = df
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #     if request.method == 'GET':
+    #     #
+    #     #         frontiere = request.session['frontiere']
+    #     #         produit = request.session['produit']
+    #     #         importateur = request.session['importateur']
+    #     #         entrepot = request.session['entrepot']
+    #     #         date_d = request.session['date_d']
+    #     #         date_f = request.session['date_f']
+    #     #
+    #     #         # R1
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison')
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #
+    #     #                                 return render(request, template, {
+    #     #                                     'cargaison': table
+    #     #                                 })
+    #     #
+    #     #         # R2
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(
+    #     #                                     dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R3
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R4
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'voie_id__nomvoie',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).filter(
+    #     #                                     dateheurecargaison__gte=date_d, dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R5
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R6
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R7
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R8
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R9
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R10
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R11
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R12
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R13
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R14
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R15
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R16
+    #     #         if frontiere == "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R17
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R18
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R19
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R20
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R21
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R22
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R23
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R24
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R25
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R26
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R26
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R27
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R28
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R29
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R30
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R31
+    #     #         if frontiere == "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R32
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R32
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R33
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R34
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get("_export", None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response("table.{}".format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R35
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R35
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R36
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startwith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R37
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R40
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R41
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R42
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R43
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur,
+    #     #                                                                   entrepot=entrepot).order_by(
+    #     #                                     '-dateheurecargaison')
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R44
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R45
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R46
+    #     #         if frontiere != "":
+    #     #             if produit == "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   importateur=importateur, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R47
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R48
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R49
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R50
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R51
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit,
+    #     #                                                                   dateheurecargaison__startswith=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R52
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R53
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R54
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R55
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur == "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R56
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R57
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R58
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R58
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot == "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R59
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R60
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d == "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #
+    #     #         # R61
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f == "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__startswith=date_d)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {'cargaison': table})
+    #     #         # R62
+    #     #         if frontiere != "":
+    #     #             if produit != "":
+    #     #                 if importateur != "":
+    #     #                     if entrepot != "":
+    #     #                         if date_d != "":
+    #     #                             if date_f != "":
+    #     #                                 qs = Cargaison.objects.select_related().values('dateheurecargaison',
+    #     #
+    #     #                                                                                'frontiere_id__nomville',
+    #     #                                                                                'entrepot_id__nomentrepot',
+    #     #                                                                                'importateur_id__nomimportateur',
+    #     #                                                                                'produit_id__nomproduit',
+    #     #                                                                                'volume', 'immatriculation',
+    #     #
+    #     #                                                                                'declaration','transitaire'
+    #     #                                                                                ).order_by(
+    #     #                                     '-dateheurecargaison').filter(entrepot__ville__idville=frontiere,
+    #     #                                                                   produit=produit, importateur=importateur,
+    #     #                                                                   entrepot=entrepot,
+    #     #                                                                   dateheurecargaison__gte=date_d,
+    #     #                                                                   dateheurecargaison__lte=date_f)
+    #     #                                 table = StatistiquesTable(qs)
+    #     #                                 RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+    #     #                                                                  "per_page": 20}).configure(table)
+    #     #                                 # export_format = request.GET.get('_export', None)
+    #     #                                 # if TableExport.is_valid_format(export_format):
+    #     #                                 #     exporter = TableExport(export_format, table)
+    #     #                                 #     return exporter.response('table.{}'.format(export_format))
+    #     #                                 return render(request, template, {
+    #     #                                     'cargaison': table
+    #     #                                 })
+    #     #
+    #     # else:
+    #     #     return redirect('logout')
 
 @login_required(login_url='login')
 # Fonction gestion des entrepots
@@ -11157,6 +10902,7 @@ def export_excel_encaiss(request):
         return response
 
 
+@login_required(login_url='login')
 # synthese des rapports
 def synthese_importation(request):
     frontiere = request.session['frontiere']
@@ -12717,8 +12463,11 @@ def synthese_importation(request):
                             return render(request, 'statssynthese.html.html', {'cargaison': table})
 
 
+
+@login_required(login_url='login')
 # synthese des rapports production
 def synthese_production(request):
+    template = 'prodsynthese.html'
     frontiere = request.session['frontiere']
     produit = request.session['produit']
     importateur = request.session['importateur']
@@ -12733,26 +12482,48 @@ def synthese_production(request):
                 if entrepot == "":
                     if date_d == "":
                         if date_f == "":
-                            qs = Dechargement.objects.values(
-                                'idcargaison__idcargaison__idcargaison__idcargaison__importateur__nomimportateur').annotate(
+                            qs = Compartiment.objects.values(
+                                'idinspection__idcargaison__importateur__nomimportateur').annotate(
                                 gasoilGOV=Sum('gov',
-                                              filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=1)),
+                                              filter=Q(idinspection__idcargaison__produit=1)),
                                 mogasGOV=Sum('gov',
-                                             filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=2)),
+                                             filter=Q(idinspection__idcargaison__produit=2)),
                                 jetGOV=Sum('gov',
-                                           filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=3)),
+                                           filter=Q(idinspection__idcargaison__produit=3)),
                                 petroleGOV=Sum('gov',
-                                               filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=4)),
+                                               filter=Q(idinspection__idcargaison__produit=4)),
                                 gasoilGSV=Sum('gsv',
-                                              filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=1)),
+                                              filter=Q(idinspection__idcargaison__produit=1)),
                                 mogasGSV=Sum('gsv',
-                                             filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=2)),
+                                             filter=Q(idinspection__idcargaison__produit=2)),
                                 jetGSV=Sum('gsv',
-                                           filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=3)),
+                                           filter=Q(idinspection__idcargaison__produit=3)),
                                 petroleGSV=Sum('gsv',
-                                               filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=4)),
+                                               filter=Q(idinspection__idcargaison__produit=4)),
                                 gsvtotal=Sum('gsv')
                             ).order_by('-gsvtotal')
+
+
+                            # qs = Dechargement.objects.values(
+                            #     'idcargaison__idcargaison__idcargaison__idcargaison__importateur__nomimportateur').annotate(
+                            #     gasoilGOV=Sum('gov',
+                            #                   filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=1)),
+                            #     mogasGOV=Sum('gov',
+                            #                  filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=2)),
+                            #     jetGOV=Sum('gov',
+                            #                filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=3)),
+                            #     petroleGOV=Sum('gov',
+                            #                    filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=4)),
+                            #     gasoilGSV=Sum('gsv',
+                            #                   filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=1)),
+                            #     mogasGSV=Sum('gsv',
+                            #                  filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=2)),
+                            #     jetGSV=Sum('gsv',
+                            #                filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=3)),
+                            #     petroleGSV=Sum('gsv',
+                            #                    filter=Q(idcargaison__idcargaison__idcargaison__idcargaison__produit=4)),
+                            #     gsvtotal=Sum('gsv')
+                            # ).order_by('-gsvtotal')
 
                             table = SyntheseProduction(qs)
                             df = pd.DataFrame(qs)
@@ -12760,7 +12531,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request,
                                           paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {
+                            return render(request, template, {
                                 'cargaison': table
                             })
 
@@ -12801,7 +12572,7 @@ def synthese_production(request):
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
 
-                            return render(request, 'prodsynthese.html', {
+                            return render(request, template, {
                                 'cargaison': table
                             })
 
@@ -12843,7 +12614,7 @@ def synthese_production(request):
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
 
-                            return render(request, 'prodsynthese.html', {
+                            return render(request, template, {
                                 'cargaison': table
                             })
 
@@ -12885,7 +12656,7 @@ def synthese_production(request):
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
 
-                            return render(request, 'prodsynthese.html', {
+                            return render(request, template, {
                                 'cargaison': table
                             })
 
@@ -12925,7 +12696,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R6
     if frontiere == "":
@@ -12964,7 +12735,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R7
     if frontiere == "":
@@ -13003,7 +12774,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R8
     if frontiere == "":
@@ -13043,7 +12814,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R9
     if frontiere == "":
@@ -13082,7 +12853,7 @@ def synthese_production(request):
 
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R10
     if frontiere == "":
@@ -13121,7 +12892,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R11
     if frontiere == "":
@@ -13160,7 +12931,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R12
     if frontiere == "":
@@ -13200,7 +12971,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R13
     if frontiere == "":
@@ -13239,7 +13010,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R14
     if frontiere == "":
@@ -13279,7 +13050,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request,
                                           paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R15
     if frontiere == "":
@@ -13319,7 +13090,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R16
     if frontiere == "":
@@ -13360,7 +13131,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R17
     if frontiere == "":
@@ -13398,7 +13169,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R18
     if frontiere == "":
@@ -13437,7 +13208,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R19
     if frontiere == "":
@@ -13476,7 +13247,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R20
     if frontiere == "":
@@ -13516,7 +13287,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R21
     if frontiere == "":
@@ -13555,7 +13326,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R22
     if frontiere == "":
@@ -13595,7 +13366,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R23
     if frontiere == "":
@@ -13635,7 +13406,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R24
     if frontiere == "":
@@ -13676,7 +13447,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R25
     if frontiere == "":
@@ -13715,7 +13486,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R26
     if frontiere == "":
@@ -13755,7 +13526,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R26
     if frontiere == "":
@@ -13795,7 +13566,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R27
     if frontiere == "":
@@ -13836,7 +13607,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R28
     if frontiere == "":
@@ -13876,7 +13647,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R29
     if frontiere == "":
@@ -13917,7 +13688,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R30
     if frontiere == "":
@@ -13958,7 +13729,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R31
     if frontiere == "":
@@ -14000,7 +13771,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R32
     if frontiere != "":
@@ -14038,7 +13809,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R32
     if frontiere != "":
@@ -14077,7 +13848,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R33
     if frontiere != "":
@@ -14116,7 +13887,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R34
     if frontiere != "":
@@ -14156,7 +13927,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R35
     if frontiere != "":
@@ -14195,7 +13966,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R35
     if frontiere != "":
@@ -14235,7 +14006,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R36
     if frontiere != "":
@@ -14275,7 +14046,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R37
     if frontiere != "":
@@ -14316,7 +14087,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     if frontiere != "":
         if produit == "":
@@ -14354,7 +14125,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R40
     if frontiere != "":
@@ -14394,7 +14165,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R41
     if frontiere != "":
@@ -14434,7 +14205,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R42
     if frontiere != "":
@@ -14475,7 +14246,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R43
     if frontiere != "":
@@ -14515,7 +14286,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R44
     if frontiere != "":
@@ -14556,7 +14327,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R45
     if frontiere != "":
@@ -14597,7 +14368,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R46
     if frontiere != "":
@@ -14639,7 +14410,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R47
     if frontiere != "":
@@ -14678,7 +14449,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R48
     if frontiere != "":
@@ -14718,7 +14489,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R49
     if frontiere != "":
@@ -14758,7 +14529,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R51
     if frontiere != "":
@@ -14799,7 +14570,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R52
     if frontiere != "":
@@ -14840,7 +14611,7 @@ def synthese_production(request):
 
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R53
     if frontiere != "":
@@ -14881,7 +14652,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R54
     if frontiere != "":
@@ -14922,7 +14693,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R55
     if frontiere != "":
@@ -14964,7 +14735,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R56
     if frontiere != "":
@@ -15004,7 +14775,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R57
     if frontiere != "":
@@ -15045,7 +14816,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R58
     if frontiere != "":
@@ -15086,7 +14857,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R58
     if frontiere != "":
@@ -15128,7 +14899,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R59
     if frontiere != "":
@@ -15169,7 +14940,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R60
     if frontiere != "":
@@ -15211,7 +14982,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
     # R61
     if frontiere != "":
@@ -15253,7 +15024,7 @@ def synthese_production(request):
                             request.session['df'] = df
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
     # R62
     if frontiere != "":
         if produit != "":
@@ -15296,7 +15067,7 @@ def synthese_production(request):
                             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                              "per_page": 20}).configure(table)
 
-                            return render(request, 'prodsynthese.html', {'cargaison': table})
+                            return render(request, template, {'cargaison': table})
 
 
 # Synthese des encaissements
@@ -16347,3 +16118,3684 @@ def synthese_encaissement(request):
                         return render(request, 'encsynthese.html', {
                             'cargaison': table
                         })
+
+# #######
+# Nouvelles Fonction
+# #######
+
+@login_required(login_url='login')
+# Fonction Recherche Statistique Detaillé
+def rapportBrut(request):
+    user = request.user
+    role = user.role_id
+    template = "rapportBrutes.html"
+    ville = request.POST['ville']
+    produit = request.POST['produit']
+    importateur = request.POST['importateur']
+    entrepot = request.POST['entrepot']
+    date_d = request.POST['date_d']
+    date_f = request.POST['date_f']
+
+    request.session['frontiere'] = ville
+    request.session['produit'] = produit
+    request.session['importateur'] = importateur
+    request.session['entrepot'] = entrepot
+    request.session['date_d'] = date_d
+    request.session['date_f'] = date_f
+
+    if ville and produit and importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                        c.idcargaison, \
+                        DATE(c.dateheurecargaison), \
+                        i.nomimportateur, \
+                        e.nomentrepot, \
+                        c.immatriculation, \
+                        p.nomproduit, \
+                        c.volume, \
+                        DATE(ee.dateechantillonage) as dateEch, \
+                        DATE(l.datereceptionlabo) as dateLabo, \
+                        im.printDate, \
+                        im.isConforme, \
+                        DATE(ei.dateinspection) as dateInsp, \
+                        DATE(ed.datedechargement) as dateDech, \
+                        ei.dens, \
+                        SUM(ec.gov) as volJauge, \
+                        SUM(ec.gsv) as gsvJauge, \
+                        SUM(ed.govmeter) as govMeter, \
+                        SUM(ed.gsvmeter) as gsvMeter, \
+                        IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                    FROM \
+                        enreg_cargaison c \
+                        LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                        LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                        LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                        LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                        LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                        LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                        LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                        LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                        LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                        LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                    WHERE \
+                        e.ville_id = %s \
+                        AND c.produit_id = %s \
+                        AND c.importateur_id = %s \
+                        AND c.entrepot_id = %s \
+                        AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                    GROUP BY \
+                        c.idcargaison, \
+                        c.dateheurecargaison, \
+                        i.nomimportateur, \
+                        e.nomentrepot, \
+                        c.immatriculation, \
+                        p.nomproduit, \
+                        c.volume, \
+                        ee.dateechantillonage, \
+                        l.datereceptionlabo, \
+                        im.printDate, \
+                        im.isConforme, \
+                        ei.dateinspection, \
+                        ei.dens",[ville,produit,importateur,entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+    if ville and produit and importateur and entrepot and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and produit and importateur and entrepot and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and produit and importateur and entrepot :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and produit and importateur and date_d and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+    if ville and produit and importateur and date_d :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and produit and importateur and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+    if ville and produit and importateur :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,importateur,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and produit and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,entrepot,date_d, date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and produit and entrepot and date_d :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and produit and entrepot and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and produit and entrepot :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND c.entrepot_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and produit and date_d and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and produit and date_d :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and produit and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and produit:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.produit_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,produit,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and importateur and entrepot and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and importateur and entrepot and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and importateur and entrepot:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if ville and importateur and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,date_d, date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and importateur and date_d :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and importateur and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and importateur :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.importateur_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,importateur,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and entrepot and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and entrepot and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and entrepot:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if ville:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                e.ville_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[ville,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if produit and importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if produit and importateur and entrepot and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and importateur and entrepot and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if produit and importateur and entrepot :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and importateur and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and importateur and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and importateur and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and importateur :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,importateur,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and entrepot and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+    if produit and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if produit:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.produit_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[produit,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if importateur and entrepot and date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if importateur and entrepot and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if importateur and entrepot :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND c.entrepot_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if importateur and date_d and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,date_d, date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if importateur and date_d :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if importateur and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if importateur :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.importateur_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[importateur,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if entrepot and date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[entrepot,date_d,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+
+    if entrepot and date_d :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[entrepot,date_d,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if entrepot and date_f :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.entrepot_id = %s \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[entrepot,date_f,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if entrepot :
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND c.entrepot_id = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[entrepot,])
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if date_d and date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[date_d,date_f,])
+
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if date_d:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[date_d,])
+
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+
+    if date_f:
+        qs = Cargaison.objects.raw("SELECT \
+                                c.idcargaison, \
+                                DATE(c.dateheurecargaison), \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                DATE(ee.dateechantillonage) as dateEch, \
+                                DATE(l.datereceptionlabo) as dateLabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                DATE(ei.dateinspection) as dateInsp, \
+                                DATE(ed.datedechargement) as dateDech, \
+                                ei.dens, \
+                                SUM(ec.gov) as volJauge, \
+                                SUM(ec.gsv) as gsvJauge, \
+                                SUM(ed.govmeter) as govMeter, \
+                                SUM(ed.gsvmeter) as gsvMeter, \
+                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                            FROM \
+                                enreg_cargaison c \
+                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                            WHERE \
+                                AND DATE(c.dateheurecargaison) = %s \
+                            GROUP BY \
+                                c.idcargaison, \
+                                c.dateheurecargaison, \
+                                i.nomimportateur, \
+                                e.nomentrepot, \
+                                c.immatriculation, \
+                                p.nomproduit, \
+                                c.volume, \
+                                ee.dateechantillonage, \
+                                l.datereceptionlabo, \
+                                im.printDate, \
+                                im.isConforme, \
+                                ei.dateinspection, \
+                                ei.dens",[date_f,])
+
+
+        table = RapportBrut(qs)
+        context = {
+            'table': table,
+        }
+        return render(request, template, context)
+
+    qs = Cargaison.objects.raw("SELECT \
+                                    c.idcargaison, \
+                                    DATE(c.dateheurecargaison), \
+                                    i.nomimportateur, \
+                                    e.nomentrepot, \
+                                    c.immatriculation, \
+                                    p.nomproduit, \
+                                    c.volume, \
+                                    DATE(ee.dateechantillonage) as dateEch, \
+                                    DATE(l.datereceptionlabo) as dateLabo, \
+                                    im.printDate, \
+                                    im.isConforme, \
+                                    DATE(ei.dateinspection) as dateInsp, \
+                                    DATE(ed.datedechargement) as dateDech, \
+                                    ei.dens, \
+                                    SUM(ec.gov) as volJauge, \
+                                    SUM(ec.gsv) as gsvJauge, \
+                                    SUM(ed.govmeter) as govMeter, \
+                                    SUM(ed.gsvmeter) as gsvMeter, \
+                                    IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                                FROM \
+                                    enreg_cargaison c \
+                                    LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                                    LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                                    LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                                    LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                                    LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                                    LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                                    LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                                    LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                                    LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                                    LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                                GROUP BY \
+                                    c.idcargaison, \
+                                    c.dateheurecargaison, \
+                                    i.nomimportateur, \
+                                    e.nomentrepot, \
+                                    c.immatriculation, \
+                                    p.nomproduit, \
+                                    c.volume, \
+                                    ee.dateechantillonage, \
+                                    l.datereceptionlabo, \
+                                    im.printDate, \
+                                    im.isConforme, \
+                                    ei.dateinspection, \
+                                    ei.dens")
+
+    table = RapportBrut(qs)
+    context = {
+        'table': table,
+    }
+    return render(request, template, context)
+

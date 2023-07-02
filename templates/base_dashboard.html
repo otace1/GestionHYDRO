@@ -306,7 +306,7 @@
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Dashboard</li>
+                            <li class="breadcrumb-item active">Département</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -317,18 +317,156 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-md-2">
-                        <a href="" data-toggle="modal" data-target="#RechercheModal" class="btn btn-info" role="button"><b>Rapport
-                            des importations</b></a>
-                    </div>
-                    <div class="col-md-2">
-                        <a href="" data-toggle="modal" data-target="#RechercheModal1" class="btn btn-info"
-                           role="button"><b>Rapport de Production</b></a>
-                    </div>
+                    <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-rapport">
+                  <span class="badge bg-success"></span>
+                  <i class="fas fa-file"></i> Rapports
+                </a>
+
+{#                <a class="btn btn-app bg-warning" data-toggle="modal" data-target="#modal-production">#}
+{#                  <span class="badge bg-teal"></span>#}
+{#                  <i class="fas fa-inbox"></i> Production#}
+{#                </a>#}
+
+
+                    <div class="modal fade" id="modal-rapport">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Filtres des rapports</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          <form action="{% url 'rapportBrut' %}" method="post">
+          {% csrf_token %}
+            <div class="modal-body">
+                {% block modalRapport %}{% endblock %}
+            </div>
+            <div class="modal-footer justify-content-between">
+              <button type="reset" class="btn btn-warning" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-success">Submit</button>
+            </div>
+          </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+                    <div class="modal fade" id="modal-production">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Filtres des rapports</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+                    <form action="{% url 'rapportBrut' %}" method="post">
+                    {% csrf_token %}
+
+            <div class="modal-body">
+                {% block rapporProduction %}{% endblock %}
+            </div>
+            <div class="modal-footer justify-content-between">
+              <button type="reset" class="btn btn-warning" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-success">Submit</button>
+            </div>
+                                        </form>
+
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+
                 </div><!-- /.container-fluid -->
             </div>
+        <br/>
             <!-- /.content-header -->
-            <br>
+        <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box bg-info">
+              <span class="info-box-icon"><i class="far fa-file"></i></span>
+
+              <div class="info-box-content">
+                <span class="info-box-text">Nouvelle cargaison</span>
+                <span class="info-box-number">{{j}}</span>
+
+{#                <div class="progress">#}
+{#                  <div class="progress-bar" style="width: 70%"></div>#}
+{#                </div>#}
+{#                <span class="progress-description">#}
+{#                  70% Increase in 30 Days#}
+{#                </span>#}
+              </div>
+              <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+          </div>
+            <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box bg-success">
+              <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
+
+              <div class="info-box-content">
+                <span class="info-box-text">En attente d'echantillonnage</span>
+                <span class="info-box-number">{{ k }}</span>
+
+{#                <div class="progress">#}
+{#                  <div class="progress-bar" style="width: 70%"></div>#}
+{#                </div>#}
+{#                <span class="progress-description">#}
+{#                  70% Increase in 30 Days#}
+{#                </span>#}
+              </div>
+              <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+          </div>
+          <!-- /.col -->
+            <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box bg-warning">
+              <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+
+              <div class="info-box-content">
+                <span class="info-box-text">En cours d'analyse</span>
+                <span class="info-box-number">{{ l }}</span>
+
+{#                <div class="progress">#}
+{#                  <div class="progress-bar" style="width: 70%"></div>#}
+{#                </div>#}
+{#                <span class="progress-description">#}
+{#                  70% Increase in 30 Days#}
+{#                </span>#}
+              </div>
+              <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+          </div>
+            <div class="col-md-3 col-sm-6 col-12">
+            <div class="info-box bg-danger">
+              <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+
+              <div class="info-box-content">
+                <span class="info-box-text">En attente d'inspection</span>
+                <span class="info-box-number">{{ m }}</span>
+
+{#                <div class="progress">#}
+{#                  <div class="progress-bar" style="width: 70%"></div>#}
+{#                </div>#}
+{#                <span class="progress-description">#}
+{#                  70% Increase in 30 Days#}
+{#                </span>#}
+              </div>
+              <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+          </div>
+        </div>
+        </div>
+{#            <br>#}
             <div class="container-fluid">
                 {% block pie %}
                 {% endblock %}
@@ -336,20 +474,151 @@
             <!-- Main content -->
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-12">
-                        <div class="card bg-gradient-light">
-                            <div class="card-header bg-gradient-dark">
-                                <h1 class="card-title"><b>Derniers enregistrements effectués</b></h1>
-                                <div class="card-tools">
-                                </div>
-                            </div>
-                            <div class="card-body table-responsive p-0">
-                                {% block stats %}
-                                {% endblock %}
-                            </div>
-                        </div>
+                    <div class="col-md-12">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title">Recap Mensuel</h5>
 
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
+                      <i class="fas fa-wrench"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" role="menu">
+                      <a href="#" class="dropdown-item">Action</a>
+                      <a href="#" class="dropdown-item">Another action</a>
+                      <a href="#" class="dropdown-item">Something else here</a>
+                      <a class="dropdown-divider"></a>
+                      <a href="#" class="dropdown-item">Separated link</a>
                     </div>
+                  </div>
+                  <button type="button" class="btn btn-tool" data-card-widget="remove">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <p class="text-center">
+                      <strong>Sales: 1 Jan, 2014 - 30 Jul, 2014</strong>
+                    </p>
+
+                    <div class="chart">
+                      <!-- Sales Chart Canvas -->
+                      <canvas id="salesChart" height="180" style="height: 180px;"></canvas>
+                    </div>
+                    <!-- /.chart-responsive -->
+                  </div>
+                  <!-- /.col -->
+                  <div class="col-md-4">
+                    <p class="text-center">
+                      <strong>Goal Completion</strong>
+                    </p>
+
+                    <div class="progress-group">
+                      Add Products to Cart
+                      <span class="float-right"><b>160</b>/200</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-primary" style="width: 80%"></div>
+                      </div>
+                    </div>
+                    <!-- /.progress-group -->
+
+                    <div class="progress-group">
+                      Complete Purchase
+                      <span class="float-right"><b>310</b>/400</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-danger" style="width: 75%"></div>
+                      </div>
+                    </div>
+
+                    <!-- /.progress-group -->
+                    <div class="progress-group">
+                      <span class="progress-text">Visit Premium Page</span>
+                      <span class="float-right"><b>480</b>/800</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-success" style="width: 60%"></div>
+                      </div>
+                    </div>
+
+                    <!-- /.progress-group -->
+                    <div class="progress-group">
+                      Send Inquiries
+                      <span class="float-right"><b>250</b>/500</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-warning" style="width: 50%"></div>
+                      </div>
+                    </div>
+                    <!-- /.progress-group -->
+                  </div>
+                  <!-- /.col -->
+                </div>
+                <!-- /.row -->
+              </div>
+              <!-- ./card-body -->
+              <div class="card-footer">
+                <div class="row">
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 17%</span>
+                      <h5 class="description-header">$35,210.43</h5>
+                      <span class="description-text">TOTAL REVENUE</span>
+                    </div>
+                    <!-- /.description-block -->
+                  </div>
+                  <!-- /.col -->
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-warning"><i class="fas fa-caret-left"></i> 0%</span>
+                      <h5 class="description-header">$10,390.90</h5>
+                      <span class="description-text">TOTAL COST</span>
+                    </div>
+                    <!-- /.description-block -->
+                  </div>
+                  <!-- /.col -->
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block border-right">
+                      <span class="description-percentage text-success"><i class="fas fa-caret-up"></i> 20%</span>
+                      <h5 class="description-header">$24,813.53</h5>
+                      <span class="description-text">TOTAL PROFIT</span>
+                    </div>
+                    <!-- /.description-block -->
+                  </div>
+                  <!-- /.col -->
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block">
+                      <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i> 18%</span>
+                      <h5 class="description-header">1200</h5>
+                      <span class="description-text">GOAL COMPLETIONS</span>
+                    </div>
+                    <!-- /.description-block -->
+                  </div>
+                </div>
+                <!-- /.row -->
+              </div>
+              <!-- /.card-footer -->
+            </div>
+            <!-- /.card -->
+          </div>
+{#                    <div class="col-12">#}
+{#                        <div class="card bg-gradient-light">#}
+{#                            <div class="card-header bg-gradient-dark">#}
+{#                                <h1 class="card-title"><b>Derniers enregistrements effectués</b></h1>#}
+{#                                <div class="card-tools">#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            <div class="card-body table-responsive p-0">#}
+{#                                {% block stats %}#}
+{#                                {% endblock %}#}
+{#                            </div>#}
+{#                        </div>#}
+{##}
+{#                    </div>#}
                 </div>
             </div>
 
