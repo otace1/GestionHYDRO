@@ -619,7 +619,7 @@ def rapportActivite(request):
                                                     ORDER BY i.dateinspection DESC', [user, ])
 
     table = RapportActivite(qs)
-    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    # RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -787,7 +787,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateDebut,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -830,7 +829,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateDebut, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -873,7 +871,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -915,7 +912,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -957,7 +953,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,dateDebut,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -999,7 +994,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,dateDebut, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1041,7 +1035,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1082,7 +1075,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,fournisseur, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1124,7 +1116,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,entrepot,dateDebut,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1166,7 +1157,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,entrepot,dateDebut, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1208,7 +1198,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,entrepot,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1249,7 +1238,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,entrepot, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1290,7 +1278,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,dateDebut,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1331,7 +1318,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,dateDebut, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1372,7 +1358,6 @@ def rapportActiviteFiltre(request):
                                                 ORDER BY i.dateinspection DESC', [user,dateFin, ])
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)

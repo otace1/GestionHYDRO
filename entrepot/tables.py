@@ -81,8 +81,9 @@ class EchantillonTable(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            "id": "example5"
         }
+        template_name = "django_tables2/bootstrap4.html"
         row_attrs = {
             "id": lambda record: record.pk
         }
