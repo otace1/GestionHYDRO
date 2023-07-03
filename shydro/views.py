@@ -1,5 +1,8 @@
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
+
+from ads.forms import ImportateurForm, EntrepotForm
+from enreg.forms import Ajoutcargaison
 from enreg.models import *
 from accounts.models import *
 from entrepot.calculs import densite15, vcf, gsv, mta
@@ -45,7 +48,7 @@ class GestionCodification():
                         Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="1_")
                     data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                    RequestConfig(request, paginate={"per_page": 20}).configure(table)
+                    RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
@@ -73,7 +76,7 @@ class GestionCodification():
                         Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent, entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="3_")
                     data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                    RequestConfig(request, paginate={"per_page": 20}).configure(table)
+                    RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
@@ -98,7 +101,7 @@ class GestionCodification():
                 table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
                 data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                RequestConfig(request, paginate={"per_page": 20}).configure(table)
+                RequestConfig(request, paginate={"per_page": 7}).configure(table)
                 context = {
                     'cargaison': table,
                     'filter': data,
@@ -636,6 +639,9 @@ def regularisation(request):
     form = ChangementDestination()
     form1 = Transbordement()
     form2 = ChangementNatureProduit()
+    form3 = ImportateurForm()
+    form4 = EntrepotForm()
+    form5 = Ajoutcargaison()
     qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).filter(Q(etat='En attente requisition')| Q(etat="En attente d'echantillonage") | Q(etat='Echantillonner') | Q(etat='Analyse Labo en cours')).order_by('-dateheurecargaison')
     table = Regularisation(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
@@ -644,6 +650,9 @@ def regularisation(request):
         'form':form,
         'form1':form1,
         'form2':form2,
+        'form3':form3,
+        'form4':form4,
+        'form5':form5,
     }
     return render(request,template,context)
 
@@ -1651,6 +1660,8 @@ def consignation(request,pk):
     i.save(update_fields=['control'])
     c.save(update_fields=['toBeConsignated'])
     return redirect('affichageNonConforme')
+
+
 
 
 

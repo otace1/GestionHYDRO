@@ -324,11 +324,25 @@
         <!-- Content Wrapper. Contains page content -->
         <section class="content">
             <div class="container-fluid">
-                <div>
-                    <a href="{% url 'codification' %}" class="btn btn-outline-danger">RETOUR</a>
-                    <a href="{% url 'cargaison' %}" class="btn btn-outline-info">NOUVEL ENREGISTREMENT</a>
-                </div>
-                <br/>
+            <div class="row">
+                <a class="btn btn-app bg-danger" href="{% url 'codification' %}">
+                  <span class="badge bg-purple"></span>
+                  <i class="fas fa-backward"></i> Retour
+                </a>
+                <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-enreg">
+                  <span class="badge bg-purple"></span>
+                  <i class="fas fa-trailer"></i> N.Enreg.
+                </a>
+                <a class="btn btn-app bg-yellow" data-toggle="modal" data-target="#modal-imp">
+                  <span class="badge bg-purple"></span>
+                  <i class="fas fa-user"></i> N.Import.
+                </a>
+                <a class="btn btn-app bg-gradient-danger" data-toggle="modal" data-target="#modal-entrepot">
+                  <span class="badge bg-purple"></span>
+                  <i class="fas fa-warehouse"></i> N.Entrep.
+                </a>
+            </div>
+
                 <div>
                     {% block search %}{% endblock %}
                 </div>
@@ -342,7 +356,7 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header bg-gradient-dark">
-                                <h1 class="card-title"><b>VRAC DES IMPORTATIONS DE L'ENTITE</b></h1>
+                                <h1 class="card-title"><b>IMPORTATIONS DE L'ENTITE</b></h1>
                                 <div class="card-tools">
                                     {% block export %}{% endblock %}
                                 </div>

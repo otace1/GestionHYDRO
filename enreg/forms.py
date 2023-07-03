@@ -53,28 +53,28 @@ class AjoutCargaison(forms.ModelForm):
 
 class Ajoutcargaison(forms.Form):
     voie = forms.ModelChoiceField(queryset=Voie.objects.all(), label="TYPE VOIE D'ENTREE")
+    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('nomville'), label="FRONTIERE D'ENTREE")
+    typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport'),
+                                                label="TYPE D'UNITE DE TRANPORT", required=False)
+    provenance = CountryField().formfield()
     importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'),
                                          label="FOURNISSEUR", required=True)
     produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="NATURE DU PRODUIT")
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('nomville'), label="FRONTIERE D'ENTREE")
-    provenance = CountryField().formfield()
     entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'),
                                       label="ENTREPOT DE DESTINATION")
-    declarant = forms.CharField(widget=forms.TextInput(), label="TRANSITAIRE")
-    poids = forms.DecimalField(min_value=1, label="MASSE EN TONNE METRIQUE (MTA)")
-    volume = forms.FloatField(label="VOLUME AMBIANT", required=True)
-    t1d = forms.CharField(label="T1D", required=False)
-    t1e = forms.CharField(label="T1E", required=False)
-    numdeclaration = forms.CharField(label="# DECLARATION", required=False)
-    numbtfh = forms.CharField(label="NUMERO BT/LT/FICHE CHAUFFEUR", required=False)
-    manifestdgda = forms.CharField(label='# MANIFESTE', required=False)
     immatriculation = forms.CharField(label="IMMATRICULATION")
     transitaire = forms.CharField(label='TRANSITAIRE')
+    declaration = forms.CharField(label="N°.DECLARATION/T1", required=False)
+    # declarant = forms.CharField(widget=forms.TextInput(), label="TRANSITAIRE")
+    # poids = forms.DecimalField(min_value=1, label="MASSE EN TONNE METRIQUE (MTA)")
+    volume = forms.FloatField(label="VOLUME AMBIANT", required=True)
+    # t1d = forms.CharField(label="T1D", required=False)
+    # t1e = forms.CharField(label="T1E", required=False)
+    # numdeclaration = forms.CharField(label="# DECLARATION", required=False)
+    # numbtfh = forms.CharField(label="NUMERO BT/LT/FICHE CHAUFFEUR", required=False)
+    # manifestdgda = forms.CharField(label='# MANIFESTE', required=False)
 
     # Nouveau ajout sur le formulaire d'enregistrement a l'entree
-    typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport'),
-                                                label="TYPE D'UNITE DE TRANPORT", required=False)
-    declaration = forms.CharField(label="N°.DECLARATION", required=False)
     volume15 = forms.FloatField(label="VOLUME A 15°C", required=False)
     volume20 = forms.FloatField(label="VOLUME A 20°C", required=False)
     tonnagevide = forms.FloatField(label="TONNAGE VIDE", required=False)

@@ -15,6 +15,7 @@ class EntrepotForm(forms.ModelForm):
         fields = ['nomentrepot', 'adresseentrepot', 'ville']
 
 
+
 # Formulaire d'edition des entrepots
 class EntrepotEditForm(forms.ModelForm):
     nomentrepot = forms.CharField()
@@ -55,6 +56,9 @@ class EntrepotEditForm(forms.ModelForm):
 
 # Formulaire pour Ajout d'importateur
 class ImportateurForm(forms.ModelForm):
+    nomimportateur = forms.CharField()
+    adresseimportateur = forms.CharField()
+
     class Meta:
         model = Importateur
         fields = ['idimportateur', 'nomimportateur', 'adresseimportateur']

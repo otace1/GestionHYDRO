@@ -3861,12 +3861,13 @@ def addimportateur(request):
             form = ImportateurForm(request.POST)
             if form.is_valid():
                 form.save()
-                return redirect('gest_importateur')
+                return redirect('regularisation')
         else:
             form = ImportateurForm()
         return render(request, template, {'form': form})
     else:
         return redirect('logout')
+
 
 @login_required(login_url='login')
 # Formulaire pour effacer des importateurs

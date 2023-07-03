@@ -104,9 +104,9 @@ class CodificationTable(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            "id": "example3"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap4-responsive.html"
 
 
 class ModificationCodification(tables.Table):
