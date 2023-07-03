@@ -1376,7 +1376,7 @@ def meterafter(request):
                     meterbefore = 0
                 if meterafter == '':
                     meterafter = 0
-                inspection = Inspection.objects.filter(idcargaison=cargaison)
+                inspection = Inspection.objects.get(idcargaison=cargaison)
                 inspection.meterafter = meterafter
                 inspection.save(update_fields=['meterafter', 'meterbefore'])
                 cargaison.etat = 'Cargaison dechargee'
@@ -1600,7 +1600,7 @@ def shoreupdateafter(request, pk):
 def tableaurapports(request):
     user = request.user.id
     template = 'tableauRapport.html'
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, ei.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, c.dateDechargement ,e.dateechantillonage, l.datereceptionlabo , ei.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
                                 FROM enreg_cargaison c \
                                     LEFT JOIN enreg_entrepot_echantillon e \
                                     ON c.idcargaison = e.idcargaison_id \
@@ -1756,7 +1756,7 @@ def affichageInspection(request):
 def marquageInspection(request):
     pk = request.session['id']
     c = Cargaison.objects.get(idcargaison=pk)
-    c.etatInspection = False
+    c.etatInspection = 0
     c.save(update_fields=['etatInspection'])
     return redirect('entrepot')
 

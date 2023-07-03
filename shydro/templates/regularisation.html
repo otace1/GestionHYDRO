@@ -82,10 +82,10 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-           <form action="" method="post">
+           <form action="{% url 'regularisationImportateur' %}" method="post">
            {% csrf_token %}
             <div class="modal-body">
-                {{ form3 | crispy}}
+                {% crispy form3 %}
             </div>
            </form>
           </div>
@@ -105,10 +105,10 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="" method="post">
+              <form action="{% url 'regularisationEntrepot' %}" method="post">
                   {% csrf_token %}
             <div class="modal-body">
-                {{ form4 | crispy}}
+                {% crispy form4 %}
             </div>
               </form>
           </div>
@@ -127,15 +127,15 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="{% url 'nouvelle' %}" method="post">
+              <form action="{% url 'regularisationCargaison' %}" method="post">
                   {% csrf_token %}
             <div class="modal-body">
-                {{ form5 | crispy }}
+                {% crispy form5 %}
             </div>
-            <div class="modal-footer justify-content-between">
-              <button type="cancel" class="btn btn-outline-info" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-outline-success">Submit</button>
-            </div>
+{#            <div class="modal-footer justify-content-between">#}
+{#              <button type="cancel" class="btn btn-outline-info" data-dismiss="modal">Close</button>#}
+{#              <button type="submit" class="btn btn-outline-success">Submit</button>#}
+{#            </div>#}
                   </form>
           </div>
           <!-- /.modal-content -->

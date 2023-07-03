@@ -39,5 +39,9 @@ urlpatterns = [
     path('transbordement/', views.transbordement, name='transbordement'),
     path('pertes/<int:pk>', views.pertes, name='pertes'),
 
+    path('regularisation/cargaison/', views.regularisationCargaison, name='regularisationCargaison'),
+    path('regularisation/importateur/', views.regularisationImportateur, name='regularisationImportateur'),
+    path('regularisation/entrepot/', views.regularisationEntrepot, name='regularisationEntrepot'),
+
 
 ]

@@ -280,7 +280,7 @@ class RapportInspectionCamion(tables.Table):
     dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
     datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
     printDate = tables.Column(verbose_name='DATE ANALYSE')
-    dateDech = tables.Column(verbose_name="DATE DECH.")
+    dateDechargement = tables.Column(verbose_name="DATE DECH.")
     volConst = tables.Column(verbose_name='GOV')
     gsvT = tables.Column(verbose_name='GSV')
     actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')

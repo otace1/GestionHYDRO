@@ -1,3 +1,6 @@
+import uuid
+import qrcode
+import io
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 
@@ -639,9 +642,9 @@ def regularisation(request):
     form = ChangementDestination()
     form1 = Transbordement()
     form2 = ChangementNatureProduit()
-    form3 = ImportateurForm()
-    form4 = EntrepotForm()
-    form5 = Ajoutcargaison()
+    form3 = ImportateurRegularisationForm()
+    form4 = EntrepotRegularisationForm()
+    form5 = RegularisationNouvelleEntree()
     qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).filter(Q(etat='En attente requisition')| Q(etat="En attente d'echantillonage") | Q(etat='Echantillonner') | Q(etat='Analyse Labo en cours')).order_by('-dateheurecargaison')
     table = Regularisation(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
@@ -1637,6 +1640,7 @@ def rapportIs(request, pk):
         return redirect('rapportActivite')
 
 
+@login_required(login_url='login')
 def consignation(request,pk):
     c = Cargaison.objects.get(idcargaison=pk)
     i = ImpressionResultat.objects.get(idcargaison=c)
@@ -1646,6 +1650,50 @@ def consignation(request,pk):
     c.save(update_fields=['toBeConsignated'])
     return redirect('affichageNonConforme')
 
+
+@login_required(login_url='login')
+def regularisationCargaison(request):
+    user = request.user
+    role = user.role_id
+    u = user.id
+    form = RegularisationNouvelleEntree(request.POST or None)
+    if form.is_valid():
+        instance = form.save(commit=False)
+        qrcode = str(uuid.uuid4())
+        instance.qrcode = qrcode
+        instance.user = u
+        instance.etat = "En attente requisition"
+        instance.save()
+        return redirect('regularisation')
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+def regularisationImportateur(request):
+    user = request.user
+    role = user.role_id
+    u = user.id
+    form = ImportateurRegularisationForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect('regularisation')
+    else:
+        return redirect('logout')
+
+
+
+@login_required(login_url='login')
+def regularisationEntrepot(request):
+    user = request.user
+    role = user.role_id
+    u = user.id
+    form = EntrepotRegularisationForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect('regularisation')
+    else:
+        return redirect('logout')
 
 
 
