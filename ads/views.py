@@ -16159,7 +16159,7 @@ def rapportBrut(request):
                         im.printDate, \
                         im.isConforme, \
                         DATE(ei.dateinspection) as dateInsp, \
-                        DATE(ed.datedechargement) as dateDech, \
+                        DATE(c.dateDechargement) as dateDech, \
                         ei.dens, \
                         SUM(ec.gov) as volJauge, \
                         SUM(ec.gsv) as gsvJauge, \
@@ -16219,7 +16219,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16280,7 +16280,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16341,7 +16341,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16401,7 +16401,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16460,7 +16460,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16520,7 +16520,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16579,7 +16579,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16638,7 +16638,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16698,7 +16698,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16759,7 +16759,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16820,7 +16820,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16880,7 +16880,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -16940,7 +16940,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17000,7 +17000,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17060,7 +17060,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17119,7 +17119,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17179,7 +17179,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17240,7 +17240,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17301,7 +17301,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17361,7 +17361,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17420,7 +17420,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17479,7 +17479,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17538,7 +17538,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17596,7 +17596,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17655,7 +17655,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17714,7 +17714,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17773,7 +17773,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17832,7 +17832,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17890,7 +17890,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -17948,7 +17948,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18006,7 +18006,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18064,7 +18064,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18125,7 +18125,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18185,7 +18185,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18246,7 +18246,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18305,7 +18305,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18364,7 +18364,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18423,7 +18423,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18482,7 +18482,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18541,7 +18541,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18600,7 +18600,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18659,7 +18659,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18717,7 +18717,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18774,7 +18774,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18832,7 +18832,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18890,7 +18890,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -18949,7 +18949,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19009,7 +19009,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19068,7 +19068,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19126,7 +19126,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19184,7 +19184,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19242,7 +19242,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19300,7 +19300,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19357,7 +19357,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19416,7 +19416,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19474,7 +19474,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19532,7 +19532,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19589,7 +19589,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19647,7 +19647,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19667,7 +19667,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND DATE(c.dateheurecargaison) = %s \
+                                DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
                                 c.dateheurecargaison, \
@@ -19705,7 +19705,7 @@ def rapportBrut(request):
                                 im.printDate, \
                                 im.isConforme, \
                                 DATE(ei.dateinspection) as dateInsp, \
-                                DATE(ed.datedechargement) as dateDech, \
+                                DATE(c.dateDechargement) as dateDech, \
                                 ei.dens, \
                                 SUM(ec.gov) as volJauge, \
                                 SUM(ec.gsv) as gsvJauge, \
@@ -19725,7 +19725,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND DATE(c.dateheurecargaison) = %s \
+                                DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
                                 c.dateheurecargaison, \
@@ -19761,7 +19761,7 @@ def rapportBrut(request):
                                     im.printDate, \
                                     im.isConforme, \
                                     DATE(ei.dateinspection) as dateInsp, \
-                                    DATE(ed.datedechargement) as dateDech, \
+                                    DATE(c.dateDechargement) as dateDech, \
                                     ei.dens, \
                                     SUM(ec.gov) as volJauge, \
                                     SUM(ec.gsv) as gsvJauge, \
