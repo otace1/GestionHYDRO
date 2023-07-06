@@ -1,5 +1,6 @@
 import json
 
+from django.utils.encoding import force_str
 from rest_framework.decorators import api_view, APIView, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions, exceptions
@@ -520,11 +521,24 @@ class Provenance(APIView):
     # permission_classes = [HasAPIKey]
     # serializer_class = CargaisonSerializer
     def get(self, request):
-        data = COUNTRIES.values()
-        json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        response = JsonResponse(json_data, safe=False)
+        data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
+        json_data = json.dumps(data, ensure_ascii=False)
+        response = JsonResponse(json.loads(json_data), safe=False)
         response['Content-Type'] = 'application/json; charset=utf-8'
         return response
+        # data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
+        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        # response = JsonResponse(json_data, safe=False)
+        # response['Content-Type'] = 'application/json; charset=utf-8'
+        # return response
+        # data = list(COUNTRIES.values())  # Convert dict_values to a list
+        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        # response = JsonResponse(json_data, safe=False)
+        # response['Content-Type'] = 'application/json; charset=utf-8'
+        # return response
+        # data = COUNTRIES.values()
+        # context = {'provenance': data}
+        # return Response(context, status=status.HTTP_200_OK)
 
 
 class GetCargoList(APIView):
