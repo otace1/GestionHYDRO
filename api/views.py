@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.decorators import api_view, APIView, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions, exceptions
@@ -12,7 +14,7 @@ from django_countries.data import COUNTRIES
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
-from django.http import QueryDict
+from django.http import QueryDict, JsonResponse
 
 from entrepot.numrappech import numRappEch
 from entrepot.calculs import *
@@ -519,8 +521,10 @@ class Provenance(APIView):
     # serializer_class = CargaisonSerializer
     def get(self, request):
         data = COUNTRIES.values()
-        context = {'provenance': data}
-        return Response(context, status=status.HTTP_200_OK)
+        json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        response = JsonResponse(json_data, safe=False)
+        response['Content-Type'] = 'application/json; charset=utf-8'
+        return response
 
 
 class GetCargoList(APIView):
