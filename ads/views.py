@@ -19609,7 +19609,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+                                DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
                                 c.idcargaison, \
                                 c.dateheurecargaison, \
