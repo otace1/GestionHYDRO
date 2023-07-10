@@ -39,7 +39,7 @@ def login_user(request):
                     else:
                         # rôle HYDROCARBURES
                         if role == 7:
-                            return redirect('dashboard')
+                            return redirect('codification')
                         else:
                             # rôle Encodeur entrepot
                             if role == 3:
