@@ -4,7 +4,8 @@ from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiem
 from django.db.models import Q, F, Func, Value, CharField, Count, ExpressionWrapper, FloatField
 from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
     DerniersEnregistrements, ProductionTable, EncaissementTable, StatistiquesJour, SyntheseImportation, \
-    SyntheseProduction, SyntheseEncaissement, RapportBrut
+    SyntheseProduction, SyntheseEncaissement, RapportBrut, RapportBrutJournalier, RapportBrutJournalierEchantillonnage, \
+    RapportBrutJournalierAnalyse
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat, RechercheEncaissement
 import json
@@ -18084,7 +18085,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
@@ -18145,7 +18146,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
@@ -18205,7 +18206,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
@@ -18266,7 +18267,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                             GROUP BY \
@@ -18325,7 +18326,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
@@ -18384,7 +18385,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
@@ -18443,7 +18444,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
@@ -18502,7 +18503,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
@@ -18561,7 +18562,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
@@ -18620,7 +18621,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
@@ -18679,7 +18680,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -18737,7 +18738,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -18794,7 +18795,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -18852,7 +18853,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.produit_id = %s \
+                                c.produit_id = %s \
                             GROUP BY \
                                 c.idcargaison, \
                                 c.dateheurecargaison, \
@@ -18910,7 +18911,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
@@ -18969,7 +18970,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
@@ -19029,7 +19030,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
@@ -19088,7 +19089,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND c.entrepot_id = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19146,7 +19147,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19204,7 +19205,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19262,7 +19263,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19320,7 +19321,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.importateur_id = %s \
+                                c.importateur_id = %s \
                             GROUP BY \
                                 c.idcargaison, \
                                 c.dateheurecargaison, \
@@ -19377,7 +19378,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.entrepot_id = %s \
+                                c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19436,7 +19437,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.entrepot_id = %s \
+                                c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19494,7 +19495,7 @@ def rapportBrut(request):
                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
                             WHERE \
-                                AND c.entrepot_id = %s \
+                                c.entrepot_id = %s \
                                 AND DATE(c.dateheurecargaison) = %s \
                             GROUP BY \
                                 c.idcargaison, \
@@ -19796,6 +19797,111 @@ def rapportBrut(request):
                                     ei.dens")
 
     table = RapportBrut(qs)
+    context = {
+        'table': table,
+    }
+    return render(request, template, context)
+
+
+
+@login_required(login_url='login')
+def rapportBrutJournalier(request):
+    template = "rapportBrutes.html"
+    today = date.today()
+    qs = Cargaison.objects.raw("SELECT \
+                        c.idcargaison, \
+                        DATE(c.dateheurecargaison), \
+                        i.nomimportateur, \
+                        e.nomentrepot, \
+                        c.immatriculation, \
+                        p.nomproduit, \
+                        c.volume, \
+                        DATE(ee.dateechantillonage) as dateEch, \
+                        DATE(l.datereceptionlabo) as dateLabo, \
+                        im.printDate, \
+                        im.isConforme, \
+                        DATE(ei.dateinspection) as dateInsp, \
+                        DATE(c.dateDechargement) as dateDech, \
+                        ei.dens, \
+                        SUM(ec.gov) as volJauge, \
+                        SUM(ec.gsv) as gsvJauge, \
+                        SUM(ed.govmeter) as govMeter, \
+                        SUM(ed.gsvmeter) as gsvMeter, \
+                        IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+                    FROM \
+                        enreg_cargaison c \
+                        LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+                        LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+                        LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+                        LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+                        LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+                        LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+                        LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+                        LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+                        LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+                        LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+                    WHERE \
+                        DATE(c.dateheurecargaison) = %s \
+                    GROUP BY \
+                        c.idcargaison, \
+                        c.dateheurecargaison, \
+                        i.nomimportateur, \
+                        e.nomentrepot, \
+                        c.immatriculation, \
+                        p.nomproduit, \
+                        c.volume, \
+                        ee.dateechantillonage, \
+                        l.datereceptionlabo, \
+                        im.printDate, \
+                        im.isConforme, \
+                        ei.dateinspection, \
+                        ei.dens",[today,])
+
+    table = RapportBrutJournalier(qs)
+    context = {
+        'table': table,
+    }
+    return render(request, template, context)
+
+
+
+@login_required(login_url='login')
+def rapportBrutEchantillonnage(request):
+    template = "rapportBrutes.html"
+    today = date.today()
+    filtres = "En attente d'echantillonage"
+    qs = Cargaison.objects.filter(etat=filtres)
+
+    table = RapportBrutJournalierEchantillonnage(qs)
+    context = {
+        'table': table,
+    }
+    return render(request, template, context)
+
+
+
+@login_required(login_url='login')
+def rapportBrutAnalyse(request):
+    template = "rapportBrutes.html"
+    today = date.today()
+    filtres = "Analyse Labo en cours"
+    qs = Cargaison.objects.filter(etat=filtres)
+
+    table = RapportBrutJournalierAnalyse(qs)
+    context = {
+        'table': table,
+    }
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def rapportBrutInspection(request):
+    template = "rapportBrutes.html"
+    today = date.today()
+    filtres = "Analyse Labo en cours"
+    qs = Cargaison.objects.filter(etat=filtres)
+
+    table = rapportBrutInspection(qs)
     context = {
         'table': table,
     }

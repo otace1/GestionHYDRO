@@ -282,13 +282,83 @@ class RapportBrut(tables.Table):
             "class": "table table-bordered table-striped",
             "id": "example1"
         }
-        # model = Cargaison
-        # sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume']
-        # exclude = ['dateHeureAnalyseLabo', 'idcargaison', 'etatInspection', 'valeurfacture', 'frontiere', 'origine',
-        #            'rapechctrl', 'requisitionack',
-        #            'typeunitetransport', 'controlOrganoleptique', 'dateDechargement', 'volume15',
-        #            'volume20', 'tonnagevide', 'toBeRefouler', 'toBeConsignated', 'isConsignated', 'isRefouler',
-        #            'tonnageair', 'transitaire',
-        #            'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
-        #            'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-        #            'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration']
+
+
+
+class RapportBrutJournalier(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    declaration = tables.Column(verbose_name='N.T1E')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPOT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    nomproduit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL. DECL.')
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+
+
+
+class RapportBrutJournalierEchantillonnage(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    declaration = tables.Column(verbose_name='N.T1E')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPOT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    produit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL. DECL.')
+    requisitiondackdate = tables.Column(verbose_name='DATE REQUISITION')
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+
+
+class RapportBrutJournalierAnalyse(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    declaration = tables.Column(verbose_name='N.T1E')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPOT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    produit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL. DECL.')
+    requisitiondackdate = tables.Column(verbose_name='DATE REQUISITION')
+    idcargaison__dateechantillonage = tables.Column(verbose_name='DATE ECHANTILLONNAGE')
+    idcargaison__idcargaison__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+
+
+
+class RapportBrutJournalierAnalyse(tables.Table):
+    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
+    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    declaration = tables.Column(verbose_name='N.T1E')
+    importateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot = tables.Column(verbose_name='ENTREPOT')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    produit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL. DECL.')
+    requisitiondackdate = tables.Column(verbose_name='DATE REQUISITION')
+    idcargaison__dateechantillonage = tables.Column(verbose_name='DATE ECHANTILLONNAGE')
+    idcargaison__idcargaison__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+
+
