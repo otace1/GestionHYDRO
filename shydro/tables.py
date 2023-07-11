@@ -87,7 +87,6 @@ nonConforme = """
 """
 
 
-
 class CodificationTable(tables.Table):
     dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
     importateur = tables.Column(verbose_name='FOURNISSEUR')

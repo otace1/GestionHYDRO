@@ -51,7 +51,7 @@ class GestionCodification():
                         Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="1_")
                     data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                    RequestConfig(request, paginate={"per_page": 7}).configure(table)
+                    # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
@@ -79,7 +79,7 @@ class GestionCodification():
                         Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent, entrepot__ville__affectationville__username_id=id) \
                             .order_by('-dateheurecargaison'), prefix="3_")
                     data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                    RequestConfig(request, paginate={"per_page": 7}).configure(table)
+                    # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
                         'cargaison': table,
                         'filter': data,
@@ -104,7 +104,7 @@ class GestionCodification():
                 table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
                                           .order_by('-dateheurecargaison'), prefix="5_")
                 data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                RequestConfig(request, paginate={"per_page": 7}).configure(table)
+                # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                 context = {
                     'cargaison': table,
                     'filter': data,
