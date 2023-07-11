@@ -1628,7 +1628,7 @@ def tableaurapports(request):
                                 ORDER BY i.dateinspection DESC',[user,])
     # qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
     qs1 = Cargaison.objects.filter(voie__idvoie=3)
-    table = RapportInspectionCamion(qs, prefix='1_')
+    table = RapportInspectionCamion(qs1, prefix='1_')
     table1 = RapportInspectionTanker(qs1, prefix='2_')
     # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
     # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table1)
