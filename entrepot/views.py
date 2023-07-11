@@ -625,7 +625,7 @@ def echantillonage(request):
             numrappech = numRappEch(pk,ville)  # Generation automatique du numero de rapport d'achentillonnage / ville et annuel
             numrappechauto = numrappech
             c.rapechctrl = 1
-            c.etatInspection = True
+            c.etatInspection = 1
             c.etat = "Echantillonner"
             c.save(update_fields=['etat', 'rapechctrl','etatInspection'])
 
@@ -1623,6 +1623,7 @@ def tableaurapports(request):
                                     LEFT JOIN accounts_affectationville v \
                                     ON v.ville_id = ev.idville \
                                 WHERE v.username_id= %s \
+                                AND c.etatInspection = 0 \
                                 GROUP BY c.idcargaison \
                                 ORDER BY i.dateinspection DESC',[user,])
     # qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
