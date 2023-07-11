@@ -291,5 +291,5 @@ class Regularisation(tables.Table):
         row_attrs = {
             "id": lambda record: record.pk
         }
-        template_name = "django_tables2/bootstrap4.html"
+        # template_name = "django_tables2/bootstrap4.html"
 
