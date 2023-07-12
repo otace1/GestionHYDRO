@@ -4220,5 +4220,23 @@ def affichageDetailsResultatsDroite(request,pk):
     return render(request,template,context)
 
 
+@login_required(login_url='login')
+def receptionRapports(request):
+    user = request.user.id
+    ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
+    template ='laboReceptionRapports.html'
+    # qs = Cargaison.objects.raw('SELECT ec.idcargaison, ec.numdos, ee.numrappechauto, ee.dateechantillonage, el.datereceptionlabo,e.nomentrepot, ei.nomimportateur, ec.immatriculation, ep.nomproduit, el.codelabo \
+    #                             FROM enreg_cargaison ec, enreg_entrepot_echantillon ee, enreg_entrepot e, enreg_importateur ei, enreg_produit ep, enreg_laboreception el, enreg_ville ev \
+    #                             WHERE ec.idcargaison = ee.idcargaison_id \
+    #                             AND ec.entrepot_id = e.identrepot \
+    #                             AND ec.importateur_id = ei.idimportateur \
+    #                             AND ec.produit_id = ep.idproduit \
+    #                             AND ec.idcargaison = el.idcargaison_id \
+    #                             AND e.ville_id = ev.idville \
+    #                             AND ev.idville = %s',[tuple(ville)])
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=user)
+    table = RapportsLaboratoireReception(qs)
+    context = {'table':table}
+    return render(request,template,context)
 
 

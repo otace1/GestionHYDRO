@@ -423,3 +423,24 @@ class AffichageDetailResultat(tables.Table):
         }
         # template_name = "django_tables2/bootstrap4.html"
 
+
+
+class RapportsLaboratoireReception(tables.Table):
+    # actions = tables.TemplateColumn(TEMPLATE, verbose_name='ACTIONS')
+    idcargaison__idcargaison__numdos = tables.Column(verbose_name="NUM.HYDRO")
+    numrappechauto = tables.Column(accessor='idcargaison.numrappechauto',verbose_name="NUM.RE")
+    idcargaison__dateechantillonage = tables.Column(verbose_name='DATE ECHANT.')
+    datereceptionlabo = tables.Column(verbose_name="DATE RECEP.")
+    idcargaison__idcargaison__entrepot = tables.Column(verbose_name='ENTREPOT')
+    idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
+    codelabo = tables.Column(verbose_name="CODE LABO")
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+            "id": "example1"
+        }
+        # template_name = "django_tables2/bootstrap4.html"
+

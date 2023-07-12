@@ -328,25 +328,15 @@
         <div class="row">
                     <a class="btn btn-app bg-warning" href="{% url 'receptionRapports' %}">
                   <span class="badge bg-success"></span>
-                  <i class="fas fa-file"></i> Rapports
+                  <i class="fas fa-file"></i> Filtres
                 </a>
         </div>
 
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card bg-white">
-                            <div class="card-header" style="background-color: darkgreen">
-                                <h3 class="card-title" style="color: white"><b>Relevé des échantillons au Laboratoire</b></h3>
-                                <div class="card-tools col-6">
-                                    <form method="get" action="{% url 'rechercheqr' %}">
-                                        <input class="form-control" name="q" type="text"
-                                               placeholder="SCANNER LE QR CODE"
-                                               aria-label="Search">
-                                    </form>
-                                </div>
-                            </div>
                             <div class="card-body">
-                                {% block dashboard %}
+                                {% block content %}
                                 {% endblock %}
                             </div>
                         </div>
