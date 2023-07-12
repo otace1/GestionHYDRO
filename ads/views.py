@@ -48,10 +48,10 @@ class Dashboard():
             form2 = RechercheStat()
 
             #Nouveau travail Journalier
-            j = Cargaison.objects.filter(dateheurecargaison__date=today, etat="En attente requisition").count()
-            k = Cargaison.objects.filter(dateheurecargaison__date=today, etat="En attente d'echantillonage").count()
-            l = Cargaison.objects.filter(dateheurecargaison__date=today, etat="Analyse Labo en cours").count()
-            m = Cargaison.objects.filter(dateheurecargaison__date=today, etatInspection=1).count()
+            j = Cargaison.objects.filter(etat="En attente requisition").count()
+            k = Cargaison.objects.filter(etat="En attente d'echantillonage").count()
+            l = Cargaison.objects.filter(etat="Analyse Labo en cours").count()
+            m = Cargaison.objects.filter(etatInspection=1).count()
 
             context = {
                 "j":j,
