@@ -550,7 +550,7 @@ def enAttenteEchantillonnage(request):
     template = 'enAttenteEchantillonnage.html'
     qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user)
     table = EnAttenteEchantillonage(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {'table':table}
     return render(request,template,context)
 
@@ -572,7 +572,7 @@ def enAttenteDechargement(request):
             AND aa.username_id = %s",[user,])
 
     table = EnAttenteDechargement(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {'table':table}
     return render(request,template,context)
 
@@ -583,7 +583,7 @@ def enAttenteResultatLabo(request):
     template = 'enAttenteResultatLabo.html'
     qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteResultatLabo(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {'table':table}
     return render(request,template,context)
 
