@@ -47,11 +47,26 @@ class Dashboard():
             form1 = RechercheStat()
             form2 = RechercheStat()
 
-            #Nouveau travail Journalier
+            #Nouveau Rapport Global
             j = Cargaison.objects.filter(etat="En attente requisition").count()
             k = Cargaison.objects.filter(etat="En attente d'echantillonage").count()
             l = Cargaison.objects.filter(etat="Analyse Labo en cours").count()
             m = Cargaison.objects.filter(etatInspection=1).count()
+
+
+            #Nouveau Produtc list
+            totalVolume = round((Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']))
+            gasoilVolume = round((Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']))
+            mogasVolume = round((Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']))
+            jetVolume = round((Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']))
+            petroleVolume = round((Cargaison.objects.filter(produit=1).aggregate(petroleVolume=Sum('volume'))['petroleVolume']))
+
+            #Pourcentage
+            gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
+            mogasPercentage = round(((mogasVolume / totalVolume) * 100 if totalVolume else 0))
+            jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
+            petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
+
 
             context = {
                 "j":j,
@@ -60,6 +75,15 @@ class Dashboard():
                 "m":m,
                 'form1':form1,
                 'form2':form2,
+                'gasoilVolume':gasoilVolume,
+                'mogasVolume':mogasVolume,
+                'jetVolume':jetVolume,
+                'petroleVolume':petroleVolume,
+                'totalVolume':totalVolume,
+                'gasoilPercentage':gasoilPercentage,
+                'mogasPercentage':mogasPercentage,
+                'jetPercentage':jetPercentage,
+                'petrolePercentage':petrolePercentage,
             }
             return render(request,template,context)
         else:
