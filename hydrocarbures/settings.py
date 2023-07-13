@@ -53,7 +53,7 @@ DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 # DEVELOPMENT_MODE = True
 
 
-# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 # ALLOWED_HOSTS = ['*']
 
 INTERNAL_IPS = [
@@ -255,7 +255,10 @@ elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
             'PASSWORD': os.getenv("DATABASE_PASSWORD"),
             'HOST': os.getenv("DATABASE_HOST"),
             'PORT': os.getenv("DATABASE_PORT"),
-            'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'ssl': {'ca': '/app/hydrocarbures/ca.crt'},
+            },
         }
     }
 
