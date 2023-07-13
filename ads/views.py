@@ -19897,10 +19897,7 @@ def rapportBrutAnalyse(request):
 @login_required(login_url='login')
 def rapportBrutInspection(request):
     template = "rapportBrutes.html"
-    today = date.today()
-    filtres = "Analyse Labo en cours"
-    qs = Cargaison.objects.filter(etat=filtres)
-
+    qs = Cargaison.objects.filter(etatInspection=1)
     table = rapportBrutInspection(qs)
     context = {
         'table': table,
