@@ -152,7 +152,7 @@ class Filters(forms.Form):
 
 
 class ChangementNatureProduit(forms.Form):
-    nouvelleNatureProduit = forms.ModelChoiceField(queryset=Produit.objects.all().order_by('nomproduit'), label='Nouvelle Nature')
+    nouvelleNatureProduit = forms.ModelChoiceField(queryset=Produit.objects.all().order_by('nomproduit'), label='NOUVELLE NATURE')
 
     def __init__(self, *args, **kwargs):
         super(ChangementNatureProduit, self).__init__(*args, **kwargs)
@@ -285,6 +285,7 @@ class ImportateurRegularisationForm(forms.ModelForm):
 class EntrepotRegularisationForm(forms.ModelForm):
     nomentrepot = forms.CharField(label='NOM ENTREPOT')
     adresseentrepot = forms.CharField(label='ADRESSE ENTREPOT')
+
     class Meta:
         model = Entrepot
         fields = ['nomentrepot', 'adresseentrepot', 'ville']
@@ -313,5 +314,31 @@ class EntrepotRegularisationForm(forms.ModelForm):
             FormActions(
                 Submit('soumettre', 'soumettre', css_class='btn btn-outlined-warning'),
                 Reset('annuler', 'annuler', css_class='btn btn-danger'),
+            ),
+        )
+
+
+
+class ChangementImportateur(forms.Form):
+    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'), label='FOURNISSEUR')
+
+    def __init__(self, *args, **kwargs):
+        super(ChangementImportateur, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'POST'
+        self.helper.form_id = 'nature-form'
+        self.helper.form_show_labels = True
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_show_errors = True
+        self.helper.label_class = 'col-md-12'
+        self.helper.field_class = 'col-md-12'
+
+        self.helper.layout = Layout(
+            Row(
+                Column('importateur', css_class='form-group col-md-12 mb-0'),
+            ),
+            FormActions(
+                Submit('VALIDER', 'VALIDER', css_class='btn btn-outline-warning'),
+                Reset('CLEAR', 'CLEAR', css_class='btn btn-danger'),
             ),
         )

@@ -146,6 +146,35 @@
 
 
 
+    <div class="modal fade" id="modal-fourn">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Changement de Fournisseur</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+              <form action="{% url 'regularisationCargaison' %}" method="post">
+                  {% csrf_token %}
+            <div class="modal-body">
+                {% crispy form6 %}
+            </div>
+{#            <div class="modal-footer justify-content-between">#}
+{#              <button type="cancel" class="btn btn-outline-info" data-dismiss="modal">Close</button>#}
+{#              <button type="submit" class="btn btn-outline-success">Submit</button>#}
+{#            </div>#}
+                  </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+
+
+
+
 {% endblock %}
 
 {% block content %}

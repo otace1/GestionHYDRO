@@ -36,6 +36,7 @@ urlpatterns = [
     path('regularisation/', views.regularisation, name='regularisation'),
     path('regularisationDestination/', views.regularisationDestination, name='regularisationDestination'),
     path('changementNature/', views.changementNature, name='changementNature'),
+    path('changementImportateur/', views.changementImportateur, name='changementImportateur'),
     path('transbordement/', views.transbordement, name='transbordement'),
     path('pertes/<int:pk>', views.pertes, name='pertes'),
 

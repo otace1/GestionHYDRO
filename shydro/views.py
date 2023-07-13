@@ -645,6 +645,7 @@ def regularisation(request):
     form3 = ImportateurRegularisationForm()
     form4 = EntrepotRegularisationForm()
     form5 = RegularisationNouvelleEntree()
+    form6 = ChangementImportateur()
     qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).filter(Q(etat='En attente requisition')| Q(etat="En attente d'echantillonage") | Q(etat='Echantillonner') | Q(etat='Analyse Labo en cours')).order_by('-dateheurecargaison')
     table = Regularisation(qs)
     # RequestConfig(request, paginate={"per_page": 10}).configure(table)
@@ -656,6 +657,7 @@ def regularisation(request):
         'form3':form3,
         'form4':form4,
         'form5':form5,
+        'form6':form6,
     }
     return render(request,template,context)
 
@@ -1694,6 +1696,26 @@ def regularisationEntrepot(request):
         return redirect('regularisation')
     else:
         return redirect('logout')
+
+
+
+@login_required(login_url='login')
+def changementImportateur(request):
+    # cargaison = Cargaison.objects.get(idcargaison=pk)
+    if request.method == 'POST':
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk', None)
+            nouvelleNatureProduit = request.POST.get('nouvelleNatureProduit', None)
+            p = Produit.objects.get(idproduit=nouvelleNatureProduit)
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            cargaison.produit = p
+            cargaison.save(update_fields=['produit'])
+            # Return a JSON response indicating success
+            return JsonResponse({'status': 'success'})
+        else:
+            return redirect('regularisation')
+    else:
+        return redirect('regularisation')
 
 
 

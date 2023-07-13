@@ -66,6 +66,9 @@ regularisationButtons = """
                 <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-trans">
                   TRANSBORDEMENT
                 </button>
+                <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-fourn">
+                  FOURNISSEUR
+                </button>
                 <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-nat">
                   NATURE PRODUIT
                 </button>
