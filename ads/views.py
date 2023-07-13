@@ -5,7 +5,7 @@ from django.db.models import Q, F, Func, Value, CharField, Count, ExpressionWrap
 from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
     DerniersEnregistrements, ProductionTable, EncaissementTable, StatistiquesJour, SyntheseImportation, \
     SyntheseProduction, SyntheseEncaissement, RapportBrut, RapportBrutJournalier, RapportBrutJournalierEchantillonnage, \
-    RapportBrutJournalierAnalyse
+    RapportBrutJournalierAnalyse, RapportBrutJournalierInspection
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat, RechercheEncaissement
 import json
@@ -19898,7 +19898,7 @@ def rapportBrutAnalyse(request):
 def rapportBrutInspection(request):
     template = "rapportBrutes.html"
     qs = Cargaison.objects.filter(etatInspection=1)
-    table = rapportBrutInspection(qs)
+    table = RapportBrutJournalierInspection(qs)
     context = {
         'table': table,
     }

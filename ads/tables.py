@@ -341,8 +341,7 @@ class RapportBrutJournalierAnalyse(tables.Table):
         }
 
 
-
-class RapportBrutJournalierAnalyse(tables.Table):
+class RapportBrutJournalierInspection(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
     declaration = tables.Column(verbose_name='N.T1E')
