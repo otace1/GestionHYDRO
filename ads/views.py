@@ -53,7 +53,6 @@ class Dashboard():
             l = Cargaison.objects.filter(etat="Analyse Labo en cours").count()
             m = Cargaison.objects.filter(etatInspection=1).count()
 
-
             #Nouveau Produtc list
             totalVolume = round((Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']))
             gasoilVolume = round((Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']))
@@ -66,7 +65,6 @@ class Dashboard():
             mogasPercentage = round(((mogasVolume / totalVolume) * 100 if totalVolume else 0))
             jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
             petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
-
 
             context = {
                 "j":j,

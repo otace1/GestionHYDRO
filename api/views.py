@@ -12,6 +12,10 @@ from rest_framework_api_key.models import APIKey
 from accounts.models import MyUser
 from django.db.models import Q
 from django_countries.data import COUNTRIES
+
+from labo.codeLabo import codeLabo
+from labo.numCq import numCq
+from .infiniteScroll import CustomPagination
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
@@ -546,7 +550,6 @@ class GetCargoList(APIView):
     serializer_class = CargaisonSerializer
 
     # permission_classes = [HasAPIKey]
-
     def get(self, request):
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
@@ -684,8 +687,14 @@ def attenteDechargement(request):
 def attenteRequisitionListe(request):
     user = request.user.id
     c = Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-    serializer = CargaisonSerializer(c, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # Apply pagination
+    paginator = CustomPagination()
+    paginated_cargaisons = paginator.paginate_queryset(c, request)
+
+    serializer = CargaisonSerializer(paginated_cargaisons, many=True)
+    return paginator.get_paginated_response(serializer.data)
+
 
 
 @api_view(['POST'])
@@ -1091,6 +1100,40 @@ def dechargementCargaison(request):
         inspection.save(update_fields=['meterafter', 'meterbefore'])
         context = {
             'id':id
+        }
+        return Response(context, status=status.HTTP_200_OK)
+    except:
+        context = {
+            'id':id
+        }
+        return Response(context,status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def receptionEchantillonLabo(request):
+    id = request.data['id']
+    qrCode = request.data['qrCode']
+    now = datetime.now()
+    try:
+        cargaison = Cargaison.objects.get(qrcode=qrCode)
+        pk = cargaison.id
+        ville = cargaison.entrepot_id
+        ville = (Entrepot.objects.get(identrepot=ville)).ville_id
+        numcertificatqualite = numCq(ville, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+
+        # Changement de l'etat de la cargaison
+        cargaison.etat = "Analyse Labo en cours"
+        cargaison.save(update_fields=['etat'])
+
+        # Sauvegarde de l'instruction dans la Table LaboReception
+        codelabo = codeLabo(ville, pk)
+        LaboReception(idcargaison_id=pk, codelabo=codelabo,numcertificatqualite=numcertificatqualite, datereceptionlabo=now).save()
+        # p.save()
+
+        context = {
+            'id':id,
+            'codeLabo':codelabo,
         }
         return Response(context, status=status.HTTP_200_OK)
     except:

@@ -49,6 +49,7 @@ urlpatterns = [
     path('dechargementCargaison/', dechargementCargaison, name='dechargementCargaison'),  # ShowPer user saved Data
 
 
-
+    # Module reception laboratoire
+    path('receptionEchantillonLabo/', receptionEchantillonLabo, name='receptionEchantillonLabo'),  # Reception Echantillon
 
 ]
