@@ -793,75 +793,174 @@ def enregistrementEchantillonnage(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonEchantillonnageList(request):
+    # user = request.user.id
+    # data = Cargaison.objects.filter(etat="En attente d'echantillonage",
+    #                                 entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    # list = []
+    # for values in data:
+    #     context = {
+    #         "id":values.idcargaison,
+    #         "dateheurecargaison": values.dateheurecargaison,
+    #         "importateur": values.importateur.nomimportateur,
+    #         "immatriculation": values.immatriculation,
+    #         "produit": values.produit.nomproduit,
+    #         "volume": values.volume,
+    #     }
+    #     list.append(context)
+    # return Response(list, status=status.HTTP_200_OK)
     user = request.user.id
     data = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                     entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-    list = []
-    for values in data:
-        context = {
-            "id":values.idcargaison,
-            "dateheurecargaison": values.dateheurecargaison,
-            "importateur": values.importateur.nomimportateur,
-            "immatriculation": values.immatriculation,
-            "produit": values.produit.nomproduit,
-            "volume": values.volume,
+
+    # Apply pagination
+    paginator = CustomPagination()
+    paginated_cargaisons = paginator.paginate_queryset(data, request)
+
+    # Serialize the paginated cargaisons
+    serializer = CargaisonSerializer(paginated_cargaisons, many=True)
+
+    # Extract the required fields for the response
+    result = [
+        {
+            "id": cargaison.idcargaison,
+            "dateheurecargaison": cargaison.dateheurecargaison,
+            "importateur": cargaison.importateur.nomimportateur,
+            "immatriculation": cargaison.immatriculation,
+            "produit": cargaison.produit.nomproduit,
+            "volume": cargaison.volume,
         }
-        list.append(context)
-    return Response(list, status=status.HTTP_200_OK)
+        for cargaison in paginated_cargaisons
+    ]
+
+    return paginator.get_paginated_response(result)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonListeDechargement(request):
+    # user = request.user.id
+    # data = Cargaison.objects.filter(etat='Conforme aux exigences',before=False,
+    #                                           entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    # list = []
+    # for values in data:
+    #     context = {
+    #         "id":values.idcargaison,
+    #         "dateheurecargaison": values.dateheurecargaison,
+    #         "importateur": values.importateur.nomimportateur,
+    #         "immatriculation": values.immatriculation,
+    #         "produit": values.produit.nomproduit,
+    #     }
+    #
+    #     list.append(context)
+    # return Response(list, status=status.HTTP_200_OK)
     user = request.user.id
-    data = Cargaison.objects.filter(etat='Conforme aux exigences',before=False,
-                                              entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-    list = []
-    for values in data:
-        context = {
-            "id":values.idcargaison,
-            "dateheurecargaison": values.dateheurecargaison,
-            "importateur": values.importateur.nomimportateur,
-            "immatriculation": values.immatriculation,
-            "produit": values.produit.nomproduit,
-        }
+    data = Cargaison.objects.filter(etat='Conforme aux exigences', before=False,
+                                    entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
 
-        list.append(context)
-    return Response(list, status=status.HTTP_200_OK)
+    # Apply pagination
+    paginator = CustomPagination()
+    paginated_cargaisons = paginator.paginate_queryset(data, request)
+
+    # Serialize the paginated cargaisons
+    serializer = CargaisonSerializer(paginated_cargaisons, many=True)
+
+    # Extract the required fields for the response
+    result = [
+        {
+            "id": cargaison.idcargaison,
+            "dateheurecargaison": cargaison.dateheurecargaison,
+            "importateur": cargaison.importateur.nomimportateur,
+            "immatriculation": cargaison.immatriculation,
+            "produit": cargaison.produit.nomproduit,
+        }
+        for cargaison in paginated_cargaisons
+    ]
+
+    return paginator.get_paginated_response(result)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonInspectionList(request):
+    # user = request.user.id
+    # data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    # list = []
+    # for values in data:
+    #     context = {
+    #         "id":values.idcargaison,
+    #         "dateheurecargaison": values.dateheurecargaison,
+    #         "importateur": values.importateur.nomimportateur,
+    #         "immatriculation": values.immatriculation,
+    #         "produit": values.produit.nomproduit,
+    #     }
+    #     list.append(context)
+    # return Response(list, status=status.HTTP_200_OK)
     user = request.user.id
-    data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-    list = []
-    for values in data:
-        context = {
-            "id":values.idcargaison,
-            "dateheurecargaison": values.dateheurecargaison,
-            "importateur": values.importateur.nomimportateur,
-            "immatriculation": values.immatriculation,
-            "produit": values.produit.nomproduit,
+    data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by(
+        '-dateheurecargaison')
+
+    # Apply pagination
+    paginator = CustomPagination()
+    paginated_cargaisons = paginator.paginate_queryset(data, request)
+
+    # Serialize the paginated cargaisons
+    serializer = CargaisonSerializer(paginated_cargaisons, many=True)
+
+    # Extract the required fields for the response
+    result = [
+        {
+            "id": cargaison.idcargaison,
+            "dateheurecargaison": cargaison.dateheurecargaison,
+            "importateur": cargaison.importateur.nomimportateur,
+            "immatriculation": cargaison.immatriculation,
+            "produit": cargaison.produit.nomproduit,
         }
-        list.append(context)
-    return Response(list, status=status.HTTP_200_OK)
+        for cargaison in paginated_cargaisons
+    ]
+
+    return paginator.get_paginated_response(result)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonRequisitionList(request):
+    # user = request.user.id
+    # data = Cargaison.objects.filter(etat="En attente requisition",entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    # list = []
+    # for values in data:
+    #     context = {
+    #         "id":values.idcargaison,
+    #         "dateheurecargaison": values.dateheurecargaison,
+    #         "importateur": values.importateur.nomimportateur,
+    #         "immatriculation": values.immatriculation,
+    #         "produit": values.produit.nomproduit,
+    #         "volume": values.volume,
+    #     }
+    #     list.append(context)
+    # return Response(list, status=status.HTTP_200_OK)
     user = request.user.id
-    data = Cargaison.objects.filter(etat="En attente requisition",entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-    list = []
-    for values in data:
-        context = {
-            "id":values.idcargaison,
-            "dateheurecargaison": values.dateheurecargaison,
-            "importateur": values.importateur.nomimportateur,
-            "immatriculation": values.immatriculation,
-            "produit": values.produit.nomproduit,
-            "volume": values.volume,
+    data = Cargaison.objects.filter(etat="En attente requisition",
+                                    entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+
+    # Apply pagination
+    paginator = CustomPagination()
+    paginated_cargaisons = paginator.paginate_queryset(data, request)
+
+    # Serialize the paginated cargaisons
+    serializer = CargaisonSerializer(paginated_cargaisons, many=True)
+
+    # Extract the required fields for the response
+    result = [
+        {
+            "id": cargaison.idcargaison,
+            "dateheurecargaison": cargaison.dateheurecargaison,
+            "importateur": cargaison.importateur.nomimportateur,
+            "immatriculation": cargaison.immatriculation,
+            "produit": cargaison.produit.nomproduit,
+            "volume": cargaison.volume,
         }
-        list.append(context)
-    return Response(list, status=status.HTTP_200_OK)
+        for cargaison in paginated_cargaisons
+    ]
+
+    return paginator.get_paginated_response(result)
 
 
 @api_view(['POST'])
