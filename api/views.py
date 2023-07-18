@@ -15,7 +15,7 @@ from django_countries.data import COUNTRIES
 
 from labo.codeLabo import codeLabo
 from labo.numCq import numCq
-from .infiniteScroll import CustomPagination
+from .infiniteScroll import CustomPagination, DateTimeEncoder
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
