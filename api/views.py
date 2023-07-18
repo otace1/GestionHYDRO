@@ -935,7 +935,7 @@ def cargaisonRequisitionList(request):
             "volume": values.volume,
         }
         list.append(context)
-    return Response(list, status=status.HTTP_200_OK)
+    return Response(list,safe=False,status=status.HTTP_200_OK,json_dumps_params={'ensure_ascii': False, 'encoding': 'utf-8'})
     # user = request.user.id
     # data = Cargaison.objects.filter(etat="En attente requisition",
     #                                 entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
