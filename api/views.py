@@ -935,9 +935,10 @@ def cargaisonRequisitionList(request):
             "volume": values.volume,
         }
         list.append(context)
-    json_data = json.dumps(list, ensure_ascii=False).encode('utf-8')
-    response = HttpResponse(json_data, content_type='application/json; charset=utf-8')
+    json_data = json.dumps(list, ensure_ascii=False, cls=DateTimeEncoder).encode('utf-8')
+    response = HttpResponse(json_data, content_type='application/json')
     response['Content-Length'] = str(len(json_data))
+    response['Content-Disposition'] = 'attachment; filename="data.json"'
     return response
     # user = request.user.id
     # data = Cargaison.objects.filter(etat="En attente requisition",
