@@ -19,7 +19,7 @@ from .infiniteScroll import CustomPagination
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model, authenticate
-from django.http import QueryDict, JsonResponse
+from django.http import QueryDict, JsonResponse, HttpResponse
 
 from entrepot.numrappech import numRappEch
 from entrepot.calculs import *
@@ -935,7 +935,10 @@ def cargaisonRequisitionList(request):
             "volume": values.volume,
         }
         list.append(context)
-    return Response(list,status=status.HTTP_200_OK,json_dumps_params={'ensure_ascii': False, 'encoding': 'utf-8'})
+    json_data = json.dumps(context, ensure_ascii=False).encode('utf-8')
+    response = HttpResponse(json_data, content_type='application/json; charset=utf-8')
+    response['Content-Length'] = str(len(json_data))
+    return response
     # user = request.user.id
     # data = Cargaison.objects.filter(etat="En attente requisition",
     #                                 entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
