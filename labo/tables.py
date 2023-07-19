@@ -1,8 +1,14 @@
 import django_tables2 as tables
 from enreg.models import Cargaison, Entrepot_echantillon, LaboReception, Resultat
 
+# TEMPLATE = """
+#             <a href="{%url 'reception' record.pk%}" class="btn btn-success">RECEPTION</a>
+#            """
+
 TEMPLATE = """ 
-            <a href="{%url 'reception' record.pk%}" class="btn btn-success">RECEPTION</a>
+            <button type="button" onclick="getRowId(this)" id="data" class="btn btn-success">
+                  ACK
+                </button>
            """
 
 
@@ -100,6 +106,9 @@ class LaboratoireReception(tables.Table):
         attrs = {
             "class": "table table-bordered table-striped",
             "id": "example1"
+        }
+        row_attrs = {
+            "id": lambda record: record.pk
         }
         # template_name = "django_tables2/bootstrap4.html"
         model = Entrepot_echantillon

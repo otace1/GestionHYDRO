@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, redirect
 from enreg.models import *
 from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser
@@ -49,40 +51,101 @@ class GestionLaboratoire():
             return redirect('logout')
 
     # Methode pour receptionner l'echantillon
+    # @login_required(login_url='login')
+    # def receptionechantillon(request, pk):
+    #     user = request.user
+    #     id = user.id
+    #
+    #     # Get Town du point de dechargement pour l'attribution automatique des numeros
+    #     print(pk)
+    #     c = Cargaison.objects.get(idcargaison=pk)
+    #     c = c.entrepot_id
+    #     c = Entrepot.objects.get(identrepot=c)
+    #     v = c.ville_id
+    #     print(v)
+    #
+    #     # ville = AffectationVille.objects.get(username_id=id)
+    #     # v = ville.ville_id
+    #     role = user.role_id
+    #     if role == 4 or role == 1:
+    #         # Getting current Year & Month
+    #         now = datetime.now()
+    #         numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+    #
+    #         # Changement de l'etat de la cargaison
+    #         d = Cargaison.objects.get(idcargaison=pk)
+    #         d.etat = "Analyse Labo en cours"
+    #         d.save(update_fields=['etat'])
+    #
+    #         # Sauvegarde de l'instruction dans la Table LaboReception
+    #         codelabo = codeLabo(v, pk)
+    #         p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
+    #                           numcertificatqualite=numcertificatqualite,datereceptionlabo=now)
+    #         p.save()
+    #         return redirect('labo')
+    #     else:
+    #         return redirect('logout')
+
     @login_required(login_url='login')
-    def receptionechantillon(request, pk):
-        user = request.user
-        id = user.id
+    def receptionechantillon(request):
+        if request.method == 'POST':
+            pk = request.POST.get('pk')
+            print('Test')
+            print(pk)
 
-        # Get Town du point de dechargement pour l'attribution automatique des numeros
-        print(pk)
-        c = Cargaison.objects.get(idcargaison=pk)
-        c = c.entrepot_id
-        c = Entrepot.objects.get(identrepot=c)
-        v = c.ville_id
-        print(v)
+            if pk is None:
+                response_data = {
+                    'success': False,
+                    'error': 'Missing primary key (pk)',
+                }
+                return JsonResponse(response_data, status=400)
 
-        # ville = AffectationVille.objects.get(username_id=id)
-        # v = ville.ville_id
-        role = user.role_id
-        if role == 4 or role == 1:
-            # Getting current Year & Month
-            now = datetime.now()
-            numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+            user = request.user
+            id = user.id
 
-            # Changement de l'etat de la cargaison
-            d = Cargaison.objects.get(idcargaison=pk)
-            d.etat = "Analyse Labo en cours"
-            d.save(update_fields=['etat'])
+            # Get Town du point de dechargement pour l'attribution automatique des numeros
+            print(pk)
+            c = Cargaison.objects.get(idcargaison=pk)
+            c = c.entrepot_id
+            c = Entrepot.objects.get(identrepot=c)
+            v = c.ville_id
+            print(v)
 
-            # Sauvegarde de l'instruction dans la Table LaboReception
-            codelabo = codeLabo(v, pk)
-            p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
-                              numcertificatqualite=numcertificatqualite,datereceptionlabo=now)
-            p.save()
-            return redirect('labo')
+            role = user.role_id
+            if role == 4 or role == 1:
+                # Getting current Year & Month
+                now = datetime.now()
+                numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+
+                # Changement de l'etat de la cargaison
+                d = Cargaison.objects.get(idcargaison=pk)
+                d.etat = "Analyse Labo en cours"
+                d.save(update_fields=['etat'])
+
+                # Sauvegarde de l'instruction dans la Table LaboReception
+                codelabo = codeLabo(v, pk)
+                p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
+                                  numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
+                p.save()
+
+                # Prepare the JSON response
+                response_data = {
+                    'success': True,
+                    'codeLabo': codelabo,
+                }
+                return JsonResponse(response_data)
+            else:
+                response_data = {
+                    'success': False,
+                    'error': 'Unauthorized',
+                }
+                return JsonResponse(response_data, status=401)
         else:
-            return redirect('logout')
+            response_data = {
+                'success': False,
+                'error': 'Invalid request method',
+            }
+            return JsonResponse(response_data, status=405)
 
     # Modification echantillone receptionner
     @login_required(login_url='login')

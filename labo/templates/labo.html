@@ -9,6 +9,121 @@
 
 {% block dashboard %}
     {% render_table labo %}
+
+
+    <div class="modal fade" id="modal-reception">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Réception de l'échantillon</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+              <form action="" method="post">
+            <div class="modal-body">
+
+            </div>
+              </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+
 {% endblock %}
 
 
+
+<script>
+    {% block javascript %}
+
+       function getRowId(button) {
+            var row = $(button).closest('tr');
+
+            if (row) {
+                rowId = row.attr('id');
+                console.log('Row ID:', rowId);
+                // Perform further actions with the row ID, such as making an AJAX request
+            }
+        }
+
+
+        // using jQuery
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        var csrftoken = getCookie('csrftoken');
+
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
+        //script for submitting data in ajax
+        $('.btn.btn-success').click(function () {
+            Id = rowId; //getting the id of the row which equal to the pk into the database
+            console.log('Test:',Id); // debug
+        });
+
+        $('.btn.btn-success').click(function(e) {
+    e.preventDefault();
+
+    // Disable Submit button
+    $('.btn.btn-success').attr("disabled", true);
+
+        var pk = Id;
+        var APIurl = "{% url 'reception' %}";
+        var dataToSend = { "pk": pk };
+        console.log('PK OK:',dataToSend)// Create an object with the pk value
+
+        $.ajax({
+        url: APIurl,
+        type: "POST",
+        data: dataToSend,  // Send only the pk value
+        dataType: 'json',
+
+        success: function (response) {
+            if (response.success) {
+                var codeLabo = response.codeLabo;
+                alert("Code Labo: " + codeLabo);
+                location.reload();
+            } else {
+                alert("An error occurred");
+                $('.btn.btn-success').attr("disabled", false);
+                location.reload();
+            }
+        },
+
+        error: function () {
+            console.log('Erreur');
+            alert("An error occurred");
+            $('.btn.btn-success').attr("disabled", false);
+            location.reload();
+        }
+    });
+    });
+
+    {% endblock %}
+</script>

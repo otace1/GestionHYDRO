@@ -430,12 +430,33 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 
 
-<script>
-var Id;
-$(document).ready(function () {
-    {% block javascript %}
-    {% endblock %}
-})
+  <script>
+    var Id;
+    var rowId;
+
+    function getRowId(button) {
+    var row = $(button).closest('tr');
+
+    if (row) {
+        rowId = row.attr('id');
+        console.log('Row ID:', rowId);
+        // Perform further actions with the row ID, such as making an AJAX request
+    }
+}
+
+    $(document).ready(function () {
+
+        {% block javascript %}
+        {% endblock %}
+    })
+
+    function confirmAction() {
+        var confirmed = confirm("Cette operation est irreversible, voulez - vous continuer?");
+        return confirmed;
+    }
+
+
+
 </script>
 
   <script>

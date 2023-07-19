@@ -6,7 +6,7 @@ urlpatterns = [
 
     path('', views.GestionLaboratoire.affichageenchantillon, name='labo'),
     path('receptionRapports/', views.receptionRapports, name='receptionRapports'),
-    path('reception/<int:pk>', views.GestionLaboratoire.receptionechantillon, name='reception'),
+    path('reception/', views.GestionLaboratoire.receptionechantillon, name='reception'),
     path('modification/', views.GestionLaboratoire.modification, name='modification'),
     path('rechercheqr/', views.GestionLaboratoire.rechercheqrcode, name='rechercheqr'),
     path('recherchecode/', views.GestionLaboratoire.recherchecode, name='recherchecode'),
