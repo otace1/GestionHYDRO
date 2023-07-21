@@ -618,13 +618,11 @@ def rapportActivite(request):
                                                     LEFT JOIN accounts_affectationville v \
                                                     ON v.ville_id = ev.idville \
                                                     WHERE v.username_id= %s \
-                                                    GROUP BY c.idcargaison \
-                                                    ', [user, ])
+                                                    GROUP BY c.idcargaison', [user, ])
 
-    # qs = list(qs)
+    qs = list(qs)
     table = RapportActivite(qs)
     # RequestConfig(request, paginate={"per_page": 15}).configure(table)
-
     context = {
         'table':table,
         'form':form
