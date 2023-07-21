@@ -97,7 +97,7 @@ class CodificationTable(tables.Table):
     produit = tables.Column(verbose_name='PRODUIT')
     volume = tables.Column(verbose_name='VOLUME')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    declaration = tables.Column(verbose_name='N°DECLARATION')
+    declaration = tables.Column(verbose_name='#.DECL.(T1D)')
     # numdos = tables.Column(verbose_name='NUM DE DOSSIER')
     numreq = tables.Column(verbose_name='REF.REQUISITION')
     numreqi = tables.TemplateColumn(A1, verbose_name='SAISIE REF.REQUISITION')
@@ -151,7 +151,7 @@ class ResultatGoLabo(tables.Table):
 
 class NonConformeOrganoleptique(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
@@ -171,7 +171,7 @@ class NonConformeOrganoleptique(tables.Table):
 
 class NonConformeLaboratoire(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT")
@@ -191,7 +191,7 @@ class NonConformeLaboratoire(tables.Table):
 
 class EnAttenteEchantillonage(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.")
+    declaration = tables.Column(verbose_name="#.DECL.(T1D)")
     importateur = tables.Column(verbose_name="FOURNISSEUR")
     entrepot = tables.Column(verbose_name="ENTREPOT")
     produit = tables.Column(verbose_name="PRODUIT")
@@ -210,7 +210,7 @@ class EnAttenteEchantillonage(tables.Table):
 
 class EnAttenteDechargement(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.")
+    declaration = tables.Column(verbose_name="#.DECL.(T1D)")
     nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
     nomentrepot = tables.Column(verbose_name="ENTREPOT")
     nomproduit = tables.Column(verbose_name="PRODUIT")
@@ -230,7 +230,7 @@ class EnAttenteDechargement(tables.Table):
 
 class EnAttenteResultatLabo(tables.Table):
     idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.")
+    idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
     idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
@@ -251,7 +251,7 @@ class EnAttenteResultatLabo(tables.Table):
 
 class RapportActivite(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.")
+    declaration = tables.Column(verbose_name="#.DECL.(T1D)")
     importateur = tables.Column(verbose_name="FOURNISSEUR")
     frontiere = tables.Column(verbose_name="FRONTIERE")
     entrepot = tables.Column(verbose_name="ENTREPOT")

@@ -619,7 +619,9 @@ def rapportActivite(request):
                                                     ON v.ville_id = ev.idville \
                                                     WHERE v.username_id= %s \
                                                     GROUP BY c.idcargaison \
-                                                    ORDER BY i.dateinspection DESC', [user, ])
+                                                    ', [user, ])
+
+    qs = list(qs)
 
     table = RapportActivite(qs)
     # RequestConfig(request, paginate={"per_page": 15}).configure(table)
