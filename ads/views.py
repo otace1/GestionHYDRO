@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect, HttpResponse
 from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation, \
     Entrepot_echantillon, LaboReception, Compartiment
@@ -41,7 +42,8 @@ class Dashboard():
         user = request.user
         role = user.role_id
         if role == 1 or role == 'st' or role == 7 or role == 8:
-            today = date.today()
+            # Get the current year
+            current_year = date.today().year
             template = 'admin.html'
 
             form1 = RechercheStat()
@@ -82,6 +84,7 @@ class Dashboard():
                 'mogasPercentage':mogasPercentage,
                 'jetPercentage':jetPercentage,
                 'petrolePercentage':petrolePercentage,
+                'current_year':current_year,
             }
             return render(request,template,context)
         else:
@@ -19926,3 +19929,18 @@ def rapportBrutInspection(request):
     }
     return render(request, template, context)
 
+
+@login_required(login_url='login')
+def chartJs(request):
+    # Get the current year
+    current_year = date.today().year
+    volumeData = Compartiment.objects.filter(idinspection__idcargaison__dateheurecargaison__year=current_year).values('idinspection__idcargaison__produit__nomproduit').annotate(
+         totalVolume = Sum('idinspection__idcargaison__volume'),
+         totalCertified = Sum('gsv'),
+    )
+
+    # Convert the queryset to a list of dictionaries
+    data_list = list(volumeData)
+
+    # Return the data as JSON response
+    return JsonResponse(data_list, safe=False)

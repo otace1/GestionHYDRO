@@ -48,5 +48,7 @@ urlpatterns = [
     path('rapport/brut/analyse/', views.rapportBrutAnalyse, name='rapportBrutAnalyse'),
     path('rapport/brut/inspection/', views.rapportBrutInspection, name='rapportBrutInspection'),
 
+    path('chartJs/', views.chartJs, name='chartJs'),
+
 
 ]
