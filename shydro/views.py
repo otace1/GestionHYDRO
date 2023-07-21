@@ -621,14 +621,9 @@ def rapportActivite(request):
                                                     GROUP BY c.idcargaison \
                                                     ', [user, ])
 
-    qs = list(qs)
-
+    # qs = list(qs)
     table = RapportActivite(qs)
     # RequestConfig(request, paginate={"per_page": 15}).configure(table)
-    export_format = request.GET.get("_export", None)
-    if TableExport.is_valid_format(export_format):
-        exporter = TableExport(export_format, table)
-        return exporter.response("table.{}".format(export_format))
 
     context = {
         'table':table,
