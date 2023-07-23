@@ -1,6 +1,8 @@
 import uuid
 import qrcode
 import io
+
+from django.forms import FloatField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 
@@ -16,7 +18,7 @@ from shydro.utils import render_to_pdf
 from django_tables2.paginators import LazyPaginator
 from django_tables2.export.export import TableExport
 from django_tables2 import RequestConfig
-from django.db.models import Q
+from django.db.models import Q, ExpressionWrapper, Sum
 from datetime import date
 import datetime
 from .numact import numeroactcurrent
@@ -595,32 +597,42 @@ def rapportActivite(request):
     form = Filters(user=user)
 
     # qs = Cargaison.objects.select_related('entrepot_echantillon').filter(entrepot__ville__affectationville__username_id=user)
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                                FROM enreg_cargaison c \
-                                                    LEFT JOIN enreg_entrepot_echantillon e \
-                                                    ON c.idcargaison = e.idcargaison_id \
-                                                    LEFT JOIN enreg_laboreception l \
-                                                    ON e.idcargaison_id = l.idcargaison_id \
-                                                    LEFT JOIN enreg_impressionresultat r \
-                                                    ON l.idcargaison_id = r.idcargaison_id \
-                                                    LEFT JOIN enreg_inspection i \
-                                                    ON i.idcargaison_id = c.idcargaison \
-                                                    LEFT JOIN enreg_compartiment co \
-                                                    ON co.idinspection_id = i.idinspection \
-                                                    LEFT JOIN enreg_produit p \
-                                                    ON p.idproduit = c.produit_id \
-                                                    LEFT JOIN enreg_importateur a \
-                                                    ON a.idimportateur = c.importateur_id \
-                                                    LEFT JOIN enreg_entrepot ee \
-                                                    ON ee.identrepot = c.entrepot_id \
-                                                    LEFT JOIN enreg_ville ev \
-                                                    ON ev.idville = ee.ville_id \
-                                                    LEFT JOIN accounts_affectationville v \
-                                                    ON v.ville_id = ev.idville \
-                                                    WHERE v.username_id= %s \
-                                                    GROUP BY c.idcargaison', [user, ])
+    # qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+    #                                             FROM enreg_cargaison c \
+    #                                                 LEFT JOIN enreg_entrepot_echantillon e \
+    #                                                 ON c.idcargaison = e.idcargaison_id \
+    #                                                 LEFT JOIN enreg_laboreception l \
+    #                                                 ON e.idcargaison_id = l.idcargaison_id \
+    #                                                 LEFT JOIN enreg_impressionresultat r \
+    #                                                 ON l.idcargaison_id = r.idcargaison_id \
+    #                                                 LEFT JOIN enreg_inspection i \
+    #                                                 ON i.idcargaison_id = c.idcargaison \
+    #                                                 LEFT JOIN enreg_compartiment co \
+    #                                                 ON co.idinspection_id = i.idinspection \
+    #                                                 LEFT JOIN enreg_produit p \
+    #                                                 ON p.idproduit = c.produit_id \
+    #                                                 LEFT JOIN enreg_importateur a \
+    #                                                 ON a.idimportateur = c.importateur_id \
+    #                                                 LEFT JOIN enreg_entrepot ee \
+    #                                                 ON ee.identrepot = c.entrepot_id \
+    #                                                 LEFT JOIN enreg_ville ev \
+    #                                                 ON ev.idville = ee.ville_id \
+    #                                                 LEFT JOIN accounts_affectationville v \
+    #                                                 ON v.ville_id = ev.idville \
+    #                                                 WHERE v.username_id= %s \
+    #                                                 GROUP BY c.idcargaison', [user, ])
 
-    qs = list(qs)
+    qs = Cargaison.objects.annotate(
+        volConst=Sum('inspection__compartiment__gov'),
+        gsvT=Sum('inspection__compartiment__gsv')
+    ).values(
+        'numdos','declaration','frontiere__nomville',
+        'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
+        'requisitiondackdate','entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','impressionresultat__printDate',
+        'inspection__dateinspection','volume','volConst','gsvT'
+    )
+
+    # qs = list(qs)
     table = RapportActivite(qs)
     # RequestConfig(request, paginate={"per_page": 15}).configure(table)
     context = {

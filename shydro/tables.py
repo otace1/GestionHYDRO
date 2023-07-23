@@ -79,10 +79,10 @@ regularisationButtons = """
 #                   CHANGEMENT DE DESTINATION
 #                 </button>
 
-rapportButtons = """
-    <a href="{%url 'rapportRe' record.pk%}" class="btn btn-success" onclick="return confirmAction();">RAPP.ECH</a>
-    <a href="{%url 'rapportIs' record.pk%}" class="btn btn-warning" onclick="return confirmAction();">RAPP.INSP</a>
-"""
+# rapportButtons = """
+#     <a href="{%url 'rapportRe' record.pk%}" class="btn btn-success" onclick="return confirmAction();">RAPP.ECH</a>
+#     <a href="{%url 'rapportIs' record.pk%}" class="btn btn-warning" onclick="return confirmAction();">RAPP.INSP</a>
+# """
 
 nonConforme = """
     <a href="{%url 'consignation' record.pk%}" class="btn btn-success" onclick="return confirmAction();">AUTORISATION DE CONSIGNATION</a>
@@ -252,21 +252,21 @@ class EnAttenteResultatLabo(tables.Table):
 class RapportActivite(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
     declaration = tables.Column(verbose_name="#.DECL.(T1D)")
-    importateur = tables.Column(verbose_name="FOURNISSEUR")
-    frontiere = tables.Column(verbose_name="FRONTIERE")
-    entrepot = tables.Column(verbose_name="ENTREPOT")
-    produit = tables.Column(verbose_name="PRODUIT")
+    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    frontiere__nomville = tables.Column(verbose_name="FRONTIERE")
+    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
     immatriculation = tables.Column(verbose_name="IMMAT.")
     dateheurecargaison = tables.Column(verbose_name="DATE D'ENT.", attrs={"td": {"bgcolor": "yellow"}})
     requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "yellow"}})
-    dateechantillonage = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
-    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
-    printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
-    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}})
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
+    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
+    impressionresultat__printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
+    inspection__dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}})
     volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
     volConst = tables.Column(verbose_name="VOL.CONST", attrs={"td": {"bgcolor": "red"}})
     gsvT = tables.Column(verbose_name='GSV', attrs={"td": {"bgcolor": "green"}})
-    actions = tables.TemplateColumn(rapportButtons,verbose_name='')
+    # actions = tables.TemplateColumn(rapportButtons,verbose_name='')
 
     class Meta:
         attrs = {
