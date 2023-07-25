@@ -287,12 +287,12 @@ class RapportBrut(tables.Table):
 
 class RapportBrutJournalier(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
+    frontiere__nomville = tables.Column(verbose_name="FRONTIERE D'ENT.")
     declaration = tables.Column(verbose_name='N.T1E')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    entrepot = tables.Column(verbose_name='ENTREPOT')
+    importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    nomproduit = tables.Column(verbose_name='PRODUIT')
+    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     volume = tables.Column(verbose_name='VOL. DECL.')
 
     class Meta:
