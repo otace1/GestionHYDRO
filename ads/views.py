@@ -19834,54 +19834,6 @@ def rapportBrutJournalier(request):
     template = "rapportBrutes.html"
     today = date.today()
     etat="En attente requisition"
-    # qs = Cargaison.objects.raw("SELECT \
-    #                     c.idcargaison, \
-    #                     DATE(c.dateheurecargaison), \
-    #                     i.nomimportateur, \
-    #                     e.nomentrepot, \
-    #                     c.immatriculation, \
-    #                     p.nomproduit, \
-    #                     c.volume, \
-    #                     DATE(ee.dateechantillonage) as dateEch, \
-    #                     DATE(l.datereceptionlabo) as dateLabo, \
-    #                     im.printDate, \
-    #                     im.isConforme, \
-    #                     DATE(ei.dateinspection) as dateInsp, \
-    #                     DATE(c.dateDechargement) as dateDech, \
-    #                     ei.dens, \
-    #                     SUM(ec.gov) as volJauge, \
-    #                     SUM(ec.gsv) as gsvJauge, \
-    #                     SUM(ed.govmeter) as govMeter, \
-    #                     SUM(ed.gsvmeter) as gsvMeter, \
-    #                     IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-    #                 FROM \
-    #                     enreg_cargaison c \
-    #                     LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-    #                     LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-    #                     LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-    #                     LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-    #                     LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-    #                     LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-    #                     LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-    #                     LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-    #                     LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-    #                     LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-    #                 WHERE \
-    #                     DATE(c.dateheurecargaison) = %s \
-    #                 GROUP BY \
-    #                     c.idcargaison, \
-    #                     c.dateheurecargaison, \
-    #                     i.nomimportateur, \
-    #                     e.nomentrepot, \
-    #                     c.immatriculation, \
-    #                     p.nomproduit, \
-    #                     c.volume, \
-    #                     ee.dateechantillonage, \
-    #                     l.datereceptionlabo, \
-    #                     im.printDate, \
-    #                     im.isConforme, \
-    #                     ei.dateinspection, \
-    #                     ei.dens",[today,])
 
     qs = Cargaison.objects.filter(etat=etat).values(
             'dateheurecargaison',
@@ -19922,7 +19874,19 @@ def rapportBrutAnalyse(request):
     template = "rapportBrutes.html"
     today = date.today()
     filtres = "Analyse Labo en cours"
-    qs = Cargaison.objects.filter(etat=filtres)
+    qs = Cargaison.objects.filter(etat=filtres).values(
+        'dateheurecargaison',
+        'frontiere__nomville',
+        'declaration',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'immatriculation',
+        'produit__nomproduit',
+        'volume',
+        'requisitiondackdate',
+        'entrepot_echantillon__dateechantillonage',
+        'entrepot_echantillon__laboreception__datereceptionlabo'
+    )
 
     table = RapportBrutJournalierAnalyse(qs)
     context = {
@@ -19934,7 +19898,20 @@ def rapportBrutAnalyse(request):
 @login_required(login_url='login')
 def rapportBrutInspection(request):
     template = "rapportBrutes.html"
-    qs = Cargaison.objects.filter(etatInspection=1)
+    qs = Cargaison.objects.filter(etatInspection=1).values(
+        'dateheurecargaison',
+        'frontiere__nomville',
+        'declaration',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'immatriculation',
+        'produit__nomproduit',
+        'volume',
+        'requisitiondackdate',
+        'entrepot_echantillon__dateechantillonage',
+        'entrepot_echantillon__laboreception__datereceptionlabo',
+    )
+
     table = RapportBrutJournalierInspection(qs)
     context = {
         'table': table,
