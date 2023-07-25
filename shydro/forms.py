@@ -285,38 +285,39 @@ class ImportateurRegularisationForm(forms.ModelForm):
 class EntrepotRegularisationForm(forms.ModelForm):
     nomentrepot = forms.CharField(label='NOM ENTREPOT')
     adresseentrepot = forms.CharField(label='ADRESSE ENTREPOT')
+    # ville = forms.CharField(label='VILLE')
 
     class Meta:
         model = Entrepot
         fields = ['nomentrepot', 'adresseentrepot', 'ville']
 
-    def __init__(self, *args, **kwargs):
-        super(EntrepotRegularisationForm, self).__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.form_method = 'POST'
-        self.helper.form_show_labels = True
-        self.helper.form_class = 'form-horizontal'
-        self.helper.label_class = 'col-md-12'
-        self.helper.field_class = 'col-md-12'
-        self.helper.layout = Layout(
-            Row("",
-                Column('nomentrepot', css_class='form-group col-12'),
-                css_class='form-row'
-                ),
-            Row("",
-                Column('adresseentrepot', css_class='form-group col-12'),
-                css_class='form-row'
-                ),
-            Row("",
-                Column('ville', css_class='form-group col-12'),
-                css_class='form-row'
-                ),
-            FormActions(
-                Submit('soumettre', 'soumettre', css_class='btn btn-outlined-warning'),
-                Reset('annuler', 'annuler', css_class='btn btn-danger'),
-            ),
-        )
-
+    # def __init__(self, *args, **kwargs):
+    #     super(EntrepotRegularisationForm, self).__init__(*args, **kwargs)
+    #     self.helper = FormHelper()
+    #     self.helper.form_method = 'POST'
+    #     self.helper.form_show_labels = True
+    #     self.helper.form_class = 'form-horizontal'
+    #     self.helper.label_class = 'col-md-12'
+    #     self.helper.field_class = 'col-md-12'
+    #     self.helper.layout = Layout(
+    #         Row("",
+    #             Column('nomentrepot', css_class='form-group col-12'),
+    #             css_class='form-row'
+    #             ),
+    #         Row("",
+    #             Column('adresseentrepot', css_class='form-group col-12'),
+    #             css_class='form-row'
+    #             ),
+    #         Row("",
+    #             Column('ville', css_class='form-group col-12'),
+    #             css_class='form-row'
+    #             ),
+    #         FormActions(
+    #             Submit('soumettre', 'soumettre', css_class='btn btn-outlined-warning'),
+    #             Reset('annuler', 'annuler', css_class='btn btn-danger'),
+    #         ),
+    #     )
+    #
 
 
 class ChangementImportateur(forms.Form):
