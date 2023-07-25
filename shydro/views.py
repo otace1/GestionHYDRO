@@ -653,7 +653,7 @@ def regularisation(request):
     form4 = EntrepotRegularisationForm()
     form5 = RegularisationNouvelleEntree()
     form6 = ChangementImportateur()
-    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).filter(Q(etat='En attente requisition')| Q(etat="En attente d'echantillonage") | Q(etat='Echantillonner') | Q(etat='Analyse Labo en cours')).order_by('-dateheurecargaison')
+    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,etat='En attente requisition').order_by('-dateheurecargaison')
     table = Regularisation(qs)
     # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {
