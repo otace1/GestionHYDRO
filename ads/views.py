@@ -16164,12 +16164,12 @@ def rapportBrut(request):
     date_d = request.POST['date_d']
     date_f = request.POST['date_f']
 
-    print(ville)
-    print(produit)
-    print(importateur)
-    print(entrepot)
-    print(date_d)
-    print(date_f)
+    # print(ville)
+    # print(produit)
+    # print(importateur)
+    # print(entrepot)
+    # print(date_d)
+    # print(date_f)
 
     request.session['frontiere'] = ville
     request.session['produit'] = produit
@@ -16227,6 +16227,7 @@ def rapportBrut(request):
                                         SUM(ec.gsv) as gsvJauge, \
                                         SUM(ed.govmeter) as govMeter, \
                                         SUM(ed.gsvmeter) as gsvMeter, \
+                                        SUM(ec.mta) as mta, \
                                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
                                     FROM \
                                         enreg_cargaison c \
