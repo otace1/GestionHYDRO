@@ -6,6 +6,82 @@
 
 {% block content %}
     {% render_table table %}
+    <!-- your_template.html -->
+{#<table id="datatable" class="display">#}
+{#  <thead>#}
+{#    <tr>#}
+{#      <th>DATE ENT.</th>#}
+{#      <th>FRONTIERE</th>#}
+{#      <th>#T1D</th>#}
+{#      <th>FOURNISSEUR</th>#}
+{#      <th>IMMATRICULATION</th>#}
+{#      <th>DATE ECH.</th>#}
+{#      <th>DATE REC. LABO</th>#}
+{#      <th>DATE ANALYSE</th>#}
+{#      <th>DATE INSPEC.</th>#}
+{#      <th>DATE DECH.</th>#}
+{#      <th>PRODUIT</th>#}
+{#      <th>DENS.ATA</th>#}
+{#      <th>TEMP.</th>#}
+{#      <th>MTA</th>#}
+{#      <th>VOL. DECL.</th>#}
+{#      <th>VOL. JAUGE</th>#}
+{#      <th>GSV JAUGE</th>#}
+{#      <th>VOL. METER.</th>#}
+{#      <th>GSV METER</th>#}
+{#      <th>FRAIS A PAYER</th>#}
+{#      <!-- Add more columns as needed -->#}
+{#    </tr>#}
+{#  </thead>#}
+{#  <tbody>#}
+{#  </tbody>#}
+{#</table>#}
+
+{##}
+{#<script>#}
+{#$(document).ready(function () {#}
+{#  // Initialize DataTables#}
+{#  $("#datatable").DataTable({#}
+{#    serverSide: true,#}
+{#    ajax: {#}
+{#      url: "{% url 'rapportBrut' %}",  // Replace 'your_view_name' with the actual URL for your view#}
+{#      type: "GET",#}
+{#      data: function (d) {#}
+{#        d.draw = d.draw || 0;#}
+{#        d.start = d.start || 0;#}
+{#        d.length = d.length || 10;  // Set the number of rows per page#}
+{#      },#}
+{#      dataSrc: function (json) {#}
+{#        return json.data;#}
+{#      },#}
+{#    },#}
+{#    columns: [#}
+{#      { data: "dateheurecargaison" },#}
+{#      { data: "frontiere" },#}
+{#      { data: "declaration" },#}
+{#      { data: "importateur" },#}
+{#      { data: "immatriculation" },#}
+{#      { data: "dateechantillonage" },#}
+{#      { data: "datereceptionlabo" },#}
+{#      { data: "printDate" },#}
+{#      { data: "dateinspection" },#}
+{#      { data: "dateDechargement" },#}
+{#      { data: "produit" },#}
+{#      { data: "dens" },#}
+{#      { data: "temp" },#}
+{#      { data: "mta" },#}
+{#      { data: "volume" },#}
+{#      { data: "volJauge" },#}
+{#      { data: "gsvJauge" },#}
+{#      { data: "govMeter" },#}
+{#      { data: "gsvMeter" },#}
+{#      { data: "fraisOcc" },#}
+{#      // Add more columns as needed#}
+{#    ],#}
+{#  });#}
+{#});#}
+{#</script>#}
+
 {% endblock %}
 
 

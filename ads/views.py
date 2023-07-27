@@ -16163,14 +16163,6 @@ def rapportBrut(request):
     entrepot = request.POST['entrepot']
     date_d = request.POST['date_d']
     date_f = request.POST['date_f']
-
-    # print(ville)
-    # print(produit)
-    # print(importateur)
-    # print(entrepot)
-    # print(date_d)
-    # print(date_f)
-
     request.session['frontiere'] = ville
     request.session['produit'] = produit
     request.session['importateur'] = importateur
@@ -16179,330 +16171,542 @@ def rapportBrut(request):
     request.session['date_f'] = date_f
 
     if ville and produit and importateur and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.filter().values(
-        #     'dateheurecargaison',
-        #     'frontiere__nomville',
-        #     'declaration',
-        #     'importateur__nomimportateur',
-        #     'immatriculation',
-        #     'entrepot_echantillon__dateechantillonage',
-        #     'entrepot_echantillon__laboreception__datereceptionlabo',
-        #     'impressionresultat__printDate',
-        #     'inspection__dateinspection',
-        #     'entrepot__cargaison__dateDechargement',
-        #     'produit__nomproduit',
-        #     'inspection__dens',
-        #     'inspection__temp',
-        #     'volume',
-        # )\
-        #     .annotate(
-        #     volJauge = Sum('inspection__compartiment__gov'),
-        #     gsvJauge = Sum('inspection__compartiment__gsv'),
-        #     govMeter= Coalesce(
-        #         Cast(F('inspection__meterafter'), FloatField()) - Cast(F('inspection__meterbefore'), FloatField()),
-        #         0.0),
-        #     # fraisOcc=Case(
-        #     #     When(dechargement__gsvmeter__isnull=True, then=F('gsvJauge') * Value(11)),
-        #     #     default=F('gsvMeter') * Value(11),
-        #     #     output_field=FloatField()
-        #     # ),
-        # )
-
-        qs = Cargaison.objects.raw("SELECT \
-                                        c.idcargaison, \
-                                        DATE(c.dateheurecargaison), \
-                                        i.nomimportateur, \
-                                        e.nomentrepot, \
-                                        c.immatriculation, \
-                                        p.nomproduit, \
-                                        c.volume, \
-                                        DATE(ee.dateechantillonage) as dateEch, \
-                                        DATE(l.datereceptionlabo) as dateLabo, \
-                                        im.printDate, \
-                                        im.isConforme, \
-                                        DATE(ei.dateinspection) as dateInsp, \
-                                        DATE(c.dateDechargement) as dateDech, \
-                                        ei.dens, \
-                                        SUM(ec.gov) as volJauge, \
-                                        SUM(ec.gsv) as gsvJauge, \
-                                        SUM(ed.govmeter) as govMeter, \
-                                        SUM(ed.gsvmeter) as gsvMeter, \
-                                        SUM(ec.mta) as mta, \
-                                        IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                                    FROM \
-                                        enreg_cargaison c \
-                                        LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                        LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                        LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                        LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                        LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                        LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                        LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                        LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                        LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                        LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                                    WHERE \
-                                        e.ville_id = %s \
-                                        AND c.produit_id = %s \
-                                        AND c.importateur_id = %s \
-                                        AND c.entrepot_id = %s \
-                                        AND DATE(c.dateheurecargaison) BETWEEN %s and %s \
-                                    GROUP BY \
-                                        c.idcargaison, \
-                                        c.dateheurecargaison, \
-                                        i.nomimportateur, \
-                                        e.nomentrepot, \
-                                        c.immatriculation, \
-                                        p.nomproduit, \
-                                        c.volume, \
-                                        ee.dateechantillonage, \
-                                        l.datereceptionlabo, \
-                                        im.printDate, \
-                                        im.isConforme, \
-                                        ei.dateinspection, \
-                                        ei.dens", [ville, produit, importateur, entrepot, date_d,date_f ])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True, then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
+        # # Use the LazyPaginator to handle pagination
+        # paginator = LazyPaginator(table, per_page=10)
+        # 
+        # # Get the current page number from the DataTables request
+        # page_number = int(request.GET.get('start', 0)) // paginator.per_page + 1
+        # 
+        # # Get the data for the current page using the paginator
+        # page = paginator.page(page_number)
+        # 
+        # # Prepare the data to be sent as JSON to DataTables
+        # data = {
+        #     'draw': int(request.GET.get('draw', 0)),
+        #     'recordsTotal': paginator.count,
+        #     'recordsFiltered': paginator.count,
+        #     'data': [{'pk': item.pk, **item.as_dict()} for item in page],
+        # }
+        # 
+        # return JsonResponse(data)
+
+        # qs = Cargaison.objects.raw("SELECT \
+        #                                 c.idcargaison, \
+        #                                 DATE(c.dateheurecargaison), \
+        #                                 i.nomimportateur, \
+        #                                 e.nomentrepot, \
+        #                                 c.immatriculation, \
+        #                                 p.nomproduit, \
+        #                                 c.volume, \
+        #                                 DATE(ee.dateechantillonage) as dateEch, \
+        #                                 DATE(l.datereceptionlabo) as dateLabo, \
+        #                                 im.printDate, \
+        #                                 im.isConforme, \
+        #                                 DATE(ei.dateinspection) as dateInsp, \
+        #                                 DATE(c.dateDechargement) as dateDech, \
+        #                                 ei.dens, \
+        #                                 SUM(ec.gov) as volJauge, \
+        #                                 SUM(ec.gsv) as gsvJauge, \
+        #                                 SUM(ed.govmeter) as govMeter, \
+        #                                 SUM(ed.gsvmeter) as gsvMeter, \
+        #                                 SUM(ec.mta) as mta, \
+        #                                 IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                             FROM \
+        #                                 enreg_cargaison c \
+        #                                 LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                                 LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                                 LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                                 LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                                 LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                                 LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                                 LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                                 LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                             WHERE \
+        #                                 e.ville_id = %s \
+        #                                 AND c.produit_id = %s \
+        #                                 AND c.importateur_id = %s \
+        #                                 AND c.entrepot_id = %s \
+        #                                 AND DATE(c.dateheurecargaison) BETWEEN %s and %s \
+        #                             GROUP BY \
+        #                                 c.idcargaison, \
+        #                                 c.dateheurecargaison, \
+        #                                 i.nomimportateur, \
+        #                                 e.nomentrepot, \
+        #                                 c.immatriculation, \
+        #                                 p.nomproduit, \
+        #                                 c.volume, \
+        #                                 ee.dateechantillonage, \
+        #                                 l.datereceptionlabo, \
+        #                                 im.printDate, \
+        #                                 im.isConforme, \
+        #                                 ei.dateinspection, \
+        #                                 ei.dens", [ville, produit, importateur, entrepot, date_d,date_f ])
+        #
+        # table = RapportBrut(qs)
+        # # Use the LazyPaginator to handle pagination
+        # # You can set the number of rows per page as needed (e.g., 10, 25, 50, etc.)
+        # paginator = LazyPaginator(table, per_page=10)
+        #
+        # # Get the current page number from the DataTables request
+        # page_number = int(request.GET.get('start', 0)) // paginator.per_page + 1
+        #
+        # # Get the data for the current page using the paginator
+        # page = paginator.page(page_number)
+        #
+        # # Prepare the data to be sent as JSON to DataTables
+        # data = {
+        #     'draw': int(request.GET.get('draw', 0)),
+        #     'recordsTotal': paginator.count,
+        #     'recordsFiltered': paginator.count,
+        #     'data': [{'pk': item.pk, **item.as_dict()} for item in page.object_list],
+        # }
+        #
+        # return JsonResponse(data)
+
+        RequestConfig(request, paginate={"per_page": 10}).configure(table)
         context = {
             'table': table,
         }
         return render(request, template, context)
+        # return JsonResponse(serialized_data, safe=False)
 
     if ville and produit and importateur and entrepot and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,entrepot,date_d,])
 
         table = RapportBrut(qs)
+        RequestConfig(request, paginate={"per_page": 15}).configure(table)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and produit and importateur and entrepot and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,entrepot,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and produit and importateur and entrepot :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,entrepot,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,entrepot,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
 
-
     if ville and produit and importateur and date_d and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,date_d,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,date_d,date_f,])
 
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
@@ -16510,57 +16714,97 @@ def rapportBrut(request):
         return render(request, template, context)
 
     if ville and produit and importateur and date_d :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,date_d,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
@@ -16568,59 +16812,98 @@ def rapportBrut(request):
         }
         return render(request, template, context)
 
-
     if ville and produit and importateur and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
@@ -16629,2194 +16912,3562 @@ def rapportBrut(request):
         return render(request, template, context)
 
     if ville and produit and importateur :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,importateur,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,importateur,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and produit and entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,entrepot,date_d, date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,entrepot,date_d, date_f,])
+
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and produit and entrepot and date_d :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,entrepot,date_d,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and produit and entrepot and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,entrepot,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and produit and entrepot :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND c.entrepot_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,entrepot,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,entrepot,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and produit and date_d and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,date_d,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and produit and date_d :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,date_d,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and produit and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and produit:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.produit_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,produit,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.produit_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,produit,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and importateur and entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,entrepot,date_d,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,entrepot,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and importateur and entrepot and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,entrepot,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and importateur and entrepot and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,entrepot,date_f,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and importateur and entrepot:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,entrepot,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,entrepot,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if ville and importateur and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,date_d, date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,date_d, date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and importateur and date_d :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and importateur and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and importateur :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.importateur_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,importateur,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,importateur,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,entrepot,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,entrepot,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and entrepot and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,entrepot,date_d,])
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and entrepot and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,entrepot,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and entrepot:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,entrepot,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,entrepot,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if ville:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                e.ville_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[ville,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         e.ville_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[ville,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if produit and importateur and entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,entrepot,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,entrepot,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if produit and importateur and entrepot and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,entrepot,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and importateur and entrepot and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,entrepot,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if produit and importateur and entrepot :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,entrepot,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,entrepot,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and importateur and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and importateur and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,date_d,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and importateur and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and importateur :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,importateur,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,importateur,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,entrepot,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,entrepot,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and entrepot and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,entrepot,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
 
-
     if produit and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,date_d,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
@@ -18824,986 +20475,1593 @@ def rapportBrut(request):
         return render(request, template, context)
 
     if produit and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,date_f,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if produit:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.produit_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[produit,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.produit_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[produit,])
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if importateur and entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,entrepot,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,entrepot,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if importateur and entrepot and date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,entrepot,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if importateur and entrepot and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,entrepot,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if importateur and entrepot :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND c.entrepot_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,entrepot,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND c.entrepot_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,entrepot,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if importateur and date_d and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,date_d, date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,date_d, date_f,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if importateur and date_d :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,date_d,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if importateur and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,date_f,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if importateur :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.importateur_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[importateur,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.importateur_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[importateur,])
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if entrepot and date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[entrepot,date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[entrepot,date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
-
 
     if entrepot and date_d :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[entrepot,date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[entrepot,date_d,])
+        qs = Cargaison.objects.filter(
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if entrepot and date_f :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.entrepot_id = %s \
-                                AND DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[entrepot,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.entrepot_id = %s \
+        #                         AND DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[entrepot,date_f,])
+        qs = Cargaison.objects.filter(
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if entrepot :
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                c.entrepot_id = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[entrepot,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         c.entrepot_id = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[entrepot,])
+        qs = Cargaison.objects.filter(
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if date_d and date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[date_d,date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         DATE(c.dateheurecargaison) BETWEEN %s AND %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[date_d,date_f,])
+        qs = Cargaison.objects.filter(
+            dateheurecargaison__range=[date_d,date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if date_d:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[date_d,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[date_d,])
+        qs = Cargaison.objects.filter(
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
             'table': table,
         }
         return render(request, template, context)
-
 
     if date_f:
-        qs = Cargaison.objects.raw("SELECT \
-                                c.idcargaison, \
-                                DATE(c.dateheurecargaison), \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                DATE(ee.dateechantillonage) as dateEch, \
-                                DATE(l.datereceptionlabo) as dateLabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                DATE(ei.dateinspection) as dateInsp, \
-                                DATE(c.dateDechargement) as dateDech, \
-                                ei.dens, \
-                                SUM(ec.gov) as volJauge, \
-                                SUM(ec.gsv) as gsvJauge, \
-                                SUM(ed.govmeter) as govMeter, \
-                                SUM(ed.gsvmeter) as gsvMeter, \
-                                IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                            FROM \
-                                enreg_cargaison c \
-                                LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                            WHERE \
-                                DATE(c.dateheurecargaison) = %s \
-                            GROUP BY \
-                                c.idcargaison, \
-                                c.dateheurecargaison, \
-                                i.nomimportateur, \
-                                e.nomentrepot, \
-                                c.immatriculation, \
-                                p.nomproduit, \
-                                c.volume, \
-                                ee.dateechantillonage, \
-                                l.datereceptionlabo, \
-                                im.printDate, \
-                                im.isConforme, \
-                                ei.dateinspection, \
-                                ei.dens",[date_f,])
-
+        # qs = Cargaison.objects.raw("SELECT \
+        #                         c.idcargaison, \
+        #                         DATE(c.dateheurecargaison), \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         DATE(ee.dateechantillonage) as dateEch, \
+        #                         DATE(l.datereceptionlabo) as dateLabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         DATE(ei.dateinspection) as dateInsp, \
+        #                         DATE(c.dateDechargement) as dateDech, \
+        #                         ei.dens, \
+        #                         SUM(ec.gov) as volJauge, \
+        #                         SUM(ec.gsv) as gsvJauge, \
+        #                         SUM(ed.govmeter) as govMeter, \
+        #                         SUM(ed.gsvmeter) as gsvMeter, \
+        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
+        #                     FROM \
+        #                         enreg_cargaison c \
+        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
+        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
+        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
+        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
+        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
+        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
+        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
+        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
+        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
+        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
+        #                     WHERE \
+        #                         DATE(c.dateheurecargaison) = %s \
+        #                     GROUP BY \
+        #                         c.idcargaison, \
+        #                         c.dateheurecargaison, \
+        #                         i.nomimportateur, \
+        #                         e.nomentrepot, \
+        #                         c.immatriculation, \
+        #                         p.nomproduit, \
+        #                         c.volume, \
+        #                         ee.dateechantillonage, \
+        #                         l.datereceptionlabo, \
+        #                         im.printDate, \
+        #                         im.isConforme, \
+        #                         ei.dateinspection, \
+        #                         ei.dens",[date_f,])
+        qs = Cargaison.objects.filter(
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values(
+            'idcargaison',
+            'dateheurecargaison',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__dateechantillonage',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
         table = RapportBrut(qs)
         context = {
@@ -19811,52 +22069,41 @@ def rapportBrut(request):
         }
         return render(request, template, context)
 
-    qs = Cargaison.objects.raw("SELECT \
-                                    c.idcargaison, \
-                                    DATE(c.dateheurecargaison), \
-                                    i.nomimportateur, \
-                                    e.nomentrepot, \
-                                    c.immatriculation, \
-                                    p.nomproduit, \
-                                    c.volume, \
-                                    DATE(ee.dateechantillonage) as dateEch, \
-                                    DATE(l.datereceptionlabo) as dateLabo, \
-                                    im.printDate, \
-                                    im.isConforme, \
-                                    DATE(ei.dateinspection) as dateInsp, \
-                                    DATE(c.dateDechargement) as dateDech, \
-                                    ei.dens, \
-                                    SUM(ec.gov) as volJauge, \
-                                    SUM(ec.gsv) as gsvJauge, \
-                                    SUM(ed.govmeter) as govMeter, \
-                                    SUM(ed.gsvmeter) as gsvMeter, \
-                                    IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-                                FROM \
-                                    enreg_cargaison c \
-                                    LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-                                    LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-                                    LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-                                    LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-                                    LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-                                    LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-                                    LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-                                    LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-                                    LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-                                    LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-                                GROUP BY \
-                                    c.idcargaison, \
-                                    c.dateheurecargaison, \
-                                    i.nomimportateur, \
-                                    e.nomentrepot, \
-                                    c.immatriculation, \
-                                    p.nomproduit, \
-                                    c.volume, \
-                                    ee.dateechantillonage, \
-                                    l.datereceptionlabo, \
-                                    im.printDate, \
-                                    im.isConforme, \
-                                    ei.dateinspection, \
-                                    ei.dens")
+    qs = Cargaison.objects.annotate(
+        volJauge=Sum('inspection__compartiment__gov'),
+        gsvJauge=Sum('inspection__compartiment__gsv'),
+        govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+        gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+        mta=Sum('inspection__compartiment__mta'),
+        fraisOcc=Case(
+            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                 then=Sum('inspection__compartiment__gsv') * 11),
+            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+            output_field=FloatField()
+        ),
+    ).values(
+        'idcargaison',
+        'dateheurecargaison',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'entrepot_echantillon__dateechantillonage',
+        'frontiere__nomville',
+        'immatriculation',
+        'produit__nomproduit',
+        'declaration',
+        'volume',
+        'inspection__temp',
+        'impressionresultat__printDate',
+        'inspection__dens',
+        'inspection__dateinspection',
+        'volJauge',
+        'gsvJauge',
+        'govMeter',
+        'gsvMeter',
+        'mta',
+        'fraisOcc',
+    )
 
     table = RapportBrut(qs)
     context = {
