@@ -1263,9 +1263,18 @@ def tankerinspection(request):
             # # meterbefore = request.POST['meterbefore']
             # if meterbefore == '':
             #     meterbefore = 0
-            data = Inspection(idcargaison=cargaison, dens=dens, temp=temp, innagein=innagein,
-                              volumein=volumein, tempin=tempin, weightin=weightin)
-            data.save()
+            try:
+                data = Inspection(idcargaison=cargaison, dens=dens, temp=temp, innagein=innagein, volumein=volumein, tempin=tempin, weightin=weightin)
+                data.save()
+            except:
+                data = Inspection.objects.get(idcargaison=cargaison)
+                data.dens = dens
+                data.temp = temp
+                data.innagein = innagein
+                data.volumein = volumein
+                data.tempin = tempin
+                data.weightin = weightin
+                data.save(update_fields=['dens','temp','innagein','volumein','tempin','weightin'])
             return redirect('compartiment', pk=pk)
     else:
         context = {'form': form}
