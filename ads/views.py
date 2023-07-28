@@ -56,11 +56,20 @@ class Dashboard():
             m = Cargaison.objects.filter(etatInspection=1).count()
 
             #Nouveau Produtc list
-            totalVolume = round((Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']))
-            gasoilVolume = round((Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']))
-            mogasVolume = round((Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']))
-            jetVolume = round((Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']))
-            petroleVolume = round((Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']))
+            totalVolume = Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']
+            totalVolume = round(totalVolume) if totalVolume is not None else 0
+
+            gasoilVolume = Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']
+            gasoilVolume = round(gasoilVolume) if gasoilVolume is not None else 0
+
+            mogasVolume = Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']
+            mogasVolume = round(mogasVolume) if mogasVolume is not None else 0
+
+            jetVolume = Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']
+            jetVolume = round(jetVolume) if jetVolume is not None else 0
+
+            petroleVolume = Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']
+            petroleVolume = round(petroleVolume) if petroleVolume is not None else 0
 
             #Pourcentage
             gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
