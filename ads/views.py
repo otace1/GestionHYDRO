@@ -60,7 +60,7 @@ class Dashboard():
             gasoilVolume = round((Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']))
             mogasVolume = round((Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']))
             jetVolume = round((Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']))
-            petroleVolume = round((Cargaison.objects.filter(produit=1).aggregate(petroleVolume=Sum('volume'))['petroleVolume']))
+            petroleVolume = round((Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']))
 
             #Pourcentage
             gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
