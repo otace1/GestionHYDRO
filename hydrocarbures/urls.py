@@ -6,11 +6,11 @@ from rest_framework.routers import DefaultRouter
 from api.views import UserViewSerializer
 from django.contrib import admin
 
-if settings.DEBUG:
-    import debug_toolbar
+# if settings.DEBUG:
+#     import debug_toolbar
 
 urlpatterns = [
-                  path('__debug__/', include(debug_toolbar.urls)),
+                  # path('__debug__/', include(debug_toolbar.urls)),
                   # path('sentry-debug/', trigger_error),
                   path('admin/', admin.site.urls),
                   path('ads/', include('ads.urls')),
