@@ -22191,7 +22191,7 @@ def responseBrutJournalier(request):
         # Write data rows to the Excel file
         for row in data:
             sheet.append([
-                row['dateheurecargaison'],
+                row['dateheurecargaison__date'],
                 row['frontiere__nomville'],
                 row['declaration'],
                 row['importateur__nomimportateur'],
@@ -22383,13 +22383,13 @@ def responseRapportBrutAnalyse(request):
 
         # Write headers to the Excel file
         header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume', 'Date requisition']
+                      'Volume', 'Date requisition','Date Echantillonnage', 'Date Reception Labo']
         sheet.append(header_row)
 
         # Write data rows to the Excel file
         for row in data:
             sheet.append([
-                row['dateheurecargaison'],
+                row['dateheurecargaison__date'],
                 row['frontiere__nomville'],
                 row['declaration'],
                 row['importateur__nomimportateur'],
@@ -22398,6 +22398,8 @@ def responseRapportBrutAnalyse(request):
                 row['produit__nomproduit'],
                 row['volume'],
                 row['requisitiondackdate'],
+                row['entrepot_echantillon__dateechantillonage'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo'],
             ])
 
         # Create an in-memory stream to hold the Excel file data
@@ -22491,13 +22493,13 @@ def responseRapportBrutInspection(request):
 
         # Write headers to the Excel file
         header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume', 'Date requisition']
+                      'Volume', 'Date requisition','Date Echantillonnage', 'Date Reception Labo']
         sheet.append(header_row)
 
         # Write data rows to the Excel file
         for row in data:
             sheet.append([
-                row['dateheurecargaison'],
+                row['dateheurecargaison__date'],
                 row['frontiere__nomville'],
                 row['declaration'],
                 row['importateur__nomimportateur'],
@@ -22506,6 +22508,8 @@ def responseRapportBrutInspection(request):
                 row['produit__nomproduit'],
                 row['volume'],
                 row['requisitiondackdate'],
+                row['entrepot_echantillon__dateechantillonage'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo'],
             ])
 
         # Create an in-memory stream to hold the Excel file data
