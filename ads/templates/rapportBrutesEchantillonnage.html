@@ -18,12 +18,13 @@
                     <th>Immatriculation</th>
                     <th>Produit</th>
                     <th>Volume</th>
+                    <th>Date Requisition</th>
                 </tr>
             </thead>
         </table>
 
-     <!-- Optional: Add Bootstrap JavaScript for table styling -->
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+{#     <!-- Optional: Add Bootstrap JavaScript for table styling -->#}
+{#    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>#}
 
     <!-- Include FileSaver.js library for saving the Excel file -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -35,7 +36,7 @@
             serverSide: true,
             responsive: true,
             ajax: {
-                url: '{% url 'responseBrutJournalier' %}',
+                url: '{% url 'responseRapportBrutEchantillonnage' %}',
                 type: 'GET',
             },
             columns: [
@@ -46,7 +47,8 @@
                 { data: 'entrepot__nomentrepot' },
                 { data: 'immatriculation' },
                 { data: 'produit__nomproduit' },
-                { data: 'volume' }
+                { data: 'volume' },
+                { data: 'requisitiondackdate' },
             ],
             // Optional: Add buttons for exporting to Excel
             dom: 'Bfrtip',
@@ -54,7 +56,7 @@
                 {
                     extend: 'excelHtml5',
                     text: 'Export to Excel',
-                    filename: 'rapport_brut_journalier',
+                    filename: 'rapport_brut',
                     exportOptions: {
                         modifier: {
                             search: 'none'
@@ -62,7 +64,7 @@
                     },
                     action: function (e, dt, node, config) {
                         // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
+                        window.location.href = '{% url 'exportBrutEchantillonnage' %}?export=excel';
                     }
                 }
             ],

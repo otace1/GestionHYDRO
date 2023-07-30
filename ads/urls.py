@@ -51,4 +51,16 @@ urlpatterns = [
     path('chartJs/', views.chartJs, name='chartJs'),
 
 
+    path('response/brut/journalier/', views.responseBrutJournalier, name='responseBrutJournalier'),
+    path('response/brut/journalier/', views.responseBrutJournalier, name='exportBrutJournalier'),
+    path('response/brut/echantillonnage/', views.responseRapportBrutEchantillonnage, name='responseRapportBrutEchantillonnage'),
+    path('response/brut/echantillonnage/', views.responseRapportBrutEchantillonnage, name='exportBrutEchantillonnage'),
+    path('response/brut/analyse/', views.responseRapportBrutAnalyse, name='responseRapportBrutAnalyse'),
+    path('response/brut/analyse/', views.responseRapportBrutAnalyse, name='exportRapportBrutAnalyse'),
+    path('response/brut/inspection/', views.responseRapportBrutInspection, name='responseRapportBrutInspection'),
+    path('response/brut/inspection/', views.responseRapportBrutInspection, name='exportRapportBrutInspection'),
+
+
+
+
 ]
