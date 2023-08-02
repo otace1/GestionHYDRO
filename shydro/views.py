@@ -802,11 +802,13 @@ def responseRapportActivite(request):
     ).annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv')
-    ).values(
-        'numdos','declaration','frontiere__nomville',
-        'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison__date',
-        'requisitiondackdate__date','entrepot_echantillon__dateechantillonage__date','entrepot_echantillon__laboreception__datereceptionlabo__date','impressionresultat__printDate',
-        'inspection__dateinspection','volume','volConst','gsvT'
+    ).values_list(
+        'numdos', 'declaration', 'frontiere__nomville',
+        'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+        'produit__nomproduit', 'dateheurecargaison__date',
+        'requisitiondackdate__date', 'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
+        'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
     ).order_by('-dateheurecargaison')
 
     # Get the search value from the request's GET parameters
