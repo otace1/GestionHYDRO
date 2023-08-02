@@ -247,8 +247,6 @@ class EnAttenteResultatLabo(tables.Table):
         # template_name = "django_tables2/bootstrap4.html"
 
 
-
-
 class RapportActivite(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
     declaration = tables.Column(verbose_name="#.DECL.(T1D)")
