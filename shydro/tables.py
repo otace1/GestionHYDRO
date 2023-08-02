@@ -91,10 +91,10 @@ nonConforme = """
 
 
 class CodificationTable(tables.Table):
-    dateheurecargaison = tables.Column(verbose_name='DATE & HEURE')
-    importateur = tables.Column(verbose_name='FOURNISSEUR')
-    entrepot = tables.Column(verbose_name='ENTREPOT')
-    produit = tables.Column(verbose_name='PRODUIT')
+    dateheurecargaison__date = tables.Column(verbose_name='DATE & HEURE')
+    importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
+    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     volume = tables.Column(verbose_name='VOLUME')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
     declaration = tables.Column(verbose_name='#.DECL.(T1D)')

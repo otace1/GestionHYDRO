@@ -1,10 +1,14 @@
+import json
 import uuid
 import qrcode
 import io
+from io import BytesIO
 
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.forms import FloatField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
+from openpyxl import Workbook
 
 from ads.forms import ImportateurForm, EntrepotForm
 from enreg.forms import Ajoutcargaison
@@ -38,7 +42,7 @@ class GestionCodification():
             if 'search' in request.GET:
                 qs = request.GET['search']
                 if qs == "":
-                    request.session['url'] = request.get_full_path()
+                    # request.session['url'] = request.get_full_path()
 
                     e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                                  entrepot__ville__affectationville__username_id=id).count()
@@ -49,14 +53,23 @@ class GestionCodification():
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                             isConforme=0, control=1).count()
 
-                    table = CodificationTable(
-                        Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__ville__affectationville__username_id=id) \
-                            .order_by('-dateheurecargaison'), prefix="1_")
-                    data = Entrepot.objects.filter(ville__affectationville__username_id=id)
+                    # qs = Cargaison.objects.filter(etat="En attente requisition",entrepot__ville__affectationville__username_id=id).values(
+                    #     'dateheurecargaison__date',
+                    #     'importateur__nomimportateur',
+                    #     'entrepot__nomentrepot',
+                    #     'produit__nomproduit',
+                    #     'volume',
+                    #     'immatriculation',
+                    #     'declaration',
+                    #     'numreq'
+                    # ).order_by('-dateheurecargaison', 'frontiere__nomville')
+
+                    # table = CodificationTable(qs)
+                    # data = Entrepot.objects.filter(ville__affectationville__username_id=id)
                     # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
-                        'cargaison': table,
-                        'filter': data,
+                        # 'cargaison': table,
+                        # 'filter': data,
                         'e':e,
                         'd':d,
                         'l':l,
@@ -75,16 +88,27 @@ class GestionCodification():
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                             isConforme=0, control=1).count()
 
-                    qs_temp = Entrepot.objects.get(nomentrepot=qs)
-                    id_ent = qs_temp.identrepot
-                    table = CodificationTable(
-                        Cargaison.objects.filter(etat="En attente requisition", entrepot=id_ent, entrepot__ville__affectationville__username_id=id) \
-                            .order_by('-dateheurecargaison'), prefix="3_")
-                    data = Entrepot.objects.filter(ville__affectationville__username_id=id)
+                    # qs_temp = Entrepot.objects.get(nomentrepot=qs)
+                    # id_ent = qs_temp.identrepot
+
+                    # qs = Cargaison.objects.filter(etat="En attente requisition",entrepot=id_ent,
+                    #                               entrepot__ville__affectationville__username_id=id).values(
+                    #     'dateheurecargaison__date',
+                    #     'importateur__nomimportateur',
+                    #     'entrepot__nomentrepot',
+                    #     'produit__nomproduit',
+                    #     'volume',
+                    #     'immatriculation',
+                    #     'declaration',
+                    #     'numreq'
+                    # ).order_by('-dateheurecargaison', 'frontiere__nomville')
+
+                    # table = CodificationTable(qs)
+                    # data = Entrepot.objects.filter(ville__affectationville__username_id=id)
                     # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
-                        'cargaison': table,
-                        'filter': data,
+                        # 'cargaison': table,
+                        # 'filter': data,
                         'e':e,
                         'd':d,
                         'l':l,
@@ -92,7 +116,7 @@ class GestionCodification():
 
                     })
             else:
-                request.session['url'] = request.get_full_path()
+                # request.session['url'] = request.get_full_path()
 
                 e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                              entrepot__ville__affectationville__username_id=id).count()
@@ -103,13 +127,13 @@ class GestionCodification():
                 n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                       isConforme=0, control=0).count()
 
-                table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
-                                          .order_by('-dateheurecargaison'), prefix="5_")
-                data = Entrepot.objects.filter(ville__affectationville__username_id=id)
+                # table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
+                #                           .order_by('-dateheurecargaison'), prefix="5_")
+                # data = Entrepot.objects.filter(ville__affectationville__username_id=id)
                 # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                 context = {
-                    'cargaison': table,
-                    'filter': data,
+                    # 'cargaison': table,
+                    # 'filter': data,
                     'e':e,
                     'd':d,
                     'l':l,
@@ -119,23 +143,177 @@ class GestionCodification():
         else:
             return redirect('logout')
 
+    @login_required(login_url='login')
+    def responseAffichageTableau(request):
+        user = request.user
+        id = user.id
+        qs = Cargaison.objects.filter(
+            etat="En attente requisition",
+            entrepot__ville__affectationville__username_id=id
+        ).select_related(
+            'dateheurecargaison',
+            'importateur',
+            'entrepot',
+            'produit'
+        ).values(
+            'idcargaison',
+            'dateheurecargaison__date',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'produit__nomproduit',
+            'volume',
+            'immatriculation',
+            'declaration',
+            'numreq'
+        ).order_by('-dateheurecargaison', 'frontiere__nomville')
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(dateheurecargaison__date__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value) |
+                Q(volume__icontains=search_value) |
+                Q(immatriculation__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(numreq__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 8
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.',
+                          '#.T1D',
+                          '#.REQ.']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['produit__nomproduit'],
+                    row['volume'],
+                    row['immatriculation'],
+                    row['declaration'],
+                    row['numreq'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+
+# # Fonction numrequisition
+# @login_required(login_url='login')
+# def numreq(request, pk):
+#     url = request.session['url']
+#     user = request.user
+#     id = user.id
+#     role = user.role_id
+#     if role == 7 or role == 1:
+#         if request.method == 'POST':
+#             numreq = request.POST['numreq']
+#             c = Cargaison.objects.get(pk=pk)
+#             numreq = numreq.upper()
+#             c.numreq = numreq
+#             c.save(update_fields=['numreq'])
+#             return redirect(url)
+#         else:
+#             return redirect(url)
+#     else:
+#         return redirect('logout')
+
+
 # Fonction numrequisition
 @login_required(login_url='login')
-def numreq(request, pk):
-    url = request.session['url']
+def numreq(request):
+    # url = request.session['url']
     user = request.user
-    id = user.id
     role = user.role_id
     if role == 7 or role == 1:
         if request.method == 'POST':
-            numreq = request.POST['numreq']
-            c = Cargaison.objects.get(pk=pk)
+            data = json.loads(request.body)
+            numreq = data.get('jsonData')
+            pk = data.get('idcargaison')
+            c = Cargaison.objects.get(idcargaison=pk)
             numreq = numreq.upper()
+
+            # Get Town du point de dechargement pour l'attribution automatique des numeros
+            # c = Cargaison.objects.get(idcargaison=pk)
+            e = c.entrepot_id
+            e = Entrepot.objects.get(identrepot=e)
+            ville = e.ville_id
+
+            td = datetime.datetime.now()
+            name = MyUser.objects.get(id=user.id)
+            name = name.username
+
+            c.numdos = numDossier(pk, ville)
             c.numreq = numreq
-            c.save(update_fields=['numreq'])
-            return redirect(url)
+            c.requisitiondackdate = td
+            c.requisitionack = name
+            c.etat = "En attente d'echantillonage"
+            c.save(update_fields=['numreq','requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
+
+            return JsonResponse({'message': 'Data submitted successfully'})
         else:
-            return redirect(url)
+            return JsonResponse({'error': 'Invalid request method'}, status=400)
     else:
         return redirect('logout')
 

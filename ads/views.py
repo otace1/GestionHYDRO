@@ -22447,7 +22447,7 @@ def responseRapportBrutInspection(request):
         'requisitiondackdate',
         'entrepot_echantillon__dateechantillonage__date',
         'entrepot_echantillon__laboreception__datereceptionlabo__date',
-    ).order_by('-dateheurecargaison', 'frontiere__nomville')
+    ).order_by('-dateheurecargaison','frontiere__nomville')
 
     # table = RapportBrutJournalierInspection(qs)
     # context = {

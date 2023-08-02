@@ -29,6 +29,7 @@
 
 {% endblock %}
 
+
   </head>
 
 
@@ -379,25 +380,25 @@
                           <div class="card">
                               <div class="card-header bg-gradient-dark">
                                   <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
-                                  <div class="card-tools">
-                                      <form action="" type="get">
-                                          <div class="input-group input-group-sm" style="width: 400px;">
-                                              <select name="search" class="form-control mr-sm-2">
-                                                  <option value="" class="form-control mr-sm-2">--------------------
-                                                  </option>
-                                                  {% for value in filter %}
-                                                    <option value="{{ value.nomentrepot }}"
-                                                            class="form-control mr-sm-2">{{ value.nomentrepot }}</option>
-                                                {% endfor %}
-
-                                            </select>
-                                            <div class="input-group-append">
-                                                <button type="submit" class="btn btn-default"><i
-                                                        class="fas fa-search"></i></button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
+{#                                  <div class="card-tools">#}
+{#                                      <form action="" type="get">#}
+{#                                          <div class="input-group input-group-sm" style="width: 400px;">#}
+{#                                              <select name="search" class="form-control mr-sm-2">#}
+{#                                                  <option value="" class="form-control mr-sm-2">--------------------#}
+{#                                                  </option>#}
+{#                                                  {% for value in filter %}#}
+{#                                                    <option value="{{ value.nomentrepot }}"#}
+{#                                                            class="form-control mr-sm-2">{{ value.nomentrepot }}</option>#}
+{#                                                {% endfor %}#}
+{##}
+{#                                            </select>#}
+{#                                            <div class="input-group-append">#}
+{#                                                <button type="submit" class="btn btn-default"><i#}
+{#                                                        class="fas fa-search"></i></button>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </form>#}
+{#                                </div>#}
                             </div>
 
                             <div class="card-body">
@@ -470,39 +471,7 @@
 </script>
 
 <script>
-  $(function () {
-    $("#example1").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-    $('#example2').DataTable({
-      "paging": true,
-      "lengthChange": false,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false,
-      "responsive": true,
-    });
-  });
+
 </script>
 
 

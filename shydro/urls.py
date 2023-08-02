@@ -5,10 +5,12 @@ from . import views
 urlpatterns = [
 
     path('', views.GestionCodification.affichageTableau, name='codification'),
+    path('response/responseAffichageTableau/', views.GestionCodification.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
     path('details/<int:pk>', views.linedetails, name='details'),
     path('update/<int:pk>', views.lineupdate, name='update'),
     #
-    path('numdoss/<int:pk>', views.numreq, name='numreq'),
+    # path('numdoss/<int:pk>', views.numreq, name='numreq'),
+    path('numdoss/', views.numreq, name='numreq'),
     path('codecam/<int:pk>', views.codecam, name='codecam'),
 
     path('', views.GestionResultatLabo.affichagetableauresultat, name='laboresult'),
