@@ -2,25 +2,23 @@ from enreg.models import *
 from accounts.models import *
 from django.db.models import *
 from django.contrib.auth.decorators import login_required
-import datetime
+from datetime import datetime
 
 
 def codeLabo(v, pk):
-    # user = request.user
-    # id = user.id
     ville = v
-    c = Entrepot_echantillon.objects.get(idcargaison=pk)
-    c = c.dateechantillonage
-    # month = datetime.datetime.month(c)
-    # year = datetime.datetime.year(c)
-    code = LaboReception.objects.filter(datereceptionlabo__month=c.month, datereceptionlabo__year=c.year,
-                                        idcargaison__idcargaison__entrepot__ville=ville).aggregate(Max('codelabo'))
+    # Get the current date
+    current_date = datetime.now()
+    code = LaboReception.objects.filter(
+        datereceptionlabo__month=current_date.month,
+        datereceptionlabo__year=current_date.year,
+        idcargaison__idcargaison__entrepot__ville=ville
+    ).aggregate(Max('codelabo'))
+
     codelabo = code.get('codelabo__max')
-    if codelabo == None:
+    if codelabo is None:
         codelabo = 1
-        return codelabo
     else:
-        codelabo = code.get('codelabo__max')
-        codelabo = int(codelabo)
-        codelabo = codelabo + 1
-        return codelabo
+        codelabo = int(codelabo) + 1
+
+    return codelabo
