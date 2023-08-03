@@ -1,0 +1,149 @@
+{% extends 'shydro/rapportActivite.html' %}
+{% load crispy_forms_tags %}
+{% load django_tables2 %}
+{% load bootstrap4 %}
+{% bootstrap_css %}
+{% bootstrap_javascript jquery='full' %}
+
+    <style>
+    @keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.3);
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-left: -20px;
+      margin-top: -20px;
+      z-index: 9999;
+    }
+    </style>
+
+{% block modal %}
+    <div class="modal fade" id="modal-default">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Filtres</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+              <form action="{% url 'rapportActiviteFiltre' %}" method="post">
+            <div class="modal-body">
+                {% csrf_token %}
+                {% crispy form %}
+            </div>
+              </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+      </div>
+      <!-- /.modal -->
+{% endblock %}
+
+{#{% block export %}#}
+{#    <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>#}
+{#{% endblock %}#}
+
+{% block content %}
+{#    {% render_table table %}#}
+<div id="data-table-wrapper" style="position: relative;">
+  <div class="loading-spinner"></div>
+  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+    <thead>
+      <tr>
+        <th>DATE ENTREE</th>
+        <th>FRONTIERE</th>
+        <th>FOURNISSEUR</th>
+        <th>ENTREPOT</th>
+        <th>PRODUIT</th>
+        <th>IMMATR.</th>
+        <th>#.T1D</th>
+        <th>#.DOSSIER</th>
+        <th>DATE REQ.</th>
+        <th>DATE ECH.</th>
+        <th>DATE REC.LABO</th>
+        <th>DATE ANALYSE.LABO</th>
+        <th>DATE INSPECTION</th>
+        <th>VOL.DECL.</th>
+        <th>VOL.CONST.</th>
+        <th>VOL. A 15°C</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'responseRapportActivite' %}',
+                type: 'GET',
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+            },
+            columns: [
+                { data: 8 }, // Use array index to access 'dateheurecargaison__date'
+                { data: 2 }, // Use array index to access 'frontiere__nomville'
+                { data: 5 }, // Use array index to access 'importateur__nomimportateur'
+                { data: 3 }, // Use array index to access 'entrepot__nomentrepot'
+                { data: 7 }, // Use array index to access 'produit__nomproduit'
+                { data: 6 }, // Use array index to access 'immatriculation'
+                { data: 1 }, // Use array index to access 'declaration'
+                { data: 0 }, // Use array index to access 'numdos'
+                { data: 9 }, // Use array index to access 'requisitiondackdate__date'
+                { data: 10 }, // Use array index to access 'entrepot_echantillon__dateechantillonage__date'
+                { data: 11 }, // Use array index to access 'entrepot_echantillon__laboreception__datereceptionlabo__date'
+                { data: 12 }, // Use array index to access 'impressionresultat__printDate'
+                { data: 13 }, // Use array index to access 'inspection__dateinspection'
+                { data: 14 }, // Use array index to access 'volume'
+                { data: 15 }, // Use array index to access 'volConst'
+                { data: 16 }, // Use array index to access 'gsvT'
+            ],
+            // Optional: Add buttons for exporting to Excel
+            {#dom: 'Bfrtip',#}
+            {#buttons: [#}
+            {#    {#}
+            {#        extend: 'excelHtml5',#}
+            {#        text: 'Export to Excel',#}
+            {#        filename: 'rapport_brut',#}
+            {#        exportOptions: {#}
+            {#            modifier: {#}
+            {#                search: 'none'#}
+            {#            }#}
+            {#        },#}
+            {#        action: function (e, dt, node, config) {#}
+            {#            // Redirect to the export URL instead of using AJAX#}
+            {#            window.location.href = '{% url 'exportResponseRapportActivite' %}?export=excel';#}
+            {#        }#}
+            {#    }#}
+            {#],#}
+        });
+    });
+</script>
+
+{% endblock %}
+
+

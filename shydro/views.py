@@ -771,7 +771,7 @@ def enAttenteResultatLabo(request):
 @login_required(login_url='login')
 def rapportActivite(request):
     user = request.user.id
-    template = 'rapportActivite.html'
+    template = 'rapportActiviteFirst.html'
     form = Filters(user=user)
     #
     # qs = Cargaison.objects.annotate(
@@ -854,6 +854,7 @@ def responseRapportActivite(request):
     data = list(page)
 
     # Check if it's an AJAX request and if the export flag is set
+    # Check if it's an AJAX request and if the export flag is set
     export = request.GET.get('export', None)
     if export == 'excel':
         # Retrieve all data (no lazy pagination) and store it in a list
@@ -867,20 +868,32 @@ def responseRapportActivite(request):
         header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.',
                       '#.T1D',
                       '#.REQ.']
-        sheet.append(header_row)
 
-        # Write data rows to the Excel file
-        for row in data:
-            sheet.append([
+        # Combine header and data rows using zip
+        all_rows = [header_row] + [
+            [
                 row['dateheurecargaison__date'],
+                row['frontiere__nomville'],
                 row['importateur__nomimportateur'],
                 row['entrepot__nomentrepot'],
                 row['produit__nomproduit'],
-                row['volume'],
                 row['immatriculation'],
                 row['declaration'],
-                row['numreq'],
-            ])
+                row['numdos'],
+                row['requisitiondackdate__date'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['impressionresultat__printDate'],
+                row['inspection__dateinspection'],
+                row['volume'],
+                row['volConst'],
+                row['gsvT'],
+            ] for row in data
+        ]
+
+        # Write data rows to the Excel file
+        for row in all_rows:
+            sheet.append(row)
 
         # Create an in-memory stream to hold the Excel file data
         excel_stream = io.BytesIO()
@@ -916,7 +929,7 @@ def regularisation(request):
     form6 = ChangementImportateur()
     qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,etat='En attente requisition').order_by('-dateheurecargaison')
     table = Regularisation(qs)
-    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {
         'table':table,
         'form':form,
@@ -1017,6 +1030,7 @@ def pertes(request,pk):
     return redirect('regularisation')
 
 
+
 @login_required(login_url='login')
 def rapportActiviteFiltre(request):
     user = request.user.id
@@ -1029,37 +1043,31 @@ def rapportActiviteFiltre(request):
         dateDebut = request.POST['dateDebut']
         dateFin = request.POST['dateFin']
 
+        request.session['fournisseur'] = fournisseur
+        request.session['entrepot'] = entrepot
+        request.session['dateDebut'] = dateDebut
+        request.session['dateFin'] = dateFin
+
         if fournisseur and entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND c.entrepot_id = %s \
-                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateDebut,dateFin, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1072,36 +1080,26 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateDebut:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND c.entrepot_id = %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateDebut, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1114,36 +1112,25 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND c.entrepot_id = %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot,dateFin, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1156,35 +1143,25 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND c.entrepot_id = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,entrepot, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1197,35 +1174,24 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,dateDebut,dateFin, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1238,35 +1204,24 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut :
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,dateDebut, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1279,35 +1234,24 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur,dateFin, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1320,34 +1264,23 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.importateur_id = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,fournisseur, ])
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1360,35 +1293,24 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.entrepot_id = %s \
-                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,entrepot,dateDebut,dateFin, ])
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1401,35 +1323,24 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateDebut:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.entrepot_id = %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,entrepot,dateDebut, ])
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1442,35 +1353,24 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.entrepot_id = %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,entrepot,dateFin, ])
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1483,34 +1383,23 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND c.entrepot_id = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,entrepot, ])
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1523,34 +1412,23 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateDebut and dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,dateDebut,dateFin, ])
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1563,34 +1441,23 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateDebut:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,dateDebut, ])
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1603,34 +1470,23 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateFin:
-            qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                AND DATE(c.dateheurecargaison) = %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user,dateFin, ])
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1642,46 +1498,463 @@ def rapportActiviteFiltre(request):
                 }
             return render(request,template,context)
 
-        qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                            FROM enreg_cargaison c \
-                                                LEFT JOIN enreg_entrepot_echantillon e \
-                                                ON c.idcargaison = e.idcargaison_id \
-                                                LEFT JOIN enreg_laboreception l \
-                                                ON e.idcargaison_id = l.idcargaison_id \
-                                                LEFT JOIN enreg_impressionresultat r \
-                                                ON l.idcargaison_id = r.idcargaison_id \
-                                                LEFT JOIN enreg_inspection i \
-                                                ON i.idcargaison_id = c.idcargaison \
-                                                LEFT JOIN enreg_compartiment co \
-                                                ON co.idinspection_id = i.idinspection \
-                                                LEFT JOIN enreg_produit p \
-                                                ON p.idproduit = c.produit_id \
-                                                LEFT JOIN enreg_importateur a \
-                                                ON a.idimportateur = c.importateur_id \
-                                                LEFT JOIN enreg_entrepot ee \
-                                                ON ee.identrepot = c.entrepot_id \
-                                                LEFT JOIN enreg_ville ev \
-                                                ON ev.idville = ee.ville_id \
-                                                LEFT JOIN accounts_affectationville v \
-                                                ON v.ville_id = ev.idville \
-                                                WHERE v.username_id= %s \
-                                                GROUP BY c.idcargaison \
-                                                ORDER BY i.dateinspection DESC', [user, ])
-
-        table = RapportActivite(qs)
-        RequestConfig(request, paginate={"per_page": 15}).configure(table)
-        export_format = request.GET.get("_export", None)
-        if TableExport.is_valid_format(export_format):
-            exporter = TableExport(export_format, table)
-            return exporter.response("table.{}".format(export_format))
-
-        context = {
-            'table':table,
-            'form':form
-            }
-        return render(request,template,context)
     else:
-        return redirect('rapportActivite')
+        fournisseur = request.session['fournisseur']
+        entrepot = request.session['entrepot']
+        dateDebut = request.session['dateDebut']
+        dateFin = request.session['dateFin']
+
+        if fournisseur and entrepot and dateDebut and dateFin:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur and entrepot and dateDebut:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur and entrepot and dateFin:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur and entrepot:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur and dateDebut and dateFin:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur and dateDebut:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur and dateFin:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if fournisseur:
+            qs = Cargaison.objects.filter(
+                importateur_id=fournisseur,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot and dateDebut and dateFin:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot and dateDebut:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot and dateFin:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if dateDebut and dateFin:
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if dateDebut:
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if dateFin:
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv')
+            ).values(
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+    # return redirect('rapportActivite')
 
 
 @login_required(login_url='login')

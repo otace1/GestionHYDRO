@@ -255,10 +255,10 @@ class RapportActivite(tables.Table):
     entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
     produit__nomproduit = tables.Column(verbose_name="PRODUIT")
     immatriculation = tables.Column(verbose_name="IMMAT.")
-    dateheurecargaison = tables.Column(verbose_name="DATE D'ENT.", attrs={"td": {"bgcolor": "yellow"}})
-    requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "yellow"}})
-    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
-    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
+    dateheurecargaison__date = tables.Column(verbose_name="DATE D'ENT.", attrs={"td": {"bgcolor": "yellow"}})
+    requisitiondackdate__date = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "yellow"}})
+    entrepot_echantillon__dateechantillonage__date = tables.Column(verbose_name="DATE ECHANT.", attrs={"td": {"bgcolor": "yellow"}})
+    entrepot_echantillon__laboreception__datereceptionlabo__date = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
     impressionresultat__printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
     inspection__dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}})
     volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
@@ -269,9 +269,9 @@ class RapportActivite(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 class Regularisation(tables.Table):
@@ -287,10 +287,10 @@ class Regularisation(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
         row_attrs = {
             "id": lambda record: record.pk
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
