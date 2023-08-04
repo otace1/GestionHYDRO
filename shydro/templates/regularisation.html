@@ -2,12 +2,13 @@
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
 
-{#{% block search %}#}
-{#    <form action="" method="POST" title="Filter">#}
-{#        <input type="text" placeholder="Search..">#}
-{#    </form>#}
-{#{% endblock %}#}
-{##}
+{% block search %}
+    <form action="{% url 'regularisationRecherche' %}" method="get" title="Filter">
+        <input type="text" placeholder="Search.." name="search_query">
+        <button type="submit">SEARCH</button>
+    </form>
+{% endblock %}
+
 {#{% block export %}#}
 {#    <input type="text" placeholder="Search..">#}
 {#    <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>#}

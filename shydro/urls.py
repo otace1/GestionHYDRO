@@ -48,5 +48,7 @@ urlpatterns = [
     path('regularisation/importateur/', views.regularisationImportateur, name='regularisationImportateur'),
     path('regularisation/entrepot/', views.regularisationEntrepot, name='regularisationEntrepot'),
 
+    path('regularisation/recherche/', views.regularisationRecherche, name='regularisationRecherche'),
+
 
 ]

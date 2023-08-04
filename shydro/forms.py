@@ -249,75 +249,71 @@ class RegularisationNouvelleEntree(forms.ModelForm):
 
 
 # Formulaire pour Ajout d'importateur
-class ImportateurRegularisationForm(forms.ModelForm):
+class ImportateurRegularisationForm(forms.Form):
     nomimportateur = forms.CharField(label='NOM IMPORTATEUR')
-    adresseimportateur = forms.CharField(label='ADRESSE')
+    adresseimportateur = forms.CharField(label='ADRESSE', required=False)
+    nifimportateur = forms.CharField(label='NIF', required=False)
+    email = forms.EmailField(label='EMAIL',widget=forms.EmailInput, required=False)
 
-    class Meta:
-        model = Importateur
-        fields = ['idimportateur', 'nomimportateur', 'adresseimportateur']
-
-    # def __init__(self, *args, **kwargs):
-    #     super(ImportateurRegularisationForm, self).__init__(*args, **kwargs)
-    #     self.helper = FormHelper()
-    #     self.helper.form_method = 'POST'
-    #     self.helper.form_show_labels = True
-    #     self.helper.form_class = 'form-horizontal'
-    #     self.helper.label_class = 'col-12'
-    #     self.helper.field_class = 'col-12'
-    #     self.helper.layout = Layout(
-    #         Row("",
-    #             Column('nomimportateur', css_class='form-group col-12'),
-    #             css_class='form-row'
-    #             ),
-    #         Row("",
-    #             Column('adresseimportateur', css_class='form-group col-12'),
-    #             css_class='form-row'
-    #             ),
-    #         FormActions(
-    #             Submit('soumettre', 'soumettre', css_class='btn btn-primary'),
-    #             Reset('annuler', 'annuler', css_class='btn btn-danger'),
-    #         ),
-    #     )
+    def __init__(self, *args, **kwargs):
+        super(ImportateurRegularisationForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'POST'
+        self.helper.form_show_labels = True
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-12'
+        self.helper.field_class = 'col-12'
+        self.helper.layout = Layout(
+                    Row(
+                        Column('nomimportateur', css_class='form-group col-12'),
+                        css_class='form-row'
+                        ),
+                    Row(
+                        Column('nifimportateur', css_class='form-group col-3'),
+                        Column('adresseimportateur', css_class='form-group col-9'),
+                        css_class='form-row'
+                        ),
+                    Row(
+                        Column('email', css_class='form-group col-12'),
+                        css_class='form-row'
+                        ),
+            FormActions(
+                Submit('ENREGISTRER', 'ENREGISTRER', css_class='btn btn-primary'),
+                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
+            ),
+        )
 
 
 # Formulaire pour ajout des entrepots
-class EntrepotRegularisationForm(forms.ModelForm):
+class EntrepotRegularisationForm(forms.Form):
     nomentrepot = forms.CharField(label='NOM ENTREPOT')
-    adresseentrepot = forms.CharField(label='ADRESSE ENTREPOT')
-    # ville = forms.CharField(label='VILLE')
+    adresseentrepot = forms.CharField(label='ADRESSE ENTREPOT', required=False)
+    ville = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('-nomville'),label='VILLE')
 
-    class Meta:
-        model = Entrepot
-        fields = ['nomentrepot', 'adresseentrepot', 'ville']
+    def __init__(self, *args, **kwargs):
+        super(EntrepotRegularisationForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'POST'
+        self.helper.form_show_labels = True
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-md-12'
+        self.helper.field_class = 'col-md-12'
+        self.helper.layout = Layout(
+            Row(
+                Column('nomentrepot', css_class='form-group col-12'),
+                css_class='form-row'
+                ),
+            Row(
+                Column('ville', css_class='form-group col-4'),
+                Column('adresseentrepot', css_class='form-group col-8'),
+                css_class='form-row'
+                ),
+            FormActions(
+                Submit('ENREGISTRER', 'ENREGISTRER', css_class='btn btn-outlined-warning'),
+                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
+            ),
+        )
 
-    # def __init__(self, *args, **kwargs):
-    #     super(EntrepotRegularisationForm, self).__init__(*args, **kwargs)
-    #     self.helper = FormHelper()
-    #     self.helper.form_method = 'POST'
-    #     self.helper.form_show_labels = True
-    #     self.helper.form_class = 'form-horizontal'
-    #     self.helper.label_class = 'col-md-12'
-    #     self.helper.field_class = 'col-md-12'
-    #     self.helper.layout = Layout(
-    #         Row("",
-    #             Column('nomentrepot', css_class='form-group col-12'),
-    #             css_class='form-row'
-    #             ),
-    #         Row("",
-    #             Column('adresseentrepot', css_class='form-group col-12'),
-    #             css_class='form-row'
-    #             ),
-    #         Row("",
-    #             Column('ville', css_class='form-group col-12'),
-    #             css_class='form-row'
-    #             ),
-    #         FormActions(
-    #             Submit('soumettre', 'soumettre', css_class='btn btn-outlined-warning'),
-    #             Reset('annuler', 'annuler', css_class='btn btn-danger'),
-    #         ),
-    #     )
-    #
 
 
 class ChangementImportateur(forms.Form):

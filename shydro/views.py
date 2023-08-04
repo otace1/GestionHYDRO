@@ -927,9 +927,13 @@ def regularisation(request):
     form4 = EntrepotRegularisationForm()
     form5 = RegularisationNouvelleEntree()
     form6 = ChangementImportateur()
-    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,etat='En attente requisition').order_by('-dateheurecargaison')
+    qs = Cargaison.objects.filter(
+            entrepot__ville__affectationville__username_id=user).filter(
+            Q(etat='En attente requisition') | Q(etat='En attente echantillonnage')
+        ).order_by('-dateheurecargaison')
+
     table = Regularisation(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
     context = {
         'table':table,
         'form':form,
@@ -2217,9 +2221,14 @@ def regularisationImportateur(request):
     user = request.user
     role = user.role_id
     u = user.id
-    form = ImportateurRegularisationForm(request.POST or None)
-    if form.is_valid():
-        form.save()
+    if request.method == 'POST':
+        i = Importateur(
+            nomimportateur=request.POST['nomimportateur'],
+            nifimportateur=request.POST['nifimportateur'],
+            adresseimportateur=request.POST['adresseimportateur'],
+            email=request.POST['email']
+        )
+        i.save()
         return redirect('regularisation')
     else:
         return redirect('logout')
@@ -2231,9 +2240,14 @@ def regularisationEntrepot(request):
     user = request.user
     role = user.role_id
     u = user.id
-    form = EntrepotRegularisationForm(request.POST or None)
-    if form.is_valid():
-        form.save()
+    if request.method == 'POST':
+        i = Importateur(
+            nomimportateur=request.POST['nomimportateur'],
+            nifimportateur=request.POST['nifimportateur'],
+            adresseimportateur=request.POST['adresseimportateur'],
+            email=request.POST['email']
+        )
+        i.save()
         return redirect('regularisation')
     else:
         return redirect('logout')
@@ -2253,6 +2267,54 @@ def changementImportateur(request):
             cargaison.save(update_fields=['produit'])
             # Return a JSON response indicating success
             return JsonResponse({'status': 'success'})
+        else:
+            return redirect('regularisation')
+    else:
+        return redirect('regularisation')
+
+
+@login_required(login_url='login')
+def regularisationRecherche(request):
+    user = request.user
+    role = user.role_id
+    u = user.id
+    template = 'regularisation.html'
+    form = ChangementDestination()
+    form1 = Transbordement()
+    form2 = ChangementNatureProduit()
+    form3 = ImportateurRegularisationForm()
+    form4 = EntrepotRegularisationForm()
+    form5 = RegularisationNouvelleEntree()
+    form6 = ChangementImportateur()
+    if request.method == 'GET':
+        search_value = request.GET.get('search_query', '')
+        # search_value = request.GET['search_query']
+        if search_value:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__affectationville__username_id=u).filter(
+                Q(etat='En attente requisition') | Q(etat='En attente echantillonnage'),
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value) |
+                Q(immatriculation__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(numreq__icontains=search_value)
+            ).order_by('-dateheurecargaison')
+
+            table = Regularisation(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            context = {
+                'table': table,
+                'form': form,
+                'form1': form1,
+                'form2': form2,
+                'form3': form3,
+                'form4': form4,
+                'form5': form5,
+                'form6': form6,
+            }
+            return render(request,template,context)
         else:
             return redirect('regularisation')
     else:
