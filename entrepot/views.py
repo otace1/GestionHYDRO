@@ -1,5 +1,6 @@
 import base64
 
+from django.forms import FloatField
 from django.shortcuts import render, redirect
 from .tables import *
 from enreg.models import *
@@ -12,7 +13,7 @@ from io import BytesIO, StringIO
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 import math
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django_tables2.paginators import LazyPaginator
 from django_tables2.export.export import TableExport
 from django_tables2 import RequestConfig
@@ -1609,38 +1610,36 @@ def shoreupdateafter(request, pk):
 def tableaurapports(request):
     user = request.user.id
     template = 'tableauRapport.html'
-    qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, c.dateDechargement ,e.dateechantillonage, l.datereceptionlabo , ei.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-                                FROM enreg_cargaison c \
-                                    LEFT JOIN enreg_entrepot_echantillon e \
-                                    ON c.idcargaison = e.idcargaison_id \
-                                    LEFT JOIN enreg_laboreception l \
-                                    ON e.idcargaison_id = l.idcargaison_id \
-                                    LEFT JOIN enreg_impressionresultat ei \
-                                    ON l.idcargaison_id = ei.idcargaison_id \
-                                    LEFT JOIN enreg_inspection i \
-                                    ON i.idcargaison_id = c.idcargaison \
-                                    LEFT JOIN enreg_compartiment co \
-                                    ON co.idinspection_id = i.idinspection \
-                                    LEFT JOIN enreg_produit p \
-                                    ON p.idproduit = c.produit_id \
-                                    LEFT JOIN enreg_importateur a \
-                                    ON a.idimportateur = c.importateur_id \
-                                    LEFT JOIN enreg_entrepot ee \
-                                    ON ee.identrepot = c.entrepot_id \
-                                    LEFT JOIN enreg_ville ev \
-                                    ON ev.idville = ee.ville_id \
-                                    LEFT JOIN accounts_affectationville v \
-                                    ON v.ville_id = ev.idville \
-                                WHERE v.username_id= %s \
-                                AND c.etatInspection = 0 \
-                                GROUP BY c.idcargaison \
-                                ORDER BY i.dateinspection DESC',[user,])
-    # qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, e.dateechantillonage, l.datereceptionlabo, r.dateanalyse, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-    qs1 = Cargaison.objects.filter(voie__idvoie=3)
-    table = RapportInspectionCamion(qs1, prefix='1_')
-    table1 = RapportInspectionTanker(qs1, prefix='2_')
-    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table)
-    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":5}).configure(table1)
+    qs = Cargaison.objects.filter(
+        etatInspection=0,
+        entrepot__affectationentrepot__username_id=user
+    ).annotate(
+        volConst=Sum('inspection__compartiment__gov'),
+        gsvT=Sum('inspection__compartiment__gsv', output_field=FloatField())
+    ).values(
+        # 'idcargaison',
+        'numdos',
+        'inspection__idinspection',
+        'entrepot__ville__nomville',
+        'inspection__dateinspection',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'immatriculation',
+        'produit__nomproduit',
+        'dateheurecargaison',
+        'requisitiondackdate',
+        'dateDechargement',
+        'entrepot_echantillon__dateechantillonage',
+        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'impressionresultat__printDate',
+        'inspection__dateinspection',
+        'volume'
+    ).order_by(
+        '-inspection__dateinspection'
+    )
+
+    table = RapportInspectionCamion(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":15}).configure(table)
 
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
@@ -1649,7 +1648,6 @@ def tableaurapports(request):
 
     context = {
         'table': table,
-        'table1': table1
     }
     return render(request, template, context)
 

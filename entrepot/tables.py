@@ -44,11 +44,11 @@ TEMPLATE2 = """
 TEMPLATE3 = """
     <a href="{%url 'rapportechantillonage' record.pk%}" class="btn btn-danger">RAPPORT D'ECHANTILLONNAGE</a>
             """
-
-TEMPLATE5 = """
-    <a href="{%url 'impressionRe' record.pk%}" class="btn btn-danger">RE</a>
-    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
-            """
+#
+# TEMPLATE5 = """
+#     <a href="{%url 'impressionRe' record.pk%}" class="btn btn-danger">RE</a>
+#     <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
+#             """
 
 A = """
     <a href="{%url 'correctionConformiteProduit' record.pk%}" class="btn btn-danger">CORRECTION</a>
@@ -270,27 +270,28 @@ class CargaisonDechargee(tables.Table):
 
 
 class RapportInspectionCamion(tables.Table):
-    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
-    produit = tables.Column(verbose_name='PRODUIT')
+    importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    declaration = tables.Column(verbose_name='N.DECL.')
+    declaration = tables.Column(verbose_name='#.DECL.T1D')
     # dateheurecargaison = tables.Column(verbose_name="DATE ENTR.")
     # requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
-    dateechantillonage = tables.Column(verbose_name='DATE ECH.')
-    dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
-    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
-    printDate = tables.Column(verbose_name='DATE ANALYSE')
+    numdos = tables.Column(verbose_name='#.DOSSIER')
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name='DATE ECH.')
+    inspection__dateinspection = tables.Column(verbose_name="DATE D'INSPECTION")
+    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+    impressionresultat__printDate = tables.Column(verbose_name='DATE ANALYSE')
     dateDechargement = tables.Column(verbose_name="DATE DECH.")
     volConst = tables.Column(verbose_name='GOV')
     gsvT = tables.Column(verbose_name='GSV')
-    actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
+    # actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 class RapportInspectionTanker(tables.Table):
@@ -308,7 +309,7 @@ class RapportInspectionTanker(tables.Table):
     MTV = tables.Column(verbose_name='MTV')
     VCF = tables.Column(verbose_name='VCF')
     GSV = tables.Column(verbose_name='GSV')
-    actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
+    # actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
 
     class Meta:
@@ -316,6 +317,7 @@ class RapportInspectionTanker(tables.Table):
             "class": "table table-bordered table-striped",
             "id": "example1"
         }
+
         # template_name = "django_tables2/bootstrap4.html"
 
 class NonConformeOrganoleptique(tables.Table):
