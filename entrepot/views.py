@@ -1,7 +1,9 @@
 import base64
 
-from django.forms import FloatField
+from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
 from django.shortcuts import render, redirect
+from openpyxl import Workbook
+
 from .tables import *
 from enreg.models import *
 from django.core.exceptions import BadRequest
@@ -13,7 +15,7 @@ from io import BytesIO, StringIO
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 import math
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Case, When, FloatField,F
 from django_tables2.paginators import LazyPaginator
 from django_tables2.export.export import TableExport
 from django_tables2 import RequestConfig
@@ -1610,50 +1612,169 @@ def shoreupdateafter(request, pk):
 def tableaurapports(request):
     user = request.user.id
     template = 'tableauRapport.html'
-    qs = Cargaison.objects.filter(
-        etatInspection=0,
-        entrepot__affectationentrepot__username_id=user
-    ).annotate(
-        volConst=Sum('inspection__compartiment__gov'),
-        gsvT=Sum('inspection__compartiment__gsv', output_field=FloatField())
-    ).values(
-        # 'idcargaison',
-        'numdos',
-        'inspection__idinspection',
-        'entrepot__ville__nomville',
-        'inspection__dateinspection',
-        'importateur__nomimportateur',
-        'entrepot__nomentrepot',
-        'immatriculation',
-        'produit__nomproduit',
-        'dateheurecargaison',
-        'requisitiondackdate',
-        'dateDechargement',
-        'entrepot_echantillon__dateechantillonage',
-        'entrepot_echantillon__laboreception__datereceptionlabo',
-        'impressionresultat__printDate',
-        'inspection__dateinspection',
-        'volume'
-    ).order_by(
-        '-inspection__dateinspection'
-    )
-
-    table = RapportInspectionCamion(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":15}).configure(table)
-
-    export_format = request.GET.get("_export", None)
-    if TableExport.is_valid_format(export_format):
-        exporter = TableExport(export_format, table)
-        return exporter.response("table.{}".format(export_format))
-
-    context = {
-        'table': table,
-    }
+    context = {}
     return render(request, template, context)
 
 
-# def reportCheck(request,data):
-#     template
+@login_required(login_url='login')
+def responseTableauRapports(request):
+    user = request.user.id
+    template = 'tableauRapport.html'
+    # qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, c.dateDechargement ,e.dateechantillonage, l.datereceptionlabo , ei.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
+    #                             FROM enreg_cargaison c \
+    #                                 LEFT JOIN enreg_entrepot_echantillon e \
+    #                                 ON c.idcargaison = e.idcargaison_id \
+    #                                 LEFT JOIN enreg_laboreception l \
+    #                                 ON e.idcargaison_id = l.idcargaison_id \
+    #                                 LEFT JOIN enreg_impressionresultat ei \
+    #                                 ON l.idcargaison_id = ei.idcargaison_id \
+    #                                 LEFT JOIN enreg_inspection i \
+    #                                 ON i.idcargaison_id = c.idcargaison \
+    #                                 LEFT JOIN enreg_compartiment co \
+    #                                 ON co.idinspection_id = i.idinspection \
+    #                                 LEFT JOIN enreg_produit p \
+    #                                 ON p.idproduit = c.produit_id \
+    #                                 LEFT JOIN enreg_importateur a \
+    #                                 ON a.idimportateur = c.importateur_id \
+    #                                 LEFT JOIN enreg_entrepot ee \
+    #                                 ON ee.identrepot = c.entrepot_id \
+    #                                 LEFT JOIN enreg_ville ev \
+    #                                 ON ev.idville = ee.ville_id \
+    #                                 LEFT JOIN accounts_affectationville v \
+    #                                 ON v.ville_id = ev.idville \
+    #                             WHERE v.username_id= %s \
+    #                             AND c.etatInspection = 0 \
+    #                             GROUP BY c.idcargaison \
+    #                             ORDER BY i.dateinspection DESC',[user,])
+    qs = Cargaison.objects.filter(
+                    entrepot__affectationentrepot__username_id=user,
+                    etatInspection=0,
+                ).annotate(
+                    volConst=Sum('inspection__compartiment__gov'),
+                    gsvT=Sum('inspection__compartiment__gsv')
+                ).values(
+                    'idcargaison',
+                    'numdos',
+                    'declaration',
+                    'inspection__idinspection',
+                    'entrepot__ville__nomville',
+                    'inspection__dateinspection',
+                    'importateur__nomimportateur',
+                    'entrepot__nomentrepot',
+                    'immatriculation',
+                    'produit__nomproduit',
+                    'dateheurecargaison__date',
+                    'requisitiondackdate',
+                    'dateDechargement',
+                    'entrepot_echantillon__dateechantillonage',
+                    'entrepot_echantillon__laboreception__datereceptionlabo',
+                    'impressionresultat__printDate',
+                    'inspection__dateinspection',
+                    'volume',
+                    gsvT=Case(
+                        When(inspection__compartiment__gsv__isnull=False, then=F('gsvT')),
+                        default=0,
+                        output_field=FloatField()
+                    )
+                ).order_by('-inspection__dateinspection')
+    # Number of items to show per page
+    items_per_page = 8
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Check if it's an AJAX request and if the export flag is set
+    # Check if it's an AJAX request and if the export flag is set
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.',
+                      '#.T1D',
+                      '#.REQ.']
+
+        # Combine header and data rows using zip
+        all_rows = [header_row] + [
+            [
+                row['dateheurecargaison__date'],
+                row['frontiere__nomville'],
+                row['importateur__nomimportateur'],
+                row['entrepot__nomentrepot'],
+                row['produit__nomproduit'],
+                row['immatriculation'],
+                row['declaration'],
+                row['numdos'],
+                row['requisitiondackdate__date'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['impressionresultat__printDate'],
+                row['inspection__dateinspection'],
+                row['volume'],
+                row['volConst'],
+                row['gsvT'],
+            ] for row in data
+        ]
+
+        # Write data rows to the Excel file
+        for row in all_rows:
+            sheet.append(row)
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+    # table = RapportInspectionCamion(qs, prefix='1_')
+    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":10}).configure(table)
+    #
+    # context = {
+    #     'table': table,
+    #     # 'table1': table1
+    # }
+    # return render(request, template, context)
+
+
 
 
 @login_required(login_url='login')

@@ -58,6 +58,7 @@ urlpatterns = [
 
     # Rapports
     path('inspection/', views.tableaurapports, name='tableaurapports'),
+    path('inspection/response/', views.responseTableauRapports, name='responseTableauRapports'),
 
     # Report Validity Check
     # path('check/', views.reportCheck, name='reportCheck'),

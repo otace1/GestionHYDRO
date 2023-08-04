@@ -45,10 +45,10 @@ TEMPLATE3 = """
     <a href="{%url 'rapportechantillonage' record.pk%}" class="btn btn-danger">RAPPORT D'ECHANTILLONNAGE</a>
             """
 #
-# TEMPLATE5 = """
-#     <a href="{%url 'impressionRe' record.pk%}" class="btn btn-danger">RE</a>
-#     <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
-#             """
+TEMPLATE5 = """
+    <a href="{%url 'impressionRe' record.pk%}" class="btn btn-danger">RE</a>
+    <a href="{%url 'rapport' record.pk%}" class="btn btn-danger">RI</a>
+            """
 
 A = """
     <a href="{%url 'correctionConformiteProduit' record.pk%}" class="btn btn-danger">CORRECTION</a>
@@ -284,14 +284,14 @@ class RapportInspectionCamion(tables.Table):
     dateDechargement = tables.Column(verbose_name="DATE DECH.")
     volConst = tables.Column(verbose_name='GOV')
     gsvT = tables.Column(verbose_name='GSV')
-    # actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE5, verbose_name='')
 
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            # "id": "example1"
+            "id": "example1"
         }
-        template_name = "django_tables2/bootstrap5-responsive.html"
+        # template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 class RapportInspectionTanker(tables.Table):
