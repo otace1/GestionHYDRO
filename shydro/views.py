@@ -929,7 +929,7 @@ def regularisation(request):
     form6 = ChangementImportateur()
     qs = Cargaison.objects.filter(
             entrepot__ville__affectationville__username_id=user).filter(
-            Q(etat='En attente requisition') | Q(etat='En attente echantillonnage')
+            Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
         ).order_by('-dateheurecargaison')
 
     table = Regularisation(qs)
@@ -2292,7 +2292,7 @@ def regularisationRecherche(request):
         if search_value:
             qs = Cargaison.objects.filter(
                 entrepot__ville__affectationville__username_id=u).filter(
-                Q(etat='En attente requisition') | Q(etat='En attente echantillonnage'),
+                Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage"),
                 Q(frontiere__nomville__icontains=search_value) |
                 Q(importateur__nomimportateur__icontains=search_value) |
                 Q(entrepot__nomentrepot__icontains=search_value) |
