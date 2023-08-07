@@ -329,7 +329,7 @@
                     <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-default">
                   FILTRES
                     </button>
-{#                    <a href="{% url 'codification' %}" class="btn btn-primary">FILTRE</a>#}
+                    {% block export %}{% endblock %}
                 </div>
                 <br/>
                 <div>
@@ -340,6 +340,7 @@
                 <!-- Main content -->
                 <div class="row">
                     <div class="col-md-12">
+
                         <div class="card">
                             <div class="card-header" style="background-color: darkgreen">
                                 <h1 class="card-title" style="color: white"><b>RAPPORT(S) D'ACTIVITE(S)</b></h1>

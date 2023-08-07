@@ -1070,7 +1070,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -1102,7 +1102,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -1134,7 +1134,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1164,7 +1164,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -1195,7 +1195,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1225,7 +1225,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1255,7 +1255,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1284,7 +1284,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1314,7 +1314,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1344,7 +1344,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1374,7 +1374,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1403,7 +1403,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1432,7 +1432,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1461,7 +1461,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1490,7 +1490,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1801,7 +1801,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
