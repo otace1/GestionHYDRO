@@ -60,6 +60,9 @@ TEMPLATE2 = """
 
 VALIDATION1 = """
 <a href="{%url 'affichageDetailsResultats' record.pk%}" class="btn btn-warning">AFFICHER</a>
+<a class="btn btn-success" href="{% url 'conforme' %}" role="button">>> CONFORME >> </a>
+<a class="btn btn-danger" href="{% url 'nonconforme' %}" role="button">>> NON CONFORME >> </a>
+<a class="btn btn-outline-danger" href="{% url 'refaire' %}" role="button">>> A REFAIRE >> </a>
 """
 
 CQ = """

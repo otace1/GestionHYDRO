@@ -36,6 +36,7 @@ urlpatterns = [
 
     # Liens des validations Labo
     path('validation1/', views.GestionValidation.affichagetableauvalidation1, name='validation1'),
+    path('validation1Response/', views.affichagetableauvalidation1Response, name='affichagetableauvalidation1Response'), #Ajax Request
     path('codecq/<int:pk>', views.GestionValidation.codecertificat, name='codecq'),
     path('validation2/', views.GestionValidation.affichagetableauvalidation2, name='validation2'),
 
@@ -44,6 +45,7 @@ urlpatterns = [
     path('conforme/', views.GestionValidation.conforme, name='conforme'),
     path('nonconforme/', views.GestionValidation.nonconforme, name='nonconforme'),
     path('refaire/', views.GestionValidation.refaire, name='refaire'),
+
 
     path('conforme2/', views.GestionValidation.conforme2, name='conforme2'),
     path('nonconforme2/', views.GestionValidation.nonconforme2, name='nonconforme2'),
@@ -60,12 +62,17 @@ urlpatterns = [
     #Nouveau Form de Saisie des resultats
     path('saisieResultat/<int:pk>', views.saisieResultat, name='saisieResultat'),
     path('saisieResultatParametre/<int:pk>', views.saisieResultatParametre, name='saisieResultatParametre'),
-
     path('validationResulat/', views.validationResulat, name='validationResulat'),
-
     path('affichageDetailsResultatsGauche/<int:pk>', views.affichageDetailsResultats, name='affichageDetailsResultats'),
-
     path('affichageDetailsResultatsDroite/<int:pk>', views.affichageDetailsResultatsDroite, name='affichageDetailsResultatsDroite'),
+
+
+    ###Second way of validation from the Chef Sce
+    path('conformeM2/', views.conformeAjx, name='conformeAjx'),
+    path('nonconformeM2/', views.nonconformeAjx, name='nonconformeAjx'),
+    path('refaireM2/', views.refaireAjx, name='refaireAjx'),
+
+
 
 
 ]

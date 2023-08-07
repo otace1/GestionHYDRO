@@ -1,13 +1,18 @@
+import io
 import json
 
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import Q
 from django.shortcuts import render, redirect
+from openpyxl import Workbook
+
 from enreg.models import *
 from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser
 from .tables import *
 from .forms import *
 from django.contrib.auth.decorators import login_required
 from labo.utils import render_to_pdf
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django_tables2.paginators import LazyPaginator
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
@@ -15,6 +20,8 @@ from datetime import datetime
 from django.http import JsonResponse
 from .codeLabo import codeLabo
 from .numCq import numCq
+from django.core import serializers
+
 
 
 #Sending email
@@ -266,8 +273,6 @@ class GestionAnalyse():
                 '-datereceptionlabo')
             table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
 
-            # RequestConfig(request, paginate={"per_page": 10}).configure(table1)
-            # RequestConfig(request, paginate={"per_page": 10}).configure(table2)
             return render(request, 'labo_analyse.html', {
                 'analyse': table1,
                 'refaire': table2,
@@ -1070,13 +1075,6 @@ class GestionValidation():
         yr = d.year
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
-            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Validation en cours 1",
-                                         idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
-                'datereceptionlabo')
-
-            # table = AffichageVal1(qs, prefix='1_')
-            table = AffichageValidation1(qs, prefix='1_')
-
             # Compteur Chef Laboratoire
             laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                                 dateechantillonage__day=da,
@@ -1087,8 +1085,7 @@ class GestionValidation():
             enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
                                                      idcargaison__idcargaison__etat='Validation en cours 1').count()
 
-            RequestConfig(request, paginate={"per_page": 14}).configure(table)
-            return render(request, 'labo_validation1.html', {'labo': table,
+            return render(request, 'labo_validation1.html', {
                                                              'form': form,
                                                              'laboreception': laboreception,
                                                              'enanalyse': enanalyse,
@@ -1096,6 +1093,7 @@ class GestionValidation():
                                                              })
         else:
             return redirect('logout')
+
 
 
     # Fonction encodage du code Labo
@@ -4288,18 +4286,176 @@ def receptionRapports(request):
     user = request.user.id
     ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
     template ='laboReceptionRapports.html'
-    # qs = Cargaison.objects.raw('SELECT ec.idcargaison, ec.numdos, ee.numrappechauto, ee.dateechantillonage, el.datereceptionlabo,e.nomentrepot, ei.nomimportateur, ec.immatriculation, ep.nomproduit, el.codelabo \
-    #                             FROM enreg_cargaison ec, enreg_entrepot_echantillon ee, enreg_entrepot e, enreg_importateur ei, enreg_produit ep, enreg_laboreception el, enreg_ville ev \
-    #                             WHERE ec.idcargaison = ee.idcargaison_id \
-    #                             AND ec.entrepot_id = e.identrepot \
-    #                             AND ec.importateur_id = ei.idimportateur \
-    #                             AND ec.produit_id = ep.idproduit \
-    #                             AND ec.idcargaison = el.idcargaison_id \
-    #                             AND e.ville_id = ev.idville \
-    #                             AND ev.idville = %s',[tuple(ville)])
     qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=user)
     table = RapportsLaboratoireReception(qs)
     context = {'table':table}
     return render(request,template,context)
 
+
+
+### Ajax Handlers
+@login_required(login_url='login')
+def refaireAjx(request):
+    user = request.user
+    role = user.role_id
+    if role == 6 or role == 1:
+        if request.method == 'POST':
+            idcargaison = request.POST.get('idcargaison')
+            print(idcargaison)
+            try:
+                c = Cargaison.objects.get(idcargaison=idcargaison)
+                print(c.idcargaison)
+                c.etat = "Refaire"
+                print(c.etat)
+                c.save(update_fields=['etat'])
+                response_data = {'status': 'success', 'message': 'Cargaison marked as REFAIRE'}
+                return JsonResponse(response_data)
+            except Cargaison.DoesNotExist:
+                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
+                return JsonResponse(response_data, status=404)  # 404 Not Found status code
+        else:
+            # Return a JSON response indicating unauthorized access
+            response_data = {'status': 'failure', 'message': 'Unauthorized'}
+            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
+    else:
+        # Return a JSON response indicating bad request method (not POST)
+        response_data = {'status': 'failure', 'message': 'Invalid request method'}
+        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+
+# Validation du responsable Division LABO OCC
+@login_required(login_url='login')
+def conformeAjx(request):
+    user = request.user
+    role = user.role_id
+
+    if role == "v2" or role == 1 or role == 6:
+        if request.method == 'POST':
+            idcargaison = request.POST.get('idcargaison')
+            print(idcargaison)
+            try:
+                c = Cargaison.objects.get(idcargaison=idcargaison)
+                print(c.idcargaison)
+                c.etat = "Validation en cours 2"
+                c.conformite = "Conforme aux exigences"
+                c.impression = "0"
+                c.save(update_fields=['etat', 'conformite', 'impression'])
+                response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
+                return JsonResponse(response_data)
+            except Cargaison.DoesNotExist:
+                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
+                return JsonResponse(response_data, status=404)  # 404 Not Found status code
+        else:
+            # Return a JSON response indicating unauthorized access
+            response_data = {'status': 'failure', 'message': 'Unauthorized'}
+            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
+    else:
+        # Return a JSON response indicating bad request method (not POST)
+        response_data = {'status': 'failure', 'message': 'Invalid request method'}
+        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+
+
+@login_required(login_url='login')
+def nonconformeAjx(request):
+    user = request.user
+    role = user.role_id
+    if role == "v2" or role == 1 or role == 6:
+        if request.method == 'POST':
+            idcargaison = request.POST.get('idcargaison')
+            print(idcargaison)
+            try:
+                c = Cargaison.objects.get(idcargaison=idcargaison)
+                print(c.idcargaison)
+                c.etat = "Validation en cours 2"
+                print(c.etat)
+                c.conformite = "Non conforme aux exigences"
+                c.impression = "0"
+                c.save(update_fields=['etat', 'conformite', 'impression'])
+                response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
+                return JsonResponse(response_data)
+            except Cargaison.DoesNotExist:
+                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
+                return JsonResponse(response_data, status=404)  # 404 Not Found status code
+        else:
+            # Return a JSON response indicating unauthorized access
+            response_data = {'status': 'failure', 'message': 'Unauthorized'}
+            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
+    else:
+        # Return a JSON response indicating bad request method (not POST)
+        response_data = {'status': 'failure', 'message': 'Invalid request method'}
+        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+
+
+
+@login_required(login_url='login')
+def affichagetableauvalidation1Response(request):
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if role == 5 or role == 1 or role == 6:
+        qs = Cargaison.objects.filter(
+            etat="Validation en cours 1",
+            entrepot__ville__affectationville__username_id=id,
+        ).values(
+            'idcargaison',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__codelabo',
+            'entrepot_echantillon__laboreception__numcertificatqualite',
+            'produit__nomproduit'
+        ).order_by(
+            '-entrepot_echantillon__laboreception__datereceptionlabo'
+        )
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(entrepot_echantillon__laboreception__datereceptionlabo__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
+                Q(entrepot_echantillon__laboreception__numcertificatqualite__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    else:
+        return redirect('logout')
 
