@@ -10,33 +10,20 @@
    <table id="data-table" class="table table-bordered display responsive" style="width:100%">
             <thead>
                 <tr>
-                    <th>DATE ENTREE</th>
+                    <th>DATE</th>
                     <th>FRONTIERE</th>
-                    <th>DECL.#.T1D</th>
+                    <th>DECL.#T1D</th>
                     <th>FOURNISSEUR</th>
                     <th>ENTREPOT</th>
                     <th>IMMATRICULATION</th>
                     <th>PRODUIT</th>
-                    <th>DATE REQ.</th>
-                    <th>DATE ECHANT.</th>
-                    <th>DATE REC.LABO</th>
-                    <th>DATE ANALYSE</th>
-                    <th>DATE INSPECT.</th>
-                    <th>DATE DECHARG.</th>
-                    <th>VOL.DECL</th>
-                    <th>VOL.JAUGE(GOV)</th>
-                    <th>DENSITE</th>
-                    <th>TEMP</th>
-                    <th>MTA</th>
-                    <th>GSV JAUGEE</th>
-                    <th>GSV COMPTEUR</th>
-                    <th>FRAIS</th>
+                    <th>VOL.DECLARE</th>
                 </tr>
             </thead>
         </table>
 
-     <!-- Optional: Add Bootstrap JavaScript for table styling -->
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+{#     <!-- Optional: Add Bootstrap JavaScript for table styling -->#}
+{#    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>#}
 
     <!-- Include FileSaver.js library for saving the Excel file -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -48,7 +35,7 @@
             serverSide: true,
             responsive: true,
             ajax: {
-                url: '{% url 'rapportBrutResponse' %}',
+                url: '{% url 'responseBrutJournalier' %}',
                 type: 'GET',
             },
             columns: [
@@ -59,20 +46,7 @@
                 { data: 'entrepot__nomentrepot' },
                 { data: 'immatriculation' },
                 { data: 'produit__nomproduit' },
-                { data: 'requisitiondackdate__date' },
-                { data: 'entrepot_echantillon__dateechantillonage__date' },
-                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
-                { data: 'impressionresultat__printDate' },
-                { data: 'inspection__dateinspection__date' },
-                { data: 'dateDechargement__date' },
                 { data: 'volume' },
-                { data: 'volJauge' },
-                { data: 'inspection__dens' },
-                { data: 'inspection__temp' },
-                { data: 'mta' },
-                { data: 'gsvJauge' },
-                { data: 'gsvMeter' },
-                { data: 'fraisOcc' },
             ],
             // Optional: Add buttons for exporting to Excel
             dom: 'Bfrtip',
@@ -80,7 +54,7 @@
                 {
                     extend: 'excelHtml5',
                     text: 'Export to Excel',
-                    filename: 'rapport_brut_journalier',
+                    filename: 'rapport_brut',
                     exportOptions: {
                         modifier: {
                             search: 'none'
@@ -88,7 +62,7 @@
                     },
                     action: function (e, dt, node, config) {
                         // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
+                        window.location.href = '{% url 'exportRapportBrutAnalyse' %}?export=excel';
                     }
                 }
             ],

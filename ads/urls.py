@@ -43,11 +43,15 @@ urlpatterns = [
     path('upload-cvs/ville', views.uploadville, name='upload_ville'),
 
     path('rapport/brut/', views.rapportBrut, name='rapportBrut'),
-    path('rapport/brut/journalier/', views.rapportBrutJournalier, name='rapportBrutJournalier'),
+    path('rapport/brutJ/', views.rapportBrutJournalier, name='rapportBrutJournalier'),
+    path('rapport/brut/journalierR/', views.rapportBrutResponse, name='rapportBrutResponse'),
+
+    path('rapport/brut/journalierR/', views.rapportBrutResponse, name='exportRapportBrutResponse'),
+
     path('rapport/brut/echantillonnage/', views.rapportBrutEchantillonnage, name='rapportBrutEchantillonnage'),
     path('rapport/brut/analyse/', views.rapportBrutAnalyse, name='rapportBrutAnalyse'),
-    path('rapport/brut/inspection/', views.rapportBrutInspection, name='rapportBrutInspection'),
 
+    path('rapport/brut/inspection/', views.rapportBrutInspection, name='rapportBrutInspection'),
     path('chartJs/', views.chartJs, name='chartJs'),
 
 

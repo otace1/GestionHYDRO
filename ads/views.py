@@ -16166,23 +16166,40 @@ def synthese_encaissement(request):
 @login_required(login_url='login')
 # Fonction Recherche Statistique Detaillé
 def rapportBrut(request):
-    user = request.user
-    role = user.role_id
     template = "rapportBrutes.html"
-    ville = request.POST['ville']
-    produit = request.POST['produit']
-    importateur = request.POST['importateur']
-    entrepot = request.POST['entrepot']
-    date_d = request.POST['date_d']
-    date_f = request.POST['date_f']
-    request.session['frontiere'] = ville
-    request.session['produit'] = produit
-    request.session['importateur'] = importateur
-    request.session['entrepot'] = entrepot
-    request.session['date_d'] = date_d
-    request.session['date_f'] = date_f
+    if request.method == 'POST':
+        ville = request.POST['ville']
+        produit = request.POST['produit']
+        importateur = request.POST['importateur']
+        entrepot = request.POST['entrepot']
+        date_d = request.POST['date_d']
+        date_f = request.POST['date_f']
+        print(ville)
+        request.session['frontiere'] = ville
+        request.session['produit'] = produit
+        request.session['importateur'] = importateur
+        request.session['entrepot'] = entrepot
+        request.session['date_d'] = date_d
+        request.session['date_f'] = date_f
+        context = {}
+        return render(request, template, context)
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+# Fonction Recherche Statistique Detaillé
+def rapportBrutResponse(request):
+    # user = request.user
+    ville = request.session['frontiere']
+    produit = request.session['produit']
+    importateur = request.session['importateur']
+    entrepot = request.session['entrepot']
+    date_d = request.session['date_d']
+    date_f = request.session['date_f']
 
     if ville and produit and importateur and entrepot and date_d and date_f:
+        # print('TEST')
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16200,13 +16217,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16215,7 +16233,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16224,106 +16242,106 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        # # Use the LazyPaginator to handle pagination
-        # paginator = LazyPaginator(table, per_page=10)
-        # 
-        # # Get the current page number from the DataTables request
-        # page_number = int(request.GET.get('start', 0)) // paginator.per_page + 1
-        # 
-        # # Get the data for the current page using the paginator
-        # page = paginator.page(page_number)
-        # 
-        # # Prepare the data to be sent as JSON to DataTables
-        # data = {
-        #     'draw': int(request.GET.get('draw', 0)),
-        #     'recordsTotal': paginator.count,
-        #     'recordsFiltered': paginator.count,
-        #     'data': [{'pk': item.pk, **item.as_dict()} for item in page],
-        # }
-        # 
-        # return JsonResponse(data)
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
 
-        # qs = Cargaison.objects.raw("SELECT \
-        #                                 c.idcargaison, \
-        #                                 DATE(c.dateheurecargaison), \
-        #                                 i.nomimportateur, \
-        #                                 e.nomentrepot, \
-        #                                 c.immatriculation, \
-        #                                 p.nomproduit, \
-        #                                 c.volume, \
-        #                                 DATE(ee.dateechantillonage) as dateEch, \
-        #                                 DATE(l.datereceptionlabo) as dateLabo, \
-        #                                 im.printDate, \
-        #                                 im.isConforme, \
-        #                                 DATE(ei.dateinspection) as dateInsp, \
-        #                                 DATE(c.dateDechargement) as dateDech, \
-        #                                 ei.dens, \
-        #                                 SUM(ec.gov) as volJauge, \
-        #                                 SUM(ec.gsv) as gsvJauge, \
-        #                                 SUM(ed.govmeter) as govMeter, \
-        #                                 SUM(ed.gsvmeter) as gsvMeter, \
-        #                                 SUM(ec.mta) as mta, \
-        #                                 IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                             FROM \
-        #                                 enreg_cargaison c \
-        #                                 LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                                 LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                                 LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                                 LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                                 LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                                 LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                                 LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                                 LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                                 LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                                 LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                             WHERE \
-        #                                 e.ville_id = %s \
-        #                                 AND c.produit_id = %s \
-        #                                 AND c.importateur_id = %s \
-        #                                 AND c.entrepot_id = %s \
-        #                                 AND DATE(c.dateheurecargaison) BETWEEN %s and %s \
-        #                             GROUP BY \
-        #                                 c.idcargaison, \
-        #                                 c.dateheurecargaison, \
-        #                                 i.nomimportateur, \
-        #                                 e.nomentrepot, \
-        #                                 c.immatriculation, \
-        #                                 p.nomproduit, \
-        #                                 c.volume, \
-        #                                 ee.dateechantillonage, \
-        #                                 l.datereceptionlabo, \
-        #                                 im.printDate, \
-        #                                 im.isConforme, \
-        #                                 ei.dateinspection, \
-        #                                 ei.dens", [ville, produit, importateur, entrepot, date_d,date_f ])
-        #
-        # table = RapportBrut(qs)
-        # # Use the LazyPaginator to handle pagination
-        # # You can set the number of rows per page as needed (e.g., 10, 25, 50, etc.)
-        # paginator = LazyPaginator(table, per_page=10)
-        #
-        # # Get the current page number from the DataTables request
-        # page_number = int(request.GET.get('start', 0)) // paginator.per_page + 1
-        #
-        # # Get the data for the current page using the paginator
-        # page = paginator.page(page_number)
-        #
-        # # Prepare the data to be sent as JSON to DataTables
-        # data = {
-        #     'draw': int(request.GET.get('draw', 0)),
-        #     'recordsTotal': paginator.count,
-        #     'recordsFiltered': paginator.count,
-        #     'data': [{'pk': item.pk, **item.as_dict()} for item in page.object_list],
-        # }
-        #
-        # return JsonResponse(data)
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
 
-        RequestConfig(request, paginate={"per_page": 10}).configure(table)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
         # return JsonResponse(serialized_data, safe=False)
 
     if ville and produit and importateur and entrepot and date_d:
@@ -16345,13 +16363,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16360,7 +16379,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16368,119 +16387,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,entrepot,date_d,])
 
-        table = RapportBrut(qs)
-        RequestConfig(request, paginate={"per_page": 15}).configure(table)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and importateur and entrepot and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,entrepot,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16499,13 +16509,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16514,7 +16525,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16522,64 +16533,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and importateur and entrepot :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,entrepot,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16597,13 +16654,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16612,7 +16670,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16620,65 +16678,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and importateur and date_d and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,date_d,date_f,])
-
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16696,13 +16799,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16711,7 +16815,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16719,64 +16823,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and importateur and date_d :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16794,13 +16944,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16809,7 +16960,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16818,64 +16969,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and importateur and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16893,13 +17089,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -16908,7 +17105,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -16917,63 +17114,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and importateur :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,importateur,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -16990,13 +17233,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17005,7 +17249,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17014,65 +17258,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) IS BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,entrepot,date_d, date_f,])
-
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17090,13 +17378,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17105,7 +17394,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17114,64 +17403,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and entrepot and date_d :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,entrepot,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17189,13 +17523,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17204,7 +17539,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17213,64 +17548,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and entrepot and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,entrepot,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17288,13 +17668,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17303,7 +17684,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17312,63 +17693,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and entrepot :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,entrepot,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17385,13 +17812,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17400,7 +17828,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17409,63 +17837,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and date_d and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,date_d,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17482,13 +17956,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17497,7 +17972,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17506,63 +17981,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and date_d :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17579,13 +18100,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17594,7 +18116,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17603,63 +18125,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17676,13 +18244,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17691,7 +18260,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17700,62 +18269,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and produit:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.produit_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,produit,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             produit_id=produit,
@@ -17771,13 +18387,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17786,7 +18403,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17795,64 +18412,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,entrepot,date_d,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -17870,13 +18532,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17885,7 +18548,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17894,64 +18557,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and entrepot and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,entrepot,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -17969,13 +18677,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -17984,7 +18693,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -17992,64 +18701,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and entrepot and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,entrepot,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -18067,13 +18822,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18082,7 +18838,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18091,63 +18847,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and entrepot:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,entrepot,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -18164,13 +18966,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18179,7 +18982,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18187,63 +18990,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,date_d, date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -18260,13 +19110,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18275,7 +19126,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18283,63 +19134,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and date_d :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -18356,13 +19254,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18371,7 +19270,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18379,63 +19278,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -18452,13 +19398,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18467,7 +19414,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18475,62 +19422,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and importateur :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,importateur,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             importateur_id=importateur,
@@ -18546,13 +19541,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18561,7 +19557,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18569,63 +19565,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,entrepot,date_d,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             entrepot_id=entrepot,
@@ -18642,13 +19685,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18657,7 +19701,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18665,63 +19709,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and entrepot and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,entrepot,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             entrepot_id=entrepot,
@@ -18738,13 +19829,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18753,7 +19845,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18762,63 +19854,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and entrepot and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,entrepot,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             entrepot_id=entrepot,
@@ -18835,13 +19973,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18850,7 +19989,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18858,63 +19997,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and entrepot:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,entrepot,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             entrepot_id=entrepot,
@@ -18930,13 +20116,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -18945,7 +20132,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -18953,62 +20140,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,date_d,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             dateheurecargaison__range=[date_d,date_f],
@@ -19024,13 +20259,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19039,7 +20275,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19047,62 +20283,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,date_d,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             dateheurecargaison__date=date_d,
@@ -19118,13 +20402,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19133,7 +20418,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19141,62 +20426,111 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
 
     if ville and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             dateheurecargaison__date=date_f,
@@ -19212,13 +20546,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19227,7 +20562,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19235,61 +20570,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if ville:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         e.ville_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[ville,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
         ).annotate(
@@ -19304,13 +20688,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19319,7 +20704,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19327,64 +20712,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,entrepot,date_d,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19402,13 +20833,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19417,7 +20849,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19425,64 +20857,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and entrepot and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,entrepot,date_d,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19500,13 +20978,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19515,7 +20994,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19523,64 +21002,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and entrepot and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,entrepot,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19598,13 +21123,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19613,7 +21139,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19621,63 +21147,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and entrepot :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,entrepot,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19694,13 +21267,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19709,7 +21283,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19717,63 +21291,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,date_d,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19790,13 +21411,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19805,7 +21427,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19813,63 +21435,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,date_d,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19886,13 +21555,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19901,7 +21571,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -19909,63 +21579,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -19982,13 +21699,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -19997,7 +21715,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20005,63 +21723,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and importateur :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,importateur,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             importateur_id=importateur,
@@ -20077,13 +21842,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20092,7 +21858,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20100,63 +21866,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,entrepot,date_d,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             entrepot_id=entrepot,
@@ -20173,13 +21986,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20188,7 +22002,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20196,63 +22010,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and entrepot and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,entrepot,date_d,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             entrepot_id=entrepot,
@@ -20269,13 +22130,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20284,7 +22146,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20292,62 +22154,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,date_d,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             dateheurecargaison__range=[date_d,date_f],
@@ -20363,13 +22273,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20378,7 +22289,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20386,62 +22297,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,date_d,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             dateheurecargaison__date=date_d,
@@ -20457,13 +22416,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20472,7 +22432,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20480,62 +22440,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,date_f,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
             dateheurecargaison__date=date_f,
@@ -20551,13 +22559,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20566,7 +22575,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20574,61 +22583,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if produit:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.produit_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[produit,])
         qs = Cargaison.objects.filter(
             produit_id=produit,
         ).annotate(
@@ -20643,13 +22701,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20658,7 +22717,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20666,63 +22725,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,entrepot,date_d,date_f,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             entrepot_id=entrepot,
@@ -20739,13 +22845,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20754,7 +22861,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20762,63 +22869,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and entrepot and date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,entrepot,date_d,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             entrepot_id=entrepot,
@@ -20835,13 +22989,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20850,7 +23005,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20858,63 +23013,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and entrepot and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,entrepot,date_f,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             entrepot_id=entrepot,
@@ -20931,13 +23133,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -20946,7 +23149,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -20954,62 +23157,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and entrepot :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND c.entrepot_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,entrepot,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             entrepot_id=entrepot,
@@ -21025,13 +23276,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21040,7 +23292,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21048,62 +23300,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and date_d and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,date_d, date_f,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             dateheurecargaison__range=[date_d,date_f],
@@ -21119,13 +23419,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21134,7 +23435,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21142,62 +23443,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and date_d :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,date_d,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             dateheurecargaison__date=date_d,
@@ -21213,13 +23562,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21228,7 +23578,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21236,62 +23586,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,date_f,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
             dateheurecargaison__date=date_f,
@@ -21307,13 +23705,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21322,7 +23721,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21330,61 +23729,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if importateur :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.importateur_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[importateur,])
         qs = Cargaison.objects.filter(
             importateur_id=importateur,
         ).annotate(
@@ -21399,13 +23847,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21414,7 +23863,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21422,62 +23871,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if entrepot and date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[entrepot,date_d,date_f,])
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
             dateheurecargaison__range=[date_d,date_f],
@@ -21493,13 +23990,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21508,7 +24006,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21516,62 +24014,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if entrepot and date_d :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[entrepot,date_d,])
         qs = Cargaison.objects.filter(
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
@@ -21587,13 +24133,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21602,7 +24149,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21610,62 +24157,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if entrepot and date_f :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.entrepot_id = %s \
-        #                         AND DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[entrepot,date_f,])
         qs = Cargaison.objects.filter(
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
@@ -21681,13 +24276,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21696,7 +24292,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21704,61 +24300,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if entrepot :
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         c.entrepot_id = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[entrepot,])
         qs = Cargaison.objects.filter(
             entrepot_id=entrepot,
         ).annotate(
@@ -21773,13 +24418,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21788,7 +24434,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21796,61 +24442,110 @@ def rapportBrut(request):
             'mta',
             'fraisOcc',
         )
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if date_d and date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         DATE(c.dateheurecargaison) BETWEEN %s AND %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[date_d,date_f,])
         qs = Cargaison.objects.filter(
             dateheurecargaison__range=[date_d,date_f],
         ).annotate(
@@ -21865,13 +24560,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21880,7 +24576,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21889,61 +24585,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if date_d:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[date_d,])
         qs = Cargaison.objects.filter(
             dateheurecargaison__date=date_d,
         ).annotate(
@@ -21958,13 +24702,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -21973,7 +24718,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -21982,61 +24727,109 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     if date_f:
-        # qs = Cargaison.objects.raw("SELECT \
-        #                         c.idcargaison, \
-        #                         DATE(c.dateheurecargaison), \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         DATE(ee.dateechantillonage) as dateEch, \
-        #                         DATE(l.datereceptionlabo) as dateLabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         DATE(ei.dateinspection) as dateInsp, \
-        #                         DATE(c.dateDechargement) as dateDech, \
-        #                         ei.dens, \
-        #                         SUM(ec.gov) as volJauge, \
-        #                         SUM(ec.gsv) as gsvJauge, \
-        #                         SUM(ed.govmeter) as govMeter, \
-        #                         SUM(ed.gsvmeter) as gsvMeter, \
-        #                         IF(SUM(ed.gsvmeter) is NULL, SUM(ec.gsv) * 11, SUM(ed.gsvmeter) * 11) AS fraisOcc \
-        #                     FROM \
-        #                         enreg_cargaison c \
-        #                         LEFT JOIN enreg_importateur i ON c.importateur_id = i.idimportateur \
-        #                         LEFT JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot \
-        #                         LEFT JOIN enreg_produit p ON c.produit_id = p.idproduit \
-        #                         LEFT JOIN enreg_entrepot_echantillon ee ON c.idcargaison = ee.idcargaison_id \
-        #                         LEFT JOIN enreg_laboreception l ON c.idcargaison = l.idcargaison_id \
-        #                         LEFT JOIN enreg_impressionresultat im ON c.idcargaison = im.idcargaison_id \
-        #                         LEFT JOIN enreg_inspection ei ON c.idcargaison = ei.idcargaison_id \
-        #                         LEFT JOIN enreg_compartiment ec ON ei.idinspection = ec.idinspection_id \
-        #                         LEFT JOIN enreg_dechargement ed ON ed.idcargaison_id = c.idcargaison \
-        #                         LEFT JOIN enreg_ville ev on e.ville_id = ev.idville \
-        #                     WHERE \
-        #                         DATE(c.dateheurecargaison) = %s \
-        #                     GROUP BY \
-        #                         c.idcargaison, \
-        #                         c.dateheurecargaison, \
-        #                         i.nomimportateur, \
-        #                         e.nomentrepot, \
-        #                         c.immatriculation, \
-        #                         p.nomproduit, \
-        #                         c.volume, \
-        #                         ee.dateechantillonage, \
-        #                         l.datereceptionlabo, \
-        #                         im.printDate, \
-        #                         im.isConforme, \
-        #                         ei.dateinspection, \
-        #                         ei.dens",[date_f,])
         qs = Cargaison.objects.filter(
             dateheurecargaison__date=date_f,
         ).annotate(
@@ -22051,13 +24844,14 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values(
+        ).values('requisitiondackdate__date','dateDechargement__date',
             'idcargaison',
-            'dateheurecargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
-            'entrepot_echantillon__laboreception__datereceptionlabo',
-            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
             'frontiere__nomville',
             'immatriculation',
             'produit__nomproduit',
@@ -22066,7 +24860,7 @@ def rapportBrut(request):
             'inspection__temp',
             'impressionresultat__printDate',
             'inspection__dens',
-            'inspection__dateinspection',
+            'inspection__dateinspection__date',
             'volJauge',
             'gsvJauge',
             'govMeter',
@@ -22075,11 +24869,107 @@ def rapportBrut(request):
             'fraisOcc',
         )
 
-        table = RapportBrut(qs)
-        context = {
-            'table': table,
-        }
-        return render(request, template, context)
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(frontiere__nomville__icontains=search_value) |
+                Q(importateur__nomimportateur__icontains=search_value) |
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(declaration__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                          'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['produit__nomproduit'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['volume'],
+                    row['volJauge'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
 
     qs = Cargaison.objects.annotate(
         volJauge=Sum('inspection__compartiment__gov'),
@@ -22093,40 +24983,135 @@ def rapportBrut(request):
             default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
             output_field=FloatField()
         ),
-    ).values(
-        'idcargaison',
-        'dateheurecargaison',
-        'importateur__nomimportateur',
-        'entrepot__nomentrepot',
-        'entrepot_echantillon__laboreception__datereceptionlabo',
-        'entrepot_echantillon__dateechantillonage',
-        'frontiere__nomville',
-        'immatriculation',
-        'produit__nomproduit',
-        'declaration',
-        'volume',
-        'inspection__temp',
-        'impressionresultat__printDate',
-        'inspection__dens',
-        'inspection__dateinspection',
-        'volJauge',
-        'gsvJauge',
-        'govMeter',
-        'gsvMeter',
-        'mta',
-        'fraisOcc',
-    )
+    ).values('requisitiondackdate__date','dateDechargement__date',
+            'idcargaison',
+            'dateheurecargaison__date',
+            'requisitiondackdate',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__dateechantillonage__date',
+            'frontiere__nomville',
+            'immatriculation',
+            'produit__nomproduit',
+            'declaration',
+            'volume',
+            'inspection__temp',
+            'impressionresultat__printDate',
+            'inspection__dens',
+            'inspection__dateinspection__date',
+            'volJauge',
+            'gsvJauge',
+            'govMeter',
+            'gsvMeter',
+            'mta',
+            'fraisOcc',
+        )
 
-    table = RapportBrut(qs)
-    context = {
-        'table': table,
-    }
-    return render(request, template, context)
+    search_value = request.GET.get('search[value]', '')
+
+    # Apply search filter to the QuerySet
+    if search_value:
+        qs = qs.filter(
+            Q(frontiere__nomville__icontains=search_value) |
+            Q(importateur__nomimportateur__icontains=search_value) |
+            Q(entrepot__nomentrepot__icontains=search_value) |
+            Q(declaration__icontains=search_value) |
+            Q(produit__nomproduit__icontains=search_value)
+        )
+
+    # Number of items to show per page
+    items_per_page = 10
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Check if it's an AJAX request and if the export flag is set
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#.T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                      'PRODUIT','DATE REQ.','DATE ECHANT.','DATE REC.LABO','DATE ANALYSE','DATE INSPECT.','DATE DECHARG.',
+                      'VOL.DECL','VOL.JAUGE(GOV)','DENSITE','TEMP','MTA','GSV JAUGEE','GSV COMPTEUR','FRAIS']
+        sheet.append(header_row)
+
+        # Write data rows to the Excel file
+        for row in data:
+            sheet.append([
+                row['dateheurecargaison__date'],
+                row['frontiere__nomville'],
+                row['declaration'],
+                row['importateur__nomimportateur'],
+                row['entrepot__nomentrepot'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
+                row['requisitiondackdate__date'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['impressionresultat__printDate'],
+                row['inspection__dateinspection__date'],
+                row['dateDechargement__date'],
+                row['volume'],
+                row['volJauge'],
+                row['inspection__dens'],
+                row['inspection__temp'],
+                row['mta'],
+                row['gsvJauge'],
+                row['gsvMeter'],
+                row['fraisOcc'],
+            ])
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
 
 
 @login_required(login_url='login')
 def rapportBrutJournalier(request):
-    template = "rapportBrutes.html"
+    template = "rapportBrutesRequisition.html"
     return render(request,template)
 
 @login_required(login_url='login')
