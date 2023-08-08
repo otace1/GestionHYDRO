@@ -39,6 +39,7 @@ urlpatterns = [
     path('validation1Response/', views.affichagetableauvalidation1Response, name='affichagetableauvalidation1Response'), #Ajax Request
     path('codecq/<int:pk>', views.GestionValidation.codecertificat, name='codecq'),
     path('validation2/', views.GestionValidation.affichagetableauvalidation2, name='validation2'),
+    path('validation2Response/', views.affichagetableauvalidation2Response, name='affichagetableauvalidation2Response'), #Ajax Request
 
     path('rapport/<int:pk>', views.GestionValidation.affichagerapportpdf, name='rapportvalidationpdf'),
     path('val/<int:pk>', views.GestionValidation.validationv1, name='validationv1'),
@@ -73,6 +74,9 @@ urlpatterns = [
     path('refaireM2/', views.refaireAjx, name='refaireAjx'),
 
 
+    ###Second way of validation from the Chef Labo
+    path('conformeM3/', views.conformeAjx2, name='conformeAjx2'),
+    path('nonconformeM3/', views.nonconformeAjx2, name='nonconformeAjx2'),
 
 
 ]

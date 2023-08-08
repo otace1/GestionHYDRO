@@ -18,6 +18,134 @@
 
 
 {% block content %}
-    {% render_table labo %}
+{#    {% render_table labo %}#}
+        <div id="data-table-wrapper" style="position: relative;">
+  <div class="loading-spinner"></div>
+  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+    <thead>
+      <tr>
+        <th>DATE RECEP.</th>
+        <th>ENTREPOT</th>
+        <th>FOURNISSEUR</th>
+        <th>CODE LABO</th>
+        <th>NUM.CERTIFICAT</th>
+        <th>PRODUIT</th>
+        <th>ACTION(s)</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'affichagetableauvalidation2Response' %}',
+                type: 'GET',
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+            },
+            columns: [
+                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
+                { data: 'entrepot__nomentrepot' }, // Use array index to access 'frontiere__nomville'
+                { data: 'importateur__nomimportateur' }, // Use array index to access 'importateur__nomimportateur'
+                { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'entrepot__nomentrepot'
+                { data: 'entrepot_echantillon__laboreception__numcertificatqualite' }, // Use array index to access 'produit__nomproduit'
+                { data: 'produit__nomproduit' },
+                { // New column configuration
+                    data: 'idcargaison',
+                    render: function (data, type, row) {
+                        // 'data' contains the value of 'idcargaison' for this row
+                        // Here, we'll create a JSON input field and a button to submit the data
+                        {##}
+                        {#const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +#}
+                        {#    '<input type="text" class="json-input" id="input-' + data + '">';#}
+
+                         // Include a link to be triggered with the parameter 'data'
+                        const linkURL = '/labo/affichageDetailsResultatsDroite/' + data;
+                        const linkText = 'AFFICHER';
+
+                        // Include a button to submit the JSON data for the row
+                        const submitAfficher = '<a class="btn btn-info" href="' + linkURL + '">' + linkText + '</a> ';
+                        const submitConforme = '<button class="btn btn-success conform-btn" data-row-id="' + data + '">CONFORME</button> ';
+                        const submitNonConforme = '<button class="btn btn-danger nonconform-btn" data-row-id="' + data + '">NON CONFORME</button> ';
+
+                        return submitAfficher + submitConforme + submitNonConforme;
+                    }
+                }// Use array index to access 'immatriculation'
+            ],
+
+        });
+    });
+
+    // Add a click event listener for the 'CONFORME' buttons with class 'conform-btn'
+    $(document).on('click', '.conform-btn', function() {
+        const idcargaison = $(this).data('row-id');
+
+        // Make an AJAX request to a particular URL with the 'idcargaison' data
+        $.ajax({
+            type: 'POST', // or 'GET' depending on your server-side implementation
+            url: '{% url "conformeAjx2" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
+            data: { idcargaison: idcargaison },
+            headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+            success: function(response) {
+                // Handle the AJAX response here if needed
+                console.log('AJAX request successful');
+                // Reload the table
+                $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
+            },
+            error: function(error) {
+                // Handle errors if any
+                console.error('AJAX request failed:', error);
+                $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
+            }
+        });
+    });
+
+
+    // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
+    $(document).on('click', '.nonconform-btn', function() {
+        const idcargaison = $(this).data('row-id');
+
+        // Make an AJAX request to a particular URL with the 'idcargaison' data
+        $.ajax({
+            type: 'POST', // or 'GET' depending on your server-side implementation
+            url: '{% url "nonconformeAjx2" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
+            data: { idcargaison: idcargaison },
+            headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+            success: function(response) {
+                // Handle the AJAX response here if needed
+                console.log('AJAX request successful');
+                // Reload the table
+                $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
+            },
+            error: function(error) {
+                // Handle errors if any
+                console.error('AJAX request failed:', error);
+                $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
+            }
+        });
+    });
+
+
+</script>
 {% endblock %}
 
