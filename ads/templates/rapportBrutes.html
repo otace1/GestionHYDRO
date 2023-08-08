@@ -41,11 +41,11 @@
     <!-- Include FileSaver.js library for saving the Excel file -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-    {% csrf_token %}
+{#    {% csrf_token %}#}
 
 <script>
 
-    var csrftoken = $("[name=csrfmiddlewaretoken]").val();  // Get the CSRF token value
+    {#var csrftoken = $("[name=csrfmiddlewaretoken]").val();  // Get the CSRF token value#}
 
     $(document).ready(function () {
         var dataTable = $('#data-table').DataTable({
