@@ -20529,7 +20529,6 @@ def rapportBrutResponse(request):
             'recordsFiltered': paginator.count,
         })
 
-
     if ville and date_f:
         qs = Cargaison.objects.filter(
             entrepot__ville__idville=ville,
@@ -25107,6 +25106,8 @@ def rapportBrutResponse(request):
         'recordsTotal': paginator.count,
         'recordsFiltered': paginator.count,
     })
+
+
 
 
 @login_required(login_url='login')
