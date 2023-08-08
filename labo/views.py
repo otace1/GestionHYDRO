@@ -4223,7 +4223,7 @@ def affichageDetailsResultats(request,pk):
 
     template = 'laboDetailsResultat.html'
 
-    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre ,r.valeurResultatChar ,r.valeurResultat, \
+    qs = Cargaison.objects.raw("SELECT c.idcargaison, ee.nomentrepot, i.nomimportateur, ep.nomproduit, l.codelabo, l.numcertificatqualite, p.nomParametre, a.valeurMin, a.valeurMax ,r.valeurResultatChar ,r.valeurResultat, \
     	                IF (r.valeurResultat  > a.valeurMax , 'Non Conforme', IF (r.valeurResultat < a.valeurMin, 'Non Conforme','Conforme')) as etatValeur \
                         FROM enreg_cargaison c, enreg_resultatanalyse r, enreg_parametresproduits p,  enreg_affectationparametre a, enreg_produit ep, enreg_importateur i, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_entrepot ee, accounts_affectationville aa, enreg_ville ev \
                         WHERE c.idcargaison = r.idcargaison_id \

@@ -420,6 +420,8 @@ class SaisieResultat(tables.Table):
 class AffichageDetailResultat(tables.Table):
     codelabo = tables.Column(verbose_name='CODE LABO')
     nomParametre = tables.Column(verbose_name='NOM PARAMETRE(S)')
+    valeurMin = tables.Column(verbose_name='VALEUR MIN')
+    valeurMax = tables.Column(verbose_name='VALEUR MAX')
     valeurResultatChar = tables.Column(verbose_name='RESULTAT(S) ALPH.')
     valeurResultat = tables.Column(verbose_name='RESULTAT(S) NUM')
     etatValeur = tables.Column(verbose_name='OBSERVATION(S)')
