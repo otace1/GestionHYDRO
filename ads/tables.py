@@ -257,33 +257,35 @@ class SyntheseEncaissement(tables.Table):
 
 
 class RapportBrut(tables.Table):
-    dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
-    frontiere__nomville = tables.Column(verbose_name="FRONTIERE D'ENT.")
-    declaration = tables.Column(verbose_name='#T1D')
+    dateheurecargaison__date = tables.Column(verbose_name="DATE ENTREE")
+    frontiere__nomville = tables.Column(verbose_name="FRONTIERE")
+    declaration = tables.Column(verbose_name='DECL.#T1D')
     importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name='DATE ECH.')
-    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name='DATE REC. LABO')
+    requisitiondackdate__date = tables.Column(verbose_name='DATE REQ.')
+    entrepot_echantillon__dateechantillonage__date = tables.Column(verbose_name='DATE ECH.')
+    entrepot_echantillon__laboreception__datereceptionlabo__date = tables.Column(verbose_name='DATE REC.LABO')
     impressionresultat__printDate = tables.Column(verbose_name='DATE ANALYSE')
-    # isConforme = tables.Column(verbose_name='CONFORMITE')
-    inspection__dateinspection = tables.Column(verbose_name="DATE INSPEC.")
+    inspection__dateinspection__date = tables.Column(verbose_name="DATE INSPEC.")
     entrepot__cargaison__dateDechargement = tables.Column(verbose_name='DATE DECH.')
     produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     inspection__dens = tables.Column(verbose_name='DENS.ATA')
     inspection__temp = tables.Column(verbose_name='TEMP.')
-    mta = tables.Column(verbose_name='MTA')
     volume = tables.Column(verbose_name='VOL. DECL.')
     volJauge = tables.Column(verbose_name='VOL. JAUGE')
+    mta = tables.Column(verbose_name='MTA')
     gsvJauge = tables.Column(verbose_name='GSV JAUGE')
-    govMeter = tables.Column(verbose_name='VOL. METER.')
-    gsvMeter = tables.Column(verbose_name='GSV METER')
+    gsvMeter = tables.Column(verbose_name='GSV COMPTEUR')
     fraisOcc = tables.Column(verbose_name='FRAIS A PAYER')
 
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
+        template_name = "django_tables2/bootstrap4.html"
+
 
 
 
