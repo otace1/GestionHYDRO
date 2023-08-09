@@ -1621,22 +1621,6 @@ class GestionValidation():
         if role == 5 or role == 1 or role == 6 or role == 10:
             template = 'labo_validation2.html'
             context = {}
-            # qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Validation en cours 2",
-            #                              idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
-            #     'datereceptionlabo')
-            # table = AffichageValidation2(qs, prefix='1_')
-            #
-            # # Compteur Chef Laboratoire
-            # laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-            #                                                     dateechantillonage__day=da,
-            #                                                     dateechantillonage__month=mo,
-            #                                                     dateechantillonage__year=yr).count()
-            # enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-            #                                          idcargaison__idcargaison__etat='Analyse Labo en cours').count()
-            # enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-            #                                          idcargaison__idcargaison__etat='Validation en cours 1').count()
-
-            # RequestConfig(request, paginate={"per_page": 14}).configure(table)
             return render(request,template,context)
         else:
             return redirect('logout')
@@ -3684,7 +3668,7 @@ def affichagetableauvalidation2Response(request):
     user = request.user
     id = user.id
     role = user.role_id
-    if role == 5 or role == 1 or role == 6:
+    if role == 5 or role == 1 or role == 6 or role == 10:
         qs = Cargaison.objects.filter(
             etat="Validation en cours 2",
             entrepot__ville__affectationville__username_id=id,
