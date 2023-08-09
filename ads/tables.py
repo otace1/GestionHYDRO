@@ -284,7 +284,7 @@ class RapportBrut(tables.Table):
             "class": "table table-bordered table-striped",
             # "id": "example1"
         }
-        template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 
