@@ -67,7 +67,7 @@ class UserRegisterForm(forms.ModelForm):
 class UserEdit(forms.ModelForm):
     class Meta:
         model = MyUser
-        fields = ['first_name', 'last_name', 'username', 'password', 'role', 'fonction']
+        fields = ['first_name', 'last_name', 'username', 'password', 'role', 'fonction','poste']
 #         ,'entrepot','ville','extras'
 
 # Affectation des utilisateurs aux entrepots
