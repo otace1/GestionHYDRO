@@ -1880,7 +1880,8 @@ class GestionImpressionLabo():
                 except:
                     sediment = ''
                 try:
-                    corrosion = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
+                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
+                    corrosion = int(corrosion_str)
                 except:
                     corrosion = ''
                 try:
@@ -1972,7 +1973,8 @@ class GestionImpressionLabo():
                     except:
                         residu=''
                     try:
-                        corrosion = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                        corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                        corrosion = int(corrosion_str)
                     except:
                         corrosion=''
                     try:
@@ -2156,8 +2158,9 @@ class GestionImpressionLabo():
                             teneureau=''
 
                         try:
-                            corrosion = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                            corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
                                 0].valeurResultat
+                            corrosion = int(corrosion_str)
                         except:
                             corrosion=''
 
@@ -2365,8 +2368,10 @@ class GestionImpressionLabo():
                                 teneureau = ''
 
                             try:
-                                corrosion = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+                                corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
                                     0].valeurResultat
+                                corrosion = int(corrosion_str)
+
                             except:
                                 corrosion = ''
 
