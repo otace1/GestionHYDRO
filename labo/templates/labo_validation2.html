@@ -93,8 +93,12 @@
     });
 
     // Add a click event listener for the 'CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.conform-btn', function() {
+    $(document).on('click', '.conform-btn', '.nonconform-btn', function() {
+        const button = $(this); // Store the button element clicked
         const idcargaison = $(this).data('row-id');
+
+        // Disable the button while the request is in progress
+        button.prop('disabled', true);
 
         // Make an AJAX request to a particular URL with the 'idcargaison' data
         $.ajax({
@@ -120,8 +124,12 @@
 
 
     // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.nonconform-btn', function() {
+    $(document).on('click', '.conform-btn', '.nonconform-btn', function() {
+        const button = $(this); // Store the button element clicked
         const idcargaison = $(this).data('row-id');
+
+        // Disable the button to prevent double submission
+        button.prop('disabled', true);
 
         // Make an AJAX request to a particular URL with the 'idcargaison' data
         $.ajax({
