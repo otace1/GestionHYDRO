@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 
@@ -1636,31 +1637,16 @@ class GestionImpressionLabo():
         ville = AffectationVille.objects.get(username_id=user.id)
         ville = ville.ville_id
         request.session['url'] = request.get_full_path()
+        template = 'labo_impression.html'
         if role == 5 or role == 1:
             # calcul pr affichages des pastilles
-            cqNotPrinted = ImpressionResultat.objects.filter(isPrinted=False,
-                                                             idcargaison__entrepot__ville=ville).count()
+            cqNotPrinted = ImpressionResultat.objects.filter(isPrinted=False,idcargaison__entrepot__ville=ville).count()
             cqPrinted = ImpressionResultat.objects.filter(isPrinted=True, idcargaison__entrepot__ville=ville).count()
-
-            qs = Cargaison.objects.raw('SELECT ec.idcargaison, ei.idImpression, el.numcertificatqualite, el.codelabo, ep.nomproduit, i.nomimportateur, ee.nomentrepot \
-                                        FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_laboreception el, enreg_produit ep, enreg_importateur i, enreg_entrepot ee, enreg_ville ev \
-                                        WHERE ei.idcargaison_id = ec.idcargaison \
-                                        AND ec.idcargaison = el.idcargaison_id \
-                                        AND ec.produit_id = ep.idproduit \
-                                        AND ec.importateur_id = i.idimportateur \
-                                        AND ec.entrepot_id = ee.identrepot \
-                                        AND ee.ville_id = ev.idville \
-                                        AND ev.idville = %s \
-                                        AND ei.isPrinted = 0', [ville, ])
-
-            table = AffichageTableauImpression(qs, prefix='2_')
-
-            return render(request, 'labo_impression.html',
-                          {
-                              'labo': table,
-                              'cqNotPrinted': cqNotPrinted,
-                              'cqPrinted': cqPrinted,
-                          })
+            context = {
+                        'cqNotPrinted': cqNotPrinted,
+                        'cqPrinted': cqPrinted,
+                        }
+            return render(request,template,context)
         else:
             return redirect('logout')
 
@@ -1734,748 +1720,748 @@ class GestionImpressionLabo():
         else:
             return redirect('logout')
 
-    # Fonction pour impression Certificat
-    @login_required(login_url='login')
-    def impressioncertificat(request, pk):
-        user = request.user
-        id = user.id
-        name = user.last_name + ' ' + user.first_name
-        poste = user.poste
-        ville = AffectationVille.objects.get(username_id=id)
-        ville = ville.ville_id
-        province = Ville.objects.get(idville=ville)
-        province = province.province
-        province = province.upper()
-        role = user.role_id
-        url = request.session['url']
-
-        #Recuperation des donnees liees aux signataires
-        affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
-        affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
-        signDroite = MyUser.objects.get(username=affect1.userId)
-        signGauche = MyUser.objects.get(username=affect2.userId)
-
-        #Recuperation du Laboratoire asssocie a la ville
-        laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
-
-        #Recuperation des donnees liees a l'Impression
-        print(pk)
-        impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
-
-        print(signGauche)
-        print(signDroite)
-
-        d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
-            mois=ExtractMonth('datereceptionlabo'),
-            annee=ExtractYear('datereceptionlabo')
-        ).values('idcargaison_id', 'mois', 'annee')
-
-
-        for entry in d:
-            mois = entry['mois']
-            annee = entry['annee']
-
-        print(mois)
-        print(annee)
-
-
-        if role == 5 or role == 1 :
-            td = datetime.today()
-            # today = td.date()
-
-            # Récuperation des dates
-            # d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-            #                                        FROM hydro_occ.enreg_laboreception \
-            #                                        WHERE idcargaison_id = %s', [pk, ])
-            # for obj in d:
-            #     mois = obj.mois
-            #     annee = obj.annee
-
-            # Recuperation du produit de la cargaison
-            p = Produit.objects.get(cargaison=pk)
-            produit = p.nomproduit
-
-            # Fecthing object with pk corresponding into database
-            cargaison = Cargaison.objects.get(idcargaison=pk)
-            echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
-            laboratoire = LaboReception.objects.get(idcargaison=pk)
-
-            printed = ImpressionResultat.objects.get(idcargaison=pk)
-            printed.isPrinted = 1
-            printed.save(update_fields=['isPrinted'])
-
-
-
-            # Test pour afficher les differents rapports
-            if produit == 'GASOIL':
-                template = 'report/Report1/gasoilreport.html'
-
-                # Resultat Gasoil Fetching data into Database
-                try:
-                    couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-                except:
-                    couleurastm = ''
-                try:
-                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
-                except:
-                    aciditetotal= ''
-                try:
-                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                except:
-                    soufre = ''
-                try:
-                    massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=21)[0].valeurResultat
-                except:
-                    massevolumique = ''
-                try:
-                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=20)[0].valeurResultat
-                except:
-                    massevolumique15 = ''
-                try:
-                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                except:
-                    distillation = ''
-                try:
-                    distillation10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-                except:
-                    distillation10 = ''
-                try:
-                    distillation20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-                except:
-                    distillation20 = ''
-                try:
-                    distillation50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-                except:
-                    distillation50 = ''
-                try:
-                    distillation90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-                except:
-                    distillation90 = ''
-                try:
-                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[0].valeurResultat
-                except:
-                    pointinitial = ''
-                try:
-                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-                except:
-                    pointfinal = ''
-                try:
-                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[0].valeurResultat
-                except:
-                    pointeclair = ''
-                try:
-                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=38)[0].valeurResultat
-                except:
-                    viscosite = ''
-                try:
-                    pointecoulement = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[0].valeurResultat
-                except:
-                    pointecoulement = ''
-                try:
-                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[0].valeurResultat
-                except:
-                    teneureau = ''
-                try:
-                    sediment = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=32)[0].valeurResultat
-                except:
-                    sediment = ''
-                try:
-                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
-                    corrosion = int(corrosion_str)
-                except:
-                    corrosion = ''
-                try:
-                    indicecetane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[0].valeurResultat
-                except:
-                    indicecetane = ''
-                # try:
-                #     densite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=49)[0].valeurResultat
-                # except:
-                #     densite = ''
-                try:
-                    recuperation362 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
-                except:
-                    recuperation362 = ''
-                try:
-                    cendre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[0].valeurResultat
-                except:
-                    cendre = ''
-
-                data = {
-                    'laboratoire': laboratoire,
-                    'cargaison': cargaison,
-                    'echantillon': echantillon,
-                    'annee': annee,
-                    'mois': mois,
-                    'province': province,
-                    'couleurastm': couleurastm,
-                    'aciditetotal': aciditetotal,
-                    'soufre': soufre,
-                    'massevolumique': massevolumique,
-                    'distillation': distillation,
-                    'distillation10': distillation10,
-                    'distillation20': distillation20,
-                    'distillation50': distillation50,
-                    'distillation90': distillation90,
-                    'pointfinal': pointfinal,
-                    'pointeclair': pointeclair,
-                    'pointinitial': pointinitial,
-                    'viscosite': viscosite,
-                    'pointecoulement': pointecoulement,
-                    'teneureau': teneureau,
-                    'sediment': sediment,
-                    'corrosion': corrosion,
-                    'indicecetane': indicecetane,
-                    # 'densite': densite,
-                    'recuperation362': recuperation362,
-                    'cendre': cendre,
-                    'massevolumique15': massevolumique15,
-                    'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
-                }
-
-                # Rendered PDF report
-                pdf = render_to_pdf(template, data)
-                return HttpResponse(pdf, content_type='application/pdf')
-
-            else:
-                if produit == 'MOGAS':
-                    template = 'report/Report1/mogasreport.html'
-                    # Resultat Gasoil Fetching data into Database
-                    try:
-                        aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
-                    except:
-                        aspect=''
-                    try:
-                        odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
-                    except:
-                        odeur=''
-                    try:
-                        couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-                    except:
-                        couleursaybolt=''
-                    try:
-                        soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                    except:
-                        soufre=''
-                    try:
-                        distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                    except:
-                        distillation=''
-                    try:
-                        pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-                    except:
-                        pointfinal=''
-                    try:
-                        residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
-                    except:
-                        residu=''
-                    try:
-                        corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
-                        corrosion = int(corrosion_str)
-                    except:
-                        corrosion=''
-                    try:
-                        pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-                    except:
-                        pourcent10=''
-                    try:
-                        pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-                    except:
-                        pourcent20=''
-                    try:
-                        pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-                    except:
-                        pourcent50=''
-                    try:
-                        pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
-                    except:
-                        pourcent70=''
-                    try:
-                        pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-                    except:
-                        pourcent90=''
-                    try:
-                        tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
-                    except:
-                        tensionvapeur=''
-                    try:
-                        difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
-                    except:
-                        difftemperature=''
-                    try:
-                        plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
-                    except:
-                        plomb=''
-                    try:
-                        indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
-                    except:
-                        indiceoctane=''
-                    try:
-                        massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                    except:
-                        massevolumique15=''
-
-                    data = {
-                        'laboratoire': laboratoire,
-                        'cargaison': cargaison,
-                        'echantillon': echantillon,
-                        'annee': annee,
-                        'mois': mois,
-                        'province': province,
-                        'aspect': aspect,
-                        'odeur': odeur,
-                        'couleursaybolt': couleursaybolt,
-                        'soufre': soufre,
-                        'distillation': distillation,
-                        'pointfinal': pointfinal,
-                        'residu': residu,
-                        'corrosion': corrosion,
-                        'pourcent10': pourcent10,
-                        'pourcent20': pourcent20,
-                        'pourcent50': pourcent50,
-                        'pourcent70': pourcent70,
-                        'pourcent90': pourcent90,
-                        'tensionvapeur': tensionvapeur,
-                        'difftemperature': difftemperature,
-                        'plomb': plomb,
-                        'indiceoctane': indiceoctane,
-                        'massevolumique15': massevolumique15,
-                        'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
-                    }
-
-                    # Rendered PDF report
-                    pdf = render_to_pdf(template, data)
-                    return HttpResponse(pdf, content_type='application/pdf')
-                else:
-                    if produit == 'JET A1':
-                        template = 'report/Report1/jeta1report.html'
-
-                        # Resultat Gasoil Fetching data into Database
-                        try:
-                            aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
-                                0].valeurResultatChar
-                        except:
-                            aspect=''
-                        try:
-                            couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                                0].valeurResultatChar
-                        except:
-                            couleursaybolt=''
-                        try:
-                            aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                                0].valeurResultat
-                        except:
-                            aciditetotal=''
-                        try:
-                            soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
-                                0].valeurResultat
-                        except:
-                            soufre=''
-                        try:
-                            soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
-                                0].valeurResultat
-                        except:
-                            soufremercaptan=''
-                        try:
-                            docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-                                0].valeurResultat
-                        except:
-                            docteurtest=''
-                        try:
-                            distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            distillation=''
-                        try:
-                            pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
-                                0].valeurResultat
-                        except:
-                            pointinitial=''
-                        try:
-                            pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-                                0].valeurResultat
-                        except:
-                            pointfinal=''
-
-                        try:
-                            pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-                                0].valeurResultat
-                        except:
-                            pointfumee=''
-
-                        try:
-                            pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
-                                0].valeurResultat
-                        except:
-                            pointeclair=''
-
-                        try:
-                            freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-                                0].valeurResultat
-                        except:
-                            freezingpoint=''
-
-                        try:
-                            residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
-                                0].valeurResultat
-                        except:
-                            residu=''
-
-                        try:
-                            perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-                                0].valeurResultat
-                        except:
-                            perte=''
-
-                        try:
-                            massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-                                0].valeurResultat
-                        except:
-                            massevolumique15=''
-
-                        try:
-                            viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
-                                0].valeurResultat
-                        except:
-                            viscosite=''
-
-                        try:
-                            pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
-                                0].valeurResultat
-                        except:
-                            pointinflammabilite=''
-
-                        try:
-                            teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
-                                0].valeurResultat
-                        except:
-                            teneureau=''
-
-                        try:
-                            corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-                                0].valeurResultat
-                            corrosion = int(corrosion_str)
-                        except:
-                            corrosion=''
-
-                        try:
-                            conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
-                                0].valeurResultat
-                        except:
-                            conductivite=''
-
-                        try:
-                            vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-                                0].valeurResultat
-                        except:
-                            vol10=''
-
-                        try:
-                            vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
-                                0].valeurResultat
-                        except:
-                            vol20=''
-                        try:
-                            vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol30=''
-                        try:
-                            vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol40=''
-                        try:
-                            vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
-                                0].valeurResultat
-                        except:
-                            vol50=''
-                        try:
-                            vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol60=''
-                        try:
-                            vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
-                                0].valeurResultat
-                        except:
-                            vol70=''
-                        try:
-                            vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol80=''
-                        try:
-                            vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
-                                0].valeurResultat
-                        except:
-                            vol90=''
-
-                        data = {
-                            'laboratoire': laboratoire,
-                            'cargaison': cargaison,
-                            'echantillon': echantillon,
-                            'annee': annee,
-                            'mois': mois,
-                            'province': province,
-                            'aspect': aspect,
-                            'couleursaybolt': couleursaybolt,
-                            'aciditetotal': aciditetotal,
-                            'soufre': soufre,
-                            'soufremercaptan': soufremercaptan,
-                            'docteurtest': docteurtest,
-                            'distillation': distillation,
-                            'pointinitial': pointinitial,
-                            'pointfinal': pointfinal,
-                            'pointfumee': pointfumee,
-                            'freezingpoint': freezingpoint,
-                            'residu': residu,
-                            'perte': perte,
-                            'pointeclair': pointeclair,
-                            'massevolumique15': massevolumique15,
-                            'viscosite': viscosite,
-                            'pointinflammabilite': pointinflammabilite,
-                            'teneureau': teneureau,
-                            'corrosion': corrosion,
-                            'conductivite': conductivite,
-                            'vol10': vol10,
-                            'vol20': vol20,
-                            'vol30': vol30,
-                            'vol40': vol40,
-                            'vol50': vol50,
-                            'vol60': vol60,
-                            'vol70': vol70,
-                            'vol80': vol80,
-                            'vol90': vol90,
-                            'signGauche': signGauche,
-                            'signDroite': signDroite,
-                            'impressionData': impressionData,
-                            'laboratoireData':laboratoireData,
-                        }
-                        # Rendered PDF report
-                        pdf = render_to_pdf(template, data)
-                        return HttpResponse(pdf, content_type='application/pdf')
-
-                    else:
-                        if produit == 'PETROLE LAMPANT':
-                            template = 'report/Report1/petrolereport.html'
-
-                            # Resultat Gasoil Fetching data into Database
-                            try:
-                                aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                                    0].valeurResultatChar
-                            except:
-                                aspect = ''
-                            try:
-                                couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[
-                                    0].valeurResultatChar
-                            except:
-                                couleursaybolt = ''
-                            try:
-                                aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-                                    0].valeurResultat
-                            except:
-                                aciditetotal = ''
-                            try:
-                                soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[
-                                    0].valeurResultat
-                            except:
-                                soufre = ''
-                            try:
-                                soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[
-                                    0].valeurResultat
-                            except:
-                                soufremercaptan = ''
-                            try:
-                                docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                                    0].valeurResultat
-                            except:
-                                docteurtest = ''
-                            try:
-                                distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-                                    0].valeurResultat
-                            except:
-                                distillation = ''
-                            try:
-                                pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-                                    0].valeurResultat
-                            except:
-                                pointinitial = ''
-                            try:
-                                pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-                                    0].valeurResultat
-                            except:
-                                pointfinal = ''
-
-                            try:
-                                pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[
-                                    0].valeurResultat
-                            except:
-                                pointfumee = ''
-
-                            try:
-                                pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[
-                                    0].valeurResultat
-                            except:
-                                pointeclair = ''
-
-                            try:
-                                freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-                                    0].valeurResultat
-                            except:
-                                freezingpoint = ''
-
-                            try:
-                                residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[
-                                    0].valeurResultat
-                            except:
-                                residu = ''
-
-                            try:
-                                perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[
-                                    0].valeurResultat
-                            except:
-                                perte = ''
-
-                            try:
-                                massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=52)[
-                                    0].valeurResultat
-                            except:
-                                massevolumique15 = ''
-
-                            try:
-                                viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-                                    0].valeurResultat
-                            except:
-                                viscosite = ''
-
-                            try:
-                                pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[
-                                    0].valeurResultat
-                            except:
-                                pointinflammabilite = ''
-
-                            try:
-                                teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[
-                                    0].valeurResultat
-                            except:
-                                teneureau = ''
-
-                            try:
-                                corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-                                    0].valeurResultat
-                                corrosion = int(corrosion_str)
-
-                            except:
-                                corrosion = ''
-
-                            try:
-                                conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-                                    0].valeurResultat
-                            except:
-                                conductivite = ''
-
-                            try:
-                                vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=39)[
-                                    0].valeurResultat
-                            except:
-                                vol10 = ''
-
-                            try:
-                                vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=40)[
-                                    0].valeurResultat
-                            except:
-                                vol20 = ''
-                            try:
-                                vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=41)[
-                                    0].valeurResultat
-                            except:
-                                vol30 = ''
-                            try:
-                                vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=42)[
-                                    0].valeurResultat
-                            except:
-                                vol40 = ''
-                            try:
-                                vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=43)[
-                                    0].valeurResultat
-                            except:
-                                vol50 = ''
-                            try:
-                                vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
-                                    0].valeurResultat
-                            except:
-                                vol60 = ''
-                            try:
-                                vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=45)[
-                                    0].valeurResultat
-                            except:
-                                vol70 = ''
-                            try:
-                                vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=46)[
-                                    0].valeurResultat
-                            except:
-                                vol80 = ''
-                            try:
-                                vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=47)[
-                                    0].valeurResultat
-                            except:
-                                vol90 = ''
-
-                            data = {
-                                'laboratoire': laboratoire,
-                                'cargaison': cargaison,
-                                'echantillon': echantillon,
-                                'annee': annee,
-                                'mois': mois,
-                                'province': province,
-                                'aspect': aspect,
-                                'couleursaybolt': couleursaybolt,
-                                'aciditetotal': aciditetotal,
-                                'soufre': soufre,
-                                'soufremercaptan': soufremercaptan,
-                                'docteurtest': docteurtest,
-                                'distillation': distillation,
-                                'pointinitial': pointinitial,
-                                'pointfinal': pointfinal,
-                                'pointfumee': pointfumee,
-                                'freezingpoint': freezingpoint,
-                                'residu': residu,
-                                'perte': perte,
-                                'pointeclair': pointeclair,
-                                'massevolumique15': massevolumique15,
-                                'viscosite': viscosite,
-                                'pointinflammabilite': pointinflammabilite,
-                                'teneureau': teneureau,
-                                'corrosion': corrosion,
-                                'conductivite': conductivite,
-                                'vol10': vol10,
-                                'vol20': vol20,
-                                'vol30': vol30,
-                                'vol40': vol40,
-                                'vol50': vol50,
-                                'vol60': vol60,
-                                'vol70': vol70,
-                                'vol80': vol80,
-                                'vol90': vol90,
-                                'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
-                            }
-
-                            # Rendered PDF report
-                            pdf = render_to_pdf(template, data)
-                            return HttpResponse(pdf, content_type='application/pdf')
-                    return redirect('logout')
-        else:
-            return redirect('logout')
+    # # Fonction pour impression Certificat
+    # @login_required(login_url='login')
+    # def impressioncertificat(request, pk):
+    #     user = request.user
+    #     id = user.id
+    #     name = user.last_name + ' ' + user.first_name
+    #     poste = user.poste
+    #     ville = AffectationVille.objects.get(username_id=id)
+    #     ville = ville.ville_id
+    #     province = Ville.objects.get(idville=ville)
+    #     province = province.province
+    #     province = province.upper()
+    #     role = user.role_id
+    #     url = request.session['url']
+    #
+    #     #Recuperation des donnees liees aux signataires
+    #     affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
+    #     affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
+    #     signDroite = MyUser.objects.get(username=affect1.userId)
+    #     signGauche = MyUser.objects.get(username=affect2.userId)
+    #
+    #     #Recuperation du Laboratoire asssocie a la ville
+    #     laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+    #
+    #     #Recuperation des donnees liees a l'Impression
+    #     print(pk)
+    #     impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
+    #
+    #     print(signGauche)
+    #     print(signDroite)
+    #
+    #     d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
+    #         mois=ExtractMonth('datereceptionlabo'),
+    #         annee=ExtractYear('datereceptionlabo')
+    #     ).values('idcargaison_id', 'mois', 'annee')
+    #
+    #
+    #     for entry in d:
+    #         mois = entry['mois']
+    #         annee = entry['annee']
+    #
+    #     print(mois)
+    #     print(annee)
+    #
+    #
+    #     if role == 5 or role == 1 :
+    #         td = datetime.today()
+    #         # today = td.date()
+    #
+    #         # Récuperation des dates
+    #         # d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
+    #         #                                        FROM hydro_occ.enreg_laboreception \
+    #         #                                        WHERE idcargaison_id = %s', [pk, ])
+    #         # for obj in d:
+    #         #     mois = obj.mois
+    #         #     annee = obj.annee
+    #
+    #         # Recuperation du produit de la cargaison
+    #         p = Produit.objects.get(cargaison=pk)
+    #         produit = p.nomproduit
+    #
+    #         # Fecthing object with pk corresponding into database
+    #         cargaison = Cargaison.objects.get(idcargaison=pk)
+    #         echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
+    #         laboratoire = LaboReception.objects.get(idcargaison=pk)
+    #
+    #         printed = ImpressionResultat.objects.get(idcargaison=pk)
+    #         printed.isPrinted = 1
+    #         printed.save(update_fields=['isPrinted'])
+    #
+    #
+    #
+    #         # Test pour afficher les differents rapports
+    #         if produit == 'GASOIL':
+    #             template = 'report/Report1/gasoilreport.html'
+    #
+    #             # Resultat Gasoil Fetching data into Database
+    #             try:
+    #                 couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
+    #             except:
+    #                 couleurastm = ''
+    #             try:
+    #                 aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
+    #             except:
+    #                 aciditetotal= ''
+    #             try:
+    #                 soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
+    #             except:
+    #                 soufre = ''
+    #             try:
+    #                 massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=21)[0].valeurResultat
+    #             except:
+    #                 massevolumique = ''
+    #             try:
+    #                 massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=20)[0].valeurResultat
+    #             except:
+    #                 massevolumique15 = ''
+    #             try:
+    #                 distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
+    #             except:
+    #                 distillation = ''
+    #             try:
+    #                 distillation10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
+    #             except:
+    #                 distillation10 = ''
+    #             try:
+    #                 distillation20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
+    #             except:
+    #                 distillation20 = ''
+    #             try:
+    #                 distillation50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
+    #             except:
+    #                 distillation50 = ''
+    #             try:
+    #                 distillation90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
+    #             except:
+    #                 distillation90 = ''
+    #             try:
+    #                 pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[0].valeurResultat
+    #             except:
+    #                 pointinitial = ''
+    #             try:
+    #                 pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
+    #             except:
+    #                 pointfinal = ''
+    #             try:
+    #                 pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[0].valeurResultat
+    #             except:
+    #                 pointeclair = ''
+    #             try:
+    #                 viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=38)[0].valeurResultat
+    #             except:
+    #                 viscosite = ''
+    #             try:
+    #                 pointecoulement = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[0].valeurResultat
+    #             except:
+    #                 pointecoulement = ''
+    #             try:
+    #                 teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[0].valeurResultat
+    #             except:
+    #                 teneureau = ''
+    #             try:
+    #                 sediment = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=32)[0].valeurResultat
+    #             except:
+    #                 sediment = ''
+    #             try:
+    #                 corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
+    #                 corrosion = int(corrosion_str)
+    #             except:
+    #                 corrosion = ''
+    #             try:
+    #                 indicecetane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[0].valeurResultat
+    #             except:
+    #                 indicecetane = ''
+    #             # try:
+    #             #     densite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=49)[0].valeurResultat
+    #             # except:
+    #             #     densite = ''
+    #             try:
+    #                 recuperation362 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
+    #             except:
+    #                 recuperation362 = ''
+    #             try:
+    #                 cendre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[0].valeurResultat
+    #             except:
+    #                 cendre = ''
+    #
+    #             data = {
+    #                 'laboratoire': laboratoire,
+    #                 'cargaison': cargaison,
+    #                 'echantillon': echantillon,
+    #                 'annee': annee,
+    #                 'mois': mois,
+    #                 'province': province,
+    #                 'couleurastm': couleurastm,
+    #                 'aciditetotal': aciditetotal,
+    #                 'soufre': soufre,
+    #                 'massevolumique': massevolumique,
+    #                 'distillation': distillation,
+    #                 'distillation10': distillation10,
+    #                 'distillation20': distillation20,
+    #                 'distillation50': distillation50,
+    #                 'distillation90': distillation90,
+    #                 'pointfinal': pointfinal,
+    #                 'pointeclair': pointeclair,
+    #                 'pointinitial': pointinitial,
+    #                 'viscosite': viscosite,
+    #                 'pointecoulement': pointecoulement,
+    #                 'teneureau': teneureau,
+    #                 'sediment': sediment,
+    #                 'corrosion': corrosion,
+    #                 'indicecetane': indicecetane,
+    #                 # 'densite': densite,
+    #                 'recuperation362': recuperation362,
+    #                 'cendre': cendre,
+    #                 'massevolumique15': massevolumique15,
+    #                 'signGauche': signGauche,
+    #                 'signDroite': signDroite,
+    #                 'impressionData': impressionData,
+    #                 'laboratoireData':laboratoireData,
+    #             }
+    #
+    #             # Rendered PDF report
+    #             pdf = render_to_pdf(template, data)
+    #             return HttpResponse(pdf, content_type='application/pdf')
+    #
+    #         else:
+    #             if produit == 'MOGAS':
+    #                 template = 'report/Report1/mogasreport.html'
+    #                 # Resultat Gasoil Fetching data into Database
+    #                 try:
+    #                     aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
+    #                 except:
+    #                     aspect=''
+    #                 try:
+    #                     odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
+    #                 except:
+    #                     odeur=''
+    #                 try:
+    #                     couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
+    #                 except:
+    #                     couleursaybolt=''
+    #                 try:
+    #                     soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
+    #                 except:
+    #                     soufre=''
+    #                 try:
+    #                     distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
+    #                 except:
+    #                     distillation=''
+    #                 try:
+    #                     pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
+    #                 except:
+    #                     pointfinal=''
+    #                 try:
+    #                     residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
+    #                 except:
+    #                     residu=''
+    #                 try:
+    #                     corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+    #                     corrosion = int(corrosion_str)
+    #                 except:
+    #                     corrosion=''
+    #                 try:
+    #                     pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
+    #                 except:
+    #                     pourcent10=''
+    #                 try:
+    #                     pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
+    #                 except:
+    #                     pourcent20=''
+    #                 try:
+    #                     pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
+    #                 except:
+    #                     pourcent50=''
+    #                 try:
+    #                     pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
+    #                 except:
+    #                     pourcent70=''
+    #                 try:
+    #                     pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
+    #                 except:
+    #                     pourcent90=''
+    #                 try:
+    #                     tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
+    #                 except:
+    #                     tensionvapeur=''
+    #                 try:
+    #                     difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
+    #                 except:
+    #                     difftemperature=''
+    #                 try:
+    #                     plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
+    #                 except:
+    #                     plomb=''
+    #                 try:
+    #                     indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
+    #                 except:
+    #                     indiceoctane=''
+    #                 try:
+    #                     massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
+    #                 except:
+    #                     massevolumique15=''
+    #
+    #                 data = {
+    #                     'laboratoire': laboratoire,
+    #                     'cargaison': cargaison,
+    #                     'echantillon': echantillon,
+    #                     'annee': annee,
+    #                     'mois': mois,
+    #                     'province': province,
+    #                     'aspect': aspect,
+    #                     'odeur': odeur,
+    #                     'couleursaybolt': couleursaybolt,
+    #                     'soufre': soufre,
+    #                     'distillation': distillation,
+    #                     'pointfinal': pointfinal,
+    #                     'residu': residu,
+    #                     'corrosion': corrosion,
+    #                     'pourcent10': pourcent10,
+    #                     'pourcent20': pourcent20,
+    #                     'pourcent50': pourcent50,
+    #                     'pourcent70': pourcent70,
+    #                     'pourcent90': pourcent90,
+    #                     'tensionvapeur': tensionvapeur,
+    #                     'difftemperature': difftemperature,
+    #                     'plomb': plomb,
+    #                     'indiceoctane': indiceoctane,
+    #                     'massevolumique15': massevolumique15,
+    #                     'signGauche': signGauche,
+    #                 'signDroite': signDroite,
+    #                 'impressionData': impressionData,
+    #                 'laboratoireData':laboratoireData,
+    #                 }
+    #
+    #                 # Rendered PDF report
+    #                 pdf = render_to_pdf(template, data)
+    #                 return HttpResponse(pdf, content_type='application/pdf')
+    #             else:
+    #                 if produit == 'JET A1':
+    #                     template = 'report/Report1/jeta1report.html'
+    #
+    #                     # Resultat Gasoil Fetching data into Database
+    #                     try:
+    #                         aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
+    #                             0].valeurResultatChar
+    #                     except:
+    #                         aspect=''
+    #                     try:
+    #                         couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
+    #                             0].valeurResultatChar
+    #                     except:
+    #                         couleursaybolt=''
+    #                     try:
+    #                         aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         aciditetotal=''
+    #                     try:
+    #                         soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         soufre=''
+    #                     try:
+    #                         soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         soufremercaptan=''
+    #                     try:
+    #                         docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         docteurtest=''
+    #                     try:
+    #                         distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         distillation=''
+    #                     try:
+    #                         pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         pointinitial=''
+    #                     try:
+    #                         pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         pointfinal=''
+    #
+    #                     try:
+    #                         pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         pointfumee=''
+    #
+    #                     try:
+    #                         pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         pointeclair=''
+    #
+    #                     try:
+    #                         freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         freezingpoint=''
+    #
+    #                     try:
+    #                         residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         residu=''
+    #
+    #                     try:
+    #                         perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         perte=''
+    #
+    #                     try:
+    #                         massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         massevolumique15=''
+    #
+    #                     try:
+    #                         viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         viscosite=''
+    #
+    #                     try:
+    #                         pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         pointinflammabilite=''
+    #
+    #                     try:
+    #                         teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         teneureau=''
+    #
+    #                     try:
+    #                         corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+    #                             0].valeurResultat
+    #                         corrosion = int(corrosion_str)
+    #                     except:
+    #                         corrosion=''
+    #
+    #                     try:
+    #                         conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         conductivite=''
+    #
+    #                     try:
+    #                         vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol10=''
+    #
+    #                     try:
+    #                         vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol20=''
+    #                     try:
+    #                         vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol30=''
+    #                     try:
+    #                         vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol40=''
+    #                     try:
+    #                         vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol50=''
+    #                     try:
+    #                         vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol60=''
+    #                     try:
+    #                         vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol70=''
+    #                     try:
+    #                         vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol80=''
+    #                     try:
+    #                         vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
+    #                             0].valeurResultat
+    #                     except:
+    #                         vol90=''
+    #
+    #                     data = {
+    #                         'laboratoire': laboratoire,
+    #                         'cargaison': cargaison,
+    #                         'echantillon': echantillon,
+    #                         'annee': annee,
+    #                         'mois': mois,
+    #                         'province': province,
+    #                         'aspect': aspect,
+    #                         'couleursaybolt': couleursaybolt,
+    #                         'aciditetotal': aciditetotal,
+    #                         'soufre': soufre,
+    #                         'soufremercaptan': soufremercaptan,
+    #                         'docteurtest': docteurtest,
+    #                         'distillation': distillation,
+    #                         'pointinitial': pointinitial,
+    #                         'pointfinal': pointfinal,
+    #                         'pointfumee': pointfumee,
+    #                         'freezingpoint': freezingpoint,
+    #                         'residu': residu,
+    #                         'perte': perte,
+    #                         'pointeclair': pointeclair,
+    #                         'massevolumique15': massevolumique15,
+    #                         'viscosite': viscosite,
+    #                         'pointinflammabilite': pointinflammabilite,
+    #                         'teneureau': teneureau,
+    #                         'corrosion': corrosion,
+    #                         'conductivite': conductivite,
+    #                         'vol10': vol10,
+    #                         'vol20': vol20,
+    #                         'vol30': vol30,
+    #                         'vol40': vol40,
+    #                         'vol50': vol50,
+    #                         'vol60': vol60,
+    #                         'vol70': vol70,
+    #                         'vol80': vol80,
+    #                         'vol90': vol90,
+    #                         'signGauche': signGauche,
+    #                         'signDroite': signDroite,
+    #                         'impressionData': impressionData,
+    #                         'laboratoireData':laboratoireData,
+    #                     }
+    #                     # Rendered PDF report
+    #                     pdf = render_to_pdf(template, data)
+    #                     return HttpResponse(pdf, content_type='application/pdf')
+    #
+    #                 else:
+    #                     if produit == 'PETROLE LAMPANT':
+    #                         template = 'report/Report1/petrolereport.html'
+    #
+    #                         # Resultat Gasoil Fetching data into Database
+    #                         try:
+    #                             aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
+    #                                 0].valeurResultatChar
+    #                         except:
+    #                             aspect = ''
+    #                         try:
+    #                             couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[
+    #                                 0].valeurResultatChar
+    #                         except:
+    #                             couleursaybolt = ''
+    #                         try:
+    #                             aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             aciditetotal = ''
+    #                         try:
+    #                             soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             soufre = ''
+    #                         try:
+    #                             soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             soufremercaptan = ''
+    #                         try:
+    #                             docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             docteurtest = ''
+    #                         try:
+    #                             distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             distillation = ''
+    #                         try:
+    #                             pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             pointinitial = ''
+    #                         try:
+    #                             pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             pointfinal = ''
+    #
+    #                         try:
+    #                             pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             pointfumee = ''
+    #
+    #                         try:
+    #                             pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             pointeclair = ''
+    #
+    #                         try:
+    #                             freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             freezingpoint = ''
+    #
+    #                         try:
+    #                             residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             residu = ''
+    #
+    #                         try:
+    #                             perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             perte = ''
+    #
+    #                         try:
+    #                             massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=52)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             massevolumique15 = ''
+    #
+    #                         try:
+    #                             viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             viscosite = ''
+    #
+    #                         try:
+    #                             pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             pointinflammabilite = ''
+    #
+    #                         try:
+    #                             teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             teneureau = ''
+    #
+    #                         try:
+    #                             corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+    #                                 0].valeurResultat
+    #                             corrosion = int(corrosion_str)
+    #
+    #                         except:
+    #                             corrosion = ''
+    #
+    #                         try:
+    #                             conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             conductivite = ''
+    #
+    #                         try:
+    #                             vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=39)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol10 = ''
+    #
+    #                         try:
+    #                             vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=40)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol20 = ''
+    #                         try:
+    #                             vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=41)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol30 = ''
+    #                         try:
+    #                             vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=42)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol40 = ''
+    #                         try:
+    #                             vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=43)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol50 = ''
+    #                         try:
+    #                             vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol60 = ''
+    #                         try:
+    #                             vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=45)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol70 = ''
+    #                         try:
+    #                             vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=46)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol80 = ''
+    #                         try:
+    #                             vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=47)[
+    #                                 0].valeurResultat
+    #                         except:
+    #                             vol90 = ''
+    #
+    #                         data = {
+    #                             'laboratoire': laboratoire,
+    #                             'cargaison': cargaison,
+    #                             'echantillon': echantillon,
+    #                             'annee': annee,
+    #                             'mois': mois,
+    #                             'province': province,
+    #                             'aspect': aspect,
+    #                             'couleursaybolt': couleursaybolt,
+    #                             'aciditetotal': aciditetotal,
+    #                             'soufre': soufre,
+    #                             'soufremercaptan': soufremercaptan,
+    #                             'docteurtest': docteurtest,
+    #                             'distillation': distillation,
+    #                             'pointinitial': pointinitial,
+    #                             'pointfinal': pointfinal,
+    #                             'pointfumee': pointfumee,
+    #                             'freezingpoint': freezingpoint,
+    #                             'residu': residu,
+    #                             'perte': perte,
+    #                             'pointeclair': pointeclair,
+    #                             'massevolumique15': massevolumique15,
+    #                             'viscosite': viscosite,
+    #                             'pointinflammabilite': pointinflammabilite,
+    #                             'teneureau': teneureau,
+    #                             'corrosion': corrosion,
+    #                             'conductivite': conductivite,
+    #                             'vol10': vol10,
+    #                             'vol20': vol20,
+    #                             'vol30': vol30,
+    #                             'vol40': vol40,
+    #                             'vol50': vol50,
+    #                             'vol60': vol60,
+    #                             'vol70': vol70,
+    #                             'vol80': vol80,
+    #                             'vol90': vol90,
+    #                             'signGauche': signGauche,
+    #                 'signDroite': signDroite,
+    #                 'impressionData': impressionData,
+    #                 'laboratoireData':laboratoireData,
+    #                         }
+    #
+    #                         # Rendered PDF report
+    #                         pdf = render_to_pdf(template, data)
+    #                         return HttpResponse(pdf, content_type='application/pdf')
+    #                 return redirect('logout')
+    #     else:
+    #         return redirect('logout')
 
     # Fonction pour impression Certificat
     @login_required(login_url='login')
@@ -3828,3 +3814,844 @@ def nonconformeAjx2(request):
         return JsonResponse(response_data, status=400)  # 400 Bad Request status code
 
 
+
+# Fonction pour affichage tableu impression des certificats
+@login_required(login_url='login')
+def responseAffichagetableauimpression(request):
+    user = request.user
+    role = user.role_id
+    ville = AffectationVille.objects.get(username_id=user.id)
+    ville = ville.ville_id
+    if role == 5 or role == 1:
+
+        qs = Cargaison.objects.filter(
+            impressionresultat__isPrinted=0,
+            entrepot__ville__idville=ville
+        ).annotate(
+            dateReceptionLabo=F('entrepot_echantillon__laboreception__datereceptionlabo__date'),
+            idImpression=F('impressionresultat__idImpression'),
+            numcertificatqualite=F('entrepot_echantillon__laboreception__numcertificatqualite'),
+            codelabo=F('entrepot_echantillon__laboreception__codelabo'),
+            nomproduit=F('produit__nomproduit'),
+            nomimportateur=F('importateur__nomimportateur'),
+            nomentrepot=F('entrepot__nomentrepot')
+        ).values(
+            'idcargaison',
+            'dateReceptionLabo',
+            'idImpression',
+            'numcertificatqualite',
+            'codelabo',
+            'nomproduit',
+            'nomimportateur',
+            'nomentrepot'
+        )
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs_search = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            ).annotate(
+                dateReceptionLabo=F('entrepot_echantillon__laboreception__datereceptionlabo__date'),
+                idImpression=F('impressionresultat__idImpression'),
+                numcertificatqualite=F('entrepot_echantillon__laboreception__numcertificatqualite'),
+                codelabo=F('entrepot_echantillon__laboreception__codelabo'),
+                nomproduit=F('produit__nomproduit'),
+                nomimportateur=F('importateur__nomimportateur'),
+                nomentrepot=F('entrepot__nomentrepot')
+            ).values(
+                'idcargaison',
+                'dateReceptionLabo',
+                'idImpression',
+                'numcertificatqualite',
+                'codelabo',
+                'nomproduit',
+                'nomimportateur',
+                'nomentrepot'
+            )
+            qs = qs_search.filter(
+                Q(codelabo=search_value) |
+                Q(nomimportateur=search_value) |
+                Q(nomentrepot=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 8
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+    else:
+        return redirect('logout')
+
+
+# Fonction pour impression Certificat
+@login_required(login_url='login')
+def impressioncertificat(request):
+    user = request.user
+    id = user.id
+    name = user.last_name + ' ' + user.first_name
+    poste = user.poste
+    ville = AffectationVille.objects.get(username_id=id)
+    ville = ville.ville_id
+    province = Ville.objects.get(idville=ville)
+    province = province.province
+    province = province.upper()
+    role = user.role_id
+
+    #Recuperation des donnees liees aux signataires
+    affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
+    affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
+    signDroite = MyUser.objects.get(username=affect1.userId)
+    signGauche = MyUser.objects.get(username=affect2.userId)
+
+    #Recuperation du Laboratoire asssocie a la ville
+    laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+
+    #Recuperation des donnees liees a l'Impression
+    if request.method == 'POST':
+        dataJson = json.loads(request.body)
+        pk = dataJson.get('idcargaison')
+        print(pk)
+        impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
+
+        print(signGauche)
+        print(signDroite)
+
+        d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
+            mois=ExtractMonth('datereceptionlabo'),
+            annee=ExtractYear('datereceptionlabo')
+        ).values('idcargaison_id', 'mois', 'annee')
+
+
+        for entry in d:
+            mois = entry['mois']
+            annee = entry['annee']
+
+        if role == 5 or role == 1 :
+            td = datetime.today()
+            # Recuperation du produit de la cargaison
+            p = Produit.objects.get(cargaison=pk)
+            produit = p.nomproduit
+
+            # Fecthing object with pk corresponding into database
+            cargaison = Cargaison.objects.get(idcargaison=pk)
+            echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
+            laboratoire = LaboReception.objects.get(idcargaison=pk)
+
+            printed = ImpressionResultat.objects.get(idcargaison=pk)
+            printed.isPrinted = 1
+            printed.save(update_fields=['isPrinted'])
+
+
+
+            # Test pour afficher les differents rapports
+            if produit == 'GASOIL':
+                template = 'report/Report1/gasoilreport.html'
+
+                # Resultat Gasoil Fetching data into Database
+                try:
+                    couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
+                except:
+                    couleurastm = ''
+                try:
+                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[0].valeurResultat
+                except:
+                    aciditetotal= ''
+                try:
+                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
+                except:
+                    soufre = ''
+                try:
+                    massevolumique = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=21)[0].valeurResultat
+                except:
+                    massevolumique = ''
+                try:
+                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk,idParametre=20)[0].valeurResultat
+                except:
+                    massevolumique15 = ''
+                try:
+                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
+                except:
+                    distillation = ''
+                try:
+                    distillation10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
+                except:
+                    distillation10 = ''
+                try:
+                    distillation20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
+                except:
+                    distillation20 = ''
+                try:
+                    distillation50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
+                except:
+                    distillation50 = ''
+                try:
+                    distillation90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
+                except:
+                    distillation90 = ''
+                try:
+                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[0].valeurResultat
+                except:
+                    pointinitial = ''
+                try:
+                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
+                except:
+                    pointfinal = ''
+                try:
+                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[0].valeurResultat
+                except:
+                    pointeclair = ''
+                try:
+                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=38)[0].valeurResultat
+                except:
+                    viscosite = ''
+                try:
+                    pointecoulement = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[0].valeurResultat
+                except:
+                    pointecoulement = ''
+                try:
+                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[0].valeurResultat
+                except:
+                    teneureau = ''
+                try:
+                    sediment = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=32)[0].valeurResultat
+                except:
+                    sediment = ''
+                try:
+                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[0].valeurResultat
+                    corrosion = int(corrosion_str)
+                except:
+                    corrosion = ''
+                try:
+                    indicecetane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[0].valeurResultat
+                except:
+                    indicecetane = ''
+                # try:
+                #     densite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=49)[0].valeurResultat
+                # except:
+                #     densite = ''
+                try:
+                    recuperation362 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=10)[0].valeurResultat
+                except:
+                    recuperation362 = ''
+                try:
+                    cendre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[0].valeurResultat
+                except:
+                    cendre = ''
+
+                data = {
+                    'laboratoire': laboratoire,
+                    'cargaison': cargaison,
+                    'echantillon': echantillon,
+                    'annee': annee,
+                    'mois': mois,
+                    'province': province,
+                    'couleurastm': couleurastm,
+                    'aciditetotal': aciditetotal,
+                    'soufre': soufre,
+                    'massevolumique': massevolumique,
+                    'distillation': distillation,
+                    'distillation10': distillation10,
+                    'distillation20': distillation20,
+                    'distillation50': distillation50,
+                    'distillation90': distillation90,
+                    'pointfinal': pointfinal,
+                    'pointeclair': pointeclair,
+                    'pointinitial': pointinitial,
+                    'viscosite': viscosite,
+                    'pointecoulement': pointecoulement,
+                    'teneureau': teneureau,
+                    'sediment': sediment,
+                    'corrosion': corrosion,
+                    'indicecetane': indicecetane,
+                    # 'densite': densite,
+                    'recuperation362': recuperation362,
+                    'cendre': cendre,
+                    'massevolumique15': massevolumique15,
+                    'signGauche': signGauche,
+                    'signDroite': signDroite,
+                    'impressionData': impressionData,
+                    'laboratoireData':laboratoireData,
+                }
+
+                # Rendered PDF report
+                pdf = render_to_pdf(template, data)
+                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                # return HttpResponse(pdf, content_type='application/pdf')
+
+            else:
+                if produit == 'MOGAS':
+                    template = 'report/Report1/mogasreport.html'
+                    # Resultat Gasoil Fetching data into Database
+                    try:
+                        aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
+                    except:
+                        aspect=''
+                    try:
+                        odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
+                    except:
+                        odeur=''
+                    try:
+                        couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
+                    except:
+                        couleursaybolt=''
+                    try:
+                        soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
+                    except:
+                        soufre=''
+                    try:
+                        distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
+                    except:
+                        distillation=''
+                    try:
+                        pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
+                    except:
+                        pointfinal=''
+                    try:
+                        residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
+                    except:
+                        residu=''
+                    try:
+                        corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                        corrosion = int(corrosion_str)
+                    except:
+                        corrosion=''
+                    try:
+                        pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
+                    except:
+                        pourcent10=''
+                    try:
+                        pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
+                    except:
+                        pourcent20=''
+                    try:
+                        pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
+                    except:
+                        pourcent50=''
+                    try:
+                        pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
+                    except:
+                        pourcent70=''
+                    try:
+                        pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
+                    except:
+                        pourcent90=''
+                    try:
+                        tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
+                    except:
+                        tensionvapeur=''
+                    try:
+                        difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
+                    except:
+                        difftemperature=''
+                    try:
+                        plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
+                    except:
+                        plomb=''
+                    try:
+                        indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
+                    except:
+                        indiceoctane=''
+                    try:
+                        massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
+                    except:
+                        massevolumique15=''
+
+                    data = {
+                        'laboratoire': laboratoire,
+                        'cargaison': cargaison,
+                        'echantillon': echantillon,
+                        'annee': annee,
+                        'mois': mois,
+                        'province': province,
+                        'aspect': aspect,
+                        'odeur': odeur,
+                        'couleursaybolt': couleursaybolt,
+                        'soufre': soufre,
+                        'distillation': distillation,
+                        'pointfinal': pointfinal,
+                        'residu': residu,
+                        'corrosion': corrosion,
+                        'pourcent10': pourcent10,
+                        'pourcent20': pourcent20,
+                        'pourcent50': pourcent50,
+                        'pourcent70': pourcent70,
+                        'pourcent90': pourcent90,
+                        'tensionvapeur': tensionvapeur,
+                        'difftemperature': difftemperature,
+                        'plomb': plomb,
+                        'indiceoctane': indiceoctane,
+                        'massevolumique15': massevolumique15,
+                        'signGauche': signGauche,
+                    'signDroite': signDroite,
+                    'impressionData': impressionData,
+                    'laboratoireData':laboratoireData,
+                    }
+
+                    # Rendered PDF report
+                    pdf = render_to_pdf(template, data)
+                    pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                    return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                    # return HttpResponse(pdf, content_type='application/pdf')
+                else:
+                    if produit == 'JET A1':
+                        template = 'report/Report1/jeta1report.html'
+
+                        # Resultat Gasoil Fetching data into Database
+                        try:
+                            aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
+                                0].valeurResultatChar
+                        except:
+                            aspect=''
+                        try:
+                            couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
+                                0].valeurResultatChar
+                        except:
+                            couleursaybolt=''
+                        try:
+                            aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
+                                0].valeurResultat
+                        except:
+                            aciditetotal=''
+                        try:
+                            soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
+                                0].valeurResultat
+                        except:
+                            soufre=''
+                        try:
+                            soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
+                                0].valeurResultat
+                        except:
+                            soufremercaptan=''
+                        try:
+                            docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
+                                0].valeurResultat
+                        except:
+                            docteurtest=''
+                        try:
+                            distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                                0].valeurResultat
+                        except:
+                            distillation=''
+                        try:
+                            pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
+                                0].valeurResultat
+                        except:
+                            pointinitial=''
+                        try:
+                            pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
+                                0].valeurResultat
+                        except:
+                            pointfinal=''
+
+                        try:
+                            pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+                                0].valeurResultat
+                        except:
+                            pointfumee=''
+
+                        try:
+                            pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
+                                0].valeurResultat
+                        except:
+                            pointeclair=''
+
+                        try:
+                            freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
+                                0].valeurResultat
+                        except:
+                            freezingpoint=''
+
+                        try:
+                            residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
+                                0].valeurResultat
+                        except:
+                            residu=''
+
+                        try:
+                            perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
+                                0].valeurResultat
+                        except:
+                            perte=''
+
+                        try:
+                            massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
+                                0].valeurResultat
+                        except:
+                            massevolumique15=''
+
+                        try:
+                            viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
+                                0].valeurResultat
+                        except:
+                            viscosite=''
+
+                        try:
+                            pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
+                                0].valeurResultat
+                        except:
+                            pointinflammabilite=''
+
+                        try:
+                            teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
+                                0].valeurResultat
+                        except:
+                            teneureau=''
+
+                        try:
+                            corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                                0].valeurResultat
+                            corrosion = int(corrosion_str)
+                        except:
+                            corrosion=''
+
+                        try:
+                            conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
+                                0].valeurResultat
+                        except:
+                            conductivite=''
+
+                        try:
+                            vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
+                                0].valeurResultat
+                        except:
+                            vol10=''
+
+                        try:
+                            vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
+                                0].valeurResultat
+                        except:
+                            vol20=''
+                        try:
+                            vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                                0].valeurResultat
+                        except:
+                            vol30=''
+                        try:
+                            vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                                0].valeurResultat
+                        except:
+                            vol40=''
+                        try:
+                            vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
+                                0].valeurResultat
+                        except:
+                            vol50=''
+                        try:
+                            vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                                0].valeurResultat
+                        except:
+                            vol60=''
+                        try:
+                            vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
+                                0].valeurResultat
+                        except:
+                            vol70=''
+                        try:
+                            vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                                0].valeurResultat
+                        except:
+                            vol80=''
+                        try:
+                            vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
+                                0].valeurResultat
+                        except:
+                            vol90=''
+
+                        data = {
+                            'laboratoire': laboratoire,
+                            'cargaison': cargaison,
+                            'echantillon': echantillon,
+                            'annee': annee,
+                            'mois': mois,
+                            'province': province,
+                            'aspect': aspect,
+                            'couleursaybolt': couleursaybolt,
+                            'aciditetotal': aciditetotal,
+                            'soufre': soufre,
+                            'soufremercaptan': soufremercaptan,
+                            'docteurtest': docteurtest,
+                            'distillation': distillation,
+                            'pointinitial': pointinitial,
+                            'pointfinal': pointfinal,
+                            'pointfumee': pointfumee,
+                            'freezingpoint': freezingpoint,
+                            'residu': residu,
+                            'perte': perte,
+                            'pointeclair': pointeclair,
+                            'massevolumique15': massevolumique15,
+                            'viscosite': viscosite,
+                            'pointinflammabilite': pointinflammabilite,
+                            'teneureau': teneureau,
+                            'corrosion': corrosion,
+                            'conductivite': conductivite,
+                            'vol10': vol10,
+                            'vol20': vol20,
+                            'vol30': vol30,
+                            'vol40': vol40,
+                            'vol50': vol50,
+                            'vol60': vol60,
+                            'vol70': vol70,
+                            'vol80': vol80,
+                            'vol90': vol90,
+                            'signGauche': signGauche,
+                            'signDroite': signDroite,
+                            'impressionData': impressionData,
+                            'laboratoireData':laboratoireData,
+                        }
+                        # Rendered PDF report
+                        pdf = render_to_pdf(template, data)
+                        pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                        return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                        # return HttpResponse(pdf, content_type='application/pdf')
+
+                    else:
+                        if produit == 'PETROLE LAMPANT':
+                            template = 'report/Report1/petrolereport.html'
+
+                            # Resultat Gasoil Fetching data into Database
+                            try:
+                                aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
+                                    0].valeurResultatChar
+                            except:
+                                aspect = ''
+                            try:
+                                couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[
+                                    0].valeurResultatChar
+                            except:
+                                couleursaybolt = ''
+                            try:
+                                aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                                    0].valeurResultat
+                            except:
+                                aciditetotal = ''
+                            try:
+                                soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[
+                                    0].valeurResultat
+                            except:
+                                soufre = ''
+                            try:
+                                soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[
+                                    0].valeurResultat
+                            except:
+                                soufremercaptan = ''
+                            try:
+                                docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
+                                    0].valeurResultat
+                            except:
+                                docteurtest = ''
+                            try:
+                                distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
+                                    0].valeurResultat
+                            except:
+                                distillation = ''
+                            try:
+                                pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
+                                    0].valeurResultat
+                            except:
+                                pointinitial = ''
+                            try:
+                                pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
+                                    0].valeurResultat
+                            except:
+                                pointfinal = ''
+
+                            try:
+                                pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[
+                                    0].valeurResultat
+                            except:
+                                pointfumee = ''
+
+                            try:
+                                pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[
+                                    0].valeurResultat
+                            except:
+                                pointeclair = ''
+
+                            try:
+                                freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
+                                    0].valeurResultat
+                            except:
+                                freezingpoint = ''
+
+                            try:
+                                residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[
+                                    0].valeurResultat
+                            except:
+                                residu = ''
+
+                            try:
+                                perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[
+                                    0].valeurResultat
+                            except:
+                                perte = ''
+
+                            try:
+                                massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=52)[
+                                    0].valeurResultat
+                            except:
+                                massevolumique15 = ''
+
+                            try:
+                                viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
+                                    0].valeurResultat
+                            except:
+                                viscosite = ''
+
+                            try:
+                                pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[
+                                    0].valeurResultat
+                            except:
+                                pointinflammabilite = ''
+
+                            try:
+                                teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[
+                                    0].valeurResultat
+                            except:
+                                teneureau = ''
+
+                            try:
+                                corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+                                    0].valeurResultat
+                                corrosion = int(corrosion_str)
+
+                            except:
+                                corrosion = ''
+
+                            try:
+                                conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
+                                    0].valeurResultat
+                            except:
+                                conductivite = ''
+
+                            try:
+                                vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=39)[
+                                    0].valeurResultat
+                            except:
+                                vol10 = ''
+
+                            try:
+                                vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=40)[
+                                    0].valeurResultat
+                            except:
+                                vol20 = ''
+                            try:
+                                vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=41)[
+                                    0].valeurResultat
+                            except:
+                                vol30 = ''
+                            try:
+                                vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=42)[
+                                    0].valeurResultat
+                            except:
+                                vol40 = ''
+                            try:
+                                vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=43)[
+                                    0].valeurResultat
+                            except:
+                                vol50 = ''
+                            try:
+                                vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
+                                    0].valeurResultat
+                            except:
+                                vol60 = ''
+                            try:
+                                vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=45)[
+                                    0].valeurResultat
+                            except:
+                                vol70 = ''
+                            try:
+                                vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=46)[
+                                    0].valeurResultat
+                            except:
+                                vol80 = ''
+                            try:
+                                vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=47)[
+                                    0].valeurResultat
+                            except:
+                                vol90 = ''
+
+                            data = {
+                                'laboratoire': laboratoire,
+                                'cargaison': cargaison,
+                                'echantillon': echantillon,
+                                'annee': annee,
+                                'mois': mois,
+                                'province': province,
+                                'aspect': aspect,
+                                'couleursaybolt': couleursaybolt,
+                                'aciditetotal': aciditetotal,
+                                'soufre': soufre,
+                                'soufremercaptan': soufremercaptan,
+                                'docteurtest': docteurtest,
+                                'distillation': distillation,
+                                'pointinitial': pointinitial,
+                                'pointfinal': pointfinal,
+                                'pointfumee': pointfumee,
+                                'freezingpoint': freezingpoint,
+                                'residu': residu,
+                                'perte': perte,
+                                'pointeclair': pointeclair,
+                                'massevolumique15': massevolumique15,
+                                'viscosite': viscosite,
+                                'pointinflammabilite': pointinflammabilite,
+                                'teneureau': teneureau,
+                                'corrosion': corrosion,
+                                'conductivite': conductivite,
+                                'vol10': vol10,
+                                'vol20': vol20,
+                                'vol30': vol30,
+                                'vol40': vol40,
+                                'vol50': vol50,
+                                'vol60': vol60,
+                                'vol70': vol70,
+                                'vol80': vol80,
+                                'vol90': vol90,
+                                'signGauche': signGauche,
+                                'signDroite': signDroite,
+                                'impressionData': impressionData,
+                                'laboratoireData':laboratoireData,
+                            }
+
+                            # Rendered PDF report
+                            pdf = render_to_pdf(template, data)
+                            pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                            return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                            # return HttpResponse(pdf, content_type='application/pdf')
+                    return redirect('logout')
+        else:
+            return redirect('logout')
+    else:
+        return redirect('logout')

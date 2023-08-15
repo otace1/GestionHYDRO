@@ -8,10 +8,10 @@
                   <span class="badge bg-purple"></span>
                   <i class="fas fa-backward"></i> Retour
       </a>
-{#      <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-default">#}
-{#                      <span class="badge bg-purple"></span>#}
-{#                      <i class="fas fa-print"></i> Re-impression#}
-{#      </a>#}
+      <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-default">
+                      <span class="badge bg-purple"></span>
+                      <i class="fas fa-print"></i> Re-impression
+      </a>
 
 {#        <div class="col-md-2">#}
 {#                            <a href="" data-toggle="modal" data-target="#modal-default" class="btn btn-info" role="button">Re-impression</a>#}
@@ -78,9 +78,6 @@
 
     $(document).ready(function () {
         var dataTable = $('#data-table').DataTable({
-            language: {
-            search: "RECHERCHE ARCHIVES" // Change this to your desired placeholder text
-            },
             lengthChange: false, // Display the length change dropdown
             processing: true,
             serverSide: true,
