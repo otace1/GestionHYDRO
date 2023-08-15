@@ -53,23 +53,7 @@ class GestionCodification():
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                             isConforme=0, control=1).count()
 
-                    # qs = Cargaison.objects.filter(etat="En attente requisition",entrepot__ville__affectationville__username_id=id).values(
-                    #     'dateheurecargaison__date',
-                    #     'importateur__nomimportateur',
-                    #     'entrepot__nomentrepot',
-                    #     'produit__nomproduit',
-                    #     'volume',
-                    #     'immatriculation',
-                    #     'declaration',
-                    #     'numreq'
-                    # ).order_by('-dateheurecargaison', 'frontiere__nomville')
-
-                    # table = CodificationTable(qs)
-                    # data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                    # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
-                        # 'cargaison': table,
-                        # 'filter': data,
                         'e':e,
                         'd':d,
                         'l':l,
@@ -88,27 +72,7 @@ class GestionCodification():
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                             isConforme=0, control=1).count()
 
-                    # qs_temp = Entrepot.objects.get(nomentrepot=qs)
-                    # id_ent = qs_temp.identrepot
-
-                    # qs = Cargaison.objects.filter(etat="En attente requisition",entrepot=id_ent,
-                    #                               entrepot__ville__affectationville__username_id=id).values(
-                    #     'dateheurecargaison__date',
-                    #     'importateur__nomimportateur',
-                    #     'entrepot__nomentrepot',
-                    #     'produit__nomproduit',
-                    #     'volume',
-                    #     'immatriculation',
-                    #     'declaration',
-                    #     'numreq'
-                    # ).order_by('-dateheurecargaison', 'frontiere__nomville')
-
-                    # table = CodificationTable(qs)
-                    # data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                    # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                     return render(request, 'shydro.html', {
-                        # 'cargaison': table,
-                        # 'filter': data,
                         'e':e,
                         'd':d,
                         'l':l,
@@ -116,8 +80,6 @@ class GestionCodification():
 
                     })
             else:
-                # request.session['url'] = request.get_full_path()
-
                 e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                              entrepot__ville__affectationville__username_id=id).count()
                 d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
@@ -127,13 +89,7 @@ class GestionCodification():
                 n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                       isConforme=0, control=0).count()
 
-                # table = CodificationTable(Cargaison.objects.filter(etat="En attente requisition", entrepot__ville__affectationville__username_id=id) \
-                #                           .order_by('-dateheurecargaison'), prefix="5_")
-                # data = Entrepot.objects.filter(ville__affectationville__username_id=id)
-                # RequestConfig(request, paginate={"per_page": 7}).configure(table)
                 context = {
-                    # 'cargaison': table,
-                    # 'filter': data,
                     'e':e,
                     'd':d,
                     'l':l,
