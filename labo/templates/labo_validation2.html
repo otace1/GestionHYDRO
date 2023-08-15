@@ -93,7 +93,7 @@
     });
 
     // Add a click event listener for the 'CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.conform-btn', '.nonconform-btn', function() {
+    $(document).on('click', '.conform-btn', function() {
         const button = $(this); // Store the button element clicked
         const idcargaison = $(this).data('row-id');
 
@@ -124,7 +124,7 @@
 
 
     // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.conform-btn', '.nonconform-btn', function() {
+    $(document).on('click', '.nonconform-btn', function() {
         const button = $(this); // Store the button element clicked
         const idcargaison = $(this).data('row-id');
 
