@@ -2,7 +2,7 @@ import io
 import json
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q
+from django.db.models import Q,F,OuterRef, Subquery
 from django.shortcuts import render, redirect
 from openpyxl import Workbook
 
@@ -1610,8 +1610,6 @@ class GestionValidation():
 
 
 
-
-
     # Fonction affichage des resultats sur Validation 1
     @login_required(login_url='login')
     def affichagetableauvalidation2(request):
@@ -1738,6 +1736,7 @@ class GestionImpressionLabo():
     # Fonction pour impression Certificat
     @login_required(login_url='login')
     def impressioncertificat(request, pk):
+        global annee
         user = request.user
         id = user.id
         name = user.last_name + ' ' + user.first_name
@@ -1766,18 +1765,18 @@ class GestionImpressionLabo():
         print(signGauche)
         print(signDroite)
 
+        # Récuperation des dates
+        d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
+                                                           FROM hydro_occ.enreg_laboreception \
+                                                           WHERE idcargaison_id = %s', [pk, ])
+        for obj in d:
+            mois = obj.mois
+            annee = obj.annee
+
 
         if role == 5 or role == 1 :
             td = datetime.today()
             today = td.date()
-
-            # Récuperation des dates
-            d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-                                                   FROM hydro_occ.enreg_laboreception \
-                                                   WHERE idcargaison_id = %s', [pk, ])
-            for obj in d:
-                mois = obj.mois
-                annee = obj.annee
 
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
@@ -2239,9 +2238,9 @@ class GestionImpressionLabo():
                             'vol80': vol80,
                             'vol90': vol90,
                             'signGauche': signGauche,
-                    'signDroite': signDroite,
-                    'impressionData': impressionData,
-                    'laboratoireData':laboratoireData,
+                            'signDroite': signDroite,
+                            'impressionData': impressionData,
+                            'laboratoireData':laboratoireData,
                         }
                         # Rendered PDF report
                         pdf = render_to_pdf(template, data)
@@ -3348,6 +3347,7 @@ def saisieResultat(request,pk):
     e = Entrepot_echantillon.objects.get(idcargaison=pk)
     a = LaboReception.objects.get(idcargaison=e)
     a = a.codelabo
+    # c = Cargaison.objects.get(idcargaison=pk)
 
     qs = ParametresProduits.objects.raw('SELECT pp.idParametre, c.idcargaison, p.nomproduit, pp.nomParametre, r.valeurResultat, r.valeurResultatChar \
             FROM enreg_cargaison c \
@@ -3363,7 +3363,7 @@ def saisieResultat(request,pk):
             WHERE c.idcargaison = %s \
             ORDER BY a.id ASC' ,[pk,])
 
-    table = SaisieResultat(qs,prefix='_1')
+    table = SaisieResultat(qs)
     # RequestConfig(request, paginate={"per_page": 10}).configure(table)
     context = {
         'table': table,
