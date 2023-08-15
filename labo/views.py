@@ -3877,9 +3877,10 @@ def responseAffichagetableauimpression(request):
                 Q(nomentrepot=search_value)
             )
 
-
         # Number of items to show per page
         items_per_page = 8
+
+        print(items_per_page)
 
         # Initialize the Paginator with the QuerySet and the number of items per page
         paginator = Paginator(qs, items_per_page)
