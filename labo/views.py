@@ -3,6 +3,7 @@ import json
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q,F,OuterRef, Subquery
+from django.db.models.functions import ExtractMonth, ExtractYear
 from django.shortcuts import render, redirect
 from openpyxl import Workbook
 
@@ -1736,7 +1737,6 @@ class GestionImpressionLabo():
     # Fonction pour impression Certificat
     @login_required(login_url='login')
     def impressioncertificat(request, pk):
-        global annee
         user = request.user
         id = user.id
         name = user.last_name + ' ' + user.first_name
@@ -1765,18 +1765,31 @@ class GestionImpressionLabo():
         print(signGauche)
         print(signDroite)
 
-        # Récuperation des dates
-        d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
-                                                           FROM hydro_occ.enreg_laboreception \
-                                                           WHERE idcargaison_id = %s', [pk, ])
-        for obj in d:
-            mois = obj.mois
-            annee = obj.annee
+        d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
+            mois=ExtractMonth('datereceptionlabo'),
+            annee=ExtractYear('datereceptionlabo')
+        ).values('idcargaison_id', 'mois', 'annee')
+
+
+        for entry in d:
+            mois = entry['mois']
+            annee = entry['annee']
+
+        print(mois)
+        print(annee)
 
 
         if role == 5 or role == 1 :
             td = datetime.today()
-            today = td.date()
+            # today = td.date()
+
+            # Récuperation des dates
+            # d = LaboReception.objects.raw('SELECT idcargaison_id, MONTH(datereceptionlabo) as mois, YEAR(datereceptionlabo) as annee \
+            #                                        FROM hydro_occ.enreg_laboreception \
+            #                                        WHERE idcargaison_id = %s', [pk, ])
+            # for obj in d:
+            #     mois = obj.mois
+            #     annee = obj.annee
 
             # Recuperation du produit de la cargaison
             p = Produit.objects.get(cargaison=pk)
