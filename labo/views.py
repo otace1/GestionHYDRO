@@ -3877,6 +3877,7 @@ def responseAffichagetableauimpression(request):
                 Q(nomentrepot=search_value)
             )
 
+
         # Number of items to show per page
         items_per_page = 8
 
