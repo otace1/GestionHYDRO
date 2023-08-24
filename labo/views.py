@@ -4886,8 +4886,8 @@ def responseAffichageanalyse(request):
             qs = qs.filter(
                 Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
                 Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
-                Q(produit__nomproduit__icontains=search_value)
+                Q(numdos__icontains=search_value) |
+                Q(immatriculation__icontains=search_value)
             )
 
         # Number of items to show per page
