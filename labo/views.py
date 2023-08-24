@@ -3514,6 +3514,7 @@ def receptionRapportsResponse(request):
     ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
     qs = Cargaison.objects.filter(
         entrepot__ville__affectationville__username_id=user,
+        entrepot_echantillon__laboreception__isnull=False
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
