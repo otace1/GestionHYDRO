@@ -26,7 +26,7 @@ from django.db.models import Q, ExpressionWrapper, Sum
 from datetime import date
 import datetime
 from .numact import numeroactcurrent
-from .numdossier import numDossier
+from .numdossier import numDossier, verificationNumDossier
 
 
 #Class de gestion des codifacations des cargaisons
@@ -215,26 +215,6 @@ class GestionCodification():
         })
 
 
-# # Fonction numrequisition
-# @login_required(login_url='login')
-# def numreq(request, pk):
-#     url = request.session['url']
-#     user = request.user
-#     id = user.id
-#     role = user.role_id
-#     if role == 7 or role == 1:
-#         if request.method == 'POST':
-#             numreq = request.POST['numreq']
-#             c = Cargaison.objects.get(pk=pk)
-#             numreq = numreq.upper()
-#             c.numreq = numreq
-#             c.save(update_fields=['numreq'])
-#             return redirect(url)
-#         else:
-#             return redirect(url)
-#     else:
-#         return redirect('logout')
-
 
 # Fonction numrequisition
 @login_required(login_url='login')
@@ -260,14 +240,25 @@ def numreq(request):
             name = MyUser.objects.get(id=user.id)
             name = name.username
 
-            c.numdos = numDossier(pk, ville)
+            #Numerotation auto des Dossiers
+            numDos = numDossier(pk, ville)
+
+            #Double Verification si le numero a sauter la plage pour faute de connexion
+            num = verificationNumDossier(pk,numDos,ville)
+
+            c.numdos = num
+
             c.numreq = numreq
             c.requisitiondackdate = td
             c.requisitionack = name
             c.etat = "En attente d'echantillonage"
             c.save(update_fields=['numreq','requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
 
-            return JsonResponse({'message': 'Data submitted successfully'})
+            context = {
+                'num':num
+            }
+
+            return JsonResponse(context)
         else:
             return JsonResponse({'error': 'Invalid request method'}, status=400)
     else:
@@ -397,6 +388,7 @@ class GestionDecharger():
             return redirect('laboresult')
         else:
             return redirect('logout')
+
 
 #Methode pour l'affichage des elements dont les ACT sont prets a etre imprimer
     @login_required(login_url='login')

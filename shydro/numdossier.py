@@ -6,33 +6,51 @@ from django.db.models import *
 
 # Numero de Dossier Annuel et unique
 def numDossier(pk, ville):
-    print(pk)
-    print(ville)
-    d = Cargaison.objects.get(idcargaison=pk)
-    date_value = d.dateheurecargaison.date()  # Extract the date value without time
-    year_value = date_value.year
+    # Fetch the Cargaison object using the primary key
+    cargaison = Cargaison.objects.get(idcargaison=pk)
 
-    c = Cargaison.objects.filter(dateheurecargaison__year=year_value, entrepot__ville__idville=ville).aggregate(Max('numdos'))
-    print(c.get('numdos__max'))
+    # Extract the year from the cargo's date and time
+    year_value = cargaison.dateheurecargaison.year
 
-    if c.get('numdos__max') is None:
+    # Query the database for the maximum numdos value for the given year and ville
+    max_numdos = Cargaison.objects.filter(dateheurecargaison__year=year_value, entrepot__ville__idville=ville).aggregate(Max('numdos'))['numdos__max']
+
+    if max_numdos is None:
         numdos = 1
     else:
-        numdos = int(c.get('numdos__max')) + 1
-        print(numdos)
+        numdos = max_numdos + 1
+
+        # Double verification to prevent gaps
+        while True:
+            existing_cargaison = Cargaison.objects.filter(dateheurecargaison__year=year_value,
+                                                          entrepot__ville__idville=ville, numdos=numdos).exists()
+            if not existing_cargaison:
+                break
+            numdos += 1
 
     return numdos
 
-    #
-    # d = Cargaison.objects.get(idcargaison=pk)
-    # d = d.dateheurecargaison
-    # d = datetime.datetime.date(d)
-    # d = d.year
-    # c = Cargaison.objects.filter(dateheurecargaison__year=d, entrepot__ville=ville).aggregate(Max('numdos'))
-    #
-    # if c.get('numdos__max') == None:
-    #     numdos = 1
-    # else:
-    #     numdos = c.get('numdos__max')
-    #     numdos = numdos + 1
-    # return numdos
+
+def verificationNumDossier(pk,num,ville):
+    # Fetch the Cargaison object using the primary key
+    cargaison = Cargaison.objects.get(idcargaison=pk)
+
+    # Extract the year from the cargo's date and time
+    year_value = cargaison.dateheurecargaison.year
+
+    # Query the database for the maximum numdos value for the given year and ville
+    max_numdos = Cargaison.objects.filter(dateheurecargaison__year=year_value, entrepot__ville__idville=ville).aggregate(
+        Max('numdos'))['numdos__max']
+
+    if max_numdos is None:
+        if num != 1:
+            num = 1
+    else:
+        if num != max_numdos + 1:
+            num = max_numdos + 1
+
+    return num
+
+
+
+

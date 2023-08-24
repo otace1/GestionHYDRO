@@ -149,9 +149,9 @@
                 success: function (response) {
                     // Handle the success response here, if needed
                     console.log('Data submitted successfully.');
-                    // Hide the loading icon after receiving the response
+                    var num = response.num;
+                    alert("NUM.DOSSIER: " + num);
                     $('#loading-icon').hide();
-                    // Reload the dataTable after a successful response
                     dataTable.ajax.reload();
                 },
                 error: function (error) {
@@ -159,6 +159,7 @@
                     console.error('Error submitting data:', error);
                     // Hide the loading icon after receiving the response
                     $('#loading-icon').hide();
+                    dataTable.ajax.reload();
                 }
             });
         });
