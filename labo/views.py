@@ -3511,10 +3511,16 @@ def receptionRapports(request):
 @login_required(login_url='login')
 def receptionRapportsResponse(request):
     user = request.user.id
-    ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
+
+    # # Get a list of idcargaison values from LaboReception
+    # labo_reception_ids = LaboReception.objects.values_list('idcargaison', flat=True)
+
+    # print('TEST IDS')
+    # print(labo_reception_ids)
+
     qs = Cargaison.objects.filter(
         entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__isnull=False
+        entrepot_echantillon__laboreception__idcargaison=F('idcargaison')
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
