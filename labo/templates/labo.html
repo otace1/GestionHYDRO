@@ -1,129 +1,115 @@
 {% extends 'base_lab_layout.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
-{% load crispy_forms_tags %}
-{% block extrahead %}
-    {{ form.media }}
-{% endblock %}
-
 
 {% block dashboard %}
-    {% render_table labo %}
+
+    <div id="data-table-wrapper" style="position: relative;">
+        <div class="loading-spinner"></div>
+          <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+            <thead>
+              <tr>
+                <th>DATE ENTREE</th>
+                <th>DATE ECHANT</th>
+                <th>ENTREPOT</th>
+                <th>PRODUIT</th>
+                <th>IMMATRICULATION</th>
+                <th>NUM. DOSSIER</th>
+                <th>NUM. RE</th>
+                <th>ACTION(s)</th>
+              </tr>
+            </thead>
+          </table>
+    </div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'affichageenchantillonResponse' %}',
+                type: 'GET',
+                // Show the loading spinner during DataTable processing
+                // Show the loading spinner during DataTable processing
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+        },
+            columns: [
+                { data: 'dateheurecargaison__date' },
+                { data: 'entrepot_echantillon__dateechantillonage__date' },
+                { data: 'entrepot__nomentrepot' },
+                { data: 'produit__nomproduit' },
+                { data: 'immatriculation' },
+                { data: 'numdos' },
+                { data: 'entrepot_echantillon__numrappechauto' },
+                { // New column configuration
+                    data: 'idcargaison',
+                    render: function (data, type, row) {
+                        // Include a button to submit the JSON data for the row
+                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">RECEPTION</button>';
+                        return submitButton;
+                    }
+                }
+            ],
+        });
 
 
-    <div class="modal fade" id="modal-reception">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Réception de l'échantillon</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-              <form action="" method="post">
-            <div class="modal-body">
+        // Handle form submission on button click
+        $('#data-table').on('click', '.btn-warning', function () {
+            const rowId = $(this).data('row-id');
+            const idcargaison = rowId;
 
-            </div>
-              </form>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
+            // Show the loading icon while waiting for the response
+            $('#loading-icon').show();
+
+            // Include 'idcargaison' in the JSON data to send to the server
+            const dataToSend = {
+                idcargaison: idcargaison,
+            };
+
+            console.log(dataToSend);
+
+            // Send the JSON data to the URL using AJAX
+            $.ajax({
+                url: "{% url 'reception' %}", // Replace with your actual URL
+                type: 'POST',
+                data: JSON.stringify(dataToSend), // Send as JSON string
+                contentType: 'application/json', // Set content type to JSON
+                headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+                success: function (response) {
+                        if (response.success) {
+                            var codeLabo = response.codeLabo;
+                            alert("CODE LABO: " + codeLabo);
+                            location.reload();
+                        } else {
+                            alert("An error occurred");
+                            $('.btn.btn-success').attr("disabled", false);
+                            location.reload();
+                        }
+                },
+
+                error: function () {
+                    console.log('Erreur');
+                    alert("An error occurred");
+                    $('.btn.btn-success').attr("disabled", false);
+                    location.reload();
+                }
+            });
+        });
+    });
+
+</script>
 
 {% endblock %}
 
 
-
-<script>
-    {% block javascript %}
-
-       function getRowId(button) {
-            var row = $(button).closest('tr');
-
-            if (row) {
-                rowId = row.attr('id');
-                console.log('Row ID:', rowId);
-                // Perform further actions with the row ID, such as making an AJAX request
-            }
-        }
-
-
-        // using jQuery
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        var csrftoken = getCookie('csrftoken');
-
-        function csrfSafeMethod(method) {
-            // these HTTP methods do not require CSRF protection
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
-        $.ajaxSetup({
-            beforeSend: function (xhr, settings) {
-        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
-    }
-});
-
-        //script for submitting data in ajax
-        $('.btn.btn-success').click(function () {
-            Id = rowId; //getting the id of the row which equal to the pk into the database
-            console.log('Test:',Id); // debug
-        });
-
-        $('.btn.btn-success').click(function(e) {
-    e.preventDefault();
-
-    // Disable Submit button
-    $('.btn.btn-success').attr("disabled", true);
-
-        var pk = Id;
-        var APIurl = "{% url 'reception' %}";
-        var dataToSend = { "pk": pk };
-        console.log('PK OK:',dataToSend)// Create an object with the pk value
-
-        $.ajax({
-        url: APIurl,
-        type: "POST",
-        data: dataToSend,  // Send only the pk value
-        dataType: 'json',
-
-        success: function (response) {
-            if (response.success) {
-                var codeLabo = response.codeLabo;
-                alert("Code Labo: " + codeLabo);
-                location.reload();
-            } else {
-                alert("An error occurred");
-                $('.btn.btn-success').attr("disabled", false);
-                location.reload();
-            }
-        },
-
-        error: function () {
-            console.log('Erreur');
-            alert("An error occurred");
-            $('.btn.btn-success').attr("disabled", false);
-            location.reload();
-        }
-    });
-    });
-
-    {% endblock %}
-</script>

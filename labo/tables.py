@@ -46,7 +46,9 @@ numerore = """
 
 
 TEMPLATE1 = """
-<a class="btn btn-success" href="{%url 'saisieResultat' record.pk%}" role="button">SAISIE DES RESULTATS</a>
+<button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-default">
+                  SAISIE
+</button>
             """
 
 
@@ -414,7 +416,6 @@ class SaisieResultat(tables.Table):
             "class": "table table-bordered table-striped",
             "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
 
 
 class AffichageDetailResultat(tables.Table):
@@ -427,7 +428,6 @@ class AffichageDetailResultat(tables.Table):
     etatValeur = tables.Column(verbose_name='OBSERVATION(S)')
 
     class Meta:
-        # row_attrs = {"style": lambda record: record.etatValeur "background-color: #8B0000;" if record['Hors norme'] else "background-color: #000000;" }
         row_attrs = {
             'id':lambda record:record.etatValeur,
         }
@@ -435,8 +435,6 @@ class AffichageDetailResultat(tables.Table):
             "class": "table table-bordered table-striped",
             "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
-
 
 
 class RapportsLaboratoireReception(tables.Table):
@@ -456,5 +454,4 @@ class RapportsLaboratoireReception(tables.Table):
             "class": "table table-bordered table-striped",
             "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
 

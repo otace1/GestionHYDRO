@@ -40,7 +40,7 @@ $(document).ready(function () {
     serverSide: true,
     responsive: true,
     ajax: {
-        url: '{% url 'receptionRapportsResponse' %}',
+        url: '{% url 'receptionRapportsResponseFiltres' %}',
         type: 'GET',
         beforeSend: function() {
           $('#data-table-wrapper .loading-spinner').show();

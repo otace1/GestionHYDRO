@@ -4,12 +4,17 @@ from . import views
 
 urlpatterns = [
     path('', views.GestionLaboratoire.affichageenchantillon, name='labo'),
+    path('echantillon/', views.GestionLaboratoire.affichageenchantillonResponse, name='affichageenchantillonResponse'),
     path('receptionRapports/', views.receptionRapports, name='receptionRapports'),
+    path('receptionRapports/response/', views.receptionRapportsResponse, name='receptionRapportsResponse'),
+    path('receptionRapports/filtres/', views.receptionRapportsResponseFiltres, name='receptionRapportsResponseFiltres'),
     path('reception/', views.GestionLaboratoire.receptionechantillon, name='reception'),
     path('modification/', views.GestionLaboratoire.modification, name='modification'),
     path('rechercheqr/', views.GestionLaboratoire.rechercheqrcode, name='rechercheqr'),
     path('recherchecode/', views.GestionLaboratoire.recherchecode, name='recherchecode'),
     path('analyse/', views.GestionAnalyse.affichageanalyse, name='analyse'),
+    path('analyse/response/', views.responseAffichageanalyse, name='responseAffichageanalyse'), #Ajax
+
 
     path('rechercheenc1/', views.GestionAnalyse.rechercheencodage1, name='rechercheenc1'),
     path('rechercheenc2/', views.GestionAnalyse.rechercheencodage2, name='rechercheenc2'),
@@ -64,6 +69,7 @@ urlpatterns = [
     #Nouveau Form de Saisie des resultats
     path('saisieResultat/<int:pk>', views.saisieResultat, name='saisieResultat'),
     path('saisieResultatParametre/<int:pk>', views.saisieResultatParametre, name='saisieResultatParametre'),
+    path('saisieResultatParametre/ajax/', views.saisieResultatParametreAjax, name='saisieResultatParametreAjax'),
     path('validationResulat/', views.validationResulat, name='validationResulat'),
     path('affichageDetailsResultatsGauche/<int:pk>', views.affichageDetailsResultats, name='affichageDetailsResultats'),
     path('affichageDetailsResultatsDroite/<int:pk>', views.affichageDetailsResultatsDroite, name='affichageDetailsResultatsDroite'),
@@ -79,5 +85,8 @@ urlpatterns = [
     path('conformeM3/', views.conformeAjx2, name='conformeAjx2'),
     path('nonconformeM3/', views.nonconformeAjx2, name='nonconformeAjx2'),
 
+
+    #Submission of Resulat by Ajax
+    path('saisieResultat/ajx/', views.saisieResultatAjax, name='saisieResultatAjax'),
 
 ]

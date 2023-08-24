@@ -335,16 +335,16 @@
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card bg-white">
-                            <div class="card-header" style="background-color: darkgreen">
-                                <h3 class="card-title" style="color: white"><b>Relevé des échantillons au Laboratoire</b></h3>
-                                <div class="card-tools col-6">
-                                    <form method="get" action="{% url 'rechercheqr' %}">
-                                        <input class="form-control" name="q" type="text"
-                                               placeholder="SCANNER LE QR CODE"
-                                               aria-label="Search">
-                                    </form>
-                                </div>
-                            </div>
+{#                            <div class="card-header" style="background-color: darkgreen">#}
+{#                                <h3 class="card-title" style="color: white"><b>Relevé des échantillons au Laboratoire</b></h3>#}
+{#                                <div class="card-tools col-6">#}
+{#                                    <form method="get" action="{% url 'rechercheqr' %}">#}
+{#                                        <input class="form-control" name="q" type="text"#}
+{#                                               placeholder="SCANNER LE QR CODE"#}
+{#                                               aria-label="Search">#}
+{#                                    </form>#}
+{#                                </div>#}
+{#                            </div>#}
                             <div class="card-body">
                                 {% block dashboard %}
                                 {% endblock %}
@@ -429,95 +429,6 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
 
-
-  <script>
-    var Id;
-    var rowId;
-
-    function getRowId(button) {
-    var row = $(button).closest('tr');
-
-    if (row) {
-        rowId = row.attr('id');
-        console.log('Row ID:', rowId);
-        // Perform further actions with the row ID, such as making an AJAX request
-    }
-}
-
-    $(document).ready(function () {
-
-        {% block javascript %}
-        {% endblock %}
-    })
-
-    function confirmAction() {
-        var confirmed = confirm("Cette operation est irreversible, voulez - vous continuer?");
-        return confirmed;
-    }
-
-
-
-</script>
-
-  <script>
-  $(function () {
-    $("#example1").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-    $("#DechargementTable").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-    $('#example2').DataTable({
-      "paging": true,
-      "lengthChange": false,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false,
-      "responsive": true,
-    });
-  });
-</script>
 
 </body>
 </html>

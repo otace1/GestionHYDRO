@@ -38,67 +38,86 @@ class GestionLaboratoire():
     # Methode d'affichage des echantillons a la reception
     @login_required(login_url='login')
     def affichageenchantillon(request):
+        template = 'labo.html'
+        context={}
+        return render(request,template,context)
+
+
+    @login_required(login_url='login')
+    def affichageenchantillonResponse(request):
         user = request.user
         id = user.id
         role = user.role_id
         if role == 4 or role == 1:
-            qs = Entrepot_echantillon.objects.filter(idcargaison__etat="Echantillonner", idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     ).order_by('-dateechantillonage')
-            table = LaboratoireReception(qs)
+            qs = Cargaison.objects.filter(
+                etat="Echantillonner",
+                entrepot__ville__affectationville__username_id=id
+                ).values(
+                'idcargaison',
+                'dateheurecargaison__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'entrepot__nomentrepot',
+                'produit__nomproduit',
+                'immatriculation',
+                'numdos',
+                'entrepot_echantillon__numrappechauto',
+                ).order_by('-entrepot_echantillon__dateechantillonage__date')
 
-            qs1 = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours").order_by(
-                '-datereceptionlabo')
-            table1 = TableauEchantillonRecu(qs1, prefix='2_')
+            # Get the search value from the request's GET parameters
+            search_value = request.GET.get('search[value]', '')
 
-            # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-            # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table1)
-            return render(request, 'labo.html', {
-                'labo': table,
-                'labo1': table1,
+            # Apply search filter to the QuerySet
+            if search_value:
+                qs = qs.filter(
+                    Q(entrepot__nomentrepot__icontains=search_value) |
+                    Q(immatriculation__icontains=search_value) |
+                    Q(numdos__icontains=search_value) |
+                    Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+                    Q(qrcode__icontains=search_value)
+                )
+
+            # Number of items to show per page
+            items_per_page = 10
+
+            # Initialize the Paginator with the QuerySet and the number of items per page
+            paginator = Paginator(qs, items_per_page)
+
+            # Get the current page number from the request's GET parameters
+            draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+            start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+            length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+            # Calculate the current page number based on start and length
+            current_page = (start // length) + 1
+
+            try:
+                # Get the current page from the Paginator
+                page = paginator.page(current_page)
+            except PageNotAnInteger:
+                # If page is not an integer, deliver the first page.
+                page = paginator.page(1)
+            except EmptyPage:
+                # If page is out of range (e.g. 9999), return an empty JSON response.
+                return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+            # Convert the page object to a list of dictionaries
+            data = list(page)
+
+            # Return JSON response with the data
+            return JsonResponse({
+                'data': data,
+                'draw': draw,
+                'recordsTotal': paginator.count,
+                'recordsFiltered': paginator.count,
             })
-        else:
-            return redirect('logout')
 
-    # Methode pour receptionner l'echantillon
-    # @login_required(login_url='login')
-    # def receptionechantillon(request, pk):
-    #     user = request.user
-    #     id = user.id
-    #
-    #     # Get Town du point de dechargement pour l'attribution automatique des numeros
-    #     print(pk)
-    #     c = Cargaison.objects.get(idcargaison=pk)
-    #     c = c.entrepot_id
-    #     c = Entrepot.objects.get(identrepot=c)
-    #     v = c.ville_id
-    #     print(v)
-    #
-    #     # ville = AffectationVille.objects.get(username_id=id)
-    #     # v = ville.ville_id
-    #     role = user.role_id
-    #     if role == 4 or role == 1:
-    #         # Getting current Year & Month
-    #         now = datetime.now()
-    #         numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
-    #
-    #         # Changement de l'etat de la cargaison
-    #         d = Cargaison.objects.get(idcargaison=pk)
-    #         d.etat = "Analyse Labo en cours"
-    #         d.save(update_fields=['etat'])
-    #
-    #         # Sauvegarde de l'instruction dans la Table LaboReception
-    #         codelabo = codeLabo(v, pk)
-    #         p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
-    #                           numcertificatqualite=numcertificatqualite,datereceptionlabo=now)
-    #         p.save()
-    #         return redirect('labo')
-    #     else:
-    #         return redirect('logout')
+
 
     @login_required(login_url='login')
     def receptionechantillon(request):
         if request.method == 'POST':
-            pk = request.POST.get('pk')
+            data = json.loads(request.body)
+            pk = data.get('idcargaison')
             print('Test')
             print(pk)
 
@@ -263,24 +282,13 @@ class GestionAnalyse():
     @login_required(login_url='login')
     def affichageanalyse(request):
         user = request.user
-        id = user.id
         role = user.role_id
-        request.session['url'] = request.get_full_path()
         if role == 5 or role == 1:
-            qs = LaboReception.objects.filter(idcargaison__idcargaison__etat='Analyse Labo en cours',
-                                              idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by('-datereceptionlabo')
-            table1 = AffichageAnalyse(qs, prefix='1_')
-            qs2 = LaboReception.objects.filter(idcargaison__idcargaison__etat='Refaire',
-                                               idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id).order_by(
-                '-datereceptionlabo')
-            table2 = AffichageAnalyseRefaire(qs2, prefix='2_')
-
-            return render(request, 'labo_analyse.html', {
-                'analyse': table1,
-                'refaire': table2,
-            })
+            context={}
+            return render(request, 'labo_analyse.html', context)
         else:
             return redirect('logout')
+
 
     # Fonction de recherche pour encodage résultat
     @login_required(login_url='login')
@@ -3376,7 +3384,6 @@ def saisieResultat(request,pk):
     return render(request,template,context)
 
 
-
 @login_required(login_url='login')
 def saisieResultatParametre(request,pk):
     id = request.session['pk']
@@ -3414,11 +3421,17 @@ def saisieResultatParametre(request,pk):
 
 @login_required(login_url='login')
 def validationResulat(request):
-    id = request.session['pk']
-    cargaison = Cargaison.objects.get(idcargaison=id)
-    cargaison.etat = 'Validation en cours 1'
-    cargaison.save(update_fields=['etat'])
-    return redirect('analyse')
+    if request.method == 'POST':
+        id = request.POST['idcargaison']
+        cargaison = Cargaison.objects.get(idcargaison=id)
+        cargaison.etat = 'Validation en cours 1'
+        cargaison.save(update_fields=['etat'])
+        context = {
+            'status':'success'
+        }
+        return JsonResponse(context)
+    else:
+        return redirect('analyse')
 
 
 @login_required(login_url='login')
@@ -3489,13 +3502,186 @@ def affichageDetailsResultatsDroite(request,pk):
 
 @login_required(login_url='login')
 def receptionRapports(request):
+    template ='laboReceptionRapports.html'
+    form = FiltresDate()
+    context = {'form':form}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def receptionRapportsResponse(request):
     user = request.user.id
     ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
-    template ='laboReceptionRapports.html'
-    qs = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=user)
-    table = RapportsLaboratoireReception(qs)
-    context = {'table':table}
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-dateheurecargaison')
+
+    # Get the search value from the request's GET parameters
+    date_d = request.GET.get('date_d','')
+    date_f = request.GET.get('date_f','')
+    search_value = request.GET.get('search[value]', '')
+
+    # Apply search filter to the QuerySet
+    if search_value:
+        qs = qs.filter(
+            Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+            Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
+            Q(produit__nomproduit__icontains=search_value)
+        )
+
+    if date_d and date_f:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+        )
+
+    if date_d:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
+        )
+        print(date_d)
+
+    if date_f:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
+        )
+
+
+    # Number of items to show per page
+    items_per_page = 10
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+@login_required(login_url='login')
+def receptionRapports(request):
+    template ='laboReceptionRapportsFiltres.html'
+
+    # Get the search value from the request's GET parameters
+    date_d = request.GET.get('date_d', '')
+    date_f = request.GET.get('date_f', '')
+
+    request.session['date_d'] = date_d
+    request.session['date_f'] = date_f
+
+    form = FiltresDate()
+    context = {'form':form}
     return render(request,template,context)
+
+
+@login_required(login_url='login')
+def receptionRapportsResponseFiltres(request):
+    user = request.user.id
+    ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-dateheurecargaison')
+
+    date_d = request.session['date_d']
+    date_f = request.session['date_f']
+
+    # Apply search filter to the QuerySet
+    if date_d and date_f:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+        )
+
+    if date_d:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
+        )
+        print(date_d)
+
+    if date_f:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
+        )
+
+    # Number of items to show per page
+    items_per_page = 10
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
 
 
 
@@ -3527,6 +3713,9 @@ def refaireAjx(request):
         # Return a JSON response indicating bad request method (not POST)
         response_data = {'status': 'failure', 'message': 'Invalid request method'}
         return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+
+
+
 
 # Validation du responsable Division LABO OCC
 @login_required(login_url='login')
@@ -4657,3 +4846,161 @@ def impressioncertificat(request):
             return redirect('logout')
     else:
         return redirect('logout')
+
+
+
+#Ajax response
+@login_required(login_url='login')
+def responseAffichageanalyse(request):
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if role == 5 or role == 1:
+        qs = Cargaison.objects.filter(etat='Analyse Labo en cours',
+                                      entrepot__ville__affectationville__username_id=id,
+                                     ).values(
+                                    'idcargaison',
+                                    'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                                    'entrepot_echantillon__laboreception__codelabo',
+                                    'entrepot_echantillon__numrappechauto',
+                                    'numdos',
+                                    'immatriculation',
+                                    'produit__nomproduit'
+                                    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+        qs2 = Cargaison.objects.filter(etat='Refaire',
+                                      entrepot__ville__affectationville__username_id=id,
+                                      ).values(
+                                    'idcargaison',
+                                    'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                                    'entrepot_echantillon__laboreception__codelabo',
+                                    'entrepot_echantillon__numrappechauto',
+                                    'produit__nomproduit'
+                                    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
+                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
+                Q(produit__nomproduit__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 8
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    else:
+        return redirect('logout')
+
+
+
+#Saisie saisieResultat Ajax
+@login_required(login_url='login')
+def saisieResultatAjax(request):
+    pk = request.GET.get('idcargaison','')
+    print(pk)
+    e = Entrepot_echantillon.objects.get(idcargaison=pk)
+    a = LaboReception.objects.get(idcargaison=e)
+    a = a.codelabo
+
+    qs = ParametresProduits.objects.raw('SELECT pp.idParametre, c.idcargaison, p.nomproduit, pp.nomParametre, r.valeurResultat, r.valeurResultatChar \
+                FROM enreg_cargaison c \
+                LEFT JOIN enreg_produit p \
+                ON c.produit_id = p.idproduit \
+                LEFT JOIN enreg_affectationparametre a \
+                ON p.idproduit = a.idproduit_id \
+                LEFT JOIN enreg_parametresproduits pp \
+                ON a.idParametre_id = pp.idParametre \
+                LEFT JOIN enreg_resultatanalyse r \
+                ON pp.idParametre = r.idParametre_id \
+                AND r.idcargaison_id = c.idcargaison \
+                WHERE c.idcargaison = %s \
+                ORDER BY a.id ASC', [pk, ])
+
+    # Serialize the raw SQL queryset results manually into a list of dictionaries
+    data = [
+        {
+            'idParametre': item.idParametre,
+            'idcargaison': item.idcargaison,
+            'nomproduit': item.nomproduit,
+            'nomParametre': item.nomParametre,
+            'valeurResultat': item.valeurResultat,
+            'valeurResultatChar': item.valeurResultatChar
+        }
+        for item in qs
+    ]
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'codeLabo': a,
+    })
+
+
+@login_required(login_url='login')
+def saisieResultatParametreAjax(request):
+    if request.method == 'POST':
+        parametreId = request.POST['idParametre']
+        idcargaison = request.POST['idcargaison']
+        inputValue = request.POST['inputValue']
+        cargaison = Cargaison.objects.get(idcargaison=idcargaison)
+        parametre = ParametresProduits.objects.get(idParametre=parametreId)
+
+        if parametre.idParametre == 2 or parametre.idParametre == 8 or parametre.idParametre == 22:
+            try:
+                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
+                r.valeurResultatChar = inputValue
+                r.save(update_fields=['valeurResultatChar'])
+                return JsonResponse({'status': 'success'})
+            except:
+                r = ResultatAnalyse(valeurResultatChar=inputValue, idParametre=parametre, idcargaison=cargaison)
+                r.save()
+                return JsonResponse({'status': 'success'})
+        else:
+            try:
+                r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
+                r.valeurResultat = inputValue
+                r.save(update_fields=['valeurResultat'])
+                return JsonResponse({'status': 'success'})
+            except:
+                r = ResultatAnalyse(valeurResultat=inputValue, idParametre=parametre, idcargaison=cargaison)
+                r.save()
+                return JsonResponse({'status': 'success'})
+    else:
+        redirect('logout')

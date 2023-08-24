@@ -315,15 +315,37 @@ class PetroleLampant(forms.Form):
                 Column('vol90',css_class='form-group col-md-4 mb-0'),
             ),
 
-            # Field('aspect', 'couleursaybolt', 'aciditetotal', 'soufre', 'soufremercaptan', 'docteurtest',
-            #       'distillation',
-            #       'pointinitial', 'pointfinal', 'pointfumee', 'pointeclair', 'freezingpoint', 'residu', 'perte',
-            #       'massevolumique15', 'viscosite',
-            #       'pointinflammabilite', 'teneureau', 'corrosion', 'conductivite', 'vol10', 'vol90'),
-
             FormActions(
                 Submit('valider', 'valider', css_class='btn btn-primary'),
                 Reset('annuler', 'annuler', css_class='btn btn-danger'),
+            ),
+
+        )
+
+
+# Formulaire de recherche statistique
+class FiltresDate(forms.Form):
+    date_d = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE DEBUT',required=False)
+    date_f = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE FIN',required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(FiltresDate, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_id = 'registration-form'
+        self.helper.label_class = 'col-md-6'
+        self.helper.field_class = 'col-md-6'
+        self.helper.layout = Layout(
+            Row(
+                Column('date_d',css_class='form-group col-md-12 mb-0'),
+            ),
+            Row(
+                Column('date_f',css_class='form-group col-md-12 mb-0'),
+            ),
+
+            FormActions(
+                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
+                Submit('VALIDER', 'VALIDER', css_class='btn btn-primary'),
             ),
 
         )

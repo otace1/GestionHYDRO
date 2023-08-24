@@ -3,13 +3,240 @@
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
 
-
 {% block content %}
-    {% render_table analyse %}
+        <div id="data-table-wrapper" style="position: relative;">
+  <div class="loading-spinner"></div>
+  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+    <thead>
+      <tr>
+        <th>DATE RECEP.</th>
+        <th>CODE LABO</th>
+        <th>NUM.RE</th>
+        <th>NUM. DOSSIER</th>
+        <th>IMMATRICULATION</th>
+        <th>PRODUIT</th>
+        <th>ACTION(s)</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+let dynamicDataTable;
+let idcargaison;
+let dataTable;
+
+$(document).ready(function () {
+        dataTable = $('#data-table').DataTable({
+        lengthChange: false, // Display the length change dropdown
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        ajax: {
+            url: '{% url 'responseAffichageanalyse' %}',
+            type: 'GET',
+            beforeSend: function() {
+              $('#data-table-wrapper .loading-spinner').show();
+            },
+            // Hide the loading spinner after DataTable processing
+            complete: function() {
+              $('#data-table-wrapper .loading-spinner').hide();
+            }
+        },
+        columns: [
+            { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
+            { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'frontiere__nomville'
+            { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'importateur__nomimportateur'
+            { data: 'numdos' }, // Use array index to access 'importateur__nomimportateur'
+            { data: 'immatriculation' }, // Use array index to access 'importateur__nomimportateur'
+            { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
+            { // New column configuration
+                data: 'idcargaison',
+                render: function (data, type, row) {
+                    const submitSaisie = '<button class="btn btn-success saisie-btn" data-row-id="' + data + '">SAISIE</button> ';
+                    return submitSaisie;
+                }
+            }// Use array index to access 'immatriculation'
+        ],
+
+    });
+
+    // Add a click event listener for the 'SAISIE' buttons with class 'saisie-btn'
+    $(document).on('click', '.saisie-btn', function() {
+        idcargaison = $(this).data('row-id');
+
+        console.log(idcargaison);
+
+        // Show the AJAX input form wrapper
+        $('#ajax-form-wrapper').show();
+        $('#modal-xl').modal('show');
+
+        // Create a new DataTable instance for the dynamic table
+            dynamicDataTable = $('#dynamic-data-table').DataTable({
+            destroy: true,
+            lengthChange: false,
+            responsive: true,
+            searching: false, // Remove search field
+            paging: false, // Remove pagination display
+            info: false, // Remove information display
+            ordering: false, // Remove column sorting
+            ajax: {
+                url: '{% url "saisieResultatAjax" %}', // Replace with your dynamic data URL
+                type: 'GET',
+                data: { idcargaison: idcargaison }, // Send additional data if neededn`
+            },
+            columns: [
+                // Define your columns for the dynamic DataTable
+                // Example:
+                { data: 'nomproduit' },
+                { data: 'nomParametre' },
+                { data: 'valeurResultat' },
+                { data: 'valeurResultatChar' },
+                { // New column configuration
+                    data: 'idParametre',
+                    render: function (data, type, row) {
+                        // 'data' contains the value of 'idcargaison' for this row
+                        // Here, we'll create a JSON input field and a button to submit the data
+                       // Create an input field for each row
+                        const inputField = `<input type="text" class="json-input" id="input-${data}" data-row-id="${data}">`;
+                        return inputField;
+                    }
+                }
+                // Use array index to access 'immatriculation'
+                // ...
+            ],
+        });
+    });
+
+
+     // Add a keypress event listener for the input fields
+    $(document).on('keypress', '.json-input', function (event) {
+        if (event.which === 13) { // Enter key
+            // Get the typed value from the input field within the same row
+            const rowId = $(this).data('row-id');
+            const inputValue = $(this).val();
+
+            console.log(inputValue);
+            console.log(rowId);
+            console.log(idcargaison);
+
+            // Make an AJAX request to save the data
+            $.ajax({
+                type: 'POST', // or 'GET' depending on your server-side implementation
+                url: '{% url "saisieResultatParametreAjax" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
+                data: {
+                    idcargaison: idcargaison,
+                    idParametre: rowId,
+                    inputValue: inputValue
+                },
+                headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+                success: function (response) {
+                    // Handle the AJAX response here if needed
+                    console.log('Data saved successfully');
+                    dynamicDataTable.ajax.reload();
+                },
+                error: function (error) {
+                    // Handle errors if any
+                    console.error('AJAX request failed:', error);
+                }
+            });
+        }
+    });
+
+
+    $(document).ready(function() {
+        $('#saveChanges').on('click', function() {
+            console.log('BUTTON PRESSED');
+
+            // Disable the button
+            $(this).prop('disabled', true);
+            // Simulate some asynchronous action
+            setTimeout(function() {
+                // Re-enable the button after some time
+                $('#saveChanges').prop('disabled', false);
+            }, 2000); // Enable after 2000 milliseconds (2 seconds)
+
+            // Make an AJAX request to save the data
+            $.ajax({
+                type: 'POST', // or 'GET' depending on your server-side implementation
+                url: '{% url "validationResulat" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
+                data: {
+                    idcargaison: idcargaison,
+                },
+                headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+                success: function (response) {
+                    // Handle the AJAX response here if needed
+                    console.log('Data saved successfully');
+                    alert('Data saved successfully');
+                    // Show the AJAX input form wrapper
+                    $('#ajax-form-wrapper').hide();
+                    $('#modal-xl').modal('hide');
+                    // Reload the table
+                    dataTable.ajax.reload();
+                },
+                error: function (error) {
+                    // Handle errors if any
+                    console.error('AJAX request failed:', error);
+                    alert('An error occured');
+
+                }
+            });
+            // Your code here
+        });
+    });
+
+
+
+});
+
+</script>
 {% endblock %}
 
 
 {% block content1 %}
-    {% render_table refaire %}
+    <div id="ajax-form-wrapper" style="display:none;">
+        <div id="dynamic-data-table-wrapper">
+            <div class="modal fade" id="modal-xl">
+                <div class="modal-dialog modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h4 class="modal-title">SAISIE DE(S) RESULTAT(S)</h4>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <table id="dynamic-data-table" class="table table-bordered display responsive" style="width:100%">
+                           <div id="data-table-wrapper" style="position: relative;">
+                      <div class="loading-spinner"></div>
+                        <thead>
+                          <tr>
+                            <th>PRODUIT</th>
+                            <th>PARAMETRE</th>
+                            <th>VALEUR RESULTAT NUM.</th>
+                            <th>VALEUR RESULTAT ALPH.</th>
+                            <th>ACTION(s)</th>
+                          </tr>
+                        </thead>
+                    </div>
+                    </table>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                      <button id="saveChanges" type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                  </div>
+                  <!-- /.modal-content -->
+                </div>
+                <!-- /.modal-dialog -->
+            </div>
+              <!-- /.modal -->
+        </div>
+    </div>
 {% endblock %}
-
