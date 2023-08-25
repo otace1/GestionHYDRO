@@ -8,8 +8,8 @@ import datetime
 
 
 def numCq(v):
-    # c = Entrepot_echantillon.objects.get(idcargaison=pk)
-    # year_value = c.dateechantillonage.year
+    current_date = datetime.now()
+    current_year = current_date.year
 
     query = f'''
                 SELECT l.idcargaison_id, c.idcargaison, MAX(l.numcertificatqualite) as last_code
@@ -17,7 +17,7 @@ def numCq(v):
                 JOIN enreg_cargaison c ON l.idcargaison_id = c.idcargaison
                 JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot
                 JOIN enreg_ville v ON e.ville_id = v.idville
-                WHERE YEAR(l.datereceptionlabo) = YEAR(CURRENT_DATE)
+                WHERE YEAR(l.datereceptionlabo) = {current_year}
                 AND v.idville = {v}
             '''
 

@@ -27,13 +27,16 @@ def codeLabo(v):
 
 
 def generate_labo_code(ville_id):
+    current_date = datetime.now()
+    current_month = current_date.month
+
     query = f'''
             SELECT l.idcargaison_id, c.idcargaison, MAX(l.codelabo) as last_code
             FROM enreg_laboreception l
             JOIN enreg_cargaison c ON l.idcargaison_id = c.idcargaison
             JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot
             JOIN enreg_ville v ON e.ville_id = v.idville
-            WHERE MONTH(l.datereceptionlabo) = MONTH(CURRENT_DATE)
+            WHERE MONTH(l.datereceptionlabo) = {current_month}
             AND v.idville = {ville_id}
         '''
 
