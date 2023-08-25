@@ -20,7 +20,7 @@ from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from datetime import datetime
 from django.http import JsonResponse
-from .codeLabo import codeLabo, generate_labo_code, verification
+from .codeLabo import codeLabo, generate_labo_code
 from .numCq import numCq
 from django.core import serializers
 
@@ -143,7 +143,17 @@ class GestionLaboratoire():
             if role == 4 or role == 1:
                 # Getting current Year & Month
                 now = datetime.now()
+
                 numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+                # print('NUM CQ NON VER:')
+                # print (numcertificatqualite)
+                print(numcertificatqualite)
+
+                #Verification de saut
+                # test = verificationCQ(numcertificatqualite,v,pk)
+                # print('NUM CQ VER:')
+                # print(test)
+
 
                 # Changement de l'etat de la cargaison
                 d = Cargaison.objects.get(idcargaison=pk)
@@ -155,18 +165,18 @@ class GestionLaboratoire():
                 print(codelabo)
 
                 #Verification Code
-                test = verification(codelabo,v)
-                print('TEST CODE')
-                print(test)
+                # test = verification(codelabo,v)
+                # print('TEST CODE')
+                # print(test)
                 
-                p = LaboReception(idcargaison_id=pk, codelabo=test,
+                p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
                                   numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
                 p.save()
 
                 # Prepare the JSON response
                 response_data = {
                     'success': True,
-                    'codeLabo': test,
+                    'codeLabo': codelabo,
                 }
                 return JsonResponse(response_data)
             else:
