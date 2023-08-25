@@ -242,11 +242,12 @@ def numreq(request):
 
             #Numerotation auto des Dossiers
             numDos = numDossier(pk, ville)
+            c.numdos = numDos
 
-            #Double Verification si le numero a sauter la plage pour faute de connexion
-            num = verificationNumDossier(pk,numDos,ville)
-
-            c.numdos = num
+            # #Double Verification si le numero a sauter la plage pour faute de connexion
+            # num = verificationNumDossier(pk,numDos,ville)
+            #
+            # c.numdos = num
 
             c.numreq = numreq
             c.requisitiondackdate = td
@@ -255,7 +256,7 @@ def numreq(request):
             c.save(update_fields=['numreq','requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
 
             context = {
-                'num':num
+                'num':numDos
             }
 
             return JsonResponse(context)
