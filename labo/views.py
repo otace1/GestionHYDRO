@@ -20,7 +20,7 @@ from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from datetime import datetime
 from django.http import JsonResponse
-from .codeLabo import codeLabo
+from .codeLabo import codeLabo, generate_labo_code, verification
 from .numCq import numCq
 from django.core import serializers
 
@@ -151,15 +151,22 @@ class GestionLaboratoire():
                 d.save(update_fields=['etat'])
 
                 # Sauvegarde de l'instruction dans la Table LaboReception
-                codelabo = codeLabo(v, pk)
-                p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
+                codelabo = generate_labo_code(v)
+                print(codelabo)
+
+                #Verification Code
+                test = verification(codelabo,v)
+                print('TEST CODE')
+                print(test)
+                
+                p = LaboReception(idcargaison_id=pk, codelabo=test,
                                   numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
                 p.save()
 
                 # Prepare the JSON response
                 response_data = {
                     'success': True,
-                    'codeLabo': codelabo,
+                    'codeLabo': test,
                 }
                 return JsonResponse(response_data)
             else:
