@@ -1,4 +1,4 @@
-{% extends 'base_lab_encodage.html' %}
+{% extends 'base_lab_encodage_refaire.html' %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
@@ -6,7 +6,7 @@
 
 
 {% block content %}
-        <div id="data-table-wrapper" style="position: relative;">
+<div id="data-table-wrapper" style="position: relative;">
   <div class="loading-spinner"></div>
   <table id="data-table" class="table table-bordered display responsive" style="width:100%">
     <thead>
@@ -37,7 +37,7 @@ $(document).ready(function () {
         serverSide: true,
         responsive: true,
         ajax: {
-            url: '{% url 'responseAffichageanalyse' %}',
+            url: '{% url 'affichageAnalyseRefaireResponse' %}',
             type: 'GET',
             beforeSend: function() {
               $('#data-table-wrapper .loading-spinner').show();

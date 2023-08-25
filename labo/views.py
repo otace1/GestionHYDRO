@@ -284,7 +284,14 @@ class GestionAnalyse():
         user = request.user
         role = user.role_id
         if role == 5 or role == 1:
-            context={}
+            count = Cargaison.objects.filter(
+                        etat='Refaire',
+                        entrepot__ville__affectationville__username_id=user.id
+                    ).count()
+            print(count)
+            context={
+                'count':count
+            }
             return render(request, 'labo_analyse.html', context)
         else:
             return redirect('logout')
@@ -4891,10 +4898,7 @@ def responseAffichageanalyse(request):
         # Apply search filter to the QuerySet
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
-                Q(numdos__icontains=search_value) |
-                Q(immatriculation__icontains=search_value)
+                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
             )
 
         # Number of items to show per page
@@ -5011,3 +5015,91 @@ def saisieResultatParametreAjax(request):
                 return JsonResponse({'status': 'success'})
     else:
         redirect('logout')
+
+
+@login_required(login_url='login')
+def affichageAnalyseRefaire(request):
+    user = request.user
+    role = user.role_id
+    template = 'labo_analyse_refaire.html'
+    if role == 5 or role == 1:
+        count = Cargaison.objects.filter(
+                    etat='Refaire',
+                    entrepot__ville__affectationville__username_id=user.id
+                ).count()
+        print(count)
+        context={
+            'count':count
+        }
+        return render(request,template, context)
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+def affichageAnalyseRefaireResponse(request):
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if role == 4 or role == 1:
+        qs = Cargaison.objects.filter(
+            etat="Refaire",
+            entrepot__ville__affectationville__username_id=id
+            ).values(
+            'idcargaison',
+            'dateheurecargaison__date',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__laboreception__codelabo',
+            'entrepot_echantillon__numrappechauto',
+            'produit__nomproduit',
+            'immatriculation',
+            'numdos',
+            'entrepot_echantillon__numrappechauto',
+            ).order_by('-entrepot_echantillon__dateechantillonage__date')
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+
+

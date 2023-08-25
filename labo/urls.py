@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path('', views.GestionLaboratoire.affichageenchantillon, name='labo'),
+    path('refaireAffichage/', views.affichageAnalyseRefaire, name='affichageAnalyseRefaire'),
+    path('refaireAffichageResponse/', views.affichageAnalyseRefaireResponse, name='affichageAnalyseRefaireResponse'),
     path('echantillon/', views.GestionLaboratoire.affichageenchantillonResponse, name='affichageenchantillonResponse'),
     path('receptionRapports/', views.receptionRapports, name='receptionRapports'),
     path('receptionRapports/response/', views.receptionRapportsResponse, name='receptionRapportsResponse'),
