@@ -26,25 +26,28 @@ def codeLabo(v):
     return codelabo
 
 
-def generate_labo_code(ville):
-    current_date = datetime.now()
-    last_month = (current_date.month - 1) % 12 or 12
-    last_year = current_date.year - 1 if current_date.month == 1 else current_date.year
+def generate_labo_code(ville_id):
+    query = f'''
+            SELECT l.idcargaison_id, c.idcargaison, MAX(l.codelabo) as last_code
+            FROM enreg_laboreception l
+            JOIN enreg_cargaison c ON l.idcargaison_id = c.idcargaison
+            JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot
+            JOIN enreg_ville v ON e.ville_id = v.idville
+            WHERE MONTH(l.datereceptionlabo) = MONTH(CURRENT_DATE)
+            AND v.idville = {ville_id}
+        '''
 
-    with transaction.atomic():
-        # Fetch the current maximum code value for the specified conditions
-        last_code_query = LaboReception.objects.filter(
-            datereceptionlabo__year__in=[current_date.year, last_year],
-            datereceptionlabo__month__in=[current_date.month, last_month],
-            idcargaison__idcargaison__entrepot__ville=ville
-        ).order_by('-codelabo').first()
+    last_code_result = Cargaison.objects.raw(query)
+    last_code = None
 
-        if last_code_query:
-            last_code = last_code_query.codelabo
-        else:
-            last_code = 0
+    for result in last_code_result:
+        last_code = result.last_code
+
+    print('LAST CODE:')
+    print(last_code)
 
     return last_code
+
 
 
 

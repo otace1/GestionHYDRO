@@ -144,8 +144,9 @@ class GestionLaboratoire():
                 # Getting current Year & Month
                 now = datetime.now()
 
-                numcertificatqualite = numCq(v, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
-                numCqToUse = numcertificatqualite + 1
+                numcertificatqualite = numCq(v)
+                # Generation automatique les numeros CQ annuel et par Ville (Labo)
+                # numCqToUse = numcertificatqualite
                 # print('NUM CQ NON VER:')
                 # print (numcertificatqualite)
                 # print(numcertificatqualite)
@@ -165,14 +166,12 @@ class GestionLaboratoire():
                 codelabo = generate_labo_code(v)
                 # print(codelabo)
                 codeToUse = codelabo + 1
+                print('TEST CODE')
+                print(codeToUse)
 
-                #Verification Code
-                # test = verification(codelabo,v)
-                # print('TEST CODE')
-                # print(test)
                 
                 p = LaboReception(idcargaison_id=pk, codelabo=codeToUse,
-                                  numcertificatqualite=numCqToUse, datereceptionlabo=now)
+                                  numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
                 p.save()
 
                 # Prepare the JSON response
