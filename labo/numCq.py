@@ -4,7 +4,7 @@ from enreg.models import *
 from accounts.models import *
 from django.db.models import *
 from django.contrib.auth.decorators import login_required
-import datetime
+from datetime import datetime
 
 
 def numCq(v):
