@@ -145,17 +145,7 @@ class GestionLaboratoire():
                 now = datetime.now()
 
                 numcertificatqualite = numCq(v)
-                # Generation automatique les numeros CQ annuel et par Ville (Labo)
-                # numCqToUse = numcertificatqualite
-                # print('NUM CQ NON VER:')
-                # print (numcertificatqualite)
-                # print(numcertificatqualite)
-
-                #Verification de saut
-                # test = verificationCQ(numcertificatqualite,v,pk)
-                # print('NUM CQ VER:')
-                # print(test)
-
+                numcertificatqualite = numcertificatqualite + 1
 
                 # Changement de l'etat de la cargaison
                 d = Cargaison.objects.get(idcargaison=pk)
@@ -164,7 +154,6 @@ class GestionLaboratoire():
 
                 # Sauvegarde de l'instruction dans la Table LaboReception
                 codelabo = generate_labo_code(v)
-                # print(codelabo)
                 codeToUse = codelabo + 1
                 print('TEST CODE')
                 print(codeToUse)

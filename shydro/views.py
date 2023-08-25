@@ -26,7 +26,7 @@ from django.db.models import Q, ExpressionWrapper, Sum
 from datetime import date
 import datetime
 from .numact import numeroactcurrent
-from .numdossier import numDossier, verificationNumDossier
+from .numdossier import numDossier
 
 
 #Class de gestion des codifacations des cargaisons
@@ -242,12 +242,8 @@ def numreq(request):
 
             #Numerotation auto des Dossiers
             numDos = numDossier(pk, ville)
-            c.numdos = numDos
+            c.numdos = numDos + 1
 
-            # #Double Verification si le numero a sauter la plage pour faute de connexion
-            # num = verificationNumDossier(pk,numDos,ville)
-            #
-            # c.numdos = num
 
             c.numreq = numreq
             c.requisitiondackdate = td
@@ -256,7 +252,7 @@ def numreq(request):
             c.save(update_fields=['numreq','requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
 
             context = {
-                'num':numDos
+                'num':c.numdos
             }
 
             return JsonResponse(context)
