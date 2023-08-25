@@ -22,15 +22,7 @@ def numCq(v, pk):
             numcertificatqualite = max_cert_query.numcertificatqualite
         else:
             numcertificatqualite = 0
-
-        # Generate the next numcertificatqualite value and update it atomically
-        next_numcertificatqualite = numcertificatqualite + 1
-        LaboReception.objects.filter(
-            datereceptionlabo__year=year_value,
-            idcargaison__idcargaison__entrepot__ville=v
-        ).update(numcertificatqualite=F('numcertificatqualite') + 1)
-
-    return next_numcertificatqualite
+    return numcertificatqualite
 
 
 # def verificationCQ(num,ville,pk):

@@ -32,7 +32,7 @@ def generate_labo_code(ville):
     last_year = current_date.year - 1 if current_date.month == 1 else current_date.year
 
     with transaction.atomic():
-        # Fetch the current maximum code value while acquiring a lock
+        # Fetch the current maximum code value for the specified conditions
         last_code_query = LaboReception.objects.filter(
             datereceptionlabo__year__in=[current_date.year, last_year],
             datereceptionlabo__month__in=[current_date.month, last_month],
@@ -44,15 +44,7 @@ def generate_labo_code(ville):
         else:
             last_code = 0
 
-        # Generate the next code and update it atomically
-        next_code = last_code + 1
-        LaboReception.objects.filter(
-            datereceptionlabo__year=current_date.year,
-            datereceptionlabo__month=current_date.month,
-            idcargaison__idcargaison__entrepot__ville=ville
-        ).update(codelabo=F('codelabo') + 1)
-
-    return next_code
+    return last_code
 
 
 
