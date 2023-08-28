@@ -1,6 +1,27 @@
 {% extends 'base_lab_layout.html' %}
 
 {% block dashboard %}
+    <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.3);
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-left: -20px;
+      margin-top: -20px;
+      z-index: 9999;
+    }
+    </style>
 
     <div id="data-table-wrapper" style="position: relative;">
         <div class="loading-spinner"></div>
@@ -22,9 +43,10 @@
 
 <script>
     const csrfToken = '{{ csrf_token }}';
+    let dataTable;
 
     $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
+        dataTable = $('#data-table').DataTable({
             lengthChange: false, // Display the length change dropdown
             processing: true,
             serverSide: true,
@@ -54,7 +76,7 @@
                     data: 'idcargaison',
                     render: function (data, type, row) {
                         // Include a button to submit the JSON data for the row
-                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">RECEPTION</button>';
+                        const submitButton = '<button type="button" class="btn btn-block btn-warning" data-row-id="' + data + '">RECEPTION</button>';
                         return submitButton;
                     }
                 }
@@ -64,11 +86,19 @@
 
         // Handle form submission on button click
         $('#data-table').on('click', '.btn-warning', function () {
+            const button = $(this);
+            if (button.attr('disabled')) {
+                return; // Return if the button is disabled
+            }
+
             const rowId = $(this).data('row-id');
             const idcargaison = rowId;
 
-            // Show the loading icon while waiting for the response
-            $('#loading-icon').show();
+
+
+            // Disable the button and show the loading spinner
+            button.attr('disabled', true);
+            $('#data-table-wrapper .loading-spinner').show();
 
             // Include 'idcargaison' in the JSON data to send to the server
             const dataToSend = {
@@ -90,19 +120,24 @@
                         if (response.success) {
                             var codeLabo = response.codeLabo;
                             alert("CODE LABO: " + codeLabo);
-                            location.reload();
+                            $('#data-table-wrapper .loading-spinner').show();
+                            dataTable.ajax.reload();
                         } else {
                             alert("An error occurred");
-                            $('.btn.btn-success').attr("disabled", false);
-                            location.reload();
+                            $('#data-table-wrapper .loading-spinner').show();
+                            dataTable.ajax.reload();
                         }
+                        button.attr('disabled', false);
                 },
 
                 error: function () {
                     console.log('Erreur');
                     alert("An error occurred");
-                    $('.btn.btn-success').attr("disabled", false);
-                    location.reload();
+                    {#$('.btn-warning').attr("disabled", false);#}
+                    // Enable the button and hide the loading spinner
+                    $('#data-table-wrapper .loading-spinner').show();
+                    button.attr('disabled', false);
+                    dataTable.ajax.reload();
                 }
             });
         });
