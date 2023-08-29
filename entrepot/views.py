@@ -368,21 +368,21 @@ class GestionDechargement():
         user = request.user
         id = user.id
         role = user.role_id
-        request.session['url'] = request.get_full_path()
-        # today = date.today()
         form = MeterAfter()
 
         if role == 3 or role == 1:
-            qs = ImpressionResultat.objects.raw('SELECT ei.idImpression, ei.isConforme, ei.idcargaison_id, ec.numdos, i.nomimportateur, ee.nomentrepot, ec.immatriculation,ep.nomproduit, ec.requisitiondackdate, eee.dateechantillonage, el.datereceptionlabo, ei.printDate \
-                    FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_entrepot_echantillon eee, enreg_laboreception el, accounts_affectationville aa \
-                    WHERE ei.idcargaison_id = ec.idcargaison \
-                    AND ec.importateur_id = i.idimportateur \
-                    AND ec.entrepot_id = ee.identrepot \
-                    AND ec.produit_id = ep.idproduit \
-                    AND ec.idcargaison = eee.idcargaison_id \
-                    AND eee.idcargaison_id = el.idcargaison_id \
-                    AND ei.isConforme = 1 \
-                    AND aa.username_id = %s',[id,])
+            qs = Cargaison.objects.filter(
+                impressionresultat__isConforme=1,
+                entrepot__affectationentrepot__username_id=id,
+            ).values(
+                'importateur__nomimportateur',
+                'immatriculation',
+                'numdos',
+                'produit__nomproduit',
+            ).order_by(
+                '-impressionresultat__printDate'
+            )
+
             table = CargaisonDechargement(qs)
             RequestConfig(request, paginate={"per_page": 10}).configure(table)
             return render(request, 'entrepot_dechargement.html', {
@@ -440,8 +440,10 @@ def impressionRe(request,pk):
 
 
 @login_required(login_url='login')
-def impressionRapport(request, pk):
+def impressionRapport(request):
     template = 'rapport.html'
+
+    pk = request.session['id']
 
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
@@ -1887,7 +1889,7 @@ def marquageInspection(request):
     c = Cargaison.objects.get(idcargaison=pk)
     c.etatInspection = 0
     c.save(update_fields=['etatInspection'])
-    return redirect('entrepot')
+    return redirect('rapport')
 
 
 @login_required(login_url='login')

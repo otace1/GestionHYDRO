@@ -133,28 +133,20 @@ class RapportEchantillonage(tables.Table):
 
 
 class CargaisonDechargement(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE6, verbose_name='')
-    nomproduit = tables.Column(verbose_name='PRODUIT')
+    importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
+    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
     numdos = tables.Column(verbose_name='NUM. DOSSIER')
+    actions = tables.TemplateColumn(TEMPLATE6, verbose_name='')
+
     # isConforme = tables.Column(verbose_name='CONFORMITE',attrs={"td": {"bgcolor": "green"}})
 
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
-        row_attrs = {
-            "id": lambda record: record.pk
-        }
-        sequence = ['nomimportateur',
-                    'numdos',
-                    'immatriculation',
-                    'nomproduit',
-                    # 'isConforme'
-                    ]
+        template_name = "django_tables2/bootstrap4.html"
+
 
 
 class EnAttenteInspection(tables.Table):

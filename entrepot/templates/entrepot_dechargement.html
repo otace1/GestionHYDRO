@@ -7,9 +7,6 @@
     {% render_table cargaison %}
 {% endblock %}
 
-{#{% block content1 %}#}
-{#    {% render_table rapport %}#}
-{#{% endblock %}#}
 
 {% block modal %}
     <div class="modal fade" id="modal-dech">
@@ -21,12 +18,10 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-{#              <form action="" method="post">#}
             <div class="modal-body">
                 {% csrf_token %}
                 {% crispy form %}
             </div>
-{#              </form>#}
           </div>
           <!-- /.modal-content -->
         </div>
