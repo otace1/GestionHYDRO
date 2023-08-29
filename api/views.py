@@ -682,6 +682,16 @@ def attenteDechargement(request):
     context = {'count':c}
     return Response(context, status=status.HTTP_200_OK)
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def attenteRequisition(request):
+    user = request.user.id
+    c = Cargaison.objects.filter(etat='En attente requisition',entrepot__affectationentrepot__username_id=user).count()
+    context = {'count':c}
+    return Response(context, status=status.HTTP_200_OK)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def attenteRequisitionListe(request):
