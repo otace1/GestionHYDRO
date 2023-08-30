@@ -958,14 +958,10 @@ def cargaisonRequisitionList(request):
         }
         result_list.append(context)
 
-    response_data = {
-        "count": paginator.count,
-        "page": page_data.number,
-        "total_pages": paginator.num_pages,
-        "results": result_list,
-    }
+    response_data = result_list  # Return the list directly as the JSON response
 
-    return JsonResponse(response_data, json_dumps_params={'ensure_ascii': False})
+    return JsonResponse(response_data, safe=False, json_dumps_params={'ensure_ascii': False})
+
 
 
 @api_view(['POST'])
