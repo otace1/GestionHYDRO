@@ -4905,7 +4905,7 @@ def responseAffichageanalyse(request):
         # Apply search filter to the QuerySet
         if search_value:
             qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
+                Q(entrepot_echantillon__laboreception__codelabo=search_value)
             )
 
         # Number of items to show per page
