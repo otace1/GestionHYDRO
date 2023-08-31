@@ -3,6 +3,7 @@ import json
 from django.core.paginator import Paginator, EmptyPage
 from django.utils.encoding import force_str
 from rest_framework.decorators import api_view, APIView, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework import status, viewsets, permissions, exceptions
 from rest_framework.generics import GenericAPIView
@@ -936,17 +937,13 @@ def cargaisonRequisitionList(request):
     data = Cargaison.objects.filter(etat="En attente requisition",
                                     entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
 
-    page_number = request.query_params.get('page', 1)  # Get the page number from query parameters
-    items_per_page = 10  # You can adjust this value according to your preference
+    # Configure pagination
+    paginator = PageNumberPagination()
+    paginator.page_size = 10  # You can adjust this value according to your preference
 
-    paginator = Paginator(data, items_per_page)
-
-    try:
-        page_data = paginator.page(page_number)
-    except EmptyPage:
-        return JsonResponse({"detail": "No more pages available"}, status=400)
-
+    page_data = paginator.paginate_queryset(data, request)
     result_list = []
+
     for values in page_data:
         context = {
             "id": values.idcargaison,
@@ -958,10 +955,9 @@ def cargaisonRequisitionList(request):
         }
         result_list.append(context)
 
-    response_data = result_list  # Return the list directly as the JSON response
+    response_data = result_list
 
-    return JsonResponse(response_data, safe=False, json_dumps_params={'ensure_ascii': False})
-
+    return paginator.get_paginated_response(response_data)
 
 
 @api_view(['POST'])
