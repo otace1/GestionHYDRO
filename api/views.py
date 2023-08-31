@@ -943,7 +943,12 @@ def cargaisonRequisitionList(request):
     paginator = PageNumberPagination()
     paginator.page_size = 10  # You can adjust this value according to your preference
 
-    page_data = paginator.paginate_queryset(data, request)
+    # Get the requested page number, default to 1 if 0 is provided
+    requested_page = int(request.GET.get('page', 1))
+    if requested_page == 0:
+        requested_page = 1
+
+    page_data = paginator.paginate_queryset(data, requested_page)
     result_list = []
 
     for values in page_data:
@@ -958,13 +963,10 @@ def cargaisonRequisitionList(request):
         result_list.append(context)
 
     response_data = {
-        # "next_page": paginator.get_next_page_number() if paginator.get_next_link() else None,
-        # "loaded_items": paginator.page.paginator.count,
         "last_response": result_list,
     }
 
     return paginator.get_paginated_response(response_data)
-
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
