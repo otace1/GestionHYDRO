@@ -945,10 +945,10 @@ def cargaisonRequisitionList(request):
 
     # Get the requested page number, default to 1 if 0 is provided
     requested_page = int(request.GET.get('page', 1))
-    if requested_page == 0:
+    if requested_page <= 0:
         requested_page = 1
 
-    page_data = paginator.paginate_queryset(data, request)
+    page_data = paginator.paginate_queryset(data, requested_page, request)
     result_list = []
 
     for values in page_data:
