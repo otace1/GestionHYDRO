@@ -943,12 +943,12 @@ def cargaisonRequisitionList(request):
     paginator = PageNumberPagination()
     paginator.page_size = 10  # You can adjust this value according to your preference
 
-    # Get the requested page number, default to 1 if 0 is provided
     requested_page = int(request.GET.get('page', 1))
+    # Handle the case where requested_page is 0
     if requested_page <= 0:
         requested_page = 1
 
-    page_data = paginator.paginate_queryset(data, requested_page, request)
+    page_data = paginator.paginate_queryset(data, request)
     result_list = []
 
     for values in page_data:
