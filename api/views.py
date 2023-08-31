@@ -930,6 +930,7 @@ def cargaisonInspectionList(request):
 #     response['Content-Disposition'] = 'attachment; filename="data.json"'
 #     return response
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonRequisitionList(request):
@@ -940,18 +941,19 @@ def cargaisonRequisitionList(request):
     ).order_by('-dateheurecargaison')
 
     # Configure pagination
-    paginator = PageNumberPagination()
-    paginator.page_size = 10  # You can adjust this value according to your preference
-
+    page_size = int(request.GET.get('pagination', 10))  # You can adjust this value according to your preference
     requested_page = int(request.GET.get('page', 1))
     # Handle the case where requested_page is 0
     if requested_page <= 0:
         requested_page = 1
 
-    page_data = paginator.paginate_queryset(data, request)
+    start_index = (requested_page - 1) * page_size
+    end_index = requested_page * page_size
+
+    paginated_data = data[start_index:end_index]
     result_list = []
 
-    for values in page_data:
+    for values in paginated_data:
         context = {
             "id": values.idcargaison,
             "dateheurecargaison": values.dateheurecargaison,
@@ -966,7 +968,9 @@ def cargaisonRequisitionList(request):
         "last_response": result_list,
     }
 
-    return paginator.get_paginated_response(response_data)
+    return Response(response_data)
+
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
