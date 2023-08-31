@@ -934,8 +934,10 @@ def cargaisonInspectionList(request):
 @permission_classes([IsAuthenticated])
 def cargaisonRequisitionList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(etat="En attente requisition",
-                                    entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    data = Cargaison.objects.filter(
+        etat="En attente requisition",
+        entrepot__affectationentrepot__username_id=user
+    ).order_by('-dateheurecargaison')
 
     # Configure pagination
     paginator = PageNumberPagination()
@@ -955,7 +957,11 @@ def cargaisonRequisitionList(request):
         }
         result_list.append(context)
 
-    response_data = result_list
+    response_data = {
+        # "next_page": paginator.get_next_page_number() if paginator.get_next_link() else None,
+        # "loaded_items": paginator.page.paginator.count,
+        "last_response": result_list,
+    }
 
     return paginator.get_paginated_response(response_data)
 
