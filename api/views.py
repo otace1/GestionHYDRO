@@ -948,7 +948,7 @@ def cargaisonRequisitionList(request):
     if requested_page == 0:
         requested_page = 1
 
-    page_data = paginator.paginate_queryset(data, requested_page)
+    page_data = paginator.paginate_queryset(data, request)
     result_list = []
 
     for values in page_data:
