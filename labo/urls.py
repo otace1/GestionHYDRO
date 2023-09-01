@@ -45,6 +45,10 @@ urlpatterns = [
     # Liens des validations Labo
     path('validation1/', views.GestionValidation.affichagetableauvalidation1, name='validation1'),
     path('validation1Response/', views.affichagetableauvalidation1Response, name='affichagetableauvalidation1Response'), #Ajax Request
+
+    path('echantillonRecus/', views.echantillonRecus, name='echantillonRecus'),
+    path('echantillonRecus/response/', views.echantillonRecusResponse, name='echantillonRecusResponse'),
+
     path('codecq/<int:pk>', views.GestionValidation.codecertificat, name='codecq'),
     path('validation2/', views.GestionValidation.affichagetableauvalidation2, name='validation2'),
     path('validation2Response/', views.affichagetableauvalidation2Response, name='affichagetableauvalidation2Response'), #Ajax Request

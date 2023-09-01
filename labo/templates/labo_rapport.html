@@ -1,0 +1,66 @@
+{% extends 'labo/labo_base_rapport.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+{% load crispy_forms_tags %}
+
+
+{% block content %}
+
+    <div id="data-table-wrapper" style="position: relative;">
+  <div class="loading-spinner"></div>
+  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+    <thead>
+      <tr>
+        <th>DATE ECHANT.</th>
+        <th>DATE RECEP.</th>
+        <th>NUM. DOSSIER</th>
+        <th>CODE LABO</th>
+        <th>NUM. RE</th>
+        <th>NUM. CQ</th>
+        <th>PRODUIT</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'echantillonRecusResponse' %}',
+                type: 'GET',
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+            },
+            columns: [
+                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
+                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'frontiere__nomville'
+                { data: 'numdos' }, // Use array index to access 'importateur__nomimportateur'
+                { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'entrepot__nomentrepot'
+                { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'produit__nomproduit'
+                { data: 'entrepot_echantillon__laboreception__numcertificatqualite' },
+                { data: 'produit__nomproduit' },
+            ],
+
+        });
+    });
+
+
+</script>
+
+{% endblock %}
+

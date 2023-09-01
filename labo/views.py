@@ -159,10 +159,10 @@ class GestionLaboratoire():
                 if codelabo is None:
                     codelabo = 0
                 codeToUse = codelabo + 1
+
                 print('TEST CODE')
                 print(codeToUse)
 
-                
                 p = LaboReception(idcargaison_id=pk, codelabo=codeToUse,
                                   numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
                 p.save()
@@ -5113,4 +5113,80 @@ def affichageAnalyseRefaireResponse(request):
         })
 
 
+@login_required(login_url='login')
+def echantillonRecus(request):
+    user = request.user
+    role = user.role_id
+    if role == 5 or role == 1 or role == 6:
+        template = 'labo_rapport.html'
+        context={}
+        return render(request,template,context)
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+def echantillonRecusResponse(request):
+    user = request.user
+    role = user.role_id
+    if role == 5 or role == 1 or role == 6:
+        qs = Cargaison.objects.filter(
+            etat="Analyse Labo en cours",
+            entrepot__ville__affectationville__username_id=user.id
+            ).values(
+            'dateheurecargaison__date',
+            'entrepot_echantillon__dateechantillonage__date',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'entrepot_echantillon__laboreception__codelabo',
+            'entrepot_echantillon__numrappechauto',
+            'entrepot_echantillon__laboreception__numcertificatqualite',
+            'produit__nomproduit',
+            'numdos',
+            ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo__date')
+
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+    else:
+        return redirect('logout')
 

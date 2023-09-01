@@ -313,6 +313,7 @@
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
                             <li class="breadcrumb-item active">Validation des résultats</li>
+                            <li class="breadcrumb-item active">Rapports</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -327,40 +328,22 @@
                     <h1 class="m-0 text-dark"><b></b></h1>
                 </div>
                 <!-- /.row -->
-            <!-- Small boxes (Stat box) -->
-                <!-- /.container-fluid -->
-                    <!-- Small boxes (Stat box) -->
-{#        <div class="row">#}
-{#          <div class="col-lg-3 col-6">#}
-{#            <!-- small box -->#}
-{#            <div class="small-box bg-info">#}
-{#              <div class="inner">#}
-{#                <h3>{{ enanalyse }}</h3>#}
-{#                <p>Echantillons reçus</p>#}
-{#              </div>#}
-{#              <div class="icon">#}
-{#                <i class="ion ion-bag"></i>#}
-{#              </div>#}
-{#              <a href="{% url 'echantillonRecus' %}" class="small-box-footer">Détails <i class="fas fa-arrow-circle-right"></i></a>#}
-{#            </div>#}
-{#          </div>#}
-{#        </div>#}
-{#        <!-- /.row -->#}
+
 
 
             <div class="row">
-                 <a class="btn btn-app bg-warning">
+                 <a class="btn btn-app bg-warning" href="{% url 'validation1' %}">
                   <span class="badge bg-info"></span>
-                  <i class="fas fa-envelope"></i> RAPPORTS
+                  <i class="fas fa-envelope"></i> RETOUR
                 </a>
             </div>
 
 
                <div class="row">
-                   <div class="col-md-9">
+                   <div class="col-md-12">
                        <div class="card">
                            <div class="card-header border-0" style="background-color: darkgreen">
-                               <h3 class="card-title" style="color: white"><b>EN ATTENTE DE VALIDATION</b></h3>
+                               <h3 class="card-title" style="color: white"><b>ÉCHANTILLONS RECU EN ATTENTE DES RESULTATS</b></h3>
                            </div>
                            <div class="card-body">
                                {% block content %}
@@ -368,24 +351,6 @@
                            </div>
                        </div>
                    </div>
-
-                <div class="col-md-3">
-            <div class="small-box bg-info">
-              <div class="inner">
-                <h3>{{ enanalyse }}</h3>
-
-                <p>ECHANTILLONS RECUS</p>
-              </div>
-              <div class="icon">
-                <i class="ion ion-bag"></i>
-              </div>
-              <a href="{% url 'echantillonRecus' %}" class="small-box-footer">Détails <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-
-            {% block content1 %}
-            {% endblock %}
-          </div>
-
                </div>
 
            </div>
