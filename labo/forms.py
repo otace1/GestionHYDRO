@@ -347,5 +347,22 @@ class FiltresDate(forms.Form):
                 Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
                 Submit('VALIDER', 'VALIDER', css_class='btn btn-primary'),
             ),
+        )
 
+
+
+# Formulaire de recherche statistique
+class CorrectionProduit(forms.Form):
+    produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label='NATURE PRODUIT')
+    def __init__(self, *args, **kwargs):
+        super(CorrectionProduit, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_id = 'correctionForm'
+        self.helper.label_class = 'col-md-6'
+        self.helper.field_class = 'col-md-6'
+        self.helper.layout = Layout(
+            Row(
+                Column('produit',css_class='form-group col-md-12 mb-0'),
+            ),
         )
