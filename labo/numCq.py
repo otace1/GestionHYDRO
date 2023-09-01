@@ -27,8 +27,8 @@ def numCq(v):
     for result in last_code_result:
         last_code = result.last_code
 
-    print('LAST CODE:')
-    print(last_code)
+    # print('LAST CODE:')
+    # print(last_code)
 
     return last_code
 
