@@ -295,13 +295,15 @@ class GestionAnalyse():
         user = request.user
         role = user.role_id
         if role == 5 or role == 1:
+            form = CorrectionProduit()
             count = Cargaison.objects.filter(
                         etat='Refaire',
                         entrepot__ville__affectationville__username_id=user.id
                     ).count()
-            print(count)
+            # print(count)
             context={
-                'count':count
+                'count':count,
+                'form':form
             }
             return render(request, 'labo_analyse.html', context)
         else:
@@ -5189,4 +5191,24 @@ def echantillonRecusResponse(request):
         })
     else:
         return redirect('logout')
+
+
+@login_required(login_url='login')
+def correctionNature(request):
+    if request.method == 'POST':
+        produit = request.POST['produit']
+        idcargaison = request.POST['idcargaison']
+        c=Cargaison.objects.get(idcargaison=idcargaison)
+        p=Produit.objects.get(idproduit=produit)
+        c.produit = p
+        c.save(update_fields=['produit'])
+        # print(produit)
+        # print(idcargaison)
+        response_data = {"message": "Form submitted successfully"}
+        return JsonResponse(response_data, status=200)
+    else:
+        # Handle other HTTP methods or errors if needed
+        response_data = {"message": "Invalid request method"}
+        return JsonResponse(response_data, status=400)
+
 

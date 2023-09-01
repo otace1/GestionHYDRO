@@ -95,4 +95,7 @@ urlpatterns = [
     #Submission of Resulat by Ajax
     path('saisieResultat/ajx/', views.saisieResultatAjax, name='saisieResultatAjax'),
 
+    #Correction Nature
+    path('correctionNature/', views.correctionNature, name='correctionNature'),
+
 ]

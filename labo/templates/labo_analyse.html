@@ -23,6 +23,27 @@
   </table>
 </div>
 
+
+    <div class="modal fade" id="correctionModal" tabindex="-1" role="dialog" aria-labelledby="correctionModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <!-- Add your modal content here -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="correctionModalLabel">CORRECTION NATURE PRODUIT</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        {% crispy form %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary validation-correction-btn" data-dismiss="modal">VALIDER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const csrfToken = '{{ csrf_token }}';
 
@@ -57,13 +78,60 @@ $(document).ready(function () {
             { // New column configuration
                 data: 'idcargaison',
                 render: function (data, type, row) {
+                    const correctionProduit = '<button class="btn btn-info correction-btn" data-toggle="modal" data-target="#correctionModal" data-row-id="' + data + '">CORRECTION PRODUIT</button> ';
                     const submitSaisie = '<button class="btn btn-success saisie-btn" data-row-id="' + data + '">SAISIE</button> ';
-                    return submitSaisie;
+                    return correctionProduit+submitSaisie;
                 }
             }// Use array index to access 'immatriculation'
         ],
 
     });
+
+
+    $(document).on('click', '.correction-btn', function () {
+        idcargaison = $(this).data('row-id');
+        // Now you have the idcargaison value stored in the idcargaison variable
+        console.log('idcargaison:', idcargaison);
+        // Open the modal programmatically
+        {#$('#correctionModal').modal('show');#}
+        // ...
+    });
+
+
+    // Attach a click event handler to the "VALIDER" button
+    $(document).on('click','.validation-correction-btn', function (){
+      // Serialize the form data into a format that can be sent via AJAX
+      var formData = $("#correctionForm").serialize();
+
+      formData += "&idcargaison=" + idcargaison;
+
+      console.log(formData);
+      // Perform the AJAX request
+      $.ajax({
+        type: "POST", // Adjust the HTTP method as needed
+        url: "{% url 'correctionNature' %}", // Replace with the actual URL for your AJAX endpoint
+        data: formData,
+        headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+        success: function(response) {
+          // Handle the success response here, e.g., show a success message
+          console.log("Form submitted successfully", response);
+          alert('Changement effectué');
+          // Close the modal if needed
+          $("#correctionModal").modal("hide");
+          dataTable.ajax.reload();
+        },
+        error: function(error) {
+          // Handle errors here, e.g., show an error message
+            alert('Erreur');
+          console.error("Error submitting form", error);
+          dataTable.ajax.reload();
+        }
+      });
+    });
+
+
 
     // Add a click event listener for the 'SAISIE' buttons with class 'saisie-btn'
     $(document).on('click', '.saisie-btn', function() {
