@@ -5054,7 +5054,7 @@ def affichageAnalyseRefaireResponse(request):
     user = request.user
     id = user.id
     role = user.role_id
-    if role == 4 or role == 1:
+    if role == 5 or role == 1:
         qs = Cargaison.objects.filter(
             etat="Refaire",
             entrepot__ville__affectationville__username_id=id
