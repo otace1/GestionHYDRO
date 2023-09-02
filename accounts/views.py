@@ -280,3 +280,10 @@ def createToken(request,pk):
         Token.objects.create(user=user)
         return redirect('userslist')
     return redirect('userslist')
+
+
+
+def privacyPolicy(request):
+    template = 'privacyPolicy.html'
+    context = {}
+    return render(request,template,context)

@@ -20,4 +20,8 @@ urlpatterns = [
 
     path('createToken/<int:pk>', views.createToken, name='createToken'), # Create Token
 
+    #Privacy Policy
+    path('privacy/', views.privacyPolicy, name='privacyPolicy'),
+
+
 ]

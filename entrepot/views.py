@@ -1832,7 +1832,7 @@ def affichageEnAttenteRequisition(request):
     role = user.role_id
     id = user.id
     template = 'enAttenteRequisition.html'
-    qs = Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
+    qs = Cargaison.objects.filter(etat="En attente requisition",entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
     table = CargaisonEnAttenteRequisition(qs)
     RequestConfig(request, paginate={"per_page": 5}).configure(table)
     context = {'table':table}
