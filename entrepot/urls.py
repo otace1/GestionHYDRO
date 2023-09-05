@@ -7,6 +7,7 @@ urlpatterns = [
     path('rechercher/', views.GestionEchantillonage.rechercheqrcode, name='rechercher'),
     path('rechercherre/', views.GestionEchantillonage.rechercherre, name='rechercherre'),
     path('dechargement/', views.GestionDechargement.tableaudechargement, name='dechargement'),
+    path('dechargement/response', views.GestionDechargement.tableauDechargementResponse, name='tableauDechargementResponse'),
     # path('rapport/<int:pk>', views.impressionRapport, name='rapport'),
     path('rapport/', views.impressionRapport, name='rapport'),
     path('impressionRe/<int:pk>', views.impressionRe, name='impressionRe'),

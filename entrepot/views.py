@@ -57,7 +57,7 @@ class GestionEchantillonage():
 
             # #Compteur de la page principale de l'entrepot
             n = Cargaison.objects.filter(etat='En attente requisition',entrepot__affectationentrepot__username_id=id).count()
-            d = Cargaison.objects.filter(impressionresultat__isConforme=1,entrepot__affectationentrepot__username_id=id).count()
+            d = Cargaison.objects.filter(etat='Conforme aux exigences',impressionresultat__isConforme=1,entrepot__affectationentrepot__username_id=id).count()
             i = Cargaison.objects.filter(etatInspection=1,entrepot__affectationentrepot__username_id=id).count()
             x= ImpressionResultat.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id).filter(Q(idcargaison__toBeConsignated=1)|Q(idcargaison__toBeRefouler=1)).filter(Q(idcargaison__isRefouler=0)|Q(idcargaison__isConsignated=0)).count()
 
@@ -366,15 +366,32 @@ class GestionDechargement():
     def tableaudechargement(request):
         # Getting Logged in user detail for filtering
         user = request.user
-        id = user.id
         role = user.role_id
         form = MeterAfter()
+        template = 'entrepot_dechargement.html'
+
+        if role == 3 or role == 1:
+            context = {'form':form}
+            return render(request,template,context)
+        else:
+            return redirect('logout')
+
+
+    @login_required(login_url='login')
+    def tableauDechargementResponse(request):
+        # Getting Logged in user detail for filtering
+        user = request.user
+        id = user.id
+        role = user.role_id
 
         if role == 3 or role == 1:
             qs = Cargaison.objects.filter(
+                etat='Conforme aux exigences',
                 impressionresultat__isConforme=1,
                 entrepot__affectationentrepot__username_id=id,
             ).values(
+                'idcargaison',
+                'dateheurecargaison__date',
                 'importateur__nomimportateur',
                 'immatriculation',
                 'numdos',
@@ -383,12 +400,41 @@ class GestionDechargement():
                 '-impressionresultat__printDate'
             )
 
-            table = CargaisonDechargement(qs)
-            RequestConfig(request, paginate={"per_page": 10}).configure(table)
-            return render(request, 'entrepot_dechargement.html', {
-                'cargaison': table,
-                'form':form,
-                                                                  })
+            # Number of items to show per page
+            items_per_page = 8
+
+            # Initialize the Paginator with the QuerySet and the number of items per page
+            paginator = Paginator(qs, items_per_page)
+
+            # Get the current page number from the request's GET parameters
+            draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+            start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+            length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+            # Calculate the current page number based on start and length
+            current_page = (start // length) + 1
+
+            try:
+                # Get the current page from the Paginator
+                page = paginator.page(current_page)
+            except PageNotAnInteger:
+                # If page is not an integer, deliver the first page.
+                page = paginator.page(1)
+            except EmptyPage:
+                # If page is out of range (e.g. 9999), return an empty JSON response.
+                return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+            # Convert the page object to a list of dictionaries
+            data = list(page)
+
+            # Return JSON response with the data
+            return JsonResponse({
+                'data': data,
+                'draw': draw,
+                'recordsTotal': paginator.count,
+                'recordsFiltered': paginator.count,
+            })
+
         else:
             return redirect('logout')
 
@@ -1300,6 +1346,7 @@ def compartiment(request, pk):
             t = request.POST['tempcomp']  # Temperature du compartiment
             govCompart = request.POST['gov']  # Gov du compartiment
 
+
             # calcul des valeurs d'inspection
             # Recuperation des valeurs pour calcul de la densite a 15
             densite = inspection.dens
@@ -1379,27 +1426,32 @@ def updatecompartiment(request, pk):
 @login_required(login_url='login')
 def meterafter(request):
     if request.method == 'POST':
-        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-            pk = request.POST.get('pk', None)
-            meterafter = request.POST.get('meterafter', None)
-            meterbefore = request.POST.get('meterbefore', None)
-            impression = ImpressionResultat.objects.get(idImpression=pk)
-            cargaison = Cargaison.objects.get(idcargaison=impression.idcargaison_id)
-            try:
-                if meterbefore == '':
-                    meterbefore = 0
-                if meterafter == '':
-                    meterafter = 0
-                inspection = Inspection.objects.get(idcargaison=cargaison)
-                inspection.meterafter = meterafter
-                inspection.save(update_fields=['meterafter', 'meterbefore'])
-                cargaison.etat = 'Cargaison dechargee'
-                cargaison.dateDechargement = datetime.datetime.today()
-                cargaison.save(update_fields=['etat', 'dateDechargement'])
-                return JsonResponse({'status': 'success'})
-            except (Inspection.DoesNotExist):
-                return JsonResponse({'status': 'error', 'message': 'ImpressionResultat or Cargaison object does not exist.'})
-        return redirect('dechargement')
+        idcargaison = request.POST['idcargaison']
+        meterafter = request.POST['meterafter']
+        meterbefore = request.POST['meterbefore']
+        print('TEST')
+        print(idcargaison)
+        print(meterbefore)
+
+        try:
+            cargaison = Cargaison.objects.get(idcargaison=idcargaison)
+            inspection = Inspection.objects.get(idcargaison=cargaison)
+
+            if meterbefore == '':
+                meterbefore = 0
+            if meterafter == '':
+                meterafter = 0
+
+            inspection.meterafter = meterafter
+            inspection.save(update_fields=['meterafter', 'meterbefore'])
+            cargaison.etat = 'Cargaison dechargee'
+            cargaison.dateDechargement = datetime.datetime.today()
+            cargaison.save(update_fields=['etat', 'dateDechargement'])
+            return JsonResponse({'status': 'success'})
+
+        except ObjectDoesNotExist:
+            return JsonResponse({'status': 'error', 'message': "Erreur! La cargaison sélectionnée n'a encore fait l'objet d'aucune inspection"})
+
     return redirect('dechargement')
 
 
@@ -1767,14 +1819,6 @@ def responseTableauRapports(request):
         'recordsFiltered': paginator.count,
     })
 
-    # table = RapportInspectionCamion(qs, prefix='1_')
-    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page":10}).configure(table)
-    #
-    # context = {
-    #     'table': table,
-    #     # 'table1': table1
-    # }
-    # return render(request, template, context)
 
 
 

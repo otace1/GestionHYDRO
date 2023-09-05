@@ -215,6 +215,23 @@ class CompartimentInspection(forms.ModelForm):
             'tempcomp',
         )
 
+    def __init__(self, *args, **kwargs):
+        super(CompartimentInspection, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            Row("",
+                Column('compart', css_class='form-group col-md-6 mb-0'),
+                Column('sealNumber', css_class='form-group col-md-6 mb-0'),
+                ),
+            Row("",
+                Column('sealstate', css_class='form-group col-md-3 mb-0'),
+                Column('innage', css_class='form-group col-md-3 mb-0'),
+                Column('gov', css_class='form-group col-md-3 mb-0'),
+                Column('tempcomp', css_class='form-group col-md-3 mb-0'),
+                css_class='form-row'
+                ),
+        )
+
 
 class MeterAfter(forms.Form):
     meterbefore = forms.FloatField(required=False, label="INDEX INITIAL DU COMPTEUR")

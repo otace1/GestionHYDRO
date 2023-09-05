@@ -4,7 +4,140 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-    {% render_table cargaison %}
+    <div id="data-table-wrapper" style="position: relative;">
+  <div class="loading-spinner"></div>
+<table id="data-table" class="table table-bordered display responsive" style="width:100%">
+    <thead>
+        <tr>
+            <th>DATE ENTREE</th>
+            <th>FOURNISSEUR</th>
+            <th>PRODUIT</th>
+            <th>IMMATR.</th>
+            <th>NUM.DOSSIER</th>
+            <th>ACTION(s)</th>
+        </tr>
+    </thead>
+</table>
+</div>
+
+<!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    let idcargaison;
+    let dataTable;
+
+    $(document).ready(function () {
+            dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'tableauDechargementResponse' %}',
+                type: 'GET',
+                // Show the loading spinner during DataTable processing
+                // Show the loading spinner during DataTable processing
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+        },
+            columns: [
+                { data: 'dateheurecargaison__date' },
+                { data: 'importateur__nomimportateur' },
+                { data: 'produit__nomproduit' },
+                { data: 'immatriculation' },
+                { data: 'numdos' },
+                { // New column configuration
+                    data: 'idcargaison',
+                    render: function (data, type, row) {
+                        // 'data' contains the value of 'idcargaison' for this row
+                        // Here, we'll create a JSON input field and a button to submit the data
+
+                        // Include a button to submit the JSON data for the row
+                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">DECHARGEMENT</button>';
+                        return  submitButton;
+                    }
+                }
+            ],
+
+        });
+
+
+        // Handle form submission on button click
+        $('#data-table').on('click', '.btn-warning', function () {
+            const rowId = $(this).data('row-id');
+            idcargaison = rowId;
+
+            console.log(idcargaison);
+            $('#modal-dech').modal('show');
+
+            // Show the loading icon while waiting for the response
+            $('#loading-icon').show();
+        });
+
+                // Add a click event handler for the "Submit" button
+        $('.btn.btn-primary').click(function (e) {
+          e.preventDefault()
+          //Disable Submit button
+          $('.btn.btn-primary').attr("disabled", true);
+          var APIurl = "{% url 'meterafter' %}";
+
+          // Serialize the form data into a format that can be sent via AJAX
+          var formData = $("#meter-after").serialize();
+
+          formData += "&idcargaison=" + idcargaison;
+
+          console.log(formData);
+           $.ajax({
+            url: APIurl,
+            type: "POST",
+            data: formData,
+            headers: {
+                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+            },
+            success: function(response) {
+                // Check the response status
+                if (response.status === 'success') {
+                    // Operation was successful
+                    console.log("Form submitted successfully", response);
+                    alert('Données sauvegardées');
+                    // Disable Submit button
+                    $('.btn.btn-primary').attr("disabled", false);
+                    // Close the modal if needed
+                    $("#modal-dech").modal("hide");
+                    dataTable.ajax.reload();
+                } else {
+                    // Operation encountered an error
+                    alert("Error: " + response.message);
+                    // Re-enable Submit button in case of error
+                    $('.btn.btn-primary').attr("disabled", false);
+                    // Close the modal if needed
+                    $("#modal-dech").modal("hide");
+                    dataTable.ajax.reload();
+                }
+            },
+            error: function(error) {
+                // Handle errors here, e.g., show an error message
+                alert("Erreur! La cargaison sélectionnée n'a encore fait l'objet d'aucune inspection");
+                // Re-enable Submit button in case of error
+                $('.btn.btn-primary').attr("disabled", false);
+                console.error("Error submitting form", error);
+                $("#modal-dech").modal("hide");
+                dataTable.ajax.reload();
+            }
+        });
+
+      })
+
+    });
+</script>
+
 {% endblock %}
 
 
@@ -31,84 +164,4 @@
 {% endblock %}
 
 
-
-<script>
-  {% block javascript %}
-          // using jQuery
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-var csrftoken = getCookie('csrftoken');
-
-function csrfSafeMethod(method) {
-    // these HTTP methods do not require CSRF protection
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-}
-      $.ajaxSetup({
-          beforeSend: function (xhr, settings) {
-              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                  xhr.setRequestHeader("X-CSRFToken", csrftoken);
-              }
-          }
-      });
-
-{#      //script for submitting data in ajax#}
-{#      //      $('.btn.btn-primary').click(function () {#}
-{#      $('.fas.fa-arrow-alt-circle-down').click(function () {#}
-{#//      $('#idechant').click(function () {#}
-{#          Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database#}
-{#          console.log(Id); //Sanity check#}
-{#      });#}
-
-      //script for submitting data in ajax
-        $('.btn.btn-default').click(function () {
-            Id = rowId; //getting the id of the row which equal to the pk into the database
-            console.log('Test:',Id); // debug
-        });
-
-
-
-      $('.btn.btn-primary').click(function (e) {
-          e.preventDefault()
-          //Disable Submit button
-          $('.btn.btn-primary').attr("disabled", true);
-          var pk = Id;
-          var APIurl = "{% url 'meterafter' %}";
-          $input = $('<input type="hidden" name="pk">').val(pk);
-          $('#meter-after').append($input);
-          var SerializedData = $("#meter-after").serialize();
-          console.log(SerializedData);
-          $.ajax({
-              url: APIurl,
-              type: "POST",
-              data: SerializedData,
-              success: function () {
-                  alert('Données sauvegardées')
-                  console.log('Data Saved');
-                  window.location.reload();
-              },
-              error: function () {
-                  alert("Erreur! La cargaison selectionner n'a encore fait l'objet d'aucune inspection");
-                  console.log('Data Not Saved');
-                  $('.btn.btn-primary').attr("disabled", false);
-                  location.reload();
-              }
-          });
-      })
-
-  {% endblock %}
-</script>
 
