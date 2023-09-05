@@ -867,6 +867,8 @@ def cargaisonListeDechargement(request):
     for values in paginated_data:
         context = {
             "id": values.idcargaison,
+            "numdos": values.numdos,
+            "requisition": values.numreq,
             "dateheurecargaison": values.dateheurecargaison,
             "importateur": values.importateur.nomimportateur,
             "immatriculation": values.immatriculation,
@@ -905,6 +907,8 @@ def cargaisonInspectionList(request):
     for values in paginated_data:
         context = {
             "id": values.idcargaison,
+            "numdos": values.numdos,
+            "requisition": values.numreq,
             "dateheurecargaison": values.dateheurecargaison,
             "importateur": values.importateur.nomimportateur,
             "immatriculation": values.immatriculation,
