@@ -486,10 +486,10 @@ def impressionRe(request,pk):
 
 
 @login_required(login_url='login')
-def impressionRapport(request):
+def impressionRapport(request,pk):
     template = 'rapport.html'
-
-    pk = request.session['id']
+    #
+    # pk = request.session['id']
 
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
@@ -1933,7 +1933,20 @@ def marquageInspection(request):
     c = Cargaison.objects.get(idcargaison=pk)
     c.etatInspection = 0
     c.save(update_fields=['etatInspection'])
-    return redirect('rapport')
+    print('DEBUG')
+    print(pk)
+
+    # Create a dictionary with the data you want to return
+    response_data = {
+        'message': 'Inspection marked successfully',
+        'status': 'success',
+        'pk': pk,
+    }
+
+    # Return a JSON response
+    return JsonResponse(response_data)
+
+    # return redirect('rapport')
 
 
 @login_required(login_url='login')

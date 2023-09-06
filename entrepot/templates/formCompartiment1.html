@@ -14,9 +14,59 @@
     <div id="seal">
     </div>
     <div align="right">
-        <a href="{% url 'marquageInspectionWeb' %}" class="btn btn-primary">SUIVANT</a>
+        <a id="suivant-button" class="btn btn-primary">SUIVANT</a>
         {#        <button href="{% url 'tanker-inspection' %}" class="btn btn-primary">Suivant</button>#}
     </div>
+
+        <script>
+        // Add a click event listener to the "SUIVANT" button
+        document.getElementById("suivant-button").addEventListener("click", function(event) {
+            event.preventDefault(); // Prevent the default link navigation
+
+            // Perform an Ajax request to the 'marquageInspectionWeb' view
+            fetch("{% url 'marquageInspectionWeb' %}", {
+                method: "GET",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest", // Add this header for Ajax request
+                },
+            })
+            .then(function(response) {
+                if (response.status === 200) {
+                    return response.json(); // Parse the JSON response
+                } else {
+                    throw new Error("Failed to fetch data");
+                }
+            })
+            .then(function(data) {
+                // Handle the JSON response data here
+                const message = data.message;
+                const status = data.status;
+                const pk = data.pk;
+
+                console.log("Message:", message);
+                console.log("Status:", status);
+                console.log("PK:", pk);
+
+                // You can update the DOM or perform other actions based on the response here
+                // Redirect to one URL
+                window.location.href = "{% url 'affichageInspection' %}";
+
+                // Open another URL in a new window if `pk` is not empty
+                if (pk !== undefined && pk !== null && pk !== "") {
+                    const urlWithParameter = `/entrepot/rapport/${pk}`;
+                    {#const urlWithParameter = `{% url 'rapport' pkValue %}`;#}
+                    window.open(urlWithParameter, "_blank");
+                }
+
+
+            })
+            .catch(function(error) {
+                console.error("Error:", error);
+            });
+        });
+    </script>
+
+
 {% endblock %}
 
 
