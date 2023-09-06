@@ -16187,10 +16187,3101 @@ def synthese_encaissement(request):
 #         return redirect('logout')
 
 
+# @login_required(login_url='login')
+# # Fonction Recherche Statistique Detaillé
+# def rapportBrut(request):
+#     user = request.user
+#     template = "rapportBrutes.html"
+#     if request.method == 'POST':
+#         ville = request.POST['ville']
+#         produit = request.POST['produit']
+#         importateur = request.POST['importateur']
+#         entrepot = request.POST['entrepot']
+#         date_d = request.POST['date_d']
+#         date_f = request.POST['date_f']
+#         print(ville)
+#         request.session['frontiere'] = ville
+#         request.session['produit'] = produit
+#         request.session['importateur'] = importateur
+#         request.session['entrepot'] = entrepot
+#         request.session['date_d'] = date_d
+#         request.session['date_f'] = date_f
+#
+#         if ville and produit and importateur and entrepot and date_d and date_f:
+#             print('TEST')
+#             print(importateur)
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d, date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True, then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#         if ville and produit and importateur and entrepot and date_d:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#         if ville and produit and importateur and entrepot and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#         if ville and produit and importateur and entrepot :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#         if ville and produit and importateur and date_d and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and importateur and date_d :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and importateur and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and importateur :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and entrepot and date_d :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and entrepot and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and entrepot :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and date_d and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and date_d :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and produit:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 produit_id=produit,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and entrepot and date_d:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and entrepot and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and entrepot:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and date_d :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and importateur :
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 importateur_id=importateur,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and entrepot and date_d:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and entrepot and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and entrepot:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and date_d:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if ville:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and entrepot and date_d:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and entrepot and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and entrepot :
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and date_d:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and importateur :
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 importateur_id=importateur,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and entrepot and date_d:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and date_d:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit and date_f:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if produit:
+#             qs = Cargaison.objects.filter(
+#                 produit_id=produit,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and entrepot and date_d:
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and entrepot and date_f:
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and entrepot :
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and date_d and date_f :
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and date_d :
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur and date_f :
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if importateur :
+#             qs = Cargaison.objects.filter(
+#                 importateur_id=importateur,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if entrepot and date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 entrepot__ville__idville=ville,
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if entrepot and date_d :
+#             qs = Cargaison.objects.filter(
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if entrepot and date_f :
+#             qs = Cargaison.objects.filter(
+#                 entrepot_id=entrepot,
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if entrepot :
+#             qs = Cargaison.objects.filter(
+#                 entrepot_id=entrepot,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if date_d and date_f:
+#             qs = Cargaison.objects.filter(
+#                 dateheurecargaison__range=[date_d,date_f],
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if date_d:
+#             qs = Cargaison.objects.filter(
+#                 dateheurecargaison__date=date_d,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#
+#         if date_f:
+#             qs = Cargaison.objects.filter(
+#                 dateheurecargaison__date=date_f,
+#             ).annotate(
+#                 volJauge=Sum('inspection__compartiment__gov'),
+#                 gsvJauge=Sum('inspection__compartiment__gsv'),
+#                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#                 mta=Sum('inspection__compartiment__mta'),
+#                 fraisOcc=Case(
+#                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                          then=Sum('inspection__compartiment__gsv') * 11),
+#                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                     output_field=FloatField()
+#                 ),
+#             ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#
+#
+#             table=RapportBrut(qs)
+#             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#             context={'table':table}
+#             return render(request,template,context)
+#
+#
+#         qs = Cargaison.objects.annotate(
+#             volJauge=Sum('inspection__compartiment__gov'),
+#             gsvJauge=Sum('inspection__compartiment__gsv'),
+#             govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+#             gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+#             mta=Sum('inspection__compartiment__mta'),
+#             fraisOcc=Case(
+#                 When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+#                      then=Sum('inspection__compartiment__gsv') * 11),
+#                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+#                 output_field=FloatField()
+#             ),
+#         ).values('requisitiondackdate__date','dateDechargement__date',
+#                 'idcargaison',
+#                 'dateheurecargaison__date',
+#                 'requisitiondackdate',
+#                 'importateur__nomimportateur',
+#                 'entrepot__nomentrepot',
+#                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+#                 'entrepot_echantillon__dateechantillonage__date',
+#                 'frontiere__nomville',
+#                 'immatriculation',
+#                 'produit__nomproduit',
+#                 'declaration',
+#                 'volume',
+#                 'inspection__temp',
+#                 'impressionresultat__printDate',
+#                 'inspection__dens',
+#                 'inspection__dateinspection__date',
+#                 'volJauge',
+#                 'gsvJauge',
+#                 'govMeter',
+#                 'gsvMeter',
+#                 'mta',
+#                 'fraisOcc',
+#             )
+#         table=RapportBrut(qs)
+#         RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+#         context={'table':table}
+#         return render(request,template,context)
+#     else:
+#         return redirect('logout')
+
+
 @login_required(login_url='login')
-# Fonction Recherche Statistique Detaillé
 def rapportBrut(request):
-    user = request.user
     template = "rapportBrutes.html"
     if request.method == 'POST':
         ville = request.POST['ville']
@@ -16199,3044 +19290,37 @@ def rapportBrut(request):
         entrepot = request.POST['entrepot']
         date_d = request.POST['date_d']
         date_f = request.POST['date_f']
-        print(ville)
         request.session['frontiere'] = ville
         request.session['produit'] = produit
         request.session['importateur'] = importateur
         request.session['entrepot'] = entrepot
         request.session['date_d'] = date_d
         request.session['date_f'] = date_f
-
-        if ville and produit and importateur and entrepot and date_d and date_f:
-            print('TEST')
-            print(importateur)
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d, date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True, then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-        if ville and produit and importateur and entrepot and date_d:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-        if ville and produit and importateur and entrepot and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-        if ville and produit and importateur and entrepot :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-        if ville and produit and importateur and date_d and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and importateur and date_d :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and importateur and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and importateur :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                importateur_id=importateur,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and entrepot and date_d :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and entrepot and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and entrepot :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and date_d and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and date_d :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and produit:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                produit_id=produit,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and entrepot and date_d:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and entrepot and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and entrepot:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and date_d :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and importateur :
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                importateur_id=importateur,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and entrepot and date_d:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and entrepot and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and entrepot:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and date_d:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if ville:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and entrepot and date_d:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and entrepot and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and entrepot :
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and date_d:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and importateur :
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                importateur_id=importateur,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and entrepot and date_d:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and date_d:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit and date_f:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if produit:
-            qs = Cargaison.objects.filter(
-                produit_id=produit,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and entrepot and date_d:
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and entrepot and date_f:
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and entrepot :
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and date_d and date_f :
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and date_d :
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur and date_f :
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if importateur :
-            qs = Cargaison.objects.filter(
-                importateur_id=importateur,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if entrepot and date_d and date_f:
-            qs = Cargaison.objects.filter(
-                entrepot__ville__idville=ville,
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if entrepot and date_d :
-            qs = Cargaison.objects.filter(
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if entrepot and date_f :
-            qs = Cargaison.objects.filter(
-                entrepot_id=entrepot,
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if entrepot :
-            qs = Cargaison.objects.filter(
-                entrepot_id=entrepot,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if date_d and date_f:
-            qs = Cargaison.objects.filter(
-                dateheurecargaison__range=[date_d,date_f],
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if date_d:
-            qs = Cargaison.objects.filter(
-                dateheurecargaison__date=date_d,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-     
-
-        if date_f:
-            qs = Cargaison.objects.filter(
-                dateheurecargaison__date=date_f,
-            ).annotate(
-                volJauge=Sum('inspection__compartiment__gov'),
-                gsvJauge=Sum('inspection__compartiment__gsv'),
-                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
-                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
-                mta=Sum('inspection__compartiment__mta'),
-                fraisOcc=Case(
-                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                         then=Sum('inspection__compartiment__gsv') * 11),
-                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                    output_field=FloatField()
-                ),
-            ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-
-
-            table=RapportBrut(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-            context={'table':table}
-            return render(request,template,context)
-
-
-        qs = Cargaison.objects.annotate(
+        context={}
+        return render(request,template,context)
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+# Fonction Recherche Statistique Detaillé
+def rapportBrutResponse(request):
+    ville = request.session['frontiere']
+    produit = request.session['produit']
+    importateur = request.session['importateur']
+    entrepot = request.session['entrepot']
+    date_d = request.session['date_d']
+    date_f = request.session['date_f']
+
+    if ville and produit and importateur and entrepot and date_d and date_f:
+
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
             volJauge=Sum('inspection__compartiment__gov'),
             gsvJauge=Sum('inspection__compartiment__gsv'),
             govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
@@ -19248,36 +19332,7961 @@ def rapportBrut(request):
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values('requisitiondackdate__date','dateDechargement__date',
-                'idcargaison',
-                'dateheurecargaison__date',
-                'requisitiondackdate',
-                'importateur__nomimportateur',
-                'entrepot__nomentrepot',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'frontiere__nomville',
-                'immatriculation',
-                'produit__nomproduit',
-                'declaration',
-                'volume',
-                'inspection__temp',
-                'impressionresultat__printDate',
-                'inspection__dens',
-                'inspection__dateinspection__date',
-                'volJauge',
-                'gsvJauge',
-                'govMeter',
-                'gsvMeter',
-                'mta',
-                'fraisOcc',
-            )
-        table=RapportBrut(qs)
-        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
-        context={'table':table}
-        return render(request,template,context)
-    else:
-        return redirect('logout')
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+        # Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+        # table = RapportBrut(qs)
+        # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        # context = {'table': table}
+        # return render(request, template, context)
+
+    if ville and produit and importateur and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and importateur and entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and importateur and entrepot:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and importateur and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and importateur and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and importateur and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and importateur:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and entrepot:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and produit:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and entrepot:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and importateur:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and entrepot:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if ville:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and entrepot:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and date_d:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and importateur:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and date_d:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit and date_f:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if produit:
+        qs = Cargaison.objects.filter(
+            produit_id=produit,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and entrepot:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and date_d:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur and date_f:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if importateur:
+        qs = Cargaison.objects.filter(
+            importateur_id=importateur,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if entrepot and date_d and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if entrepot and date_d:
+        qs = Cargaison.objects.filter(
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if entrepot and date_f:
+        qs = Cargaison.objects.filter(
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if entrepot:
+        qs = Cargaison.objects.filter(
+            entrepot_id=entrepot,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if date_d and date_f:
+        qs = Cargaison.objects.filter(
+            dateheurecargaison__range=[date_d, date_f],
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if date_d:
+        qs = Cargaison.objects.filter(
+            dateheurecargaison__date=date_d,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    if date_f:
+        qs = Cargaison.objects.filter(
+            dateheurecargaison__date=date_f,
+        ).annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+# Number of items to show per page
+        items_per_page = 10
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
+                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+            sheet.append(header_row)
+
+            # Write data rows to the Excel file
+            for row in data:
+                sheet.append([
+                    row['dateheurecargaison__date'],
+                    row['frontiere__nomville'],
+                    row['declaration'],
+                    row['importateur__nomimportateur'],
+                    row['entrepot__nomentrepot'],
+                    row['immatriculation'],
+                    row['requisitiondackdate__date'],
+                    row['entrepot_echantillon__dateechantillonage__date'],
+                    row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                    row['impressionresultat__printDate'],
+                    row['inspection__dateinspection__date'],
+                    row['dateDechargement__date'],
+                    row['produit__nomproduit'],
+                    row['inspection__dens'],
+                    row['inspection__temp'],
+                    row['volJauge'],
+                    row['mta'],
+                    row['gsvJauge'],
+                    row['gsvMeter'],
+                    row['fraisOcc'],
+                ])
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    qs = Cargaison.objects.annotate(
+        volJauge=Sum('inspection__compartiment__gov'),
+        gsvJauge=Sum('inspection__compartiment__gsv'),
+        govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+        gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+        mta=Sum('inspection__compartiment__mta'),
+        fraisOcc=Case(
+            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                 then=Sum('inspection__compartiment__gsv') * 11),
+            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+            output_field=FloatField()
+        ),
+    ).values('requisitiondackdate__date', 'dateDechargement__date',
+             'idcargaison',
+             'dateheurecargaison__date',
+             'requisitiondackdate',
+             'importateur__nomimportateur',
+             'entrepot__nomentrepot',
+             'entrepot_echantillon__laboreception__datereceptionlabo__date',
+             'entrepot_echantillon__dateechantillonage__date',
+             'frontiere__nomville',
+             'immatriculation',
+             'produit__nomproduit',
+             'declaration',
+             'volume',
+             'inspection__temp',
+             'impressionresultat__printDate',
+             'inspection__dens',
+             'inspection__dateinspection__date',
+             'volJauge',
+             'gsvJauge',
+             'govMeter',
+             'gsvMeter',
+             'mta',
+             'fraisOcc',
+             )
+    # Number of items to show per page
+    items_per_page = 10
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Check if it's an AJAX request and if the export flag is set
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
+                      'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                      'PRODUIT', 'DENS.ATA',
+                      'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
+        sheet.append(header_row)
+
+        # Write data rows to the Excel file
+        for row in data:
+            sheet.append([
+                row['dateheurecargaison__date'],
+                row['frontiere__nomville'],
+                row['declaration'],
+                row['importateur__nomimportateur'],
+                row['entrepot__nomentrepot'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
+                row['volume'],
+            ])
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
 
 
 @login_required(login_url='login')
