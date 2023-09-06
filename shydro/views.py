@@ -242,6 +242,9 @@ def numreq(request):
 
             #Numerotation auto des Dossiers
             numDos = numDossier(ville)
+            if numDos is None:
+                numDos = 0
+
             c.numdos = numDos + 1
 
 
