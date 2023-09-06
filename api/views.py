@@ -1015,6 +1015,11 @@ def compartimentInspection(request):
     sealState = request.data['sealState']
     sealState = SealState.objects.get(sealstate=sealState)
     innage = request.data['innage']
+    if innage is not None:
+        innage = innage
+    else:
+        innage = 'N/A'
+
     gov = request.data['gov']
 
     #Calcul dens a 15
