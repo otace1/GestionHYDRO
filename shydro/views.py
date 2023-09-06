@@ -241,7 +241,7 @@ def numreq(request):
             name = name.username
 
             #Numerotation auto des Dossiers
-            numDos = numDossier(pk, ville)
+            numDos = numDossier(ville)
             c.numdos = numDos + 1
 
 
