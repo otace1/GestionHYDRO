@@ -163,9 +163,9 @@ class EnAttenteInspection(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap4.html"
 
 
 class CargaisonDechargement2(tables.Table):
