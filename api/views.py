@@ -1015,7 +1015,7 @@ def compartimentInspection(request):
     sealState = request.data['sealState']
     sealState = SealState.objects.get(sealstate=sealState)
     innage = request.data['innage']
-    if innage == 0:
+    if innage == 'null':
         innage = 'N/A'
 
     gov = request.data['gov']
