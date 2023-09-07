@@ -816,17 +816,16 @@ def cargaisonEchantillonnageList(request):
     if requested_page <= 0:
         requested_page = 1
 
-    start_index = (requested_page - 1) * page_size
-    end_index = requested_page * page_size
+    paginator = Paginator(data, page_size)
+    paginated_data = paginator.get_page(requested_page)
 
-    paginated_data = data[start_index:end_index]
     result_list = []
 
     for values in paginated_data:
         context = {
             "id": values.idcargaison,
             "numdos": values.numdos,
-            "requisition":values.numreq,
+            "requisition": values.numreq,
             "dateheurecargaison": values.dateheurecargaison,
             "importateur": values.importateur.nomimportateur,
             "immatriculation": values.immatriculation,
