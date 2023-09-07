@@ -826,7 +826,7 @@ def cargaisonEchantillonnageList(request):
             "id": values.idcargaison,
             "numdos": values.numdos,
             "requisition": values.numreq,
-            "dateheurecargaison": values.dateheurecargaison,
+            "dateheurecargaison": values.dateheurecargaison__date,
             "importateur": values.importateur.nomimportateur,
             "immatriculation": values.immatriculation,
             "produit": values.produit.nomproduit,
