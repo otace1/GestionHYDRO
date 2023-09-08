@@ -1015,8 +1015,10 @@ def compartimentInspection(request):
     sealState = request.data['sealState']
     sealState = SealState.objects.get(sealstate=sealState)
     innage = request.data['innage']
-    if innage == 'null':
-        innage = 'N/A'
+
+    # Check if 'meterafter' is a valid number or convert it to 0 if it's None or empty.
+    if innage is None or not str(innage).isnumeric():
+        innage = 0
 
     gov = request.data['gov']
 
