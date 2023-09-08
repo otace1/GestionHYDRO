@@ -1153,10 +1153,10 @@ def rapportInspection(request):
         'qrCode':cargaison.qrcode,
         'immatriculation':cargaison.immatriculation,
         'entrance':cargaison.frontiere.nomville,
-        'dateArrivee':cargaison.dateheurecargaison__date,
+        'dateArrivee':cargaison.dateheurecargaison.date(),
         'origin':cargaison.provenance.name,
         'produit':cargaison.produit.nomproduit,
-        'dateInspection':inspection.dateinspection__date,
+        'dateInspection':inspection.dateinspection.date(),
         'fournisseur':cargaison.importateur.nomimportateur,
         'entrepot':cargaison.entrepot.nomentrepot,
         #Jaugeage
