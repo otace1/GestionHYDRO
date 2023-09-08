@@ -1673,33 +1673,6 @@ def tableaurapports(request):
 @login_required(login_url='login')
 def responseTableauRapports(request):
     user = request.user.id
-    template = 'tableauRapport.html'
-    # qs = Cargaison.objects.raw('SELECT c.idcargaison, i.idinspection, ev.nomville, i.dateinspection, a.nomimportateur, ee.nomentrepot ,c.immatriculation, p.nomproduit, c.dateheurecargaison, c.requisitiondackdate, c.dateDechargement ,e.dateechantillonage, l.datereceptionlabo , ei.printDate, i.dateinspection , c.volume , SUM(co.gov) as volConst, ROUND(SUM(co.gsv),4) as gsvT \
-    #                             FROM enreg_cargaison c \
-    #                                 LEFT JOIN enreg_entrepot_echantillon e \
-    #                                 ON c.idcargaison = e.idcargaison_id \
-    #                                 LEFT JOIN enreg_laboreception l \
-    #                                 ON e.idcargaison_id = l.idcargaison_id \
-    #                                 LEFT JOIN enreg_impressionresultat ei \
-    #                                 ON l.idcargaison_id = ei.idcargaison_id \
-    #                                 LEFT JOIN enreg_inspection i \
-    #                                 ON i.idcargaison_id = c.idcargaison \
-    #                                 LEFT JOIN enreg_compartiment co \
-    #                                 ON co.idinspection_id = i.idinspection \
-    #                                 LEFT JOIN enreg_produit p \
-    #                                 ON p.idproduit = c.produit_id \
-    #                                 LEFT JOIN enreg_importateur a \
-    #                                 ON a.idimportateur = c.importateur_id \
-    #                                 LEFT JOIN enreg_entrepot ee \
-    #                                 ON ee.identrepot = c.entrepot_id \
-    #                                 LEFT JOIN enreg_ville ev \
-    #                                 ON ev.idville = ee.ville_id \
-    #                                 LEFT JOIN accounts_affectationville v \
-    #                                 ON v.ville_id = ev.idville \
-    #                             WHERE v.username_id= %s \
-    #                             AND c.etatInspection = 0 \
-    #                             GROUP BY c.idcargaison \
-    #                             ORDER BY i.dateinspection DESC',[user,])
     qs = Cargaison.objects.filter(
                     entrepot__affectationentrepot__username_id=user,
                     etatInspection=0,
