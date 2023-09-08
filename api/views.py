@@ -1189,14 +1189,17 @@ def dechargementCargaison(request):
     id = request.data['id']
     meterafter = request.POST['meterafter']
     meterbefore = request.POST['meterbefore']
+
+    # Check if 'meterafter' is a valid number or convert it to 0 if it's None or empty.
+    if meterafter is None or not str(meterafter).isnumeric():
+        meterafter = 0
+
+    if meterbefore is None or not str(meterbefore).isnumeric():
+        meterbefore = 0
+
     try:
         cargaison = Cargaison.objects.get(idcargaison=id)
         inspection = Inspection.objects.get(idcargaison_id=cargaison)
-
-        if meterbefore == '':
-            meterbefore = 0
-        if meterafter == '':
-            meterafter = 0
 
         inspection.meterafter = meterafter
         inspection.save(update_fields=['meterafter', 'meterbefore'])
