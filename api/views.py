@@ -1,5 +1,6 @@
 import json
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.utils.encoding import force_str
 from rest_framework.decorators import api_view, APIView, permission_classes
@@ -1186,26 +1187,28 @@ def rapportInspection(request):
 @permission_classes([IsAuthenticated])
 def dechargementCargaison(request):
     id = request.data['id']
+    meterafter = request.POST['meterafter']
+    meterbefore = request.POST['meterbefore']
     try:
-        inspection = Inspection.objects.get(idcargaison=id)
         cargaison = Cargaison.objects.get(idcargaison=id)
-        meterafter = request.data['meterAfter']
-        meterbefore = request.data['meterBefore']
+        inspection = Inspection.objects.get(idcargaison=cargaison)
+
         if meterbefore == '':
             meterbefore = 0
         if meterafter == '':
             meterafter = 0
+
+        inspection.meterafter = meterafter
+        inspection.save(update_fields=['meterafter', 'meterbefore'])
         cargaison.etat = 'Cargaison dechargee'
         cargaison.dateDechargement = datetime.datetime.today()
         cargaison.save(update_fields=['etat', 'dateDechargement'])
 
-        inspection.meterafter = meterafter
-        inspection.save(update_fields=['meterafter', 'meterbefore'])
         context = {
             'id':id
         }
         return Response(context, status=status.HTTP_200_OK)
-    except:
+    except ObjectDoesNotExist:
         context = {
             'id':id
         }
