@@ -1043,7 +1043,7 @@ def compartimentInspection(request):
 def marquageInspection(request):
     id = request.data['id']
     c = Cargaison.objects.get(idcargaison=id)
-    c.etatInspection = False
+    c.etatInspection = 0
     c.save(update_fields=['etatInspection'])
     context = {
         'id': id
@@ -1191,7 +1191,7 @@ def dechargementCargaison(request):
     meterbefore = request.POST['meterbefore']
     try:
         cargaison = Cargaison.objects.get(idcargaison=id)
-        inspection = Inspection.objects.get(idcargaison=cargaison)
+        inspection = Inspection.objects.get(idcargaison_id=cargaison)
 
         if meterbefore == '':
             meterbefore = 0
