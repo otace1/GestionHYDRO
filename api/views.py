@@ -1220,6 +1220,8 @@ def dechargementCargaison(request):
         }
         return Response(context,status=status.HTTP_400_BAD_REQUEST)
 
+#
+# ReceptionLabo
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
