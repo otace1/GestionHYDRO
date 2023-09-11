@@ -1225,7 +1225,7 @@ def dechargementCargaison(request):
 def receptionEchantillonLabo(request):
     # id = request.data['id']
     qrCode = request.data['qrCode']
-    now = datetime.now()
+    now = datetime.datetime.now()
     try:
         cargaison = Cargaison.objects.get(qrcode=qrCode)
         pk = cargaison.id
