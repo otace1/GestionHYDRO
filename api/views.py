@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework_api_key.permissions import HasAPIKey
 from rest_framework.authtoken.models import Token
 from rest_framework_api_key.models import APIKey
+from django.shortcuts import get_object_or_404
 from accounts.models import MyUser
 from django.db.models import Q
 from django_countries.data import COUNTRIES
@@ -1223,33 +1224,34 @@ def dechargementCargaison(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def receptionEchantillonLabo(request):
-    # id = request.data['id']
-    qrCode = request.data['qrCode']
-    now = datetime.datetime.now()
     try:
-        cargaison = Cargaison.objects.get(qrcode=qrCode)
-        pk = cargaison.id
-        ville = cargaison.entrepot_id
-        ville = (Entrepot.objects.get(identrepot=ville)).ville_id
-        numcertificatqualite = numCq(ville)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+        qrCode = request.data.get('qrCode')  # Use get() to safely retrieve the value
+        if not qrCode:
+            return Response({'error': 'qrCode is missing in the request data'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Changement de l'etat de la cargaison
+        cargaison = get_object_or_404(Cargaison, qrcode=qrCode, etat='Echantillonner')
+        cargaisonEntrepot = get_object_or_404(Entrepot_echantillon, idcargaison=cargaison)
+
+        ville = get_object_or_404(Entrepot, identrepot=cargaison.entrepot_id).ville_id
+
+        # Generate the automatic CQ number
+        numcertificatqualite = numCq(ville)
+
+        # Change the state of the cargaison
         cargaison.etat = "Analyse Labo en cours"
         cargaison.save(update_fields=['etat'])
 
-        # Sauvegarde de l'instruction dans la Table LaboReception
+        # Save the instruction in the LaboReception table
         codelabo = codeLabo(ville)
-        LaboReception(idcargaison_id=pk, codelabo=codelabo,numcertificatqualite=numcertificatqualite, datereceptionlabo=now).save()
-        # p.save()
-
-        context = {
-            # 'id':pk,
-            'codeLabo':codelabo,
-        }
+        LaboReception.objects.create(
+            idcargaison=cargaisonEntrepot, codelabo=codelabo, numcertificatqualite=numcertificatqualite, datereceptionlabo=datetime.datetime.now()
+        )
+        context = {'codeLabo': codelabo}
         return Response(context, status=status.HTTP_200_OK)
-    except:
-        context = {
-            # 'id':pk
-        }
-        return Response(context,status=status.HTTP_400_BAD_REQUEST)
+    except Cargaison.DoesNotExist:
+        return Response({'error': 'Cargaison not found for the given qrCode'}, status=status.HTTP_404_NOT_FOUND)
+    except Entrepot.DoesNotExist:
+        return Response({'error': 'Entrepot not found for the given qrCode'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
