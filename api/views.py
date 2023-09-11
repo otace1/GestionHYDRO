@@ -1223,7 +1223,7 @@ def dechargementCargaison(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def receptionEchantillonLabo(request):
-    id = request.data['id']
+    # id = request.data['id']
     qrCode = request.data['qrCode']
     now = datetime.now()
     try:
@@ -1231,25 +1231,25 @@ def receptionEchantillonLabo(request):
         pk = cargaison.id
         ville = cargaison.entrepot_id
         ville = (Entrepot.objects.get(identrepot=ville)).ville_id
-        numcertificatqualite = numCq(ville, pk)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
+        numcertificatqualite = numCq(ville)  # Generation automatique les numeros CQ annuel et par Ville (Labo)
 
         # Changement de l'etat de la cargaison
         cargaison.etat = "Analyse Labo en cours"
         cargaison.save(update_fields=['etat'])
 
         # Sauvegarde de l'instruction dans la Table LaboReception
-        codelabo = codeLabo(ville, pk)
+        codelabo = codeLabo(ville)
         LaboReception(idcargaison_id=pk, codelabo=codelabo,numcertificatqualite=numcertificatqualite, datereceptionlabo=now).save()
         # p.save()
 
         context = {
-            'id':id,
+            # 'id':id,
             'codeLabo':codelabo,
         }
         return Response(context, status=status.HTTP_200_OK)
     except:
         context = {
-            'id':id
+            # 'id':id
         }
         return Response(context,status=status.HTTP_400_BAD_REQUEST)
 
