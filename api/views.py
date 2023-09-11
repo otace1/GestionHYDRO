@@ -1243,13 +1243,13 @@ def receptionEchantillonLabo(request):
         # p.save()
 
         context = {
-            'id':pk,
+            # 'id':pk,
             'codeLabo':codelabo,
         }
         return Response(context, status=status.HTTP_200_OK)
     except:
         context = {
-            'id':pk
+            # 'id':pk
         }
         return Response(context,status=status.HTTP_400_BAD_REQUEST)
 
