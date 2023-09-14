@@ -877,7 +877,7 @@ def regularisation(request):
     form6 = ChangementImportateur()
     qs = Cargaison.objects.filter(
             entrepot__ville__affectationville__username_id=user).filter(
-            Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
+            Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage") | Q(etat="Conforme aux exigences")
         ).order_by('-dateheurecargaison')
 
     table = Regularisation(qs)
