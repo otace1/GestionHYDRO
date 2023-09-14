@@ -2242,7 +2242,7 @@ def regularisationRecherche(request):
         if search_value:
             qs = Cargaison.objects.filter(
                 entrepot__ville__affectationville__username_id=u).filter(
-                Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage"),
+                Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage") | Q(etat="Conforme aux exigences"),
                 Q(frontiere__nomville__icontains=search_value) |
                 Q(importateur__nomimportateur__icontains=search_value) |
                 Q(entrepot__nomentrepot__icontains=search_value) |
