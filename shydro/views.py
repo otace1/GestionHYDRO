@@ -2208,11 +2208,13 @@ def changementImportateur(request):
     if request.method == 'POST':
         if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
             pk = request.POST.get('pk', None)
-            nouvelleNatureProduit = request.POST.get('nouvelleNatureProduit', None)
-            p = Produit.objects.get(idproduit=nouvelleNatureProduit)
+            print('TEST')
+            nouvelImportateur = request.POST.get('importateur', None)
+            print(nouvelImportateur)
+            i = Importateur.objects.get(idimportateur=nouvelImportateur)
             cargaison = Cargaison.objects.get(idcargaison=pk)
-            cargaison.produit = p
-            cargaison.save(update_fields=['produit'])
+            cargaison.importateur = i
+            cargaison.save(update_fields=['importateur'])
             # Return a JSON response indicating success
             return JsonResponse({'status': 'success'})
         else:

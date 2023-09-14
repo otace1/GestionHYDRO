@@ -109,6 +109,7 @@ class Transbordement(forms.Form):
         )
 
 
+
 class Filters(forms.Form):
     fournisseur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'), label='FOURNISSEUR',required=False)
     entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.none(), label='ENTREPOT',required=False)
@@ -323,7 +324,7 @@ class ChangementImportateur(forms.Form):
         super(ChangementImportateur, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_method = 'POST'
-        self.helper.form_id = 'nature-form'
+        self.helper.form_id = 'importateur-form'
         self.helper.form_show_labels = True
         self.helper.form_class = 'form-horizontal'
         self.helper.form_show_errors = True
@@ -335,7 +336,7 @@ class ChangementImportateur(forms.Form):
                 Column('importateur', css_class='form-group col-md-12 mb-0'),
             ),
             FormActions(
-                Submit('VALIDER', 'VALIDER', css_class='btn btn-outline-warning'),
-                Reset('CLEAR', 'CLEAR', css_class='btn btn-danger'),
+                Submit('submit', 'VALIDER', css_class='btn btn-outline-danger'),
+                Reset('reset', 'CLEAR', css_class='btn btn-danger'),
             ),
         )

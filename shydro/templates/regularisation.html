@@ -156,16 +156,12 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="{% url 'regularisationCargaison' %}" method="post">
+{#              <form action="{% url 'changementImportateur' %}" method="post">#}
                   {% csrf_token %}
             <div class="modal-body">
                 {% crispy form6 %}
             </div>
-{#            <div class="modal-footer justify-content-between">#}
-{#              <button type="cancel" class="btn btn-outline-info" data-dismiss="modal">Close</button>#}
-{#              <button type="submit" class="btn btn-outline-success">Submit</button>#}
-{#            </div>#}
-                  </form>
+{#                  </form>#}
           </div>
           <!-- /.modal-content -->
         </div>
@@ -327,6 +323,47 @@
              }
          });
         })
+
+
+        $('.btn.btn-outline-danger').click(function (e) {
+    e.preventDefault();
+
+    // Disable Submit button
+    $('.btn.btn-outline-danger').attr("disabled", true);
+
+    // Get the value of pk
+    var pk = Id; // Make sure Id contains the value you want to send
+
+    var APIurl = '/shydro/changementImportateur/';
+
+    // Create a hidden input field with the name "pk" and the value of pk
+    $input = $('<input type="hidden" name="pk">').val(pk);
+    $('#importateur-form').append($input);
+
+    // Serialize the form data including the added "pk" input
+    var SerializedData = $("#importateur-form").serialize();
+    console.log(SerializedData);
+
+    $.ajax({
+        url: APIurl,
+        type: "POST",
+        data: SerializedData,
+        dataType: 'json',
+
+        success: function () {
+            alert("Données sauvegardées");
+            location.reload();
+        },
+
+        error: function () {
+            console.log('Erreur');
+            alert("An error occurred");
+            $('.btn.btn-outline-primary').attr("disabled", false);
+            location.reload();
+        }
+    });
+});
+
 
 
     {% endblock %}
