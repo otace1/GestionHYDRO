@@ -350,7 +350,6 @@ class FiltresDate(forms.Form):
         )
 
 
-
 # Formulaire de recherche statistique
 class CorrectionProduit(forms.Form):
     produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label='NATURE PRODUIT')
@@ -366,3 +365,12 @@ class CorrectionProduit(forms.Form):
                 Column('produit',css_class='form-group col-md-12 mb-0'),
             ),
         )
+
+#
+#
+# class FiltresDate(forms.Form):
+#     # codelabo = forms.CharField(label="Code du Labo :")
+#     # numerore= forms.CharField(label="Numero RE :")
+#     datedebut = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de début :")
+#     datefin = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de fin :")
+#

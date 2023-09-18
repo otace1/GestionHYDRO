@@ -3,8 +3,9 @@ import io
 import json
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q,F,OuterRef, Subquery
-from django.db.models.functions import ExtractMonth, ExtractYear
+from django.db.models import Q,F, ExpressionWrapper, fields
+from django.db.models.functions import ExtractMonth, ExtractYear, Cast
+from django.db.models.functions import Cast
 from django.shortcuts import render, redirect
 from openpyxl import Workbook
 
@@ -3531,29 +3532,19 @@ def receptionRapports(request):
 @login_required(login_url='login')
 def receptionRapportsResponse(request):
     user = request.user.id
-
-    # qs = LaboReception.objects.filter(entrepot__ville__affectationville__username_id=user).values(
-    #     'idcargaison__idcargaison__numdos',
-    #     'idcargaison__numrappechauto',
-    #     'codelabo',
-    #     'idcargaison__dateechantillonage__date',
-    #     'datereceptionlabo__date',
-    #     'idcargaison__idcargaison__entrepot__nomentrepot',
-    #     'idcargaison__idcargaison__importateur__nomimportateur',
-    # ).order_by('-datereceptionlabo')
-
-    qs = Cargaison.objects.raw('SELECT c.numdos, l.codelabo, DATE(e.dateechantillonage), DATE(l.datereceptionlabo), ee.nomentrepot, i.nomimportateur, c.immatriculation, ep.nomproduit, e.numrappechauto \
-                            FROM enreg_cargaison c, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_ville ev, accounts_affectationville av \
-                            WHERE c.idcargaison = e.idcargaison_id \
-                            AND e.idcargaison_id = l.idcargaison_id \
-                            AND c.importateur_id = i.idimportateur \
-                            AND c.entrepot_id = ee.identrepot \
-                            AND c.produit_id = ep.idproduit \
-                            AND ee.ville_id = ev.idville \
-                            AND ev.idville = av.ville_id \
-                            AND av.username_id = %s \
-                            ORDER BY l.datereceptionlabo DESC',[user,])
-
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
 
     # Number of items to show per page
     items_per_page = 10
@@ -3579,6 +3570,8 @@ def receptionRapportsResponse(request):
         # If page is out of range (e.g. 9999), return an empty JSON response.
         return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
+    # # Convert the page object to a list of dictionaries
+    # data = list(page)
     # Convert the page object to a list of dictionaries
     data = list(page)
 
@@ -3592,20 +3585,22 @@ def receptionRapportsResponse(request):
         sheet = workbook.active
 
         # Write headers to the Excel file
-        header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.',
-                      '#.T1D',
-                      '#.REQ.']
+        header_row = ['NUM.DOSS', 'NUM.RE', 'CODE LABO', 'DATE ECHANT.', 'DATE RECEP.', 'ENTREPOT',
+                      'FOURNISSEUR',
+                      'IMMATRICULATION','PRODUIT']
 
         # Combine header and data rows using zip
         all_rows = [header_row] + [
             [
-                row['idcargaison__idcargaison__numdos'],
-                row['idcargaison__numrappechauto'],
-                row['codelabo'],
-                row['idcargaison__dateechantillonage__date'],
-                row['datereceptionlabo__date'],
-                row['idcargaison__idcargaison__entrepot__nomentrepot'],
-                row['idcargaison__idcargaison__importateur__nomimportateur'],
+                row['numdos'],
+                row['entrepot_echantillon__numrappechauto'],
+                row['entrepot_echantillon__laboreception__codelabo'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['entrepot__nomentrepot'],
+                row['importateur__nomimportateur'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
             ] for row in data
         ]
 
@@ -3634,19 +3629,21 @@ def receptionRapportsResponse(request):
 
 
 @login_required(login_url='login')
-def receptionRapports(request):
+def receptionRapportsGenerate(request):
     template ='laboReceptionRapportsFiltres.html'
-
     # Get the search value from the request's GET parameters
-    date_d = request.GET.get('date_d', '')
-    date_f = request.GET.get('date_f', '')
+    if request.method == 'POST':
+        date_d = request.POST['date_d']
+        date_f = request.POST['date_f']
 
-    request.session['date_d'] = date_d
-    request.session['date_f'] = date_f
+        request.session['date_d'] = date_d
+        request.session['date_f'] = date_f
 
-    form = FiltresDate()
-    context = {'form':form}
-    return render(request,template,context)
+        form = FiltresDate()
+        context = {'form':form}
+        return render(request,template,context)
+    else:
+        return redirect('receptionRapports')
 
 
 @login_required(login_url='login')
@@ -3713,6 +3710,50 @@ def receptionRapportsResponseFiltres(request):
 
     # Convert the page object to a list of dictionaries
     data = list(page)
+
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['NUM.DOSS', 'NUM.RE', 'CODE LABO', 'DATE ECHANT.', 'DATE RECEP.', 'ENTREPOT',
+                      'FOURNISSEUR',
+                      'IMMATRICULATION', 'PRODUIT']
+
+        # Combine header and data rows using zip
+        all_rows = [header_row] + [
+            [
+                row['numdos'],
+                row['entrepot_echantillon__numrappechauto'],
+                row['entrepot_echantillon__laboreception__codelabo'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['entrepot__nomentrepot'],
+                row['importateur__nomimportateur'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
+            ] for row in data
+        ]
+
+        # Write data rows to the Excel file
+        for row in all_rows:
+            sheet.append(row)
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
 
     # Return JSON response with the data
     return JsonResponse({
