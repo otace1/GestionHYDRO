@@ -3532,55 +3532,27 @@ def receptionRapports(request):
 def receptionRapportsResponse(request):
     user = request.user.id
 
-    # # Get a list of idcargaison values from LaboReception
-    # labo_reception_ids = LaboReception.objects.values_list('idcargaison', flat=True)
+    # qs = LaboReception.objects.filter(entrepot__ville__affectationville__username_id=user).values(
+    #     'idcargaison__idcargaison__numdos',
+    #     'idcargaison__numrappechauto',
+    #     'codelabo',
+    #     'idcargaison__dateechantillonage__date',
+    #     'datereceptionlabo__date',
+    #     'idcargaison__idcargaison__entrepot__nomentrepot',
+    #     'idcargaison__idcargaison__importateur__nomimportateur',
+    # ).order_by('-datereceptionlabo')
 
-    # print('TEST IDS')
-    # print(labo_reception_ids)
-
-    qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user,
-        entrepot_echantillon__laboreception__idcargaison=F('idcargaison')
-    ).values(
-        'numdos',
-        'entrepot_echantillon__numrappechauto',
-        'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage__date',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
-        'entrepot__nomentrepot',
-        'importateur__nomimportateur',
-        'immatriculation',
-        'produit__nomproduit',
-    ).order_by('-dateheurecargaison')
-
-    # Get the search value from the request's GET parameters
-    date_d = request.GET.get('date_d','')
-    date_f = request.GET.get('date_f','')
-    search_value = request.GET.get('search[value]', '')
-
-    # Apply search filter to the QuerySet
-    if search_value:
-        qs = qs.filter(
-            Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-            Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
-            Q(produit__nomproduit__icontains=search_value)
-        )
-
-    if date_d and date_f:
-        qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
-        )
-
-    if date_d:
-        qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
-        )
-        print(date_d)
-
-    if date_f:
-        qs = qs.filter(
-            entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
-        )
+    qs = Cargaison.objects.raw('SELECT c.numdos, l.codelabo, DATE(e.dateechantillonage), DATE(l.datereceptionlabo), ee.nomentrepot, i.nomimportateur, c.immatriculation, ep.nomproduit, e.numrappechauto \
+                            FROM enreg_cargaison c, enreg_entrepot_echantillon e, enreg_laboreception l, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_ville ev, accounts_affectationville av \
+                            WHERE c.idcargaison = e.idcargaison_id \
+                            AND e.idcargaison_id = l.idcargaison_id \
+                            AND c.importateur_id = i.idimportateur \
+                            AND c.entrepot_id = ee.identrepot \
+                            AND c.produit_id = ep.idproduit \
+                            AND ee.ville_id = ev.idville \
+                            AND ev.idville = av.ville_id \
+                            AND av.username_id = %s \
+                            ORDER BY l.datereceptionlabo DESC',[user,])
 
 
     # Number of items to show per page
@@ -3609,6 +3581,48 @@ def receptionRapportsResponse(request):
 
     # Convert the page object to a list of dictionaries
     data = list(page)
+
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.',
+                      '#.T1D',
+                      '#.REQ.']
+
+        # Combine header and data rows using zip
+        all_rows = [header_row] + [
+            [
+                row['idcargaison__idcargaison__numdos'],
+                row['idcargaison__numrappechauto'],
+                row['codelabo'],
+                row['idcargaison__dateechantillonage__date'],
+                row['datereceptionlabo__date'],
+                row['idcargaison__idcargaison__entrepot__nomentrepot'],
+                row['idcargaison__idcargaison__importateur__nomimportateur'],
+            ] for row in data
+        ]
+
+        # Write data rows to the Excel file
+        for row in all_rows:
+            sheet.append(row)
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
 
     # Return JSON response with the data
     return JsonResponse({
