@@ -261,9 +261,13 @@ class RapportActivite(tables.Table):
     entrepot_echantillon__laboreception__datereceptionlabo__date = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "yellow"}})
     impressionresultat__printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "yellow"}})
     inspection__dateinspection = tables.Column(verbose_name="DATE D'INSPECTION", attrs={"td": {"bgcolor": "yellow"}})
-    volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
-    volConst = tables.Column(verbose_name="VOL.CONST", attrs={"td": {"bgcolor": "red"}})
-    gsvT = tables.Column(verbose_name='GSV', attrs={"td": {"bgcolor": "green"}})
+    # volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "red"}})
+    volume = tables.Column(verbose_name="VOL.DECL")
+    inspection__dens = tables.Column(verbose_name='DENS.15')
+    inspection__temp = tables.Column(verbose_name='TEMP.ATA')
+    mtaTotal = tables.Column(verbose_name='MTA')
+    volConst = tables.Column(verbose_name="GOV")
+    gsvT = tables.Column(verbose_name='GSV')
     # actions = tables.TemplateColumn(rapportButtons,verbose_name='')
 
     class Meta:

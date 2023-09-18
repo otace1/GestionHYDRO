@@ -722,21 +722,22 @@ def rapportActivite(request):
     template = 'rapportActiviteFirst.html'
     form = Filters(user=user)
     #
-    # qs = Cargaison.objects.annotate(
-    #     volConst=Sum('inspection__compartiment__gov'),
-    #     gsvT=Sum('inspection__compartiment__gsv')
-    # ).values(
-    #     'numdos','declaration','frontiere__nomville',
-    #     'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
-    #     'requisitiondackdate','entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','impressionresultat__printDate',
-    #     'inspection__dateinspection','volume','volConst','gsvT'
-    # ).order_by('-dateheurecargaison')
-    #
-    # # qs = list(qs)
-    # table = RapportActivite(qs)
-    # RequestConfig(request, paginate={"per_page": 7}).configure(table)
+    qs = Cargaison.objects.annotate(
+        volConst=Sum('inspection__compartiment__gov'),
+        gsvT=Sum('inspection__compartiment__gsv'),
+        mtaTotal=Sum('inspection__compartiment__mta')
+    ).values(
+        'numdos','declaration','frontiere__nomville','inspection__dens','inspection__temp','mtaTotal',
+        'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
+        'requisitiondackdate','entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','impressionresultat__printDate',
+        'inspection__dateinspection','volume','volConst','gsvT'
+    ).order_by('-dateheurecargaison')
+
+    # qs = list(qs)
+    table = RapportActivite(qs)
+    RequestConfig(request, paginate={"per_page": 7}).configure(table)
     context = {
-        # 'table':table,
+        'table':table,
         'form':form
         }
     return render(request,template,context)
