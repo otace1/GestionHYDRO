@@ -123,23 +123,23 @@
 {#                { data: 16 }, // Use array index to access 'gsvT'#}
 {#            ],#}
 {#            // Optional: Add buttons for exporting to Excel#}
-            {#dom: 'Bfrtip',#}
-            {#buttons: [#}
-            {#    {#}
-            {#        extend: 'excelHtml5',#}
-            {#        text: 'Export to Excel',#}
-            {#        filename: 'rapport_brut',#}
-            {#        exportOptions: {#}
-            {#            modifier: {#}
-            {#                search: 'none'#}
-            {#            }#}
-            {#        },#}
-            {#        action: function (e, dt, node, config) {#}
-            {#            // Redirect to the export URL instead of using AJAX#}
-            {#            window.location.href = '{% url 'exportResponseRapportActivite' %}?export=excel';#}
-            {#        }#}
-            {#    }#}
-            {#],#}
+{#            dom: 'Bfrtip',#}
+{#            buttons: [#}
+{#                {#}
+{#                    extend: 'excelHtml5',#}
+{#                    text: 'Export to Excel',#}
+{#                    filename: 'rapport_brut',#}
+{#                    exportOptions: {#}
+{#                        modifier: {#}
+{#                            search: 'none'#}
+{#                        }#}
+{#                    },#}
+{#                    action: function (e, dt, node, config) {#}
+{#                        // Redirect to the export URL instead of using AJAX#}
+{#                        window.location.href = '{% url 'exportResponseRapportActivite' %}?export=excel';#}
+{#                    }#}
+{#                }#}
+{#            ],#}
 {#        });#}
 {#    });#}
 {#</script>#}

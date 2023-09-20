@@ -1008,13 +1008,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1039,14 +1041,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1071,14 +1074,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1101,14 +1105,15 @@ def rapportActiviteFiltre(request):
                 entrepot_id=entrepot,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1132,14 +1137,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1162,14 +1168,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1192,14 +1199,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1221,14 +1229,15 @@ def rapportActiviteFiltre(request):
                 importateur_id=fournisseur,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1251,14 +1260,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1281,14 +1291,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1311,14 +1322,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1340,14 +1352,15 @@ def rapportActiviteFiltre(request):
                 entrepot_id=entrepot,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1369,14 +1382,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1398,14 +1412,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1427,14 +1442,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1464,14 +1480,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1496,14 +1513,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1528,14 +1546,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1558,14 +1577,15 @@ def rapportActiviteFiltre(request):
                 entrepot_id=entrepot,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1589,14 +1609,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1619,14 +1640,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1649,14 +1671,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1678,14 +1701,15 @@ def rapportActiviteFiltre(request):
                 importateur_id=fournisseur,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1708,14 +1732,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1738,14 +1763,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1768,14 +1794,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1797,14 +1824,15 @@ def rapportActiviteFiltre(request):
                 entrepot_id=entrepot,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1826,14 +1854,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1855,14 +1884,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1884,14 +1914,15 @@ def rapportActiviteFiltre(request):
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv')
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
-                'entrepot__ville__nomville',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
                 'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 

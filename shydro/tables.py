@@ -266,6 +266,7 @@ class RapportActivite(tables.Table):
     inspection__dens = tables.Column(verbose_name='DENS.15')
     inspection__temp = tables.Column(verbose_name='TEMP.ATA')
     mtaTotal = tables.Column(verbose_name='MTA')
+    mtvTotal = tables.Column(verbose_name='MTV')
     volConst = tables.Column(verbose_name="GOV")
     gsvT = tables.Column(verbose_name='GSV')
     # actions = tables.TemplateColumn(rapportButtons,verbose_name='')
