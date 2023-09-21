@@ -19296,8 +19296,3214 @@ def rapportBrut(request):
         request.session['entrepot'] = entrepot
         request.session['date_d'] = date_d
         request.session['date_f'] = date_f
-        context={}
-        return render(request,template,context)
+
+        if ville and produit and importateur and entrepot and date_d and date_f:
+
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and importateur:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and entrepot:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and produit:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and entrepot:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and importateur:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and entrepot:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if ville:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and entrepot:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and date_d:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and importateur:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and date_d:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit and date_f:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if produit:
+            qs = Cargaison.objects.filter(
+                produit_id=produit,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and entrepot:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and date_d:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur and date_f:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if importateur:
+            qs = Cargaison.objects.filter(
+                importateur_id=importateur,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if entrepot and date_d and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if entrepot and date_d:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if entrepot and date_f:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if entrepot:
+            qs = Cargaison.objects.filter(
+                entrepot_id=entrepot,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if date_d and date_f:
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__range=[date_d, date_f],
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if date_d:
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date=date_d,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        if date_f:
+            qs = Cargaison.objects.filter(
+                dateheurecargaison__date=date_f,
+            ).annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mta=Sum('inspection__compartiment__mta'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ),
+            ).values('requisitiondackdate__date', 'dateDechargement__date',
+                     'idcargaison',
+                     'dateheurecargaison__date',
+                     'requisitiondackdate',
+                     'importateur__nomimportateur',
+                     'entrepot__nomentrepot',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                     'entrepot_echantillon__dateechantillonage__date',
+                     'frontiere__nomville',
+                     'immatriculation',
+                     'produit__nomproduit',
+                     'declaration',
+                     'volume',
+                     'inspection__temp',
+                     'impressionresultat__printDate',
+                     'inspection__dens',
+                     'inspection__dateinspection__date',
+                     'volJauge',
+                     'gsvJauge',
+                     'govMeter',
+                     'gsvMeter',
+                     'mta',
+                     'fraisOcc',
+                     )
+
+            table=RapportBrut(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+            export_format = request.GET.get("_export", None)
+            if TableExport.is_valid_format(export_format):
+                exporter = TableExport(export_format, table)
+                return exporter.response("table.{}".format(export_format))
+
+            context = {'table': table}
+            return render(request, template, context)
+
+        qs = Cargaison.objects.annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mta=Sum('inspection__compartiment__mta'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ),
+        ).values('requisitiondackdate__date', 'dateDechargement__date',
+                 'idcargaison',
+                 'dateheurecargaison__date',
+                 'requisitiondackdate',
+                 'importateur__nomimportateur',
+                 'entrepot__nomentrepot',
+                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                 'entrepot_echantillon__dateechantillonage__date',
+                 'frontiere__nomville',
+                 'immatriculation',
+                 'produit__nomproduit',
+                 'declaration',
+                 'volume',
+                 'inspection__temp',
+                 'impressionresultat__printDate',
+                 'inspection__dens',
+                 'inspection__dateinspection__date',
+                 'volJauge',
+                 'gsvJauge',
+                 'govMeter',
+                 'gsvMeter',
+                 'mta',
+                 'fraisOcc',
+                 )
+
+        table = RapportBrut(qs)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        export_format = request.GET.get("_export", None)
+        if TableExport.is_valid_format(export_format):
+            exporter = TableExport(export_format, table)
+            return exporter.response("table.{}".format(export_format))
+
+        context = {'table': table}
+        return render(request, template, context)
     else:
         return redirect('logout')
 
