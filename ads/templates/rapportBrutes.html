@@ -55,7 +55,7 @@ const csrfToken = '{{ csrf_token }}';
             responsive: true,
             ajax: {
                 url: '{% url 'rapportBrutResponse' %}',
-                type: 'POST',
+                type: 'GET',
                 headers: {
                     'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
                 },
