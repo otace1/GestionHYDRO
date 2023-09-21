@@ -1,5 +1,6 @@
 {% load static %}
 {% load bootstrap4 %}
+{% load django_tables2 %}
 {% bootstrap_css %}
 {% bootstrap_javascript jquery='full' %}
 
@@ -321,7 +322,12 @@
             <div class="row">
                     <a class="btn btn-app bg-danger" href="{% url 'dashboard' %}">
                   <span class="badge bg-success"></span>
-                  <i class="fas fa-file"></i> Retour
+                  <i class="fas fa-backward"></i> Retour
+                </a>
+
+                 <a class="btn btn-app bg-warning" href="{% export_url "xlsx" %}">
+                  <span class="badge bg-success"></span>
+                  <i class="fas fa-file-excel"></i> DL.
                 </a>
 
 {#                <a class="btn btn-app bg-success" href="{% url 'synthese_importation' %}">#}

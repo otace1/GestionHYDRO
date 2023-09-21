@@ -1,0 +1,20 @@
+{% extends 'rapportsBrutes.html' %}
+{% load crispy_forms_tags %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+
+
+{% block content %}
+    {% render_table table %}
+
+     <!-- Optional: Add Bootstrap JavaScript for table styling -->
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+{% endblock %}
+
+
+
+
