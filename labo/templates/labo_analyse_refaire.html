@@ -103,12 +103,44 @@ $(document).ready(function () {
                         // Here, we'll create a JSON input field and a button to submit the data
                        // Create an input field for each row
                         const inputField = `<input type="text" class="json-input" id="input-${data}" data-row-id="${data}">`;
-                        return inputField;
+                        const clearButton = `<button class="btn btn-danger clear-btn" data-row-id="${data}">Effacer</button>`;
+                        return inputField+'&nbsp;'+clearButton;
                     }
                 }
                 // Use array index to access 'immatriculation'
                 // ...
             ],
+        });
+    });
+
+        // Attach a click event handler to the clear button
+    $('#dynamic-data-table').on('click', '.clear-btn', function() {
+        const rowId = $(this).data('row-id');
+
+        // Make an AJAX request here to clear data associated with the rowId
+        $.ajax({
+            url: "{% url 'clearSaisie' %}", // Replace with your clear data endpoint URL
+            type: 'POST', // or 'GET' depending on your server-side handling
+            data: {
+                rowId: rowId,
+                idcargaison: idcargaison,
+                    }, // Pass any data you need to clear the data
+            headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+            success: function(response) {
+                // Handle success response
+                console.log('Data cleared successfully:', response);
+                alert('Data cleared successfully:\n' + response.status);
+                dynamicDataTable.ajax.reload();
+                // Optionally, update the DataTable or perform any other actions here
+            },
+            error: function(error) {
+                // Handle error response
+                console.error('Error clearing data:', error);
+                alert('Error clearing data:\n' + error.statusText);
+                dynamicDataTable.ajax.reload();
+            }
         });
     });
 

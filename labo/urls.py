@@ -101,4 +101,7 @@ urlpatterns = [
     #Correction Nature
     path('correctionNature/', views.correctionNature, name='correctionNature'),
 
+    #Correction Nature
+    path('clearSaisie/', views.clearSaisie, name='clearSaisie'),
+
 ]

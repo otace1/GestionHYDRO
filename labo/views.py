@@ -5267,3 +5267,36 @@ def correctionNature(request):
         return JsonResponse(response_data, status=400)
 
 
+
+@login_required(login_url='login')
+def clearSaisie(request):
+    if request.method == 'POST':
+        parametreId = request.POST.get('rowId')  # Get the rowId from POST data
+        idcargaison = request.POST.get('idcargaison')  # Get the idcargaison from POST data
+        inputValue = ""  # Define inputValue (you need to get this from your POST data)
+        print(parametreId)
+        print(idcargaison)
+        # Check if the user is allowed to clear values based on parametre.idParametre
+        try:
+            parametre = ParametresProduits.objects.get(idParametre=parametreId)
+            cargaison = Cargaison.objects.get(idcargaison=idcargaison)
+            print(parametre.nomParametre)
+
+            if parametre.idParametre in [2, 8, 22]:
+                r, created = ResultatAnalyse.objects.get_or_create(idParametre=parametre, idcargaison=cargaison)
+                r.valeurResultatChar = inputValue
+                r.save(update_fields=['valeurResultatChar'])
+            else:
+                r, created = ResultatAnalyse.objects.get_or_create(idParametre=parametre, idcargaison=cargaison)
+                r.valeurResultat = None
+                r.save(update_fields=['valeurResultat'])
+
+            return JsonResponse({'status': 'success'})
+        except ParametresProduits.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Parametre not found'}, status=400)
+        except Cargaison.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Cargaison not found'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    else:
+        return redirect('logout')
