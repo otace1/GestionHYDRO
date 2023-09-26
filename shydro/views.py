@@ -1010,8 +1010,8 @@ def rapportActiviteFiltre(request):
                 volConst=Sum('inspection__compartiment__gov'),
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+                mtvTotal=Sum('inspection__compartiment__mtv'),
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1044,7 +1044,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1077,7 +1077,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1108,7 +1108,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1140,7 +1140,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1171,7 +1171,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1202,7 +1202,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1232,7 +1232,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1263,7 +1263,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1294,7 +1294,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1325,7 +1325,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1355,7 +1355,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1385,7 +1385,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1415,7 +1415,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1445,7 +1445,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1483,7 +1483,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1516,7 +1516,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1549,7 +1549,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1580,7 +1580,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1612,7 +1612,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1643,7 +1643,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1674,7 +1674,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1704,7 +1704,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1735,7 +1735,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1766,7 +1766,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1797,7 +1797,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1827,7 +1827,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1857,7 +1857,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1887,7 +1887,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1917,7 +1917,7 @@ def rapportActiviteFiltre(request):
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
                 mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
+            ).values('inspection__compartiment__vcf',
                 'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
                 'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
@@ -1938,7 +1938,6 @@ def rapportActiviteFiltre(request):
                 'form': form
             }
             return render(request, template, context)
-    # return redirect('rapportActivite')
 
 
 @login_required(login_url='login')
@@ -2302,6 +2301,43 @@ def regularisationRecherche(request):
     else:
         return redirect('regularisation')
 
+
+@login_required(login_url='login')
+def rechercheRapportActivite(request):
+    user = request.user.id
+    search = request.GET.get('search',None)
+    print("SEARCH")
+    print(search)
+    template = 'rapportActiviteFirst.html'
+    form = Filters(user=user)
+    #
+    qs = Cargaison.objects.annotate(
+        volConst=Sum('inspection__compartiment__gov'),
+        gsvT=Sum('inspection__compartiment__gsv'),
+        mtaTotal=Sum('inspection__compartiment__mta')
+    ).values(
+        'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
+        'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+        'produit__nomproduit', 'dateheurecargaison',
+        'requisitiondackdate', 'entrepot_echantillon__dateechantillonage',
+        'entrepot_echantillon__laboreception__datereceptionlabo', 'impressionresultat__printDate',
+        'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+    ).order_by('-dateheurecargaison')
+
+    filter = qs.filter(
+        Q(immatriculation__icontains=search) |
+        Q(declaration__icontains=search) |
+        Q(numreq__icontains=search)
+    )
+
+    # qs = list(qs)
+    table = RapportActivite(filter)
+    RequestConfig(request, paginate={"per_page": 7}).configure(table)
+    context = {
+        'table': table,
+        'form': form
+    }
+    return render(request,template,context)
 
 
 

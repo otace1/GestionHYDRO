@@ -50,5 +50,10 @@ urlpatterns = [
 
     path('regularisation/recherche/', views.regularisationRecherche, name='regularisationRecherche'),
 
+    path('recherche/rapportActivite/', views.rechercheRapportActivite, name='rechercheRapportActivite'),
+
+
+
+
 
 ]
