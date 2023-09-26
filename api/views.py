@@ -997,8 +997,19 @@ def tankerInspection(request):
     tempIn = request.data['volumeIn']
     weightIn = request.data['volumeIn']
 
-    i = Inspection(idcargaison=cargaison,dens=densite,temp=temperature,innagein=innageIn, volumein=volumeIn, tempin=tempIn,weightin=weightIn)
-    i.save()
+    try:
+        i = Inspection(idcargaison=cargaison,dens=densite,temp=temperature,innagein=innageIn, volumein=volumeIn, tempin=tempIn,weightin=weightIn)
+        i.save()
+    except:
+        data = Inspection.objects.get(idcargaison=cargaison)
+        data.dens = densite
+        data.temp = temperature
+        data.innagein = innageIn
+        data.volumein = volumeIn
+        data.tempin = tempIn
+        data.weightin = weightIn
+        data.save(update_fields=['dens', 'temp', 'innagein', 'volumein', 'tempin', 'weightin'])
+
     context = {
         'id':id
     }
