@@ -1698,6 +1698,7 @@ def responseTableauRapports(request):
                     'impressionresultat__printDate',
                     'inspection__dateinspection',
                     'volume',
+                    'volConst',
                     gsvT=Case(
                         When(inspection__compartiment__gsv__isnull=False, then=F('gsvT')),
                         default=0,
