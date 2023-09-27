@@ -7,9 +7,9 @@
 
     <style>
     @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
     .loading-spinner {
       border: 4px solid rgba(0, 0, 0, 0.3);
@@ -26,6 +26,7 @@
       z-index: 9999;
     }
     </style>
+
 
 {% block modal %}
     <div class="modal fade" id="modal-default">
@@ -51,98 +52,68 @@
       <!-- /.modal -->
 {% endblock %}
 
-{#{% block export %}#}
-{#    <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>#}
-{#{% endblock %}#}
 
 {% block content %}
     {% render_table table %}
-{#<div id="data-table-wrapper" style="position: relative;">#}
-{#  <div class="loading-spinner"></div>#}
-{#  <table id="data-table" class="table table-bordered display responsive" style="width:100%">#}
-{#    <thead>#}
-{#      <tr>#}
-{#        <th>DATE ENTREE</th>#}
-{#        <th>FRONTIERE</th>#}
-{#        <th>FOURNISSEUR</th>#}
-{#        <th>ENTREPOT</th>#}
-{#        <th>PRODUIT</th>#}
-{#        <th>IMMATR.</th>#}
-{#        <th>#.T1D</th>#}
-{#        <th>#.DOSSIER</th>#}
-{#        <th>DATE REQ.</th>#}
-{#        <th>DATE ECH.</th>#}
-{#        <th>DATE REC.LABO</th>#}
-{#        <th>DATE ANALYSE.LABO</th>#}
-{#        <th>DATE INSPECTION</th>#}
-{#        <th>VOL.DECL.</th>#}
-{#        <th>VOL.CONST.</th>#}
-{#        <th>VOL. A 15°C</th>#}
-{#      </tr>#}
-{#    </thead>#}
-{#  </table>#}
-{#</div>#}
-{##}
-{#<!-- Include FileSaver.js library for saving the Excel file -->#}
-{#<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>#}
-{##}
-{#<script>#}
-{#    $(document).ready(function () {#}
-{#        var dataTable = $('#data-table').DataTable({#}
-{#            lengthChange: false, // Display the length change dropdown#}
-{#            processing: true,#}
-{#            serverSide: true,#}
-{#            responsive: true,#}
-{#            ajax: {#}
-{#                url: '{% url 'responseRapportActivite' %}',#}
-{#                type: 'GET',#}
-{#                beforeSend: function() {#}
-{#                  $('#data-table-wrapper .loading-spinner').show();#}
-{#                },#}
-{#                // Hide the loading spinner after DataTable processing#}
-{#                complete: function() {#}
-{#                  $('#data-table-wrapper .loading-spinner').hide();#}
-{#                }#}
-{#            },#}
-{#            columns: [#}
-{#                { data: 8 }, // Use array index to access 'dateheurecargaison__date'#}
-{#                { data: 2 }, // Use array index to access 'frontiere__nomville'#}
-{#                { data: 5 }, // Use array index to access 'importateur__nomimportateur'#}
-{#                { data: 3 }, // Use array index to access 'entrepot__nomentrepot'#}
-{#                { data: 7 }, // Use array index to access 'produit__nomproduit'#}
-{#                { data: 6 }, // Use array index to access 'immatriculation'#}
-{#                { data: 1 }, // Use array index to access 'declaration'#}
-{#                { data: 0 }, // Use array index to access 'numdos'#}
-{#                { data: 9 }, // Use array index to access 'requisitiondackdate__date'#}
-{#                { data: 10 }, // Use array index to access 'entrepot_echantillon__dateechantillonage__date'#}
-{#                { data: 11 }, // Use array index to access 'entrepot_echantillon__laboreception__datereceptionlabo__date'#}
-{#                { data: 12 }, // Use array index to access 'impressionresultat__printDate'#}
-{#                { data: 13 }, // Use array index to access 'inspection__dateinspection'#}
-{#                { data: 14 }, // Use array index to access 'volume'#}
-{#                { data: 15 }, // Use array index to access 'volConst'#}
-{#                { data: 16 }, // Use array index to access 'gsvT'#}
-{#            ],#}
-{#            // Optional: Add buttons for exporting to Excel#}
-{#            dom: 'Bfrtip',#}
-{#            buttons: [#}
-{#                {#}
-{#                    extend: 'excelHtml5',#}
-{#                    text: 'Export to Excel',#}
-{#                    filename: 'rapport_brut',#}
-{#                    exportOptions: {#}
-{#                        modifier: {#}
-{#                            search: 'none'#}
-{#                        }#}
-{#                    },#}
-{#                    action: function (e, dt, node, config) {#}
-{#                        // Redirect to the export URL instead of using AJAX#}
-{#                        window.location.href = '{% url 'exportResponseRapportActivite' %}?export=excel';#}
-{#                    }#}
-{#                }#}
-{#            ],#}
-{#        });#}
-{#    });#}
-{#</script>#}
+
+<script>
+var rowId;
+
+const csrfToken = '{{ csrf_token }}';
+
+function confirmAction() {
+    event.preventDefault(); // Prevent the default action of the anchor element
+
+    // Get the row element containing the clicked button
+    const row = event.target.closest('tr');
+
+    // Get the value of the "id" attribute from the row element
+    rowId = row.getAttribute('id');
+
+    // Store the rowId in a variable or use it as needed
+    console.log('Row ID:', rowId);
+
+    // Display a confirmation dialog to the user
+    const confirmed = confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?');
+
+    // If the user confirms, send the rowId to your endpoint
+    if (confirmed) {
+        // Make an AJAX request to your endpoint with the rowId
+        // Replace 'yourEndpointURL' with your actual endpoint URL
+        fetch('{% url "reInspecter" %}', {
+            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
+            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
+            contentType: 'application/json', // Set content type to JSON
+            headers: {
+                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+            },
+        })
+        .then(response => {
+            // Handle the response from the server
+            if (response.ok) {
+                // Request was successful
+                // You can perform any necessary actions here
+                console.log('Row ID sent to the server successfully.');
+                alert('Cargaison renvoyée en inspection');
+                window.location.reload();
+            } else {
+                // Request failed
+                console.error('Failed to send Row ID to the server.');
+                alert('Une erreur s\'est produite lors de la réinspection.');
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('An error occurred:', error);
+        });
+    }
+
+    // Return false to prevent the anchor from navigating
+    return false;
+}
+
+
+</script>
 
 {% endblock %}
 

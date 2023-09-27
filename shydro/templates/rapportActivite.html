@@ -36,6 +36,67 @@
 
 {% block content %}
     {% render_table table %}
+
+<script>
+var rowId;
+
+const csrfToken = '{{ csrf_token }}';
+
+function confirmAction() {
+    event.preventDefault(); // Prevent the default action of the anchor element
+
+    // Get the row element containing the clicked button
+    const row = event.target.closest('tr');
+
+    // Get the value of the "id" attribute from the row element
+    rowId = row.getAttribute('id');
+
+    // Store the rowId in a variable or use it as needed
+    console.log('Row ID:', rowId);
+
+    // Display a confirmation dialog to the user
+    const confirmed = confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?');
+
+    // If the user confirms, send the rowId to your endpoint
+    if (confirmed) {
+        // Make an AJAX request to your endpoint with the rowId
+        // Replace 'yourEndpointURL' with your actual endpoint URL
+        fetch('{% url "reInspecter" %}', {
+            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
+            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
+            contentType: 'application/json', // Set content type to JSON
+            headers: {
+                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+            },
+        })
+        .then(response => {
+            // Handle the response from the server
+            if (response.ok) {
+                // Request was successful
+                // You can perform any necessary actions here
+                console.log('Row ID sent to the server successfully.');
+                alert('Cargaison renvoyée en inspection');
+                window.location.reload();
+            } else {
+                // Request failed
+                console.error('Failed to send Row ID to the server.');
+                alert('Une erreur s\'est produite lors de la réinspection.');
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('An error occurred:', error);
+        });
+    }
+
+    // Return false to prevent the anchor from navigating
+    return false;
+}
+
+
+</script>
+
+</script>
 {% endblock %}
 
 

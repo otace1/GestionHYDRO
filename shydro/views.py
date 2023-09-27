@@ -726,7 +726,7 @@ def rapportActivite(request):
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
         mtaTotal=Sum('inspection__compartiment__mta')
-    ).values(
+    ).values('idcargaison',
         'numdos','declaration','frontiere__nomville','inspection__dens','inspection__temp','mtaTotal',
         'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
         'requisitiondackdate','entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','impressionresultat__printDate',
@@ -2314,8 +2314,9 @@ def rechercheRapportActivite(request):
     qs = Cargaison.objects.annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
-        mtaTotal=Sum('inspection__compartiment__mta')
-    ).values(
+        mtaTotal=Sum('inspection__compartiment__mta'),
+        mtvTotal=Sum('inspection__compartiment__mtv'),
+    ).values('idcargaison','mtvTotal',
         'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
         'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
         'produit__nomproduit', 'dateheurecargaison',
@@ -2327,7 +2328,7 @@ def rechercheRapportActivite(request):
     filter = qs.filter(
         Q(immatriculation__icontains=search) |
         Q(declaration__icontains=search) |
-        Q(numreq__icontains=search)
+        Q(numdos__icontains=search)
     )
 
     # qs = list(qs)
@@ -2338,6 +2339,32 @@ def rechercheRapportActivite(request):
         'form': form
     }
     return render(request,template,context)
+
+
+@login_required(login_url='login')
+def reInspecter(request):
+    user = request.user.id
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        pk = data.get('rowId')
+        print(pk)
+        cargaison = Cargaison.objects.get(idcargaison=pk)
+        try:
+            inspection = Inspection.objects.get(idcargaison=cargaison)
+            if Compartiment.objects.filter(idinspection=inspection).exists():
+               Compartiment.objects.filter(idinspection=inspection).delete()
+               cargaison.etatInspection = 1
+               cargaison.save(update_fields=['etatInspection'])
+               return redirect('rapportActivite')
+            else:
+                cargaison.etatInspection = 1
+                cargaison.save(update_fields=['etatInspection'])
+                return redirect('rapportActivite')
+        except:
+            return redirect('rapportActivite')
+    else:
+        return redirect('rapportActivite')
+
 
 
 

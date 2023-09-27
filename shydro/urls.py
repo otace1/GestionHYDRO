@@ -52,6 +52,10 @@ urlpatterns = [
 
     path('recherche/rapportActivite/', views.rechercheRapportActivite, name='rechercheRapportActivite'),
 
+    # re-Inspecter
+    path('reInspecter/', views.reInspecter, name='reInspecter'),
+
+
 
 
 

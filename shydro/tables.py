@@ -1,6 +1,6 @@
 import django_tables2 as tables
 from django_tables2.utils import A
-from enreg.models import Cargaison,Dechargement
+from enreg.models import Cargaison,Dechargement, Entrepot_echantillon
 
 
 A1 = """
@@ -79,10 +79,9 @@ regularisationButtons = """
 #                   CHANGEMENT DE DESTINATION
 #                 </button>
 
-# rapportButtons = """
-#     <a href="{%url 'rapportRe' record.pk%}" class="btn btn-success" onclick="return confirmAction();">RAPP.ECH</a>
-#     <a href="{%url 'rapportIs' record.pk%}" class="btn btn-warning" onclick="return confirmAction();">RAPP.INSP</a>
-# """
+rapportButtons = """
+    <a class="btn btn-warning" onclick="return confirmAction();">Re-INSPECTER</a>
+"""
 
 nonConforme = """
     <a href="{%url 'consignation' record.pk%}" class="btn btn-success" onclick="return confirmAction();">AUTORISATION DE CONSIGNATION</a>
@@ -167,8 +166,6 @@ class NonConformeOrganoleptique(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
 
 
-
-
 class NonConformeLaboratoire(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
     idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
@@ -185,8 +182,6 @@ class NonConformeLaboratoire(tables.Table):
             "id": "example1"
         }
         # template_name = "django_tables2/bootstrap4.html"
-
-
 
 
 class EnAttenteEchantillonage(tables.Table):
@@ -269,14 +264,18 @@ class RapportActivite(tables.Table):
     mtvTotal = tables.Column(verbose_name='MTV')
     volConst = tables.Column(verbose_name="GOV")
     gsvT = tables.Column(verbose_name='GSV')
-    # actions = tables.TemplateColumn(rapportButtons,verbose_name='')
+    actions = tables.TemplateColumn(rapportButtons,verbose_name='')
 
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
             # "id": "example1"
         }
+        row_attrs = {
+            "id": lambda record: record['idcargaison']
+        }
         template_name = "django_tables2/bootstrap5-responsive.html"
+
 
 
 class Regularisation(tables.Table):
