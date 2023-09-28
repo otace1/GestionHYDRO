@@ -455,3 +455,66 @@ class RapportsLaboratoireReception(tables.Table):
             "id": "example1"
         }
 
+
+class RapportLaboratoireEnAttenteReception(tables.Table):
+    numdos = tables.Column(verbose_name="NUM.DOSSIER")
+    entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    entrepot_echantillon__qte = tables.Column(verbose_name="QTE")
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
+class RapportLaboratoireEnAttenteResultat(tables.Table):
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name="DATE DE RECEPTION")
+    numdos = tables.Column(verbose_name="NUM.DOSSIER")
+    entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
+    entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
+    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    entrepot_echantillon__qte = tables.Column(verbose_name="QTE")
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
+
+class RapportLaboratoireEnAttenteValidation(tables.Table):
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name="DATE DE RECEPTION")
+    numdos = tables.Column(verbose_name="NUM.DOSSIER")
+    entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
+    entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
+    entrepot_echantillon__laboreception__numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
+    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
+class RapportLaboratoireEnchPrintedCert(tables.Table):
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name="DATE DE RECEPTION")
+    impressionresultat__printDate = tables.Column(verbose_name="DATE D'IMPRESSION")
+    numdos = tables.Column(verbose_name="NUM.DOSSIER")
+    entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
+    entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
+    entrepot_echantillon__laboreception__numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
+    entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"

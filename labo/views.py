@@ -1107,20 +1107,19 @@ class GestionValidation():
         form = RapportLabo()
         if role == 5 or role == 1 or role == 6:
             # Compteur Chef Laboratoire
-            laboreception = Entrepot_echantillon.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                                dateechantillonage__day=da,
-                                                                dateechantillonage__month=mo,
-                                                                dateechantillonage__year=yr).count()
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',idcargaison__entrepot__ville__affectationville__username_id=id).count()
             enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
                                                      idcargaison__idcargaison__etat='Analyse Labo en cours').count()
             enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                     idcargaison__idcargaison__etat='Validation en cours 1').count()
+                                                     idcargaison__idcargaison__etat='Validation en cours 2').count()
+            certImprimer = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,isPrinted=1).count()
 
             return render(request, 'labo_validation1.html', {
                                                              'form': form,
                                                              'laboreception': laboreception,
                                                              'enanalyse': enanalyse,
                                                              'enattente': enattente,
+                                                            'certImprimer':certImprimer,
                                                              })
         else:
             return redirect('logout')
@@ -1649,7 +1648,19 @@ class GestionValidation():
         role = user.role_id
         if role == 5 or role == 1 or role == 6 or role == 10:
             template = 'labo_validation2.html'
-            context = {}
+            laboreception = Entrepot_echantillon.objects.filter(idcargaison__etat='Echantillonner',idcargaison__entrepot__ville__affectationville__username_id=id).count()
+            enanalyse = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__idcargaison__etat='Analyse Labo en cours').count()
+            enattente = LaboReception.objects.filter(idcargaison__idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                     idcargaison__idcargaison__etat='Validation en cours 2').count()
+            certImprimer = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,isPrinted=1).count()
+
+            context = {
+                'laboreception':laboreception,
+                'enanalyse':enanalyse,
+                'enattente':enattente,
+                'certImprimer':certImprimer,
+            }
             return render(request,template,context)
         else:
             return redirect('logout')
@@ -5300,3 +5311,100 @@ def clearSaisie(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     else:
         return redirect('logout')
+
+
+@login_required(login_url='login')
+def enchAttenteReception(request):
+    user = request.user.id
+    template = 'laboRapport.html'
+    qs = Cargaison.objects.filter(
+        etat='Echantillonner',
+        entrepot__ville__affectationville__username_id=user
+    ).values(
+        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
+        'entrepot__nomentrepot','importateur__nomimportateur',
+        'produit__nomproduit','entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteReception(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def enchAttenteResultat(request):
+    user = request.user.id
+    template = 'laboRapport.html'
+    qs = Cargaison.objects.filter(
+        etat='Analyse Labo en cours',
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
+        'importateur__nomimportateur','produit__nomproduit',
+        'entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteResultat(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def enchAttenteValidation(request):
+    user = request.user.id
+    template = 'laboRapport.html'
+    qs = Cargaison.objects.filter(
+        etat='Validation en cours 2',
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot__nomentrepot','importateur__nomimportateur',
+        'produit__nomproduit'
+    )
+    table = RapportLaboratoireEnAttenteValidation(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
+def enchPrintedCert(request):
+    user = request.user.id
+    template = 'laboRapport.html'
+    qs = Cargaison.objects.filter(
+        impressionresultat__isPrinted=1,
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
+        'produit__nomproduit'
+    )
+    table = RapportLaboratoireEnchPrintedCert(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
+    return render(request, template, context)
+
+

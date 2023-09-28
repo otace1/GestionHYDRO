@@ -104,4 +104,11 @@ urlpatterns = [
     #Correction Nature
     path('clearSaisie/', views.clearSaisie, name='clearSaisie'),
 
+
+    #Different Rapport et Compteur Labo
+    path('enchAttenteReception/', views.enchAttenteReception, name='enchAttenteReception'),
+    path('enchAttenteResultat/', views.enchAttenteResultat, name='enchAttenteResultat'),
+    path('enchAttenteValidation/', views.enchAttenteValidation, name='enchAttenteValidation'),
+    path('enchPrintedCert/', views.enchPrintedCert, name='enchPrintedCert'),
+
 ]
