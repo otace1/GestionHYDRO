@@ -42,8 +42,6 @@ class GestionCodification():
             if 'search' in request.GET:
                 qs = request.GET['search']
                 if qs == "":
-                    # request.session['url'] = request.get_full_path()
-
                     e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                                  entrepot__ville__affectationville__username_id=id).count()
                     d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
@@ -52,12 +50,17 @@ class GestionCodification():
                                                  entrepot__ville__affectationville__username_id=id).count()
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                             isConforme=0, control=1).count()
+                    p = Entrepot_echantillon.objects.filter(
+                        idcargaison__etat='Echantillonner',
+                        idcargaison__entrepot__ville__affectationville__username_id=id
+                        ).count()
 
                     return render(request, 'shydro.html', {
                         'e':e,
                         'd':d,
                         'l':l,
-                        'n':n
+                        'n':n,
+                        'p':p,
 
                     })
                 else:
@@ -71,12 +74,18 @@ class GestionCodification():
                                                  entrepot__ville__affectationville__username_id=id).count()
                     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                             isConforme=0, control=1).count()
+                    p = Entrepot_echantillon.objects.filter(
+                        idcargaison__etat='Echantillonner',
+                        idcargaison__entrepot__ville__affectationville__username_id=id
+                        ).count()
+
 
                     return render(request, 'shydro.html', {
                         'e':e,
                         'd':d,
                         'l':l,
-                        'n':n
+                        'n':n,
+                        'p':p,
 
                     })
             else:
@@ -88,12 +97,17 @@ class GestionCodification():
                                              entrepot__ville__affectationville__username_id=id).count()
                 n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
                                                       isConforme=0, control=0).count()
+                p = Entrepot_echantillon.objects.filter(
+                    idcargaison__etat='Echantillonner',
+                    idcargaison__entrepot__ville__affectationville__username_id=id
+                ).count()
 
                 context = {
                     'e':e,
                     'd':d,
                     'l':l,
-                    'n':n
+                    'n':n,
+                    'p':p,
                 }
                 return render(request, 'shydro.html', context)
         else:
@@ -678,7 +692,11 @@ def enAttenteEchantillonnage(request):
     template = 'enAttenteEchantillonnage.html'
     qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user)
     table = EnAttenteEchantillonage(qs)
-    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
     context = {'table':table}
     return render(request,template,context)
 
@@ -700,7 +718,11 @@ def enAttenteDechargement(request):
             AND aa.username_id = %s",[user,])
 
     table = EnAttenteDechargement(qs)
-    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
     context = {'table':table}
     return render(request,template,context)
 
@@ -711,9 +733,42 @@ def enAttenteResultatLabo(request):
     template = 'enAttenteResultatLabo.html'
     qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteResultatLabo(qs)
-    # RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
     context = {'table':table}
     return render(request,template,context)
+
+
+
+@login_required(login_url='login')
+def enAttenteReceptionLabo(request):
+    user = request.user.id
+    template = 'enAttenteReceptionLabo.html'
+    qs = Entrepot_echantillon.objects.filter(
+        idcargaison__etat="Echantillonner",
+        idcargaison__entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'idcargaison__numdos',
+        'idcargaison__declaration',
+        'idcargaison__importateur__nomimportateur',
+        'idcargaison__entrepot__nomentrepot',
+        'idcargaison__produit__nomproduit',
+        'idcargaison__immatriculation',
+        'idcargaison__requisitiondackdate',
+        'dateechantillonage__date',
+    )
+    table = EnAttenteReceptionLabo(qs)
+    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
+
 
 
 @login_required(login_url='login')

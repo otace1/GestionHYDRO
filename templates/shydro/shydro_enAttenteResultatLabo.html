@@ -1,6 +1,8 @@
 {% load static %}
 {% load bootstrap4 %}
 {% bootstrap_css %}
+{% load django_tables2 %}
+
 {% bootstrap_javascript jquery='full' %}
 
 {% block extrahead %}
@@ -327,6 +329,7 @@
 
                 <div>
                     <a href="{% url 'codification' %}" class="btn btn-danger">RETOUR</a>
+                    <a href="{% export_url "xlsx" %}" class="btn btn-warning">Export.</a>
                 </div>
                 <br/>
 

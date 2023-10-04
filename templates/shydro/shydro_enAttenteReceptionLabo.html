@@ -1,39 +1,62 @@
 {% load static %}
 {% load bootstrap4 %}
 {% bootstrap_css %}
+{% load django_tables2 %}
+
 {% bootstrap_javascript jquery='full' %}
 
 {% block extrahead %}
-     {{ form.media }}
+    {{ form.media }}
 {% endblock %}
 <html>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>TrackFlow+</title>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>TrackFlow+</title>
 <!-- Tell the browser to be responsive to screen width -->
 <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-  <!-- Google Font: Source Sans Pro -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="{% static '/dist/css/adminlte.min.css' %}">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
+<!-- Ionicons -->
+<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+<!-- Tempusdominus Bbootstrap 4 -->
+<link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+
+<!-- iCheck -->
+<link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+<!-- JQVMap -->
+<link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+<!-- Theme style -->
+<link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+<!-- overlayScrollbars -->
+<link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+<!-- Daterange picker -->
+<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+<!-- summernote -->
+<link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+<!-- DataTables -->
+<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+
+<!-- Google Font: Source Sans Pro -->
+<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 
-    <!-- Date picker -->
+<!-- Date picker -->
 {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
+{% block extra_js %}
 
 {% endblock %}
 
+</head>
 
-  </head>
 
-
-  <!-- sidebar: style can be found in sidebar.less -->
+<!-- sidebar: style can be found in sidebar.less -->
   <body class="hold-transition sidebar-mini- layout-fixed">
   <div class="wrapper">
 
@@ -280,189 +303,124 @@
     </aside>
 
 
-      <!-- Content Wrapper. Contains page content -->
-      <div class="content-wrapper">
-          <!-- Content Header (Page header) -->
-          <div class="content-header">
-              <div class="container-fluid">
-                  <div class="row mb-2">
-                      <div class="col-sm-6">
-                          <h1 class="m-0 text-dark"><b>GESTION CENTRALISEE DES PRODUITS PETROLIERS</b></h1>
-                      </div><!-- /.col -->
-                      <div class="col-sm-6">
-                          <ol class="breadcrumb float-sm-right">
-                              <li class="breadcrumb-item"><a href="">Accueil</a></li>
-                              <li class="breadcrumb-item active">Controle des Hydrocarbures</li>
-                          </ol>
-                      </div><!-- /.col -->
-                  </div><!-- /.row -->
-              </div><!-- /.container-fluid -->
-          </div>
-          <!-- /.content-header -->
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark"><b>EN ATTENTE DE RECEPTION LABO</b></h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="">Accueil</a></li>
+                            <li class="breadcrumb-item active">Controle des Hydrocarbures</li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
 
-          <!-- Content Wrapper. Contains page content -->
-          <section class="content">
-              <div class="container-fluid">
+        <!-- Content Wrapper. Contains page content -->
+        <section class="content">
+            <div class="container-fluid">
 
-                  <div class="row">
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-info">
-                              <div class="inner">
-                                  <h3>{{ e }}</h3>
-                                  <p><b>EN ATTENTE D'ECHANTILLONNAGE</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-alert-circled"></i>
-                              </div>
-                              <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-info">
-                              <div class="inner">
-                                  <h3>{{ d }}</h3>
-                                  <p><b>EN ATTENTE DE DECHARGEMENT</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-alert-circled"></i>
-                              </div>
-                              <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
+                <div>
+                    <a href="{% url 'codification' %}" class="btn btn-danger">RETOUR</a>
+                    <a href="{% export_url "xlsx" %}" class="btn btn-warning">Export.</a>
+                </div>
+                <br/>
+
+            <div>
 
 
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-warning">
-                              <div class="inner">
-                                  <h3>{{ p }}</h3>
-                                  <p><b>EN ATTENTE DE RECEPTION LABO</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-android-bar"></i>
-                              </div>
-                              <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
+                <!-- Main content -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header" style="background-color: darkgreen">
+                                <h1 class="card-title" style="color: white"><b>EN ATTENTE DE RECEPTION LABO</b></h1>
 
-
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-green">
-                              <div class="inner">
-                                  <h3>{{ l }}</h3>
-                                  <p><b>EN ATTENTE DES RESULTATS LABO</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-funnel"></i>
-                              </div>
-                              <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-
-
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-danger">
-                              <div class="inner">
-                                  <h3>{{ n }}</h3>
-                                  <p><b>CARGAISON(S) NON CONFORME(S)</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-android-bar"></i>
-                              </div>
-                              <a href="{% url 'affichageNonConforme' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
-                  </div>
-
-                  <div>
-                      <a href="{% url 'rapportActivite' %}" class="btn btn-success">RAPPORT(S) D'ACTIVITE(S)</a>
-                  </div>
-                  <br/>
-
-              {% block modal %}{% endblock %}
-
-
-                  <!-- Main content -->
-                  <div class="row">
-                      <div class="col-md-12">
-                          <div class="card">
-                              <div class="card-header bg-gradient-dark">
-                                  <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
-{#                                  <div class="card-tools">#}
-{#                                      <form action="" type="get">#}
-{#                                          <div class="input-group input-group-sm" style="width: 400px;">#}
-{#                                              <select name="search" class="form-control mr-sm-2">#}
-{#                                                  <option value="" class="form-control mr-sm-2">--------------------#}
-{#                                                  </option>#}
-{#                                                  {% for value in filter %}#}
-{#                                                    <option value="{{ value.nomentrepot }}"#}
-{#                                                            class="form-control mr-sm-2">{{ value.nomentrepot }}</option>#}
-{#                                                {% endfor %}#}
-{##}
-{#                                            </select>#}
-{#                                            <div class="input-group-append">#}
-{#                                                <button type="submit" class="btn btn-default"><i#}
-{#                                                        class="fas fa-search"></i></button>#}
-{#                                            </div>#}
-{#                                        </div>#}
-{#                                    </form>#}
-{#                                </div>#}
                             </div>
 
                             <div class="card-body">
                                 {% block content %}
-              {% endblock %}
-            <!-- /.box-header -->
-              </div>
-          </div>
-    </div>
+                                {% endblock %}
+                                <!-- /.box-header -->
+                            </div>
+                        </div>
+                    </div>
 
-    </div>
-    </div>
+                </div>
+            </div>
 
-      <!-- /.row -->
+            <!-- /.row -->
 
-    </section>
-    <!-- /.content -->
-  </div>
+        </section>
+        <!-- /.content -->
+    </div>
     <!-- /.content-wrapper --> <!-- /.content-wrapper -->
     <footer class="main-footer">
-        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong>
         All rights reserved.
         <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.0
+            <b>Version</b> 3.0
         </div>
-      </footer>
-      <!-- Control Sidebar -->
-      <aside class="control-sidebar control-sidebar-dark">
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
         <!-- Control sidebar content goes here -->
-      </aside>
-      <!-- /.control-sidebar -->
+    </aside>
+    <!-- /.control-sidebar -->
 
-    </div>
-
+</div>
 
 
 <!-- jQuery -->
-<script src="{% static '/plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<!-- jQuery UI 1.11.4 -->
+<script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+<script>
+    $.widget.bridge('uibutton', $.ui.button)
+</script>
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- ChartJS -->
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<!-- Sparkline -->
+<script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
+<!-- JQVMap -->
+<script src="{% static 'plugins/jqvmap/jquery.vmap.min.js' %}"></script>
+<script src="{% static 'plugins/jqvmap/maps/jquery.vmap.usa.js' %}"></script>
+<!-- jQuery Knob Chart -->
+<script src="{% static 'plugins/jquery-knob/jquery.knob.min.js' %}"></script>
+<!-- daterangepicker -->
+<script src="{% static 'plugins/moment/moment.min.js' %}"></script>
+<script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
+<!-- Tempusdominus Bootstrap 4 -->
+<script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
+<!-- Summernote -->
+<script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
+<!-- overlayScrollbars -->
+<script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
 <!-- AdminLTE App -->
-<script src="{% static 'dist/js/adminlte.min.js' %}"></script>
-<!-- AdminLTE for demo purposes -->
-{#<script src="../../dist/js/demo.js"></script>#}
+<script src="{% static 'dist/js/adminlte.js' %}"></script>
+{#    <!-- AdminLTE dashboard demo (This is only for demo purposes) -->#}
+{#    <script src="{% static 'dist/js/pages/dashboard.js' %}"></script>#}
+{#    <!-- AdminLTE for demo purposes -->#}
+{#    <script src="{% static 'dist/js/demo.js' %}"></script>#}
+
+<!-- /.JS script for modal -->
+<!-- jQuery 3 -->
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
+
+<!-- Bootstrap 4 -->
+<script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <!-- DataTables  & Plugins -->
 <script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
@@ -476,7 +434,6 @@
 <script src="{% static 'plugins/datatables-buttons/js/buttons.html5.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
-
 <script>
 
     var Id;
@@ -490,10 +447,42 @@
     })
 </script>
 
-<script>
 
+<script>
+  $(function () {
+    $("#example1").DataTable({
+       dom: 'Bfrtip',
+      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
+      "buttons": [
+          {
+      extend: 'excelHtml5',
+      text: 'Export to Excel',
+      exportOptions: {
+        format: {
+          body: function (data, row, column, node) {
+            // Replace "," with "." for decimal numbers during export
+            if (typeof data === 'string' && data.includes(',')) {
+              data = data.replace(',', '.');
+            }
+            return data;
+          }
+        }
+      }
+    },
+    'print'
+      ]
+    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+    $('#example2').DataTable({
+      "paging": true,
+      "lengthChange": false,
+      "searching": false,
+      "ordering": true,
+      "info": true,
+      "autoWidth": false,
+      "responsive": true,
+    });
+  });
 </script>
 
-
-    </body>
-    </html>
+</body>
+</html>

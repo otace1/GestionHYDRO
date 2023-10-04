@@ -26,6 +26,7 @@ urlpatterns = [
     path('enAttenteEchantillonnage/', views.enAttenteEchantillonnage, name='enAttenteEchantillonnage'),
     path('enAttenteDechargement/', views.enAttenteDechargement, name='enAttenteDechargement'),
     path('enAttenteResultatLabo/', views.enAttenteResultatLabo, name='enAttenteResultatLabo'),
+    path('enAttenteReceptionLabo/', views.enAttenteReceptionLabo, name='enAttenteReceptionLabo'),
     path('rapportActivite/', views.rapportActivite, name='rapportActivite'),
     path('responseRapportActivite/', views.responseRapportActivite, name='responseRapportActivite'), #Json response
     path('exportResponseRapportActivite/', views.responseRapportActivite, name='exportResponseRapportActivite'), #Json response

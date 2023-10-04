@@ -179,9 +179,9 @@ class NonConformeLaboratoire(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 class EnAttenteEchantillonage(tables.Table):
@@ -197,9 +197,9 @@ class EnAttenteEchantillonage(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 
@@ -218,9 +218,26 @@ class EnAttenteDechargement(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
+
+
+class EnAttenteReceptionLabo(tables.Table):
+    idcargaison__numdos = tables.Column(verbose_name="#.DOS")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
+    idcargaison__importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
+    idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
+    dateechantillonage__date = tables.Column(verbose_name="DATE ECHANT.")
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+        }
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 class EnAttenteResultatLabo(tables.Table):
@@ -237,9 +254,9 @@ class EnAttenteResultatLabo(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            # "id": "example1"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
 
 class RapportActivite(tables.Table):
