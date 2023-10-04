@@ -3,9 +3,8 @@ import io
 import json
 
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q,F, ExpressionWrapper, fields
+from django.db.models import Q,F, ExpressionWrapper, fields,Case, When, Value, CharField
 from django.db.models.functions import ExtractMonth, ExtractYear, Cast
-from django.db.models.functions import Cast
 from django.shortcuts import render, redirect
 from openpyxl import Workbook
 
@@ -5406,5 +5405,280 @@ def enchPrintedCert(request):
 
     context = {'table': table}
     return render(request, template, context)
+
+
+
+
+@login_required(login_url='login')
+def rapportCq(request):
+    template ='laboRapportsCq.html'
+    form = FiltresDate()
+    context = {'form':form}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def rapportCqResponse(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user,
+        entrepot_echantillon__laboreception__isnull=False
+        # impressionresultat__isnull=False
+    ).annotate(
+        conformiteProduit=Case(
+            When(impressionresultat__isConforme__isnull=True, then=Value('EN ATTENTE')),
+            When(impressionresultat__isConforme=False, then=Value('NON CONFORME')),
+            When(impressionresultat__isConforme=True, then=Value('CONFORME')),
+            default=Value('AUTRE CAS'),  # Handle other cases if necessary
+            output_field=CharField()
+        )
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'conformiteProduit',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+    # Number of items to show per page
+    items_per_page = 10
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # # Convert the page object to a list of dictionaries
+    # data = list(page)
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ECHANT.', 'DATE RECEP.','NUM.DOSS', 'NUM.RE', 'CODE LABO', 'ENTREPOT',
+                      'FOURNISSEUR',
+                      'IMMATRICULATION','PRODUIT','CONFORMITE']
+
+        # Combine header and data rows using zip
+        all_rows = [header_row] + [
+            [   row['entrepot_echantillon__laboreception__codelabo'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['numdos'],
+                row['entrepot_echantillon__numrappechauto'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['entrepot__nomentrepot'],
+                row['importateur__nomimportateur'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
+                row['conformiteProduit'],
+            ] for row in data
+        ]
+
+        # Write data rows to the Excel file
+        for row in all_rows:
+            sheet.append(row)
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+@login_required(login_url='login')
+def rapportCqfiltres(request):
+    template ='laboRapportsCQFiltres.html'
+    # Get the search value from the request's GET parameters
+    if request.method == 'POST':
+        date_d = request.POST['date_d']
+        date_f = request.POST['date_f']
+
+        # print(date_d)
+        # print(date_f)
+
+        request.session['date_d'] = date_d
+        request.session['date_f'] = date_f
+
+        form = FiltresDate()
+        context = {'form':form}
+        return render(request,template,context)
+    else:
+        return redirect('receptionRapports')
+
+
+@login_required(login_url='login')
+def rapportCqfiltresResponse(request):
+    user = request.user.id
+    ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user,
+        entrepot_echantillon__laboreception__isnull=False
+        # impressionresultat__isnull=False
+    ).annotate(
+        conformiteProduit=Case(
+            When(impressionresultat__isConforme__isnull=True, then=Value('EN ATTENTE')),
+            When(impressionresultat__isConforme=False, then=Value('NON CONFORME')),
+            When(impressionresultat__isConforme=True, then=Value('CONFORME')),
+            default=Value('AUTRE CAS'),  # Handle other cases if necessary
+            output_field=CharField()
+        )
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'conformiteProduit',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+    date_d = request.session['date_d']
+    date_f = request.session['date_f']
+
+    print(date_d)
+    print(date_f)
+
+    # Apply search filter to the QuerySet
+    if date_d and date_f:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+        )
+    else:
+        if date_d:
+            qs = qs.filter(
+                entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
+            )
+        else:
+            if date_f:
+                qs = qs.filter(
+                    entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
+                )
+
+    # Number of items to show per page
+    items_per_page = 10
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ECHANT.', 'DATE RECEP.','NUM.DOSS', 'NUM.RE', 'CODE LABO', 'ENTREPOT',
+                      'FOURNISSEUR',
+                      'IMMATRICULATION','PRODUIT','CONFORMITE']
+
+        # Combine header and data rows using zip
+        all_rows = [header_row] + [
+            [   row['entrepot_echantillon__laboreception__codelabo'],
+                row['entrepot_echantillon__dateechantillonage__date'],
+                row['numdos'],
+                row['entrepot_echantillon__numrappechauto'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['entrepot__nomentrepot'],
+                row['importateur__nomimportateur'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
+                row['conformiteProduit'],
+            ] for row in data
+        ]
+
+        # Write data rows to the Excel file
+        for row in all_rows:
+            sheet.append(row)
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
 
 

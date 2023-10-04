@@ -1,0 +1,102 @@
+{% extends 'BaseLaboCQRapport.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+{% load crispy_forms_tags %}
+{% block extrahead %}
+    {{ form.media }}
+    <!-- Include the DataTables Date Range Filter plugin CSS and JS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+{% endblock %}
+
+
+
+{% block content %}
+
+     <div id="data-table-wrapper" style="position: relative;">
+        <div class="loading-spinner"></div>
+          <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+            <thead>
+              <tr>
+                  <th>DATE ECHANT.</th>
+                <th>DATE RECEP.</th>
+                <th>NUM.HYDRO</th>
+                <th>NUM.RE</th>
+                <th>CODE LABO</th>
+                  <th>NUM.CQ</th>
+                <th>ENTREPOT</th>
+                <th>FOURNISSEUR</th>
+                <th>IMMATRICULATION</th>
+                <th>PRODUIT</th>
+                <th>CONFORMITE</th>
+              </tr>
+            </thead>
+          </table>
+    </div>
+
+
+    {#<!-- Include FileSaver.js library for saving the Excel file -->#}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+
+
+const csrfToken = '{{ csrf_token }}';
+let dataTable;
+
+$(document).ready(function () {
+    dataTable = $('#data-table').DataTable({
+    lengthChange: false, // Display the length change dropdown
+    processing: true,
+    serverSide: true,
+    responsive: true,
+    ajax: {
+        url: '{% url 'rapportCqResponse' %}',
+        type: 'GET',
+        beforeSend: function() {
+          $('#data-table-wrapper .loading-spinner').show();
+        },
+        // Hide the loading spinner after DataTable processing
+        complete: function() {
+          $('#data-table-wrapper .loading-spinner').hide();
+        }
+    },
+    columns: [
+        { data: 'entrepot_echantillon__dateechantillonage__date' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'numdos' }, // Use array index to access 'dateheurecargaison__date'
+        { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'frontiere__nomville'
+        { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'importateur__nomimportateur'
+        { data: 'entrepot_echantillon__laboreception__numcertificatqualite' }, // Use array index to access 'importateur__nomimportateur'
+        { data: 'entrepot__nomentrepot' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'importateur__nomimportateur' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'immatriculation' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'conformiteProduit' }, // Use array index to access 'entrepot__nomentrepot'
+    ],
+        // Optional: Add buttons for exporting to Excel
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    filename: 'rapport_brut',
+                    exportOptions: {
+                        modifier: {
+                            search: 'none'
+                        }
+                    },
+                    action: function (e, dt, node, config) {
+                        // Redirect to the export URL instead of using AJAX
+                        window.location.href = '{% url 'rapportCqResponseExport' %}?export=excel';
+                    }
+                }
+            ],
+});
+});
+</script>
+
+
+
+
+{% endblock %}

@@ -111,4 +111,13 @@ urlpatterns = [
     path('enchAttenteValidation/', views.enchAttenteValidation, name='enchAttenteValidation'),
     path('enchPrintedCert/', views.enchPrintedCert, name='enchPrintedCert'),
 
+
+    #Rapport au niveaux des acteurs du labo
+    path('rapportCq/', views.rapportCq, name='rapportCq'),
+    path('rapportCq/response/', views.rapportCqResponse, name='rapportCqResponse'),
+    path('rapportCqResponse/response/export/', views.rapportCqResponse, name='rapportCqResponseExport'),
+    path('rapportCqfiltres/filtres/', views.rapportCqfiltres, name='rapportCqfiltres'),
+    path('rapportCqfiltres/response/', views.rapportCqfiltresResponse, name='rapportCqfiltresResponse'),
+    path('rapportCqfiltres/response/export/', views.rapportCqfiltresResponse, name='rapportCqfiltresResponseExport'),
+
 ]
