@@ -55,12 +55,17 @@ class GestionCodification():
                         idcargaison__entrepot__ville__affectationville__username_id=id
                         ).count()
 
+                    c = Cargaison.objects.filter(
+                        entrepot__ville__affectationville__username_id=id
+                        ).count()
+
                     return render(request, 'shydro.html', {
                         'e':e,
                         'd':d,
                         'l':l,
                         'n':n,
                         'p':p,
+                        'c':c,
 
                     })
                 else:
@@ -79,6 +84,9 @@ class GestionCodification():
                         idcargaison__entrepot__ville__affectationville__username_id=id
                         ).count()
 
+                    c = Cargaison.objects.filter(
+                        entrepot__ville__affectationville__username_id=id
+                    ).count()
 
                     return render(request, 'shydro.html', {
                         'e':e,
@@ -86,6 +94,7 @@ class GestionCodification():
                         'l':l,
                         'n':n,
                         'p':p,
+                        'c':c,
 
                     })
             else:
@@ -102,12 +111,17 @@ class GestionCodification():
                     idcargaison__entrepot__ville__affectationville__username_id=id
                 ).count()
 
+                c = Cargaison.objects.filter(
+                    entrepot__ville__affectationville__username_id=id
+                ).count()
+
                 context = {
                     'e':e,
                     'd':d,
                     'l':l,
                     'n':n,
                     'p':p,
+                    'c':c,
                 }
                 return render(request, 'shydro.html', context)
         else:
