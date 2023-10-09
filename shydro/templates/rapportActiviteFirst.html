@@ -159,7 +159,7 @@ function printRappEchantillonnage() {
             } else {
                 // Request failed
                 console.error('Failed to generate PDF.');
-                alert('Une erreur s\'est produite.');
+                alert("Un ou plusieurs éléments du rapport d'echantillannage sont manquants.");
                 window.location.reload();
             }
         })

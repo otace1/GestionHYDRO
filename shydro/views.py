@@ -2445,51 +2445,54 @@ def impressionRappEch(request):
     print('TEST IMPRESSION')
     print(pk)
 
-    # Generer le rapport d'echantillonage
-    template = 'rapportechantillonage.html'
-    c = Cargaison.objects.get(idcargaison=pk)
-    e = Entrepot_echantillon.objects.get(idcargaison=pk)
-    entrepot = c.entrepot
-    dateechantillonage = e.dateechantillonage
-    dateech = dateechantillonage
-    methodeutilisee = e.methodeutilisee
-    matricule = e.matricule
-    numdos = c.numdos
-    importateur = c.importateur
-    adresseimportateur = c.importateur_id
-    adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-    produit = c.produit
-    volume = c.volume
-    provenance = c.provenance.name
-    voie = c.voie.nomvoie
-    immatriculation = c.immatriculation
-    qtelabo = e.qte
-    numrappechauto = e.numrappechauto
+    try:
+        # Generer le rapport d'echantillonage
+        template = 'rapportechantillonage.html'
+        c = Cargaison.objects.get(idcargaison=pk)
+        e = Entrepot_echantillon.objects.get(idcargaison=pk)
+        entrepot = c.entrepot
+        dateechantillonage = e.dateechantillonage
+        dateech = dateechantillonage
+        methodeutilisee = e.methodeutilisee
+        matricule = e.matricule
+        numdos = c.numdos
+        importateur = c.importateur
+        adresseimportateur = c.importateur_id
+        adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
+        produit = c.produit
+        volume = c.volume
+        provenance = c.provenance.name
+        voie = c.voie.nomvoie
+        immatriculation = c.immatriculation
+        qtelabo = e.qte
+        numrappechauto = e.numrappechauto
 
-    data = {
-        'dateechantillonage': dateechantillonage,
-        'dateech': dateech,
-        'entrepot': entrepot,
-        'numdos': numdos,
-        'methodeutilisee': methodeutilisee,
-        'importateur': importateur,
-        'adresseimportateur': adresseimportateur,
-        'produit': produit,
-        'volume': volume,
-        'provenance': provenance,
-        'voie': voie,
-        'immatriculation': immatriculation,
-        'matricule':matricule,
-        'qtelabo': qtelabo,
-        'numrappechauto': numrappechauto,
-    }
+        data = {
+            'dateechantillonage': dateechantillonage,
+            'dateech': dateech,
+            'entrepot': entrepot,
+            'numdos': numdos,
+            'methodeutilisee': methodeutilisee,
+            'importateur': importateur,
+            'adresseimportateur': adresseimportateur,
+            'produit': produit,
+            'volume': volume,
+            'provenance': provenance,
+            'voie': voie,
+            'immatriculation': immatriculation,
+            'matricule':matricule,
+            'qtelabo': qtelabo,
+            'numrappechauto': numrappechauto,
+        }
 
-    # Render PDF Files
-    pdf = render_to_pdf(template, data)
+        # Render PDF Files
+        pdf = render_to_pdf(template, data)
 
-    # Convert PDF content to Base64-encoded string
-    pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-    return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+        # Convert PDF content to Base64-encoded string
+        pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+        return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+    except:
+        return JsonResponse({'status': 'error'})
 
 
 
