@@ -56,6 +56,11 @@ urlpatterns = [
     # re-Inspecter
     path('reInspecter/', views.reInspecter, name='reInspecter'),
 
+    # Impression RApport
+    path('impressionRappEch/', views.impressionRappEch, name='impressionRappEch'),
+    path('impressionRappInsp/', views.impressionRappInsp, name='impressionRappInsp'),
+    # path('impressionRappEssaie/', views.impressionRappEssaie, name='impressionRappEssaie'),
+
 
 
 

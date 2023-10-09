@@ -113,6 +113,127 @@ function confirmAction() {
 }
 
 
+function printRappEchantillonnage() {
+    event.preventDefault(); // Prevent the default action of the anchor element
+
+    // Get the row element containing the clicked button
+    const row = event.target.closest('tr');
+
+    // Get the value of the "id" attribute from the row element
+    rowId = row.getAttribute('id');
+
+    // Store the rowId in a variable or use it as needed
+    console.log('Row ID:', rowId);
+
+    // Display a confirmation dialog to the user
+    const confirmed = confirm("Afficher le rapport d'Echantillonnage?");
+
+    // If the user confirms, send the rowId to your endpoint
+    if (confirmed) {
+        // Make an AJAX request to your endpoint with the rowId
+        // Replace 'yourEndpointURL' with your actual endpoint URL
+        fetch('{% url "impressionRappEch" %}', {
+            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
+            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
+            contentType: 'application/json', // Set content type to JSON
+            headers: {
+                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+            },
+        })
+        .then(response => response.json()) // Parse the JSON response
+        .then(data => {
+            if (data.status === 'success') {
+                // Decode the PDF content from the response
+                var pdfContent = atob(data.pdf_base64);
+
+                // Create a Blob object from the decoded PDF content
+                var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
+
+                // Create a URL for the Blob object
+                var pdfURL = URL.createObjectURL(pdfBlob);
+
+                // Open the PDF in a new browser window
+                window.open(pdfURL);
+
+                location.reload();
+            } else {
+                // Request failed
+                console.error('Failed to generate PDF.');
+                alert('Une erreur s\'est produite.');
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('An error occurred:', error);
+        });
+    }
+
+    // Return false to prevent the anchor from navigating
+    return false;
+}
+
+
+function printRappInspection() {
+    event.preventDefault(); // Prevent the default action of the anchor element
+
+    // Get the row element containing the clicked button
+    const row = event.target.closest('tr');
+
+    // Get the value of the "id" attribute from the row element
+    rowId = row.getAttribute('id');
+
+    // Store the rowId in a variable or use it as needed
+    console.log('Row ID:', rowId);
+
+    // Display a confirmation dialog to the user
+    const confirmed = confirm("Afficher le rapport d'Inspection?");
+
+    // If the user confirms, send the rowId to your endpoint
+    if (confirmed) {
+        // Make an AJAX request to your endpoint with the rowId
+        // Replace 'yourEndpointURL' with your actual endpoint URL
+        fetch('{% url "impressionRappInsp" %}', {
+            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
+            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
+            contentType: 'application/json', // Set content type to JSON
+            headers: {
+                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+            },
+        })
+        .then(response => response.json()) // Parse the JSON response
+        .then(data => {
+            if (data.status === 'success') {
+                // Decode the PDF content from the response
+                var pdfContent = atob(data.pdf_base64);
+
+                // Create a Blob object from the decoded PDF content
+                var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
+
+                // Create a URL for the Blob object
+                var pdfURL = URL.createObjectURL(pdfBlob);
+
+                // Open the PDF in a new browser window
+                window.open(pdfURL);
+
+                location.reload();
+            } else {
+                // Request failed
+                console.error('Failed to generate PDF.');
+                alert("Un ou plusieurs éléments du rapport d'inspection sont manquants.");
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('An error occurred:', error);
+        });
+    }
+
+    // Return false to prevent the anchor from navigating
+    return false;
+}
+
+
+
 </script>
 
 {% endblock %}

@@ -79,8 +79,22 @@ regularisationButtons = """
 #                   CHANGEMENT DE DESTINATION
 #                 </button>
 
+# rapportButtons = """ <a class="btn btn-warning" onclick="return confirmAction();">Re-INSPECTER</a> """
+
 rapportButtons = """
-    <a class="btn btn-warning" onclick="return confirmAction();">Re-INSPECTER</a>
+<div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-info">Actions</button>
+            <button type="button" class="btn btn-info dropdown-toggle dropdown-hover dropdown-icon" data-toggle="dropdown">
+              <span class="sr-only">Toggle Dropdown</span>
+            </button>
+            <div class="dropdown-menu" role="menu">
+              <a class="dropdown-item" onclick="return confirmAction();">Re-Inspecter</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" onclick="return printRappEchantillonnage();">Rapport d'Ech.</a>
+              <a class="dropdown-item" onclick="return printRappInspection();">Rapport d'Insp.</a>
+            </div>
+        </div>
 """
 
 nonConforme = """
