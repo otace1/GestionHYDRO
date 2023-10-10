@@ -799,9 +799,8 @@ def rapportActivite(request):
     ).values('idcargaison',
         'numdos','declaration','frontiere__nomville','inspection__dens','inspection__temp','mtaTotal',
         'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
-        'requisitiondackdate','entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','impressionresultat__printDate',
-        'inspection__dateinspection','volume','volConst','gsvT'
-    ).order_by('-dateheurecargaison')
+        'requisitiondackdate','entrepot_echantillon__dateechantillonage__date','entrepot_echantillon__laboreception__datereceptionlabo__date','impressionresultat__printDate',
+        'inspection__dateinspection','volume','volConst','gsvT').order_by('-dateheurecargaison')
 
     # qs = list(qs)
     table = RapportActivite(qs)
