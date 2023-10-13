@@ -705,7 +705,7 @@ class GestionDecharger():
 def enAttenteEchantillonnage(request):
     user = request.user.id
     template = 'enAttenteEchantillonnage.html'
-    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user)
+    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
     table = EnAttenteEchantillonage(qs)
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
     export_format = request.GET.get("_export", None)
