@@ -916,11 +916,19 @@ def cargaisonRequisitionList(request):
         entrepot__affectationentrepot__username_id=user
     ).order_by('-dateheurecargaison')
 
-    # Apply pagination
-    paginator = CustomPagination()
-    paginated_data = paginator.paginate_queryset(data, request)
+    # Configure pagination
+    page_size = int(request.GET.get('pagination', 4))  # You can adjust this value according to your preference
+    requested_page = int(request.GET.get('page', 1))
+    # Handle the case where requested_page is 0
+    if requested_page <= 0:
+        requested_page = 1
 
+    start_index = (requested_page - 1) * page_size
+    end_index = requested_page * page_size
+
+    paginated_data = data[start_index:end_index]
     result_list = []
+
     for values in paginated_data:
         context = {
             "id": values.idcargaison,
@@ -932,7 +940,11 @@ def cargaisonRequisitionList(request):
         }
         result_list.append(context)
 
-    return paginator.get_paginated_response(result_list)
+    response_data = {
+        "last_response": result_list,
+    }
+
+    return Response(response_data)
 
 
 
