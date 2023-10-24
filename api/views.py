@@ -916,6 +916,7 @@ def cargaisonRequisitionList(request):
         entrepot__affectationentrepot__username_id=user
     ).order_by('-dateheurecargaison')
 
+
     # Configure pagination
     page_size = int(request.GET.get('pagination', 4))  # You can adjust this value according to your preference
     requested_page = int(request.GET.get('page', 1))

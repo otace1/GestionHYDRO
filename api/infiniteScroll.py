@@ -5,9 +5,10 @@ from datetime import datetime
 
 #Paginattion
 class CustomPagination(PageNumberPagination):
-    page_size = 4  # Number of items per page
-    page_size_query_param = 'page_size'
-    max_page_size = 40  # Maximum number of items per page
+    page_size = 4  # Set your preferred page size here
+    page_size_query_param = 'pagination'
+    max_page_size = 100  # Set the maximum page size if needed
+
 
 
 class DateTimeEncoder(json.JSONEncoder):
