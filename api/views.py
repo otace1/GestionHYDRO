@@ -526,18 +526,34 @@ class GetQrcode(APIView):
 class Provenance(APIView):
     queryset = Cargaison.objects.all()
 
+    # permission_classes = [HasAPIKey]
+    # serializer_class = CargaisonSerializer
     def get(self, request):
         data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
         json_data = json.dumps(data, ensure_ascii=False)
         response = JsonResponse(json.loads(json_data), safe=False)
         response['Content-Type'] = 'application/json; charset=utf-8'
         return response
+        # data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
+        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        # response = JsonResponse(json_data, safe=False)
+        # response['Content-Type'] = 'application/json; charset=utf-8'
+        # return response
+        # data = list(COUNTRIES.values())  # Convert dict_values to a list
+        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        # response = JsonResponse(json_data, safe=False)
+        # response['Content-Type'] = 'application/json; charset=utf-8'
+        # return response
+        # data = COUNTRIES.values()
+        # context = {'provenance': data}
+        # return Response(context, status=status.HTTP_200_OK)
 
 
 class GetCargoList(APIView):
     queryset = Cargaison.objects.all()
     serializer_class = CargaisonSerializer
 
+    # permission_classes = [HasAPIKey]
     def get(self, request):
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
@@ -562,11 +578,13 @@ class GetCargoCount(APIView):
 
 
 class UserViewSerializer(viewsets.ModelViewSet):
+    # permission_classes = [HasAPIKey]
     serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
 
 
 class AuthUserApiView(GenericAPIView):
+    # permission_classes = [HasAPIKey]
     def get(self, request):
         user = request.user
         serializer = UserSerializer(get_user_model())
@@ -867,6 +885,7 @@ def cargaisonListeDechargement(request):
     return Response(response_data)
 
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cargaisonInspectionList(request):
@@ -874,7 +893,7 @@ def cargaisonInspectionList(request):
     data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
 
     # Configure pagination
-    page_size = int(request.GET.get('pagination', 5))  # You can adjust this value according to your preference
+    page_size = int(request.GET.get('pagination', 10))  # You can adjust this value according to your preference
     requested_page = int(request.GET.get('page', 1))
     # Handle the case where requested_page is 0
     if requested_page <= 0:
@@ -905,87 +924,6 @@ def cargaisonInspectionList(request):
 
     return Response(response_data)
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def cargaisonInspectionList(request):
-#     user = request.user.id
-#     data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
-#
-#     # Configure pagination
-#     page_size = int(request.GET.get('pagination', 10))
-#     requested_page = int(request.GET.get('page', 1))
-#
-#     if requested_page <= 0:
-#         requested_page = 1
-#
-#     start_index = (requested_page - 1) * page_size
-#     end_index = requested_page * page_size
-#
-#     paginated_data = data[start_index:end_index]
-#     result_list = []
-#
-#     for values in paginated_data:
-#         context = {
-#             "id": values.idcargaison,
-#             "numdos": values.numdos,
-#             "requisition": values.numreq,
-#             "dateheurecargaison": values.dateheurecargaison.date(),
-#             "importateur": values.importateur.nomimportateur,
-#             "immatriculation": values.immatriculation,
-#             "produit": values.produit.nomproduit,
-#             "volume": values.volume,
-#         }
-#         result_list.append(context)
-#
-#     total_items = data.count()  # Get the total number of items in the queryset
-#
-#     response_data = {
-#         "total_items": total_items,
-#         "current_page_items": len(result_list),
-#         "last_response": result_list,
-#     }
-#
-#     return Response(response_data)
-
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def cargaisonRequisitionList(request):
-#     user = request.user.id
-#     data = Cargaison.objects.filter(
-#         etat="En attente requisition",
-#         entrepot__affectationentrepot__username_id=user
-#     ).order_by('-dateheurecargaison')
-#
-#
-#     # Configure pagination
-#     page_size = int(request.GET.get('pagination', 4))  # You can adjust this value according to your preference
-#     requested_page = int(request.GET.get('page', 1))
-#     # Handle the case where requested_page is 0
-#     if requested_page <= 0:
-#         requested_page = 1
-#
-#     start_index = (requested_page - 1) * page_size
-#     end_index = requested_page * page_size
-#
-#     paginated_data = data[start_index:end_index]
-#     result_list = []
-#
-#     for values in paginated_data:
-#         context = {
-#             "id": values.idcargaison,
-#             "dateheurecargaison": values.dateheurecargaison.date(),
-#             "importateur": values.importateur.nomimportateur,
-#             "immatriculation": values.immatriculation,
-#             "produit": values.produit.nomproduit,
-#             "volume": values.volume,
-#         }
-#         result_list.append(context)
-#
-#     response_data = {
-#         "last_response": result_list,
-#     }
-#
-#     return Response(response_data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -997,9 +935,9 @@ def cargaisonRequisitionList(request):
     ).order_by('-dateheurecargaison')
 
     # Configure pagination
-    page_size = int(request.GET.get('pagination', 4))
+    page_size = int(request.GET.get('pagination', 10))  # You can adjust this value according to your preference
     requested_page = int(request.GET.get('page', 1))
-
+    # Handle the case where requested_page is 0
     if requested_page <= 0:
         requested_page = 1
 
@@ -1020,15 +958,12 @@ def cargaisonRequisitionList(request):
         }
         result_list.append(context)
 
-    total_items = data.count()  # Get the total number of items in the queryset
-
     response_data = {
-        "total_items": total_items,
-        "current_page_items": len(result_list),
         "last_response": result_list,
     }
 
     return Response(response_data)
+
 
 
 @api_view(['POST'])
