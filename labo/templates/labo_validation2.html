@@ -113,6 +113,8 @@
             success: function(response) {
                 // Handle the AJAX response here if needed
                 console.log('AJAX request successful');
+                alert("Resultat envoyé à l'impression 'STATUT CONFORME'.");
+
                 // Reload the table
                 $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
             },
@@ -144,6 +146,7 @@
             success: function(response) {
                 // Handle the AJAX response here if needed
                 console.log('AJAX request successful');
+                alert("Resultat envoyé à l'impression 'STATUT NON-CONFORME'.");
                 // Reload the table
                 $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
             },
@@ -176,6 +179,7 @@
             success: function(response) {
                 // Handle the AJAX response here if needed
                 console.log('AJAX request successful');
+                alert("Échantillon renvoyé à l'analyse.");
                 // Reload the table
                 $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
             },
