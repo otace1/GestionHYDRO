@@ -874,7 +874,7 @@ def cargaisonInspectionList(request):
     data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
 
     # Configure pagination
-    page_size = int(request.GET.get('pagination', 10))  # You can adjust this value according to your preference
+    page_size = int(request.GET.get('pagination', 5))  # You can adjust this value according to your preference
     requested_page = int(request.GET.get('page', 1))
     # Handle the case where requested_page is 0
     if requested_page <= 0:
