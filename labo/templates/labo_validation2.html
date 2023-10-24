@@ -81,10 +81,12 @@
 
                         // Include a button to submit the JSON data for the row
                         const submitAfficher = '<a class="btn btn-info" href="' + linkURL + '">' + linkText + '</a> ';
+                        const submitARefaire = '<button class="btn btn-outline-danger refaire-btn" data-row-id="' + data + '">A REFAIRE</button> ';
                         const submitConforme = '<button class="btn btn-success conform-btn" data-row-id="' + data + '">CONFORME</button> ';
                         const submitNonConforme = '<button class="btn btn-danger nonconform-btn" data-row-id="' + data + '">NON CONFORME</button> ';
 
-                        return submitAfficher + submitConforme + submitNonConforme;
+
+                        return submitAfficher + submitARefaire + submitConforme + submitNonConforme;
                     }
                 }// Use array index to access 'immatriculation'
             ],
@@ -135,6 +137,38 @@
         $.ajax({
             type: 'POST', // or 'GET' depending on your server-side implementation
             url: '{% url "nonconformeAjx2" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
+            data: { idcargaison: idcargaison },
+            headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+            success: function(response) {
+                // Handle the AJAX response here if needed
+                console.log('AJAX request successful');
+                // Reload the table
+                $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
+            },
+            error: function(error) {
+                // Handle errors if any
+                console.error('AJAX request failed:', error);
+                $('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table
+            }
+        });
+    });
+
+    // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
+    $(document).on('click', '.refaire-btn', function() {
+        const button = $(this); // Store the button element clicked
+        const idcargaison = $(this).data('row-id');
+
+        console.log(idcargaison);
+
+        // Disable the button to prevent double submission
+        button.prop('disabled', true);
+
+        // Make an AJAX request to a particular URL with the 'idcargaison' data
+        $.ajax({
+            type: 'POST', // or 'GET' depending on your server-side implementation
+            url: '{% url "refaireAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
             data: { idcargaison: idcargaison },
             headers: {
                     'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
