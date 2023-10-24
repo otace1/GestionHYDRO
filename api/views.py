@@ -526,34 +526,18 @@ class GetQrcode(APIView):
 class Provenance(APIView):
     queryset = Cargaison.objects.all()
 
-    # permission_classes = [HasAPIKey]
-    # serializer_class = CargaisonSerializer
     def get(self, request):
         data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
         json_data = json.dumps(data, ensure_ascii=False)
         response = JsonResponse(json.loads(json_data), safe=False)
         response['Content-Type'] = 'application/json; charset=utf-8'
         return response
-        # data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
-        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        # response = JsonResponse(json_data, safe=False)
-        # response['Content-Type'] = 'application/json; charset=utf-8'
-        # return response
-        # data = list(COUNTRIES.values())  # Convert dict_values to a list
-        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        # response = JsonResponse(json_data, safe=False)
-        # response['Content-Type'] = 'application/json; charset=utf-8'
-        # return response
-        # data = COUNTRIES.values()
-        # context = {'provenance': data}
-        # return Response(context, status=status.HTTP_200_OK)
 
 
 class GetCargoList(APIView):
     queryset = Cargaison.objects.all()
     serializer_class = CargaisonSerializer
 
-    # permission_classes = [HasAPIKey]
     def get(self, request):
         data = Cargaison.objects.all()
         serializer = CargaisonSerializer(data, many=True)
@@ -578,13 +562,11 @@ class GetCargoCount(APIView):
 
 
 class UserViewSerializer(viewsets.ModelViewSet):
-    # permission_classes = [HasAPIKey]
     serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
 
 
 class AuthUserApiView(GenericAPIView):
-    # permission_classes = [HasAPIKey]
     def get(self, request):
         user = request.user
         serializer = UserSerializer(get_user_model())
@@ -935,7 +917,7 @@ def cargaisonRequisitionList(request):
     ).order_by('-dateheurecargaison')
 
     # Configure pagination
-    page_size = int(request.GET.get('pagination', 10))  # You can adjust this value according to your preference
+    page_size = int(request.GET.get('pagination', 4))  # You can adjust this value according to your preference
     requested_page = int(request.GET.get('page', 1))
     # Handle the case where requested_page is 0
     if requested_page <= 0:
