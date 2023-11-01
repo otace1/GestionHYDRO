@@ -3782,7 +3782,7 @@ def receptionRapportsResponseFiltres(request):
 def refaireAjx(request):
     user = request.user
     role = user.role_id
-    if role == 6 or role == 1:
+    if role == 6 or role == 1 or role == 10:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
             print(idcargaison)
