@@ -2289,13 +2289,13 @@ def regularisationEntrepot(request):
     role = user.role_id
     u = user.id
     if request.method == 'POST':
-        i = Importateur(
-            nomimportateur=request.POST['nomimportateur'],
-            nifimportateur=request.POST['nifimportateur'],
-            adresseimportateur=request.POST['adresseimportateur'],
-            email=request.POST['email']
+        v = Ville.objects.get(idville=request.POST['ville'])
+        e = Entrepot(
+            nomentrepot=request.POST['nomentrepot'],
+            ville=v,
+            adresseentrepot=request.POST['adresseentrepot']
         )
-        i.save()
+        e.save()
         return redirect('regularisation')
     else:
         return redirect('logout')
