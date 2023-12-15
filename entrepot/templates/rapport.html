@@ -31,11 +31,11 @@
                 <center>OFFICE CONGOLAIS DE CONTROLE</center>
             </b>
             <img src="/media/occ.png" width="150px" height="150px"/><br/>
-            <b>DIRECTION PROVINCIALE DU KATANGA</b><br/>
+            <b>DIRECTION PROVINCIALE {% if province == 'ITURI' %}DE L'{% else %}DU{% endif %} {{ province }}</b><br/>
         </td>
         <td colspan="3"
             style="width:60%;font-size:10.5px;font-family:'Times New Roman'; border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-            <span><b>INSPECTION CERTIFICATE N°: </b> </span><br/>
+            <span><b>INSPECTION CERTIFICATE N°: </b> {{ numCertInspection }} </span><br/>
             <span><b>MATRC.  TRUCK / TOWED : </b> {{ cargaison.immatriculation }}</span><br/>
             <span><b>ENTRANCE : </b> {{ cargaison.frontiere }}</span><br/>
             <span><b>ARRIVAL DATE :</b> {{ cargaison.dateheurecargaison }}</span><br/>

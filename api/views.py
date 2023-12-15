@@ -1087,9 +1087,9 @@ def rapportInspection(request):
     mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)), 3))  # mta Total Tanker
     mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)), 3))  # mtv Total Tanker
     vcfTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('vcf', flat=True)), 3))  # vcf Total Tanker
-    print('OK OK')
-    print('VCF PRINT')
-    print(vcfTotal)
+    # print('OK OK')
+    # print('VCF PRINT')
+    # print(vcfTotal)
 
     densite = densite15(inspection.temp, inspection.dens)  # densite 15c
     govMeter = round((inspection.meterafter - inspection.meterbefore) / 1000, 3)  # govmeter

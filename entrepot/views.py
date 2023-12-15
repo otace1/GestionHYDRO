@@ -4,6 +4,7 @@ from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
 from django.shortcuts import render, redirect
 from openpyxl import Workbook
 
+from shydro.numact import num_cert_inspection
 from .tables import *
 from enreg.models import *
 from django.core.exceptions import BadRequest
@@ -487,12 +488,27 @@ def impressionRe(request,pk):
 
 @login_required(login_url='login')
 def impressionRapport(request,pk):
+    user = request.user.id
+    ville = AffectationVille.objects.get(username_id=user)
+    ville = ville.ville_id
+    province = Ville.objects.get(idville=ville)
+    province = province.province
+    province = province.upper()
+
     template = 'rapport.html'
     #
     # pk = request.session['id']
 
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
+
+    if cargaison.numCertInspection == None:
+        numCertInspection = num_cert_inspection(ville)
+        cargaison.numCertInspection = numCertInspection
+        cargaison.save(update_fields=['numCertInspection'])
+    else:
+        numCertInspection = cargaison.numCertInspection
+
     inspection = Inspection.objects.get(idcargaison=pk)
     if inspection.meterbefore is None:
         inspection.meterbefore = 0
@@ -602,6 +618,8 @@ def impressionRapport(request,pk):
 
     data = {
         'cargaison': cargaison,
+        'province': province,
+        'numCertInspection': numCertInspection,
         'inspection': inspection,
         'densite': densite,
         'prGsvLtTanker':prGsvLtTanker,
@@ -1903,12 +1921,15 @@ def affichageInspection(request):
 
 @login_required(login_url='login')
 def marquageInspection(request):
+    user = request.user.id
+    ville = AffectationVille.objects.get(username_id=user)
     pk = request.session['id']
     c = Cargaison.objects.get(idcargaison=pk)
     c.etatInspection = 0
-    c.save(update_fields=['etatInspection'])
-    print('DEBUG')
-    print(pk)
+    c.numact = numCertInspection(ville)
+    c.save(update_fields=['etatInspection','numact'])
+    print('ACT DEBUG')
+    print(c.numact)
 
     # Create a dictionary with the data you want to return
     response_data = {
@@ -1920,7 +1941,6 @@ def marquageInspection(request):
     # Return a JSON response
     return JsonResponse(response_data)
 
-    # return redirect('rapport')
 
 
 @login_required(login_url='login')

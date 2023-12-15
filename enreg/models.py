@@ -139,6 +139,7 @@ class Cargaison(models.Model):
     numdossier = models.CharField(max_length=30, null=True, blank=True, verbose_name="Numéro Dossier Hydro")
     codecargaison = models.CharField(max_length=30, null=True, blank=True, verbose_name="Codification Hydro")
     numact = models.IntegerField(null=True, blank=True, verbose_name="Numéro ACT")
+    numCertInspection = models.IntegerField(null=True)
     conformite = models.CharField(max_length=30, blank=True, null=True, verbose_name='DECISION LABO')
     impression = models.BooleanField(default="0")
     user = models.CharField(max_length=200, default='NULL', blank=True, verbose_name='User')

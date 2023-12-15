@@ -16,6 +16,7 @@ from enreg.forms import Ajoutcargaison
 from enreg.models import *
 from accounts.models import *
 from entrepot.calculs import densite15, vcf, gsv, mta
+from .numact import num_cert_inspection
 from .tables import *
 from .forms import *
 from django.contrib.auth.decorators import login_required
@@ -26,7 +27,7 @@ from django_tables2 import RequestConfig
 from django.db.models import Q, ExpressionWrapper, Sum
 from datetime import date
 import datetime
-from .numact import numeroactcurrent
+# from .numact import numeroactcurrent
 from .numdossier import numDossier
 
 
@@ -1071,7 +1072,7 @@ def rapportActiviteFiltre(request):
         request.session['dateFin'] = dateFin
 
         if fournisseur and entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
@@ -1104,7 +1105,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
@@ -1137,7 +1138,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
@@ -1169,7 +1170,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
             ).annotate(
@@ -1201,7 +1202,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
@@ -1232,7 +1233,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut :
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateDebut
             ).annotate(
@@ -1263,7 +1264,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateFin
             ).annotate(
@@ -1294,7 +1295,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1324,7 +1325,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
@@ -1355,7 +1356,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
             ).annotate(
@@ -1386,7 +1387,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
             ).annotate(
@@ -1417,7 +1418,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1447,7 +1448,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1477,7 +1478,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1507,7 +1508,7 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1543,7 +1544,7 @@ def rapportActiviteFiltre(request):
         dateFin = request.session['dateFin']
 
         if fournisseur and entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
@@ -1576,7 +1577,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and entrepot and dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
@@ -1609,7 +1610,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and entrepot and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
@@ -1641,7 +1642,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and entrepot:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
             ).annotate(
@@ -1673,7 +1674,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
@@ -1704,7 +1705,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateDebut
             ).annotate(
@@ -1735,7 +1736,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateFin
             ).annotate(
@@ -1766,7 +1767,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1796,7 +1797,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
@@ -1827,7 +1828,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot and dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
             ).annotate(
@@ -1858,7 +1859,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
             ).annotate(
@@ -1889,7 +1890,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1919,7 +1920,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if dateDebut and dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1949,7 +1950,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if dateDebut:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateDebut
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -1979,7 +1980,7 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if dateFin:
-            qs = Cargaison.objects.filter(
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateFin
             ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
@@ -2073,6 +2074,20 @@ def rapportIs(request, pk):
 
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
+
+    print('DEBUG')
+
+    if cargaison.numCertInspection == None:
+        numCertInspection = num_cert_inspection(ville)
+        cargaison.numCertInspection = numCertInspection
+        cargaison.save(update_fields=['numCertInspection'])
+    else:
+        numCertInspection = cargaison.numCertInspection
+
+    # print('DEBUG')
+    # print(numact)
+
+
     try:
         inspection = Inspection.objects.get(idcargaison=pk)
         if inspection.meterbefore is None:
@@ -2183,6 +2198,7 @@ def rapportIs(request, pk):
 
         data = {
             'cargaison': cargaison,
+            'numCertInspection': numCertInspection,
             'inspection': inspection,
             'densite': densite,
             'prGsvLtTanker':prGsvLtTanker,
@@ -2497,6 +2513,13 @@ def impressionRappEch(request):
 
 @login_required(login_url='login')
 def impressionRappInsp(request):
+    user = request.user
+    ville = AffectationVille.objects.get(username_id=user.id)
+    ville = ville.ville_id
+    province = Ville.objects.get(idville=ville)
+    province = province.province
+    province = province.upper()
+
     template = 'rapport.html'
     # Generer le rapport d'echantillonage
     data = json.loads(request.body)
@@ -2505,6 +2528,18 @@ def impressionRappInsp(request):
     # Request to fecth data into database
     try:
         cargaison = Cargaison.objects.get(idcargaison=pk)
+
+        if cargaison.numCertInspection is None:
+            numCertInspection = num_cert_inspection(ville)
+
+            # print("DEBUG")
+            # print(numCertInspection)
+
+            cargaison.numCertInspection = numCertInspection
+            cargaison.save(update_fields=['numCertInspection'])
+        else:
+            numCertInspection = cargaison.numCertInspection
+
         inspection = Inspection.objects.get(idcargaison=pk)
         if inspection.meterbefore is None:
             inspection.meterbefore = 0
@@ -2614,6 +2649,8 @@ def impressionRappInsp(request):
 
         data = {
             'cargaison': cargaison,
+            'province': province,
+            'numCertInspection': numCertInspection,
             'inspection': inspection,
             'densite': densite,
             'prGsvLtTanker':prGsvLtTanker,

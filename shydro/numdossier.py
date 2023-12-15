@@ -32,31 +32,6 @@ def numDossier(ville):
     return last_code
 
 
-    #
-    # max_numdos_query = Cargaison.objects.filter(dateheurecargaison__year=year_value,
-    #                                             entrepot__ville__idville=ville).order_by('-numdos').first()
-    #
-    # if max_numdos_query:
-    #     max_numdos = max_numdos_query.numdos
-    # else:
-    #     max_numdos = 0
-    #
-    # return max_numdos
-
-
-
-
-    #
-    #
-    #
-    # for result in last_code_result:
-    #     last_code = result.last_code
-    #
-    # # print('LAST CODE:')
-    # # print(last_code)
-
-
-
 
 
 
