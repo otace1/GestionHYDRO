@@ -7,29 +7,37 @@ from django.db.models import *
 from datetime import datetime
 
 
-# Numero de Dossier Annuel et unique
-def numDossier(ville):
+def numDossier(ville,pk):
     current_date = datetime.now()
     current_year = current_date.year
-    query = f'''
-            SELECT c.idcargaison, MAX(c.numdos) as last_code
-            FROM enreg_cargaison c
-            JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot
-            JOIN enreg_ville v ON e.ville_id = v.idville
-            WHERE YEAR(c.dateheurecargaison) = {current_year}
-            AND v.idville = {ville}
-        '''
 
-    last_code_result = Cargaison.objects.raw(query)
-    last_code = None
+    # Get the record
+    record = Cargaison.objects.get(idcargaison=pk)
 
-    for result in last_code_result:
-        last_code = result.last_code
+    # Check if the record's year is equal to the current year
+    if record.dateheurecargaison.year == current_year:
+        print('CURRENT YEAR')
+        last_code_result_current = Cargaison.objects.filter(
+            dateheurecargaison__year=current_year,
+            entrepot__ville__idville=ville
+        ).aggregate(last_code=Max('numdos'))
 
-    # print('LAST CODE:')
-    # print(last_code)
+        # Use the 'get' method to retrieve the 'last_code' value
+        last_code = last_code_result_current.get('last_code', 0)
+        return last_code + 1
 
-    return last_code
+
+    # Check if the record's year is equal to the previous year
+    if record.dateheurecargaison.year == current_year - 1:
+        print('PAST YEAR')
+        last_code_result_previous = Cargaison.objects.filter(
+            dateheurecargaison__year=current_year -1,
+            entrepot__ville__idville=ville
+        ).aggregate(last_code=Max('numdos'))
+
+        # Use the 'get' method to retrieve the 'last_code' value
+        last_code = last_code_result_previous.get('last_code', 0)
+        return last_code + 1
 
 
 
