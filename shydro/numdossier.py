@@ -24,6 +24,8 @@ def numDossier(ville,pk):
 
         # Use the 'get' method to retrieve the 'last_code' value
         last_code = last_code_result_current.get('last_code', 0)
+        if last_code is None:
+            last_code = 0
         return last_code + 1
 
 
@@ -37,6 +39,8 @@ def numDossier(ville,pk):
 
         # Use the 'get' method to retrieve the 'last_code' value
         last_code = last_code_result_previous.get('last_code', 0)
+        if last_code is None:
+            last_code = 0
         return last_code + 1
 
 
