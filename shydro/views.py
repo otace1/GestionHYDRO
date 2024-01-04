@@ -270,14 +270,11 @@ def numreq(request):
             name = MyUser.objects.get(id=user.id)
             name = name.username
 
-            #Numerotation auto des Dossiers
-            numDos = numDossier(ville)
-            if numDos is None:
-                numDos = 0
+    
+            #Numerotation auto des Dossier
+            numDos = numDossier(ville,int(pk))
 
-            c.numdos = numDos + 1
-
-
+            c.numdos = numDos
             c.numreq = numreq
             c.requisitiondackdate = td
             c.requisitionack = name
