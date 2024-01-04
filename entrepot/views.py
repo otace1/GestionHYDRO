@@ -1926,7 +1926,7 @@ def marquageInspection(request):
     pk = request.session['id']
     c = Cargaison.objects.get(idcargaison=pk)
     c.etatInspection = 0
-    c.numact = numCertInspection(ville)
+    c.numact = num_cert_inspection(ville)
     c.save(update_fields=['etatInspection','numact'])
     print('ACT DEBUG')
     print(c.numact)
