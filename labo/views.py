@@ -5638,17 +5638,17 @@ def rapportCqfiltresResponse(request):
         sheet = workbook.active
 
         # Write headers to the Excel file
-        header_row = ['DATE ECHANT.', 'DATE RECEP.','NUM.DOSS', 'NUM.RE', 'CODE LABO', 'ENTREPOT',
+        header_row = ['DATE RECEP.', 'DATE ECHANT.','NUM.DOSS', 'NUM.RE', 'CODE LABO', 'ENTREPOT',
                       'FOURNISSEUR',
                       'IMMATRICULATION','PRODUIT','CONFORMITE']
 
         # Combine header and data rows using zip
         all_rows = [header_row] + [
-            [   row['entrepot_echantillon__laboreception__codelabo'],
+            [   row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
                 row['entrepot_echantillon__dateechantillonage__date'],
                 row['numdos'],
                 row['entrepot_echantillon__numrappechauto'],
-                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
+                row['entrepot_echantillon__laboreception__codelabo'],
                 row['entrepot__nomentrepot'],
                 row['importateur__nomimportateur'],
                 row['immatriculation'],
