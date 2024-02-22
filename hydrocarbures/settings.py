@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'django_countries',
     'crispy_forms',
+    'crispy_bootstrap4',
     'qr_code',
     'django_tables2',
     'bootstrap4',
@@ -265,6 +266,7 @@ elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 DJANGO_TABLES2_TEMPLATE = 'django_tables2/bootstrap-responsive.html'
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 # TAILWIND_APP_NAME = 'theme'
 
 # Password validation
