@@ -187,7 +187,7 @@ class NonConformeLaboratoire(tables.Table):
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT")
     idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
-    actions = tables.TemplateColumn(nonConforme,verbose_name='')
+    actions = tables.TemplateColumn(nonConforme,verbose_name='',exclude_from_export=True)
     # volume = tables.Column(verbose_name="VOLUME DECL.")
 
     class Meta:
@@ -295,7 +295,7 @@ class RapportActivite(tables.Table):
     mtvTotal = tables.Column(verbose_name='MTV')
     volConst = tables.Column(verbose_name="GOV")
     gsvT = tables.Column(verbose_name='GSV')
-    actions = tables.TemplateColumn(rapportButtons,verbose_name='')
+    actions = tables.TemplateColumn(rapportButtons,verbose_name='',exclude_from_export=True)
 
     class Meta:
         attrs = {
@@ -317,7 +317,7 @@ class Regularisation(tables.Table):
     entrepot = tables.Column(verbose_name="ENTREPOT")
     immatriculation = tables.Column(verbose_name="IMMATRICULATION")
     volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "green"}})
-    actions = tables.TemplateColumn(regularisationButtons, verbose_name='')
+    actions = tables.TemplateColumn(regularisationButtons, verbose_name='',exclude_from_export=True)
 
     class Meta:
         attrs = {

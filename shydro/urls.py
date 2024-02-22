@@ -32,6 +32,10 @@ urlpatterns = [
     path('exportResponseRapportActivite/', views.responseRapportActivite, name='exportResponseRapportActivite'), #Json response
     path('rapportActiviteExport/', views.rapportActivite, name='rapportActiviteExport'),
     path('rapportActiviteFiltre/', views.rapportActiviteFiltre, name='rapportActiviteFiltre'),
+
+    path('rapportActiviteFiltrePost/', views.rapportActiviteFiltrePost, name='rapportActiviteFiltrePost'),
+    path('checkExportTaskStatus/<str:task_id>', views.checkExportTaskStatus, name='checkExportTaskStatus'),
+
     path('rapportRe/<int:pk>', views.rapportRe, name='rapportRe'),
     path('rapportIs/<int:pk>', views.rapportIs, name='rapportIs'),
 
@@ -61,6 +65,12 @@ urlpatterns = [
     path('impressionRappInsp/', views.impressionRappInsp, name='impressionRappInsp'),
     # path('impressionRappEssaie/', views.impressionRappEssaie, name='impressionRappEssaie'),
 
+    #Celery Task Test
+    path('tasks/', views.tasks, name='tasks'),
+
+    path('gestionGo/', views.gestionGo, name='gestionGo'),
+    path('gestionGoResponse/', views.gestionGoResponse, name='gestionGoResponse'),
+    #
 
 
 

@@ -1,21 +1,30 @@
 import base64
 import json
 import uuid
+
+import pandas as pd
 import qrcode
 import io
 from io import BytesIO
 
+from celery.result import AsyncResult
+from celery_progress.backend import ProgressRecorder
+from celery_progress.views import get_progress
+
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.forms import FloatField
+from django.forms import FloatField, model_to_dict
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from openpyxl import Workbook
 
+import shydro
 from ads.forms import ImportateurForm, EntrepotForm
 from enreg.forms import Ajoutcargaison
 from enreg.models import *
 from accounts.models import *
 from entrepot.calculs import densite15, vcf, gsv, mta
+from hydrocarbures.celery import app
 from .numact import num_cert_inspection
 from .tables import *
 from .forms import *
@@ -29,7 +38,9 @@ from datetime import date
 import datetime
 # from .numact import numeroactcurrent
 from .numdossier import numDossier
-
+from .tasks import export_report_task
+from celery import Celery
+from celery.result import AsyncResult
 
 #Class de gestion des codifacations des cargaisons
 class GestionCodification():
@@ -1048,6 +1059,627 @@ def changementNature(request):
 def pertes(request,pk):
     Cargaison.objects.get(idcargaison=pk).delete()
     return redirect('regularisation')
+
+
+
+def checkExportTaskStatus(request, task_id):
+    parameter = int(request.GET.get('parameter', 5))  # Get the parameter value from the request query parameters
+    task = AsyncResult(task_id,app=app)
+
+    if task.state in ['PENDING', 'SUCCESS', 'FAILURE']:
+        # Task is in a known state
+        if task.state == 'SUCCESS':
+            # Task completed successfully
+            result_value = task.get()
+            response_data = {
+                'state': 'SUCCESS',
+                'progress': 100,  # Assuming progress is 100% when task is successful
+                'result': result_value
+            }
+        elif task.state == 'FAILURE':
+            # Task failed
+            response_data = {
+                'state': 'FAILURE',
+                'progress': None,  # No progress if task failed
+                'error': str(task.result)  # Include error message
+            }
+        else:
+            # Task is in progress
+            # Calculate progress based on the parameter value (modify this according to your logic)
+            progress = parameter * 10  # Assuming each increment of parameter increases progress by 10%
+            response_data = {
+                'state': 'PENDING',
+                'progress': min(progress, 80)  # Cap progress at 100%
+            }
+    else:
+        # Task state is unknown or invalid
+        response_data = {
+            'state': 'UNKNOWN',
+            'progress': None
+        }
+
+    return JsonResponse(response_data)
+
+
+
+@login_required(login_url='login')
+def rapportActiviteFiltrePost(request):
+
+    user = request.user.id
+    template = 'rapportActivite.html'
+    form = Filters(user=user)
+
+    if request.method == 'POST':
+        fournisseur = request.session['fournisseur']
+        entrepot = request.session['entrepot']
+        dateDebut = request.session['dateDebut']
+        dateFin = request.session['dateFin']
+
+        if fournisseur and entrepot and dateDebut and dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and entrepot and dateDebut:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+
+        if fournisseur and entrepot:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+                entrepot_id=entrepot,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and dateDebut and dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and dateDebut :
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+        if fournisseur and dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table':table,
+                'form':form
+                }
+            return render(request,template,context)
+
+
+        if fournisseur:
+            qs = Cargaison.objects.filter(
+                entrepot__ville__affectationville__username_id=user,
+                importateur_id=fournisseur,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values(
+                'inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville',
+                'inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur',
+                'entrepot__nomentrepot', 'immatriculation', 'produit__nomproduit',
+                'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date',
+                'inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                'mtaTotal','mtvTotal', 'impressionresultat__printDate',
+                'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot and dateDebut and dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                entrepot_id=entrepot,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot and dateDebut:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot and dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if entrepot:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                entrepot_id=entrepot,
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if dateDebut and dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                dateheurecargaison__date__range=[dateDebut, dateFin]
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if dateDebut:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                dateheurecargaison__date=dateDebut
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
+        if dateFin:
+            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+                dateheurecargaison__date=dateFin
+            ).annotate(
+                volConst=Sum('inspection__compartiment__gov'),
+                gsvT=Sum('inspection__compartiment__gsv'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv')
+            ).values('inspection__compartiment__vcf',
+                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
+                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
+                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
+                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+            ).order_by('-inspection__dateinspection')
+
+            table = RapportActivite(qs)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('shydro.tasks.export_report_task', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+            context = {
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
+
 
 
 
@@ -2700,5 +3332,249 @@ def impressionRappInsp(request):
     except:
         return JsonResponse({'status': 'error'})
 
+
+
+def tasks(request):
+    qs = Cargaison.objects.annotate(
+        volConst=Sum('inspection__compartiment__gov'),
+        gsvT=Sum('inspection__compartiment__gsv'),
+        mtaTotal=Sum('inspection__compartiment__mta'),
+        mtvTotal=Sum('inspection__compartiment__mtv'),
+    ).values('inspection__compartiment__vcf',
+             'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+             'entrepot__ville__nomville',
+             'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
+             'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+             'entrepot_echantillon__dateechantillonage__date', 'inspection__dens', 'inspection__temp',
+             'entrepot_echantillon__laboreception__datereceptionlabo__date', 'mtaTotal', 'mtvTotal',
+             'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+             ).order_by('-inspection__dateinspection')
+
+    # Convert QuerySet to list of dictionaries
+    data = list(qs)
+
+    df = pd.DataFrame(list(qs))
+
+    # Rename the columns
+    df = df.rename(columns={
+        'idcargaison': 'ID CARGAISON',
+        'inspection__idinspection':'ID INSPECTION',
+        'numdos': 'NUM.DOSSIER',
+        'declaration': 'DECLARATION (T1E OU TR8)',
+        'frontiere__nomville': 'FRONTIERE',
+        'entrepot__ville__nomville': 'ENTREPOT',
+        'frontiere__nomville': 'FRONTIERE',
+        'importateur__nomimportateur': 'IMPORTATEUR',
+        'entrepot__nomentrepot': 'ENTREPOT',
+        'immatriculation': 'IMMATRICULATION',
+        'produit__nomproduit': 'PRODUIT',
+        'dateheurecargaison__date': 'DATE ENTREE',
+        'requisitiondackdate__date': 'DATE REQUISITION',
+        'entrepot_echantillon__dateechantillonage__date': 'DATE ECHANTILLONNAGE',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date': 'DATE RECEPTION LABO',
+        'inspection__dateinspection': 'DATE INSPECTION',
+        'inspection__dens': 'DENSITE',
+        'inspection__temp': 'TEMPERATURE',
+        'volume': 'VOL DECLARE',
+        'volConst': 'VOL JAUGE',
+        'volConst': 'VOL JAUGE',
+        'inspection__compartiment__vcf': 'VCF',
+        'gsvT': 'GSV',
+        'mtaTotal': 'MTA',
+        'mtvTotal': 'MTV',
+    })
+
+    # Create a BytesIO object to store the Excel file
+    excel_file = pd.ExcelWriter('data.xlsx', engine='xlsxwriter')
+    df.to_excel(excel_file, index=False)
+    excel_file.save()
+
+    # Open the file for reading
+    with open('data.xlsx', 'rb') as file:
+        response = HttpResponse(file.read(), content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename=data.xlsx'
+        return response
+
+    # df = pd.DataFrame(qs)
+    # df = df.to_json()
+    #
+    # # Trigger the Celery task
+    # task = export_to_excel.delay(data)
+    #
+    # # Context
+    # context = {'task_id':task.id}
+    #
+    # # Redirect the user to a page indicating that the export is in progress
+    # return JsonResponse(context, status=200)
+
+
+
+@csrf_exempt
+def get_status(request, task_id):
+    task_result = AsyncResult(task_id)
+    result = {
+        "task_id": task_id,
+        "task_status": task_result.status,
+        "task_result": task_result.result
+    }
+    return JsonResponse(result, status=200)
+
+
+
+
+@login_required(login_url='login')
+def gestionGo(request):
+    # # template = 'display_progress.html'
+    template = 'gestionGo.html'
+    user = request.user
+    id = user.id
+    role = user.role_id
+
+    if role == 7 or role == 1:
+        e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                     entrepot__ville__affectationville__username_id=id).count()
+        d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+                                              idcargaison__entrepot__ville__affectationville__username_id=id).count()
+        l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+                                     entrepot__ville__affectationville__username_id=id).count()
+        n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                              isConforme=0, control=1).count()
+        p = Entrepot_echantillon.objects.filter(
+            idcargaison__etat='Echantillonner',
+            idcargaison__entrepot__ville__affectationville__username_id=id
+        ).count()
+
+        c = Cargaison.objects.filter(
+            entrepot__ville__affectationville__username_id=id
+        ).count()
+
+        context = {
+            'e': e,
+            'd': d,
+            'l': l,
+            'n': n,
+            'p': p,
+            'c': c,
+
+        }
+        return render(request, template, context)
+    else:
+        return redirect('logout')
+
+
+@login_required(login_url='login')
+def gestionGoResponse(request):
+    user = request.user
+    id = user.id
+    qs = Cargaison.objects.filter(
+        etat="En attente requisition",
+        entrepot__ville__affectationville__username_id=id
+    ).select_related(
+        'dateheurecargaison',
+        'importateur',
+        'entrepot',
+        'produit'
+    ).values(
+        'idcargaison',
+        'dateheurecargaison__date',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'produit__nomproduit',
+        'volume',
+        'immatriculation',
+        'declaration',
+        'numreq'
+    ).order_by('-dateheurecargaison', 'frontiere__nomville')
+
+    # Get the search value from the request's GET parameters
+    search_value = request.GET.get('search[value]', '')
+
+    # Apply search filter to the QuerySet
+    if search_value:
+        qs = qs.filter(
+            Q(dateheurecargaison__date__icontains=search_value) |
+            Q(importateur__nomimportateur__icontains=search_value) |
+            Q(entrepot__nomentrepot__icontains=search_value) |
+            Q(produit__nomproduit__icontains=search_value) |
+            Q(volume__icontains=search_value) |
+            Q(immatriculation__icontains=search_value) |
+            Q(declaration__icontains=search_value) |
+            Q(numreq__icontains=search_value)
+        )
+
+    # Number of items to show per page
+    items_per_page = 8
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Check if it's an AJAX request and if the export flag is set
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.',
+                      '#.T1D',
+                      '#.REQ.']
+        sheet.append(header_row)
+
+        # Write data rows to the Excel file
+        for row in data:
+            sheet.append([
+                row['dateheurecargaison__date'],
+                row['importateur__nomimportateur'],
+                row['entrepot__nomentrepot'],
+                row['produit__nomproduit'],
+                row['volume'],
+                row['immatriculation'],
+                row['declaration'],
+                row['numreq'],
+            ])
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
 
 
