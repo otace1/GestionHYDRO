@@ -125,7 +125,6 @@ tablib==3.2.1
 tinycss2==1.1.1
 tqdm==4.64.0
 typing_extensions==4.3.0
-tzdata==2022.2
 tzlocal==4.2
 uritemplate==4.1.1
 uritools==4.0.0
