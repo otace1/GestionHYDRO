@@ -1,40 +1,29 @@
+import csv
+import io
+from datetime import date
+from io import BytesIO
+
+import pandas as pd
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import Q, Count, FloatField
+from django.db.models import Sum, Case, When, F, DecimalField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect, HttpResponse
-from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation, \
-    Entrepot_echantillon, LaboReception, Compartiment
-from django.db.models import Q, F, Func, Value, CharField, Count, ExpressionWrapper, FloatField
-from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
-    DerniersEnregistrements, ProductionTable, EncaissementTable, StatistiquesJour, SyntheseImportation, \
-    SyntheseProduction, SyntheseEncaissement, RapportBrut, RapportBrutJournalier, RapportBrutJournalierEchantillonnage, \
-    RapportBrutJournalierAnalyse, RapportBrutJournalierInspection
-from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
-    ProduitEditForm, RechercheStat, RechercheEncaissement
-import json
-from django.db.models import Sum, Case, When, F, DecimalField
-import simplejson
-import csv, io
-from django_tables2 import RequestConfig
-from django_tables2.paginators import LazyPaginator
-from django.contrib import messages
 from django.urls import reverse
-from django.contrib.auth.decorators import login_required
+from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
-from django.utils.timezone import timedelta
-import math
-from datetime import date
-from .exp_excel import export_excel
-from django.core import serializers
-
-# Test for faster export to XLSX with Pandas
-from django_pandas.io import read_frame
-import pandas as pd
-from io import BytesIO
-# from pandas.io.json import json_normalize
-from django.db.models import CharField
-from django.db.models.functions import Cast, Coalesce
-
+from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
+
+from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation, \
+    Compartiment
+from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
+    ProduitEditForm, RechercheStat
+from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
+    ProductionTable, EncaissementTable, StatistiquesJour, SyntheseImportation, \
+    SyntheseProduction, SyntheseEncaissement, RapportBrut
 
 
 @login_required(login_url='login')
@@ -52,13 +41,13 @@ class Dashboard():
             form1 = RechercheStat()
             form2 = RechercheStat()
 
-            #Nouveau Rapport Global
+            # Nouveau Rapport Global
             j = Cargaison.objects.filter(etat="En attente requisition").count()
             k = Cargaison.objects.filter(etat="En attente d'echantillonage").count()
             l = Cargaison.objects.filter(etat="Analyse Labo en cours").count()
             m = Cargaison.objects.filter(etatInspection=1).count()
 
-            #Nouveau Produtc list
+            # Nouveau Produtc list
             totalVolume = Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']
             totalVolume = round(totalVolume) if totalVolume is not None else 0
 
@@ -74,34 +63,33 @@ class Dashboard():
             petroleVolume = Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']
             petroleVolume = round(petroleVolume) if petroleVolume is not None else 0
 
-            #Pourcentage
+            # Pourcentage
             gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
             mogasPercentage = round(((mogasVolume / totalVolume) * 100 if totalVolume else 0))
             jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
             petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
 
             context = {
-                "j":j,
-                "k":k,
-                "l":l,
-                "m":m,
-                'form1':form1,
-                'form2':form2,
-                'gasoilVolume':gasoilVolume,
-                'mogasVolume':mogasVolume,
-                'jetVolume':jetVolume,
-                'petroleVolume':petroleVolume,
-                'totalVolume':totalVolume,
-                'gasoilPercentage':gasoilPercentage,
-                'mogasPercentage':mogasPercentage,
-                'jetPercentage':jetPercentage,
-                'petrolePercentage':petrolePercentage,
-                'current_year':current_year,
+                "j": j,
+                "k": k,
+                "l": l,
+                "m": m,
+                'form1': form1,
+                'form2': form2,
+                'gasoilVolume': gasoilVolume,
+                'mogasVolume': mogasVolume,
+                'jetVolume': jetVolume,
+                'petroleVolume': petroleVolume,
+                'totalVolume': totalVolume,
+                'gasoilPercentage': gasoilPercentage,
+                'mogasPercentage': mogasPercentage,
+                'jetPercentage': jetPercentage,
+                'petrolePercentage': petrolePercentage,
+                'current_year': current_year,
             }
-            return render(request,template,context)
+            return render(request, template, context)
         else:
             return redirect('logout')
-            
 
     # @login_required(login_url='login')
     # # Fonction Recherche Statistique Detaillé
@@ -3799,6 +3787,7 @@ class Dashboard():
     #     # else:
     #     #     return redirect('logout')
 
+
 @login_required(login_url='login')
 # Fonction gestion des entrepots
 def gestionentrepot(request):
@@ -3919,6 +3908,7 @@ def deleteimportateur(request, pk):
     else:
         return redirect('logout')
 
+
 @login_required(login_url='login')
 # Formulaire d'edition Importateurs
 def editimportateur(request, pk):
@@ -3939,6 +3929,7 @@ def editimportateur(request, pk):
         return render(request, template, args)
     else:
         return redirect('logout')
+
 
 @login_required(login_url='login')
 # Formulaire de gestion de frontiere
@@ -3974,6 +3965,7 @@ def addfrontiere(request):
     else:
         return redirect('logout')
 
+
 @login_required(login_url='login')
 # Fonction delete frontiere
 def delfrontiere(request, pk):
@@ -3986,6 +3978,7 @@ def delfrontiere(request, pk):
         return redirect('gest_frontiere')
     else:
         return redirect('logout')
+
 
 @login_required(login_url='login')
 # Fonction edit frontiere
@@ -4062,6 +4055,7 @@ def editproduit(request, pk):
         return render(request, template, args)
     else:
         return redirect('logout')
+
 
 @login_required(login_url='login')
 # Fonction delete produit
@@ -4234,7 +4228,7 @@ def uploadsydonia(request):
     role = user.role_id
 
     if role == 1:
-        template ='sydoniaupload.html'
+        template = 'sydoniaupload.html'
         prompt = {'order': 'Attention a la disposition des colonnes'}
 
         if request.method == 'GET':
@@ -4259,15 +4253,15 @@ def uploadsydonia(request):
                 n_liq=column[6],
                 date_liq=column[7],
                 ide_ser=column[8],
-                ide_nbr = column[9],
-                date_pay = column[10],
-                tax_cod = column[11],
-                mont_enc = column[12],
-                bnk_nam = column[13],
-                libelle = column[14],
-                ref_pay = column[15],
-                taux = column[16],
-                qte_stat = column[17],
+                ide_nbr=column[9],
+                date_pay=column[10],
+                tax_cod=column[11],
+                mont_enc=column[12],
+                bnk_nam=column[13],
+                libelle=column[14],
+                ref_pay=column[15],
+                taux=column[16],
+                qte_stat=column[17],
             )
         context = {}
         return render(request, template, context)
@@ -6149,7 +6143,6 @@ def statproduction(request):
                                     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                                                      "per_page": 20}).configure(table)
                                     return render(request, 'statsproductions.html', {'cargaison': table})
-
 
             # R49
             if frontiere != "":
@@ -9082,7 +9075,8 @@ def statproduction(request):
             else:
                 return redirect('logout')
 
-#Stats encaissement
+
+# Stats encaissement
 @login_required(login_url='login')
 def statencaissement(request):
     template = 'statsprod.html'
@@ -9102,7 +9096,7 @@ def statencaissement(request):
             request.session['date_d'] = date_d
             request.session['date_f'] = date_f
 
-#R1
+            # R1
             if frontiere == '':
                 if importateur == '':
                     if banque == '':
@@ -9128,7 +9122,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-#R2
+            # R2
             if frontiere == '':
                 if importateur == '':
                     if banque == '':
@@ -9150,7 +9144,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-# R3
+            # R3
             if frontiere == '':
                 if importateur == '':
                     if banque == '':
@@ -9172,7 +9166,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-# R4
+            # R4
             if frontiere == '':
                 if importateur == '':
                     if banque == '':
@@ -9194,7 +9188,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-# R5
+            # R5
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -9216,7 +9210,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-# R6
+            # R6
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -9239,7 +9233,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-# R7
+            # R7
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -9262,8 +9256,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R8
+            # R8
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -9286,8 +9279,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R9
+            # R9
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -9309,7 +9301,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R10
+            # R10
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -9332,8 +9324,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R11
+            # R11
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -9356,8 +9347,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R12
+            # R12
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -9380,7 +9370,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R13
+            # R13
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -9403,8 +9393,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R14
+            # R14
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -9428,7 +9417,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R15
+            # R15
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -9452,7 +9441,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R16
+            # R16
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -9476,7 +9465,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R17
+            # R17
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -9498,8 +9487,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R18
+            # R18
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -9522,7 +9510,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R19
+            # R19
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -9545,7 +9533,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R20
+            # R20
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -9568,8 +9556,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R21
+            # R21
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -9592,7 +9579,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R22
+            # R22
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -9616,7 +9603,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R23
+            # R23
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -9640,7 +9627,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R24
+            # R24
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -9664,7 +9651,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R25
+            # R25
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -9687,7 +9674,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R26
+            # R26
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -9711,7 +9698,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R27
+            # R27
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -9735,8 +9722,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R28
+            # R28
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -9760,7 +9746,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R29
+            # R29
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -9784,8 +9770,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R30
+            # R30
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -9810,7 +9795,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R31
+            # R31
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -9835,7 +9820,7 @@ def statencaissement(request):
                                                                  "per_page": 20}).configure(table)
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R32
+            # R32
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -9863,8 +9848,8 @@ def statencaissement(request):
 
         if request.method == 'GET':
 
-            frontiere =  request.session['frontiere']
-            importateur =  request.session['importateur']
+            frontiere = request.session['frontiere']
+            importateur = request.session['importateur']
             banque = request.session['banque']
             date_d = request.session['date_d']
             date_f = request.session['date_f']
@@ -10015,7 +10000,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R6
+            # R6
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -10045,7 +10030,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R7
+            # R7
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -10075,9 +10060,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-
-    # R8
+            # R8
             if frontiere == '':
                 if importateur == '':
                     if banque != '':
@@ -10107,8 +10090,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R9
+            # R9
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -10137,9 +10119,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-
-    # R10
+            # R10
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -10169,9 +10149,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-
-    # R11
+            # R11
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -10201,8 +10179,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R12
+            # R12
             if frontiere == '':
                 if importateur != '':
                     if banque == '':
@@ -10232,7 +10209,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R13
+            # R13
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -10262,7 +10239,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R14
+            # R14
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -10293,9 +10270,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-
-    # R15
+            # R15
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -10326,9 +10301,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-
-    # R16
+            # R16
             if frontiere == '':
                 if importateur != '':
                     if banque != '':
@@ -10359,7 +10332,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R17
+            # R17
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -10388,8 +10361,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R18
+            # R18
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -10419,8 +10391,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R19
+            # R19
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -10450,8 +10421,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R20
+            # R20
             if frontiere != '':
                 if importateur == '':
                     if banque == '':
@@ -10481,8 +10451,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R21
+            # R21
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -10512,8 +10481,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R22
+            # R22
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -10544,8 +10512,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R23
+            # R23
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -10576,8 +10543,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R24
+            # R24
             if frontiere != '':
                 if importateur == '':
                     if banque != '':
@@ -10608,8 +10574,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R25
+            # R25
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -10639,8 +10604,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-
-    # R26
+            # R26
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -10671,7 +10635,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R27
+            # R27
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -10702,7 +10666,7 @@ def statencaissement(request):
                                     'cargaison': table
                                 })
 
-    # R28
+            # R28
             if frontiere != '':
                 if importateur != '':
                     if banque == '':
@@ -10735,8 +10699,7 @@ def statencaissement(request):
 
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R29
+            # R29
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -10770,7 +10733,7 @@ def statencaissement(request):
 
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-    # R30
+            # R30
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -10804,8 +10767,7 @@ def statencaissement(request):
 
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R31
+            # R31
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -10839,8 +10801,7 @@ def statencaissement(request):
 
                                 return render(request, 'statsencaissements.html', {'cargaison': table})
 
-
-    # R32
+            # R32
             if frontiere != '':
                 if importateur != '':
                     if banque != '':
@@ -12502,7 +12463,6 @@ def synthese_importation(request):
                             return render(request, 'statssynthese.html.html', {'cargaison': table})
 
 
-
 @login_required(login_url='login')
 # synthese des rapports production
 def synthese_production(request):
@@ -12513,7 +12473,6 @@ def synthese_production(request):
     entrepot = request.session['entrepot']
     date_d = request.session['date_d']
     date_f = request.session['date_f']
-
 
     # R1
     if frontiere == "":
@@ -12542,7 +12501,6 @@ def synthese_production(request):
                                                filter=Q(idinspection__idcargaison__produit=4)),
                                 gsvtotal=Sum('gsv')
                             ).order_by('-gsvtotal')
-
 
                             # qs = Dechargement.objects.values(
                             #     'idcargaison__idcargaison__idcargaison__idcargaison__importateur__nomimportateur').annotate(
@@ -16159,6 +16117,7 @@ def synthese_encaissement(request):
                             'cargaison': table
                         })
 
+
 # #######
 # Nouvelles Fonction
 # #######
@@ -19318,7 +19277,7 @@ def rapportBrut(request):
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19339,10 +19298,10 @@ def rapportBrut(request):
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19365,14 +19324,14 @@ def rapportBrut(request):
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19393,10 +19352,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19419,14 +19378,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19447,10 +19406,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19472,14 +19431,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19500,10 +19459,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19525,14 +19484,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19553,10 +19512,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19578,14 +19537,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19606,10 +19565,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19631,14 +19590,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19659,10 +19618,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19683,14 +19642,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19711,10 +19670,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19736,14 +19695,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19764,10 +19723,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19789,14 +19748,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19817,10 +19776,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19842,14 +19801,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19870,10 +19829,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19894,14 +19853,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19922,10 +19881,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19946,14 +19905,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -19974,10 +19933,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -19998,14 +19957,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20026,10 +19985,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20050,14 +20009,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20078,10 +20037,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20101,14 +20060,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20129,10 +20088,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20154,14 +20113,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20182,10 +20141,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20207,14 +20166,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20235,10 +20194,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20260,14 +20219,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20288,10 +20247,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20312,14 +20271,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20340,10 +20299,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20364,14 +20323,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20392,10 +20351,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20416,14 +20375,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20444,10 +20403,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20468,14 +20427,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20496,10 +20455,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20519,14 +20478,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20547,10 +20506,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20571,14 +20530,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20599,10 +20558,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20623,14 +20582,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20651,10 +20610,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20675,14 +20634,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20703,10 +20662,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20726,14 +20685,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20754,10 +20713,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20777,14 +20736,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20805,10 +20764,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20828,14 +20787,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20856,10 +20815,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20879,14 +20838,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20907,10 +20866,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20929,14 +20888,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -20957,10 +20916,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -20982,14 +20941,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21010,10 +20969,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21035,14 +20994,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21063,10 +21022,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21088,14 +21047,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21116,10 +21075,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21140,14 +21099,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21168,10 +21127,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21192,14 +21151,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21220,10 +21179,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21244,14 +21203,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21272,10 +21231,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21296,14 +21255,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21324,10 +21283,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21347,14 +21306,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21375,10 +21334,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21399,14 +21358,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21427,10 +21386,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21451,14 +21410,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21479,10 +21438,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21502,14 +21461,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21530,10 +21489,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21553,14 +21512,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21581,10 +21540,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21604,14 +21563,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21632,10 +21591,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21654,14 +21613,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21682,10 +21641,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21706,14 +21665,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21734,10 +21693,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21758,14 +21717,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21786,10 +21745,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21810,14 +21769,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21838,10 +21797,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21861,14 +21820,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21889,10 +21848,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21912,14 +21871,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21940,10 +21899,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -21963,14 +21922,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -21991,10 +21950,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22014,14 +21973,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22042,10 +22001,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22064,14 +22023,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22092,10 +22051,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22115,14 +22074,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22143,10 +22102,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22166,14 +22125,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22194,10 +22153,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22217,14 +22176,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22245,10 +22204,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22267,14 +22226,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22295,10 +22254,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22317,14 +22276,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22345,10 +22304,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22367,14 +22326,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22395,10 +22354,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22417,14 +22376,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22445,10 +22404,10 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
-            table=RapportBrut(qs)
+            table = RapportBrut(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -22464,14 +22423,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
             govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
             gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
             mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+            mtvTotal=Sum('inspection__compartiment__mtv'),
             fraisOcc=Case(
                 When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                      then=Sum('inspection__compartiment__gsv') * 11),
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+        ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                  'idcargaison',
                  'dateheurecargaison__date',
                  'requisitiondackdate',
@@ -22527,14 +22486,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22555,7 +22514,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22581,14 +22540,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22609,7 +22568,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22635,14 +22594,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22663,7 +22622,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22688,14 +22647,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22716,7 +22675,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22741,14 +22700,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22769,7 +22728,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22794,14 +22753,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22822,7 +22781,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22847,14 +22806,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22875,7 +22834,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22899,14 +22858,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22927,7 +22886,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -22952,14 +22911,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -22980,7 +22939,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23005,14 +22964,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23033,7 +22992,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23058,14 +23017,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23086,7 +23045,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23110,14 +23069,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23138,7 +23097,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23162,14 +23121,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23190,7 +23149,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23214,14 +23173,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23242,7 +23201,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23266,14 +23225,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23294,7 +23253,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23317,14 +23276,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23345,7 +23304,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23370,14 +23329,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23398,7 +23357,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23423,14 +23382,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23451,7 +23410,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23476,14 +23435,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23504,7 +23463,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23528,14 +23487,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23556,7 +23515,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23580,14 +23539,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23608,7 +23567,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23632,14 +23591,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23660,7 +23619,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23684,14 +23643,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23712,7 +23671,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23735,14 +23694,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23763,7 +23722,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23787,14 +23746,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23815,7 +23774,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23839,14 +23798,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23867,7 +23826,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23891,14 +23850,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23919,7 +23878,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23942,14 +23901,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -23970,7 +23929,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -23993,14 +23952,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24021,7 +23980,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24044,14 +24003,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24072,7 +24031,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24095,14 +24054,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24123,7 +24082,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24145,14 +24104,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24173,7 +24132,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24198,14 +24157,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24226,7 +24185,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24251,14 +24210,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24279,7 +24238,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24304,14 +24263,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24332,7 +24291,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24356,14 +24315,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24384,7 +24343,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24408,14 +24367,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24436,7 +24395,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24460,14 +24419,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24488,7 +24447,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24512,14 +24471,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24540,7 +24499,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24563,14 +24522,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24591,7 +24550,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24615,14 +24574,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24643,7 +24602,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24667,14 +24626,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24695,7 +24654,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24718,14 +24677,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24746,7 +24705,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24769,14 +24728,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24797,7 +24756,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24820,14 +24779,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24848,7 +24807,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24870,14 +24829,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24898,7 +24857,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24922,14 +24881,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -24950,7 +24909,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -24974,14 +24933,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25002,7 +24961,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25026,14 +24985,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25054,7 +25013,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25077,14 +25036,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25105,7 +25064,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25128,14 +25087,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25156,7 +25115,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25179,14 +25138,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25207,7 +25166,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25230,14 +25189,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25258,7 +25217,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25280,14 +25239,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25308,7 +25267,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25331,14 +25290,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25359,7 +25318,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25382,14 +25341,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25410,7 +25369,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25433,14 +25392,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25461,7 +25420,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25483,14 +25442,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25511,7 +25470,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25533,14 +25492,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25561,7 +25520,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25583,14 +25542,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25611,7 +25570,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25633,14 +25592,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                 govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
                 gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
                 fraisOcc=Case(
                     When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                          then=Sum('inspection__compartiment__gsv') * 11),
                     default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                     output_field=FloatField()
                 ),
-            ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+            ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                      'idcargaison',
                      'dateheurecargaison__date',
                      'requisitiondackdate',
@@ -25661,7 +25620,7 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
                      'gsvJauge',
                      'govMeter',
                      'gsvMeter',
-                     'mtaTotal','mtvTotal','fraisOcc',
+                     'mtaTotal', 'mtvTotal', 'fraisOcc',
                      )
 
             table = RapportBrut(qs)
@@ -25680,14 +25639,14 @@ mtvTotal=Sum('inspection__compartiment__mtv'),
             govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
             gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
             mtaTotal=Sum('inspection__compartiment__mta'),
-mtvTotal=Sum('inspection__compartiment__mtv'),
+            mtvTotal=Sum('inspection__compartiment__mtv'),
             fraisOcc=Case(
                 When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
                      then=Sum('inspection__compartiment__gsv') * 11),
                 default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
                 output_field=FloatField()
             ),
-        ).values('requisitiondackdate__date', 'dateDechargement__date','inspection__compartiment__vcf',
+        ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
                  'idcargaison',
                  'dateheurecargaison__date',
                  'requisitiondackdate',
@@ -25817,8 +25776,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -25914,7 +25874,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -25953,8 +25913,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26045,7 +26006,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26084,8 +26045,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26175,7 +26137,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26214,8 +26176,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26305,7 +26268,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26344,8 +26307,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26435,7 +26399,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26474,8 +26438,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26565,7 +26530,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26604,8 +26569,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26694,7 +26660,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26733,8 +26699,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26824,7 +26791,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26863,8 +26830,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -26954,7 +26922,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -26993,8 +26961,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27084,7 +27053,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27123,8 +27092,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27213,7 +27183,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27252,8 +27222,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27342,7 +27313,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27381,8 +27352,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27471,7 +27443,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27510,8 +27482,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27600,7 +27573,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27639,8 +27612,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27728,7 +27702,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27767,8 +27741,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27858,7 +27833,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -27897,8 +27872,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -27988,7 +27964,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28027,8 +28003,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28118,7 +28095,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28157,8 +28134,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28247,7 +28225,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28286,8 +28264,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28376,7 +28355,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28415,8 +28394,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28505,7 +28485,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28544,8 +28524,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28634,7 +28615,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28673,8 +28654,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28762,7 +28744,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28801,8 +28783,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -28891,7 +28874,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -28930,8 +28913,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29020,7 +29004,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29059,8 +29043,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29149,7 +29134,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29188,8 +29173,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29277,7 +29263,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29316,8 +29302,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29405,7 +29392,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29444,8 +29431,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29533,7 +29521,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29572,8 +29560,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29661,7 +29650,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29700,8 +29689,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29788,7 +29778,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29827,8 +29817,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -29918,7 +29909,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -29957,8 +29948,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30048,7 +30040,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30087,8 +30079,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30178,7 +30171,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30217,8 +30210,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30307,7 +30301,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30346,8 +30340,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30436,7 +30431,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30475,8 +30470,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30565,7 +30561,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30604,8 +30600,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30694,7 +30691,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30733,8 +30730,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30822,7 +30820,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30861,8 +30859,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -30951,7 +30950,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -30990,8 +30989,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31080,7 +31080,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31119,8 +31119,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31208,7 +31209,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31247,8 +31248,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31336,7 +31338,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31375,8 +31377,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31464,7 +31467,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31503,8 +31506,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31591,7 +31595,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31630,8 +31634,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31720,7 +31725,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31759,8 +31764,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31849,7 +31855,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -31888,8 +31894,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -31978,7 +31985,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32017,8 +32024,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32106,7 +32114,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32145,8 +32153,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32234,7 +32243,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32273,8 +32282,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32362,7 +32372,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32401,8 +32411,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32490,7 +32501,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32529,8 +32540,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32617,7 +32629,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32656,8 +32668,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32745,7 +32758,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32784,8 +32797,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -32873,7 +32887,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -32912,8 +32926,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -33001,7 +33016,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -33040,8 +33055,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -33128,7 +33144,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -33167,8 +33183,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -33255,7 +33272,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -33294,8 +33311,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -33382,7 +33400,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -33421,8 +33439,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -33509,7 +33528,7 @@ def rapportBrutResponse(request):
                  'fraisOcc',
                  )
 
-# Number of items to show per page
+        # Number of items to show per page
         items_per_page = 10
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -33548,8 +33567,9 @@ def rapportBrutResponse(request):
 
             # Write headers to the Excel file
             header_row = ['DATE ENTREE', 'FRONTIERE', 'DECL.#T1D', 'FOURNISSEUR', 'ENTREPOT', 'IMMATRICULATION',
-                          'DATE REQ.','DATE ECH.','DATE REC.LABO','DATE ANALYSE','DATE INSPEC.','DATE DECH.','PRODUIT','DENS.ATA',
-                          'TEMP.','VOL. DECL.','VOL. JAUGE','MTA','GSV JAUGE','GSV COMPTEUR','FRAIS A PAYER']
+                          'DATE REQ.', 'DATE ECH.', 'DATE REC.LABO', 'DATE ANALYSE', 'DATE INSPEC.', 'DATE DECH.',
+                          'PRODUIT', 'DENS.ATA',
+                          'TEMP.', 'VOL. DECL.', 'VOL. JAUGE', 'MTA', 'GSV JAUGE', 'GSV COMPTEUR', 'FRAIS A PAYER']
             sheet.append(header_row)
 
             # Write data rows to the Excel file
@@ -33709,11 +33729,11 @@ def rapportBrutResponse(request):
     })
 
 
-
 @login_required(login_url='login')
 def rapportBrutJournalier(request):
     template = "rapportBrutesRequisition.html"
-    return render(request,template)
+    return render(request, template)
+
 
 @login_required(login_url='login')
 def responseBrutJournalier(request):
@@ -33810,7 +33830,8 @@ def responseBrutJournalier(request):
 @login_required(login_url='login')
 def rapportBrutEchantillonnage(request):
     template = "rapportBrutesEchantillonnage.html"
-    return render(request,template)
+    return render(request, template)
+
 
 @login_required(login_url='login')
 def responseRapportBrutEchantillonnage(request):
@@ -33869,7 +33890,7 @@ def responseRapportBrutEchantillonnage(request):
 
         # Write headers to the Excel file
         header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume','Date requisition']
+                      'Volume', 'Date requisition']
         sheet.append(header_row)
 
         # Write data rows to the Excel file
@@ -33910,6 +33931,7 @@ def responseRapportBrutEchantillonnage(request):
 def rapportBrutAnalyse(request):
     template = "rapportBrutesAnalyse.html"
     return render(request, template)
+
 
 @login_required(login_url='login')
 def responseRapportBrutAnalyse(request):
@@ -33969,7 +33991,7 @@ def responseRapportBrutAnalyse(request):
 
         # Write headers to the Excel file
         header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume', 'Date requisition','Date Echantillonnage', 'Date Reception Labo']
+                      'Volume', 'Date requisition', 'Date Echantillonnage', 'Date Reception Labo']
         sheet.append(header_row)
 
         # Write data rows to the Excel file
@@ -34013,10 +34035,12 @@ def responseRapportBrutAnalyse(request):
     # }
     # return render(request, template, context)
 
+
 @login_required(login_url='login')
 def rapportBrutInspection(request):
     template = "rapportBrutesInspection.html"
     return render(request, template)
+
 
 @login_required(login_url='login')
 def responseRapportBrutInspection(request):
@@ -34033,7 +34057,7 @@ def responseRapportBrutInspection(request):
         'requisitiondackdate',
         'entrepot_echantillon__dateechantillonage__date',
         'entrepot_echantillon__laboreception__datereceptionlabo__date',
-    ).order_by('-dateheurecargaison','frontiere__nomville')
+    ).order_by('-dateheurecargaison', 'frontiere__nomville')
 
     # table = RapportBrutJournalierInspection(qs)
     # context = {
@@ -34079,7 +34103,7 @@ def responseRapportBrutInspection(request):
 
         # Write headers to the Excel file
         header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume', 'Date requisition','Date Echantillonnage', 'Date Reception Labo']
+                      'Volume', 'Date requisition', 'Date Echantillonnage', 'Date Reception Labo']
         sheet.append(header_row)
 
         # Write data rows to the Excel file
@@ -34122,9 +34146,10 @@ def responseRapportBrutInspection(request):
 def chartJs(request):
     # Get the current year
     current_year = date.today().year
-    volumeData = Compartiment.objects.filter(idinspection__idcargaison__dateheurecargaison__year=current_year).values('idinspection__idcargaison__produit__nomproduit').annotate(
-         totalVolume = Sum('idinspection__idcargaison__volume'),
-         totalCertified = Sum('gsv'),
+    volumeData = Compartiment.objects.filter(idinspection__idcargaison__dateheurecargaison__year=current_year).values(
+        'idinspection__idcargaison__produit__nomproduit').annotate(
+        totalVolume=Sum('idinspection__idcargaison__volume'),
+        totalCertified=Sum('gsv'),
     )
 
     # Convert the queryset to a list of dictionaries
