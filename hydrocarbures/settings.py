@@ -339,3 +339,16 @@ sentry_sdk.init(
 )
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+
+# CELERY SETTINGS
+#
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'
+# CELERY_TIMEZONE = 'Africa/Lubumbashi'
+
+
