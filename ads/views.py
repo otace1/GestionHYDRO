@@ -30,7 +30,7 @@ from django.core import serializers
 from django_pandas.io import read_frame
 import pandas as pd
 from io import BytesIO
-from pandas.io.json import json_normalize
+# from pandas.io.json import json_normalize
 from django.db.models import CharField
 from django.db.models.functions import Cast, Coalesce
 
