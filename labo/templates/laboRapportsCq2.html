@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block buttons %}
-    <a class="btn btn-app bg-danger" href="{% url 'validation1' %}" >
+    <a class="btn btn-app bg-danger" href="{% url 'validation2' %}" >
                         <span class="badge bg-success"></span>
                         <i class="fas fa-backward"></i> Retour
                     </a>
@@ -33,7 +33,7 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="{% url 'rapportCqfiltres' %}" method="post">
+              <form action="{% url 'rapportCqfiltres2' %}" method="post">
             <div class="modal-body">
                     {% csrf_token %}
                     {% crispy form %}
@@ -131,7 +131,7 @@ $(document).ready(function () {
     <script>
 document.addEventListener("DOMContentLoaded", function() {
     // Add click event listener to the export link
-    document.querySelector("#bulkPrint").addEventListener("click", function(event) {
+    document.querySelector("#export-link").addEventListener("click", function(event) {
         event.preventDefault(); // Prevent the default action of the link
 
         // Hide the export link

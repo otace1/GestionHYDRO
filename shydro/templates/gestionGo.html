@@ -1,0 +1,199 @@
+{% extends 'shydro/gestionGo.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+
+
+{% block extra_js%}
+    <style>
+    @keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+    .loading-spinner {
+      border: 4px solid rgba(0, 0, 0, 0.3);
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-left: -20px;
+      margin-top: -20px;
+      z-index: 9999;
+    }
+    </style>
+
+{% endblock %}
+
+
+{% block content %}
+<div id="data-table-wrapper" style="position: relative;">
+  <div class="loading-spinner"></div>
+<table id="data-table" class="table table-bordered display responsive" style="width:100%">
+    <thead>
+        <tr>
+            <th></th>
+            <th>DATE ENTREE</th>
+            <th>FOURNISSEUR</th>
+            <th>ENTREPOT</th>
+            <th>PRODUIT</th>
+            <th>VOL.DECL.</th>
+            <th>IMMATR.</th>
+            <th>#.T1D</th>
+            <th>ACTION(s)</th> <!-- New column header -->
+        </tr>
+    </thead>
+</table>
+</div>
+
+<!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            processing: false,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'responseAffichageTableau' %}',
+                type: 'GET',
+                // Show the loading spinner during DataTable processing
+                // Show the loading spinner during DataTable processing
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+        },
+            columns: [
+                { // New column configuration for tick box
+                    data: null,
+                    render: function (data, type, row) {
+                        // Render a tick box in each cell of this column
+                        return '<input type="checkbox" class="tick-box">';
+                    },
+                    className: 'text-center', // Center align content in this column
+                    title: '<input type="checkbox" id="tick-all">' // Add checkbox in the header
+                },
+                { data: 'dateheurecargaison__date' },
+                { data: 'importateur__nomimportateur' },
+                { data: 'entrepot__nomentrepot' },
+                { data: 'produit__nomproduit' },
+                { data: 'volume' },
+                { data: 'immatriculation' },
+                { data: 'declaration' },
+                { // New column configuration
+                    data: 'idcargaison',
+                    render: function (data, type, row) {
+                        // 'data' contains the value of 'idcargaison' for this row
+                        // Here, we'll create a JSON input field and a button to submit the data
+                        {##}
+                        {#const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +#}
+                        {#    '<input type="text" class="json-input" id="input-' + data + '">';#}
+
+                        // Include a button to submit the JSON data for the row
+                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">GO DECHARGEMENT</button>';
+
+                        return submitButton;
+                    }
+                }
+            ],
+            // Optional: Add buttons for exporting to Excel
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    filename: 'rapport_brut',
+                    exportOptions: {
+                        modifier: {
+                            search: 'none'
+                        }
+                    },
+                    action: function (e, dt, node, config) {
+                        // Redirect to the export URL instead of using AJAX
+                        window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
+                    }
+                }
+            ],
+        });
+
+
+
+        // Event listener for the "Select All" checkbox
+    $('#tick-all').on('change', function() {
+        var checkboxes = $('.tick-box');
+        checkboxes.prop('checked', $(this).prop('checked'));
+        if ($(this).prop('checked')) {
+            var tickedIds = [];
+            checkboxes.each(function() {
+                var row = $(this).closest('tr');
+                var rowData = dataTable.row(row).data();
+                tickedIds.push(rowData.idcargaison);
+            });
+            console.log('Ticked row IDs:', tickedIds);
+        }
+    });
+
+
+
+        // Handle form submission on button click
+        $('#data-table').on('click', '.btn-warning', function () {
+            const rowId = $(this).data('row-id');
+            const jsonData = $('#input-' + rowId).val();
+            const idcargaison = rowId;
+
+            // Show the loading icon while waiting for the response
+            $('#loading-icon').show();
+
+            // Include 'idcargaison' in the JSON data to send to the server
+            const dataToSend = {
+                idcargaison: idcargaison,
+                jsonData: jsonData // Directly use the JSON data typed in the input field
+            };
+
+            console.log(dataToSend);
+
+            // Send the JSON data to the URL using AJAX
+            $.ajax({
+                url: "{% url 'numreq' %}", // Replace with your actual URL
+                type: 'POST',
+                data: JSON.stringify(dataToSend), // Send as JSON string
+                contentType: 'application/json', // Set content type to JSON
+                headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
+                success: function (response) {
+                    // Handle the success response here, if needed
+                    console.log('Data submitted successfully.');
+                    var num = response.num;
+                    alert("NUM.DOSSIER: " + num);
+                    $('#loading-icon').hide();
+                    dataTable.ajax.reload();
+                },
+                error: function (error) {
+                    // Handle the error response here, if needed
+                    console.error('Error submitting data:', error);
+                    // Hide the loading icon after receiving the response
+                    $('#loading-icon').hide();
+                    dataTable.ajax.reload();
+                }
+            });
+        });
+    });
+</script>
+
+
+
+{% endblock %}
+
+

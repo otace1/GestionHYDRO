@@ -4,67 +4,47 @@
 
 {% block formsearch %}
  <div class="row">
-      <a class="btn btn-app bg-warning" href="{% url 'impression' %}">
+      <a class="btn btn-app bg-yellow" href="{% url 'impression' %}">
                   <span class="badge bg-purple"></span>
-                  <i class="fas fa-backward"></i> Retour
+                  <i class="fas fa-recycle"></i>REFRESH
       </a>
-{#      <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-default">#}
-{#                      <span class="badge bg-purple"></span>#}
-{#                      <i class="fas fa-print"></i> Re-impression#}
-{#      </a>#}
 
-{#        <div class="col-md-2">#}
-{#                            <a href="" data-toggle="modal" data-target="#modal-default" class="btn btn-info" role="button">Re-impression</a>#}
-{#        </div>#}
-{#         <div class="col-md-2">#}
-{#            <a href="{% url 'impression' %}"><button class="btn btn-danger"><i class="fa fa-backward"></i>Retour</button></a>#}
-{#                 </div>#}
       </div><!-- /.container-fluid -->
 
-    <div class="modal fade" id="modal-default">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Recherche des Archives</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              <form method="get" action="{% url 'recherchecqr' %}">
-                  <div class="input-group input-group-sm" style="width: 400px;">
-                    <input type="text" name="codelabo" class="form-control float-right" placeholder="Recherche par code Labo...">
-                    <div class="input-group-append">
-                      <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
-                    </div>
-                  </div>
-                         </form>
-            </div>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
+
 {% endblock%}
 
 {% block content %}
-{#    {% render_table labo %}#}
+     <a class="btn btn-app bg-success" href="#" id="bulkPrint">
+         <span class="badge bg-purple"></span>
+         <i class="fas fa-print"></i>IMPRESSION
+     </a>
+
+
+     <div id="progress-bar-container" style="display: none;" class="mt-3">
+                    <div id="progress-bar" class="progress" style="border-radius: 25px">
+                        <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div id="progress-bar-label" class="mt-2">Exporting...</div>
+    </div>
+
+    <input type="hidden" id="parameter-input" name="parameter" value="2">
+
     <div id="data-table-wrapper" style="position: relative;">
   <div class="loading-spinner"></div>
 <table id="data-table" class="table table-bordered display responsive" style="width:100%">
     <thead>
         <tr>
-            <th>DATE</th>
+            <th></th>
+            <th>DATE DE RECEPTION</th>
+            <th>DATE D'ANALYSE</th>
             <th>CODE LABO</th>
             <th>NUM. CERTIFICAT</th>
             <th>FOURNISSEUR</th>
             <th>ENTREPOT</th>
             <th>PRODUIT</th>
             <th>ACTION(s)</th>
-{#            <th>#.T1D</th>#}
-{#            <th>#.REQ.</th>#}
-{#            <th>SAISIE REF.REQ.</th> <!-- New column header -->#}
+
         </tr>
     </thead>
 </table>
@@ -72,8 +52,12 @@
 
 <!-- Include FileSaver.js library for saving the Excel file -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
 
 <script>
+    var dataRow;
+    var selectedRowIds = [];
     const csrfToken = '{{ csrf_token }}';
 
     $(document).ready(function () {
@@ -85,6 +69,7 @@
             processing: true,
             serverSide: true,
             responsive: true,
+            ordering:false,
             ajax: {
                 url: '{% url 'responseAffichagetableauimpression' %}',
                 type: 'GET',
@@ -99,7 +84,17 @@
                 }
         },
             columns: [
+                { // New column configuration for tick box
+                    data: null,
+                    render: function (data, type, row) {
+                        // Render a tick box in each cell of this column
+                        return '<input type="checkbox" class="tick-box" data-row-id="' + row.idcargaison + '">';
+                    },
+                    className: 'text-center', // Center align content in this column
+                    title: '<input type="checkbox" id="tick-all">' // Add checkbox in the header
+                },
                 { data: 'dateReceptionLabo' },
+                { data: 'impressionresultat__printDate' },
                 { data: 'codelabo' },
                 { data: 'numcertificatqualite' },
                 { data: 'nomimportateur' },
@@ -116,6 +111,44 @@
                 }
             ],
         });
+
+
+        // Event listener for individual tick boxes
+        $(document).on('change', '.tick-box', function() {
+            var rowId = $(this).data('row-id');
+            if ($(this).prop('checked')) {
+                selectedRowIds.push(rowId); // Store the row ID when the tick box is checked
+                console.log(selectedRowIds);
+            } else {
+                var index = selectedRowIds.indexOf(rowId);
+                if (index !== -1) {
+                    selectedRowIds.splice(index, 1); // Remove the row ID if the tick box is unchecked
+                    console.log(selectedRowIds);
+                }
+            }
+        });
+
+
+        // Event listener for the "Select All" checkbox
+        $('#tick-all').on('change', function() {
+            var checkboxes = $('.tick-box');
+            checkboxes.prop('checked', $(this).prop('checked'));
+            if ($(this).prop('checked')) {
+                selectedRowIds = []; // Clear the selectedRowIds array
+                checkboxes.each(function() {
+                    var rowId = $(this).data('row-id');
+                    selectedRowIds.push(rowId); // Store all row IDs when "Select All" is checked
+                    console.log(selectedRowIds);
+                });
+            } else {
+                selectedRowIds = []; // Clear the selectedRowIds array if "Select All" is unchecked
+                console.log(selectedRowIds);
+            }
+        });
+
+
+
+
 
         // Handle form submission on button click
         $('#data-table').on('click', '.btn-warning', function () {
@@ -176,7 +209,123 @@
         });
 
     });
+
+
+
+$(document).ready(function() {
+        $('#bulkPrint').click(function(event) {
+            // Prevent the default action of the link
+            event.preventDefault();
+            if (selectedRowIds.length > 0) {
+                this.style.display = "none";
+                // Show the progress bar
+                document.getElementById("progress-bar-container").style.display = "block";
+                console.log(selectedRowIds);
+                $.ajax({
+                    type: 'POST', // or 'GET' depending on your server-side implementation
+                    url: '{% url "impressionCertificatBulk" %}', // Replace 'your_desired_address_here' with your actual address
+                    data: { selectedRowIds: selectedRowIds },
+                    headers: {
+                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
+                    },
+                    success: async function (response) {
+                        $('#data-table').DataTable().ajax.reload(); // Reload the table
+                        selectedRowIds = [];
+                        console.log(response);
+
+                        {#// Parse the response as JSON#}
+                        {#const data = await response.json();#}
+
+                        // Update progress bar based on task ID
+                        if (response.task_id) {
+                            updateProgressBar(response.task_id);
+                            } else {
+                            throw new Error('Task ID not found in response.');
+                        }
+
+                    },
+                    error: function(error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Erreur lors du traitement de votre requête!',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $('#data-table').DataTable().ajax.reload(); // Reload the table
+                                selectedRowIds = [];
+                            }
+                        });
+                        {#// Handle errors if any#}
+                        {#console.error('Error sending selected rows:', error);#}
+                    }
+                });
+                $('#data-table').DataTable().ajax.reload();
+
+                console.log(selectedRowIds);
+            } else {
+                Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Aucune case sélectionnée!',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                $('#data-table').DataTable().ajax.reload(); // Reload the table
+                                selectedRowIds = [];
+                            }
+                });
+            }
+        });
+    });
+
+function updateProgressBar(taskId) {
+    const progressBar = document.getElementById('progress-bar-inner');
+    const progressBarLabel = document.getElementById('progress-bar-label');
+
+    function checkProgress() {
+        fetch(`/shydro/checkExportTaskStatus/${taskId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.state === 'PENDING') {
+                    const progress = data.progress;
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                    progressBarLabel.textContent = `Exporting... ${progress}%`;
+                    setTimeout(checkProgress, 1000);
+                } else if (data.state === 'SUCCESS') {
+                    progressBar.style.width = '100%';
+                    progressBar.setAttribute('aria-valuenow', 100);
+                    progressBarLabel.textContent = 'Export completed!';
+                    // Download PDF blob file
+                    downloadFile(data.result.file_url, data.result.file_name);
+                } else if (data.state === 'FAILURE') {
+                    progressBarLabel.textContent = 'Export failed!';
+                } else {
+                    // Handle other task states as needed
+                }
+            });
+    }
+
+    checkProgress();
+}
+
+function downloadFile(fileUrl, fileName) {
+    // Create an anchor element
+    const anchor = document.createElement('a');
+    anchor.href = fileUrl;
+    anchor.download = fileName;
+
+    // Append the anchor to the body and trigger a click event
+    document.body.appendChild(anchor);
+    anchor.click();
+
+    // Remove the anchor from the body
+    document.body.removeChild(anchor);
+}
+
 </script>
+
+
+
 
 {% endblock %}
 

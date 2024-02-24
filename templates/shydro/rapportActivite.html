@@ -217,11 +217,17 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>TRACABILITE</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'codification' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>TRACABILITE</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'gestionGo' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>GESTION GO</p>
+    </a>
+</li>
                             <li class="nav-item">
                                     <a href="{% url 'regularisation' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -327,7 +333,7 @@
                 <div>
                     <a href="{% url 'codification' %}" class="btn btn-danger">RETOUR</a>
                     <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-default">
-                  FILTRES
+                        FILTRES
                     </button>
                     {% block export %}{% endblock %}
                 </div>

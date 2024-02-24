@@ -9,56 +9,31 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 {% endblock %}
 
-{% block buttons %}
-    <a class="btn btn-app bg-danger" href="{% url 'validation1' %}" >
-                        <span class="badge bg-success"></span>
-                        <i class="fas fa-backward"></i> Retour
-                    </a>
-                    <a class="btn btn-app bg-warning" data-toggle="modal" data-target="#modal-default">
-                        <span class="badge bg-success"></span>
-                        <i class="fas fa-filter"></i> Filtres
-                    </a>
-
-{% endblock %}
-
 
 {% block content %}
 
-     <div class="modal fade" id="modal-default">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Filtres</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-              <form action="{% url 'rapportCqfiltres' %}" method="post">
-            <div class="modal-body">
-                    {% csrf_token %}
-                    {% crispy form %}
-            </div>
-                  </form>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
+    <div class="row">
+                 <a href="{% url 'validation2' %}" class="btn btn-app bg-red">
+                  <span class="badge bg-info"></span>
+                  <i class="fas fa-backward"></i> RETOUR
+                </a>
 
-     <div id="progress-bar-container" style="display: none;" class="mt-3">
+
+                <a id="export-link" href="#" class="btn btn-app bg-warning">
+                  <span class="badge bg-info"></span>
+                  <i class="fas fa-file-excel"></i> EXPORT EXCEL.
+                </a>
+
+                <input type="hidden" id="parameter-input" name="parameter" value="2">
+    </div>
+
+
+    <div id="progress-bar-container" style="display: none;" class="mt-3">
                     <div id="progress-bar" class="progress" style="border-radius: 25px">
                         <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <div id="progress-bar-label" class="mt-2">Exporting...</div>
     </div>
-
-                    <a id="export-link" href="#" class="btn btn-app bg-success">
-                        <span class="badge bg-success"></span>
-                        <i class="fas fa-file"></i> EXPORT.EXCEL
-                    </a>
-    <input type="hidden" id="parameter-input" name="parameter" value="2">
-
 
 
      <div id="data-table-wrapper" style="position: relative;">
@@ -67,71 +42,25 @@
             <thead>
               <tr>
                   <th>DATE ECHANT.</th>
-                <th>DATE RECEP.</th>
-                <th>NUM.HYDRO</th>
-                <th>NUM.RE</th>
-                <th>CODE LABO</th>
+                  <th>DATE RECEP.</th>
+                  <th>NUM.HYDRO</th>
+                  <th>NUM.RE</th>
+                  <th>CODE LABO</th>
                   <th>NUM.CQ</th>
-                <th>ENTREPOT</th>
-                <th>FOURNISSEUR</th>
-                <th>IMMATRICULATION</th>
-                <th>PRODUIT</th>
-                <th>CONFORMITE</th>
+                  <th>ENTREPOT</th>
+                  <th>FOURNISSEUR</th>
+                  <th>IMMATRICULATION</th>
+                  <th>PRODUIT</th>
+                  <th>CONFORMITE</th>
               </tr>
             </thead>
           </table>
     </div>
 
-
-    {#<!-- Include FileSaver.js library for saving the Excel file -->#}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
-<script>
-
-
-const csrfToken = '{{ csrf_token }}';
-let dataTable;
-
-$(document).ready(function () {
-    dataTable = $('#data-table').DataTable({
-    lengthChange: false, // Display the length change dropdown
-    processing: true,
-    serverSide: true,
-    responsive: true,
-    ajax: {
-        url: '{% url 'rapportCqResponse' %}',
-        type: 'GET',
-        beforeSend: function() {
-          $('#data-table-wrapper .loading-spinner').show();
-        },
-        // Hide the loading spinner after DataTable processing
-        complete: function() {
-          $('#data-table-wrapper .loading-spinner').hide();
-        }
-    },
-    columns: [
-        { data: 'entrepot_echantillon__dateechantillonage__date' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'numdos' }, // Use array index to access 'dateheurecargaison__date'
-        { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'frontiere__nomville'
-        { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'importateur__nomimportateur'
-        { data: 'entrepot_echantillon__laboreception__numcertificatqualite' }, // Use array index to access 'importateur__nomimportateur'
-        { data: 'entrepot__nomentrepot' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'importateur__nomimportateur' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'immatriculation' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
-        { data: 'conformiteProduit' }, // Use array index to access 'entrepot__nomentrepot'
-    ],
-
-});
-});
-</script>
-
-
     <script>
 document.addEventListener("DOMContentLoaded", function() {
     // Add click event listener to the export link
-    document.querySelector("#bulkPrint").addEventListener("click", function(event) {
+    document.querySelector("#export-link").addEventListener("click", function(event) {
         event.preventDefault(); // Prevent the default action of the link
 
         // Hide the export link
@@ -151,7 +80,7 @@ async function startExport() {
     try {
 
         // Make an AJAX request to start the export process
-        const response = await fetch('{% url "rapportCQExport" %}', {
+        const response = await fetch('{% url "rapportCqfiltresResponseExport" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json', // Specify JSON content type
@@ -237,6 +166,67 @@ function downloadFile(fileUrl, fileName) {
     document.body.removeChild(anchor);
 }
 </script>
+    {#<!-- Include FileSaver.js library for saving the Excel file -->#}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+
+
+const csrfToken = '{{ csrf_token }}';
+let dataTable;
+
+$(document).ready(function () {
+    dataTable = $('#data-table').DataTable({
+    lengthChange: false, // Display the length change dropdown
+    processing: true,
+    serverSide: true,
+    responsive: true,
+    ajax: {
+        url: '{% url 'rapportCqfiltresResponse' %}',
+        type: 'GET',
+        beforeSend: function() {
+          $('#data-table-wrapper .loading-spinner').show();
+        },
+        // Hide the loading spinner after DataTable processing
+        complete: function() {
+          $('#data-table-wrapper .loading-spinner').hide();
+        }
+    },
+    columns: [
+        { data: 'entrepot_echantillon__dateechantillonage' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'entrepot_echantillon__laboreception__datereceptionlabo' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'numdos' }, // Use array index to access 'dateheurecargaison__date'
+        { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'frontiere__nomville'
+        { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'importateur__nomimportateur'
+        { data: 'entrepot_echantillon__laboreception__numcertificatqualite' }, // Use array index to access 'importateur__nomimportateur'
+        { data: 'entrepot__nomentrepot' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'importateur__nomimportateur' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'immatriculation' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
+        { data: 'conformiteProduit' }, // Use array index to access 'entrepot__nomentrepot'
+    ],
+        {#// Optional: Add buttons for exporting to Excel#}
+        {#    dom: 'Bfrtip',#}
+        {#    buttons: [#}
+        {#        {#}
+        {#            extend: 'excelHtml5',#}
+        {#            text: 'Export to Excel',#}
+        {#            filename: 'rapport_brut',#}
+        {#            exportOptions: {#}
+        {#                modifier: {#}
+        {#                    search: 'none'#}
+        {#                }#}
+        {#            },#}
+        {#            action: function (e, dt, node, config) {#}
+        {#                // Redirect to the export URL instead of using AJAX#}
+        {#                window.location.href = '{% url 'rapportCqResponseExport' %}?export=excel';#}
+        {#            }#}
+        {#        }#}
+        {#    ],#}
+});
+});
+</script>
+
 
 
 

@@ -11,6 +11,17 @@ def numCq(v):
     current_date = datetime.now()
     current_year = current_date.year
 
+    # last_code_result_current = LaboReception.objects.filter(
+    #     datereceptionlabo__year=current_year,
+    #     idcargaison__idcargaison__entrepot__ville__idville=v
+    # ).aggregate(last_code=Max('numcertificatqualite'))
+    #
+    # # Use the 'get' method to retrieve the 'last_code' value
+    # last_code = last_code_result_current.get('last_code', 0)
+    # if last_code is None:
+    #     last_code = 0
+    # return last_code
+
     query = f'''
                 SELECT l.idcargaison_id, c.idcargaison, MAX(l.numcertificatqualite) as last_code
                 FROM enreg_laboreception l
@@ -19,6 +30,7 @@ def numCq(v):
                 JOIN enreg_ville v ON e.ville_id = v.idville
                 WHERE YEAR(l.datereceptionlabo) = {current_year}
                 AND v.idville = {v}
+                GROUP BY l.idcargaison_id, c.idcargaison
             '''
 
     last_code_result = Cargaison.objects.raw(query)

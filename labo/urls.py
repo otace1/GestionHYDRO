@@ -107,17 +107,37 @@ urlpatterns = [
 
     #Different Rapport et Compteur Labo
     path('enchAttenteReception/', views.enchAttenteReception, name='enchAttenteReception'),
+    path('enchAttenteReceptionExport/', views.enchAttenteReceptionExport, name='enchAttenteReceptionExport'),
     path('enchAttenteResultat/', views.enchAttenteResultat, name='enchAttenteResultat'),
+    path('enchAttenteResultatExport/', views.enchAttenteResultatExport, name='enchAttenteResultatExport'),
     path('enchAttenteValidation/', views.enchAttenteValidation, name='enchAttenteValidation'),
     path('enchPrintedCert/', views.enchPrintedCert, name='enchPrintedCert'),
+    path('enchPrintedCertExport/', views.enchPrintedCertExport, name='enchPrintedCertExport'),
 
 
     #Rapport au niveaux des acteurs du labo
     path('rapportCq/', views.rapportCq, name='rapportCq'),
+    path('rapportCq2/', views.rapportCq2, name='rapportCq2'),
     path('rapportCq/response/', views.rapportCqResponse, name='rapportCqResponse'),
     path('rapportCqResponse/response/export/', views.rapportCqResponse, name='rapportCqResponseExport'),
+    path('rapportCQExport/', views.rapportCQExport, name='rapportCQExport'),
+
     path('rapportCqfiltres/filtres/', views.rapportCqfiltres, name='rapportCqfiltres'),
+    path('rapportCqfiltres2/filtres/', views.rapportCqfiltres2, name='rapportCqfiltres2'),
     path('rapportCqfiltres/response/', views.rapportCqfiltresResponse, name='rapportCqfiltresResponse'),
-    path('rapportCqfiltres/response/export/', views.rapportCqfiltresResponse, name='rapportCqfiltresResponseExport'),
+    path('rapportCqfiltresResponseExport', views.rapportCqfiltresResponseExport, name='rapportCqfiltresResponseExport'),
+
+    # path('rapportActiviteFiltrePost/', views.rapportActiviteFiltrePost, name='rapportActiviteFiltrePost'),
+    # path('checkExportTaskStatus/<str:task_id>', views.checkExportTaskStatus, name='checkExportTaskStatus'),
+
+    path('bulkConforme1/', views.bulkConforme1, name='bulkConforme1'),
+    path('bulkNonConforme1/', views.bulkNonConforme1, name='bulkNonConforme1'),
+    path('bulkRefaire1/', views.bulkRefaire1, name='bulkRefaire1'),
+
+    path('bulkConforme2/', views.bulkConforme2, name='bulkConforme2'),
+    path('bulkNonConforme2/', views.bulkNonConforme2, name='bulkNonConforme2'),
+    path('bulkRefaire2/', views.bulkRefaire2, name='bulkRefaire2'),
+
+    path('impressionCertificatBulk/', views.impressionCertificatBulk, name='impressionCertificatBulk'),
 
 ]

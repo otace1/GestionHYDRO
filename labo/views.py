@@ -7,9 +7,11 @@ from django.db.models import Q,F, ExpressionWrapper, fields,Case, When, Value, C
 from django.db.models.functions import ExtractMonth, ExtractYear, Cast
 from django.shortcuts import render, redirect
 from openpyxl import Workbook
+from .tasks import export_report_task
 
 from enreg.models import *
 from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser
+from hydrocarbures.celery import app
 from .tables import *
 from .forms import *
 from django.contrib.auth.decorators import login_required
@@ -3815,7 +3817,7 @@ def conformeAjx(request):
     user = request.user
     role = user.role_id
 
-    if role == "v2" or role == 1 or role == 6:
+    if role == 1 or role == 6:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
             print(idcargaison)
@@ -4119,6 +4121,7 @@ def responseAffichagetableauimpression(request):
         ).values(
             'idcargaison',
             'dateReceptionLabo',
+            'impressionresultat__printDate',
             'idImpression',
             'numcertificatqualite',
             'codelabo',
@@ -4146,6 +4149,7 @@ def responseAffichagetableauimpression(request):
                 'idcargaison',
                 'dateReceptionLabo',
                 'idImpression',
+                'impressionresultat__printDate',
                 'numcertificatqualite',
                 'codelabo',
                 'nomproduit',
@@ -4159,7 +4163,7 @@ def responseAffichagetableauimpression(request):
             )
 
         # Number of items to show per page
-        items_per_page = 8
+        items_per_page = 10
 
         print(items_per_page)
 
@@ -4256,9 +4260,8 @@ def impressioncertificat(request):
             printed.isPrinted = 1
             printed.save(update_fields=['isPrinted'])
 
-
-
             # Test pour afficher les differents rapports
+
             if produit == 'GASOIL':
                 template = 'report/Report1/gasoilreport.html'
 
@@ -4394,548 +4397,546 @@ def impressioncertificat(request):
                 return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
                 # return HttpResponse(pdf, content_type='application/pdf')
 
-            else:
-                if produit == 'MOGAS':
-                    template = 'report/Report1/mogasreport.html'
-                    # Resultat Gasoil Fetching data into Database
-                    try:
-                        aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
-                    except:
-                        aspect=''
-                    try:
-                        odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
-                    except:
-                        odeur=''
-                    try:
-                        couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
-                    except:
-                        couleursaybolt=''
-                    try:
-                        soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
-                    except:
-                        soufre=''
-                    try:
-                        distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
-                    except:
-                        distillation=''
-                    try:
-                        pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
-                    except:
-                        pointfinal=''
-                    try:
-                        residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
-                    except:
-                        residu=''
-                    try:
-                        corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
-                        corrosion = int(corrosion_str)
-                    except:
-                        corrosion=''
-                    try:
-                        pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
-                    except:
-                        pourcent10=''
-                    try:
-                        pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
-                    except:
-                        pourcent20=''
-                    try:
-                        pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
-                    except:
-                        pourcent50=''
-                    try:
-                        pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
-                    except:
-                        pourcent70=''
-                    try:
-                        pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
-                    except:
-                        pourcent90=''
-                    try:
-                        tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
-                    except:
-                        tensionvapeur=''
-                    try:
-                        difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
-                    except:
-                        difftemperature=''
-                    try:
-                        plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
-                    except:
-                        plomb=''
-                    try:
-                        indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
-                    except:
-                        indiceoctane=''
-                    try:
-                        massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
-                    except:
-                        massevolumique15=''
+            if produit == 'MOGAS':
+                template = 'report/Report1/mogasreport.html'
+                # Resultat Gasoil Fetching data into Database
+                try:
+                    aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
+                except:
+                    aspect=''
+                try:
+                    odeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[0].valeurResultatChar
+                except:
+                    odeur=''
+                try:
+                    couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
+                except:
+                    couleursaybolt=''
+                try:
+                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[0].valeurResultat
+                except:
+                    soufre=''
+                try:
+                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[0].valeurResultat
+                except:
+                    distillation=''
+                try:
+                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[0].valeurResultat
+                except:
+                    pointfinal=''
+                try:
+                    residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[0].valeurResultat
+                except:
+                    residu=''
+                try:
+                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[0].valeurResultat
+                    corrosion = int(corrosion_str)
+                except:
+                    corrosion=''
+                try:
+                    pourcent10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[0].valeurResultat
+                except:
+                    pourcent10=''
+                try:
+                    pourcent20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[0].valeurResultat
+                except:
+                    pourcent20=''
+                try:
+                    pourcent50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[0].valeurResultat
+                except:
+                    pourcent50=''
+                try:
+                    pourcent70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[0].valeurResultat
+                except:
+                    pourcent70=''
+                try:
+                    pourcent90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[0].valeurResultat
+                except:
+                    pourcent90=''
+                try:
+                    tensionvapeur = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=36)[0].valeurResultat
+                except:
+                    tensionvapeur=''
+                try:
+                    difftemperature = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=9)[0].valeurResultat
+                except:
+                    difftemperature=''
+                try:
+                    plomb = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[0].valeurResultat
+                except:
+                    plomb=''
+                try:
+                    indiceoctane = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[0].valeurResultat
+                except:
+                    indiceoctane=''
+                try:
+                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[0].valeurResultat
+                except:
+                    massevolumique15=''
 
-                    data = {
-                        'laboratoire': laboratoire,
-                        'cargaison': cargaison,
-                        'echantillon': echantillon,
-                        'annee': annee,
-                        'mois': mois,
-                        'province': province,
-                        'aspect': aspect,
-                        'odeur': odeur,
-                        'couleursaybolt': couleursaybolt,
-                        'soufre': soufre,
-                        'distillation': distillation,
-                        'pointfinal': pointfinal,
-                        'residu': residu,
-                        'corrosion': corrosion,
-                        'pourcent10': pourcent10,
-                        'pourcent20': pourcent20,
-                        'pourcent50': pourcent50,
-                        'pourcent70': pourcent70,
-                        'pourcent90': pourcent90,
-                        'tensionvapeur': tensionvapeur,
-                        'difftemperature': difftemperature,
-                        'plomb': plomb,
-                        'indiceoctane': indiceoctane,
-                        'massevolumique15': massevolumique15,
-                        'signGauche': signGauche,
+                data = {
+                    'laboratoire': laboratoire,
+                    'cargaison': cargaison,
+                    'echantillon': echantillon,
+                    'annee': annee,
+                    'mois': mois,
+                    'province': province,
+                    'aspect': aspect,
+                    'odeur': odeur,
+                    'couleursaybolt': couleursaybolt,
+                    'soufre': soufre,
+                    'distillation': distillation,
+                    'pointfinal': pointfinal,
+                    'residu': residu,
+                    'corrosion': corrosion,
+                    'pourcent10': pourcent10,
+                    'pourcent20': pourcent20,
+                    'pourcent50': pourcent50,
+                    'pourcent70': pourcent70,
+                    'pourcent90': pourcent90,
+                    'tensionvapeur': tensionvapeur,
+                    'difftemperature': difftemperature,
+                    'plomb': plomb,
+                    'indiceoctane': indiceoctane,
+                    'massevolumique15': massevolumique15,
+                    'signGauche': signGauche,
                     'signDroite': signDroite,
                     'impressionData': impressionData,
                     'laboratoireData':laboratoireData,
-                    }
+                }
 
-                    # Rendered PDF report
-                    pdf = render_to_pdf(template, data)
-                    pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                    return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                    # return HttpResponse(pdf, content_type='application/pdf')
-                else:
-                    if produit == 'JET A1':
-                        template = 'report/Report1/jeta1report.html'
+                # Rendered PDF report
+                pdf = render_to_pdf(template, data)
+                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                # return HttpResponse(pdf, content_type='application/pdf')
 
-                        # Resultat Gasoil Fetching data into Database
-                        try:
-                            aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
-                                0].valeurResultatChar
-                        except:
-                            aspect=''
-                        try:
-                            couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                                0].valeurResultatChar
-                        except:
-                            couleursaybolt=''
-                        try:
-                            aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                                0].valeurResultat
-                        except:
-                            aciditetotal=''
-                        try:
-                            soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
-                                0].valeurResultat
-                        except:
-                            soufre=''
-                        try:
-                            soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
-                                0].valeurResultat
-                        except:
-                            soufremercaptan=''
-                        try:
-                            docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-                                0].valeurResultat
-                        except:
-                            docteurtest=''
-                        try:
-                            distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            distillation=''
-                        try:
-                            pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
-                                0].valeurResultat
-                        except:
-                            pointinitial=''
-                        try:
-                            pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-                                0].valeurResultat
-                        except:
-                            pointfinal=''
+            if produit == 'JET A1':
+                template = 'report/Report1/jeta1report.html'
 
-                        try:
-                            pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-                                0].valeurResultat
-                        except:
-                            pointfumee=''
+                # Resultat Gasoil Fetching data into Database
+                try:
+                    aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
+                        0].valeurResultatChar
+                except:
+                    aspect=''
+                try:
+                    couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
+                        0].valeurResultatChar
+                except:
+                    couleursaybolt=''
+                try:
+                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
+                        0].valeurResultat
+                except:
+                    aciditetotal=''
+                try:
+                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
+                        0].valeurResultat
+                except:
+                    soufre=''
+                try:
+                    soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
+                        0].valeurResultat
+                except:
+                    soufremercaptan=''
+                try:
+                    docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
+                        0].valeurResultat
+                except:
+                    docteurtest=''
+                try:
+                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    distillation=''
+                try:
+                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
+                        0].valeurResultat
+                except:
+                    pointinitial=''
+                try:
+                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
+                        0].valeurResultat
+                except:
+                    pointfinal=''
 
-                        try:
-                            pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
-                                0].valeurResultat
-                        except:
-                            pointeclair=''
+                try:
+                    pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+                        0].valeurResultat
+                except:
+                    pointfumee=''
 
-                        try:
-                            freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-                                0].valeurResultat
-                        except:
-                            freezingpoint=''
+                try:
+                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
+                        0].valeurResultat
+                except:
+                    pointeclair=''
 
-                        try:
-                            residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
-                                0].valeurResultat
-                        except:
-                            residu=''
+                try:
+                    freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
+                        0].valeurResultat
+                except:
+                    freezingpoint=''
 
-                        try:
-                            perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-                                0].valeurResultat
-                        except:
-                            perte=''
+                try:
+                    residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
+                        0].valeurResultat
+                except:
+                    residu=''
 
-                        try:
-                            massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-                                0].valeurResultat
-                        except:
-                            massevolumique15=''
+                try:
+                    perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
+                        0].valeurResultat
+                except:
+                    perte=''
 
-                        try:
-                            viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
-                                0].valeurResultat
-                        except:
-                            viscosite=''
+                try:
+                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
+                        0].valeurResultat
+                except:
+                    massevolumique15=''
 
-                        try:
-                            pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
-                                0].valeurResultat
-                        except:
-                            pointinflammabilite=''
+                try:
+                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
+                        0].valeurResultat
+                except:
+                    viscosite=''
 
-                        try:
-                            teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
-                                0].valeurResultat
-                        except:
-                            teneureau=''
+                try:
+                    pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
+                        0].valeurResultat
+                except:
+                    pointinflammabilite=''
 
-                        try:
-                            corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-                                0].valeurResultat
-                            corrosion = int(corrosion_str)
-                        except:
-                            corrosion=''
+                try:
+                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
+                        0].valeurResultat
+                except:
+                    teneureau=''
 
-                        try:
-                            conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
-                                0].valeurResultat
-                        except:
-                            conductivite=''
+                try:
+                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                        0].valeurResultat
+                    corrosion = int(corrosion_str)
+                except:
+                    corrosion=''
 
-                        try:
-                            vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-                                0].valeurResultat
-                        except:
-                            vol10=''
+                try:
+                    conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
+                        0].valeurResultat
+                except:
+                    conductivite=''
 
-                        try:
-                            vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
-                                0].valeurResultat
-                        except:
-                            vol20=''
-                        try:
-                            vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol30=''
-                        try:
-                            vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol40=''
-                        try:
-                            vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
-                                0].valeurResultat
-                        except:
-                            vol50=''
-                        try:
-                            vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol60=''
-                        try:
-                            vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
-                                0].valeurResultat
-                        except:
-                            vol70=''
-                        try:
-                            vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
-                                0].valeurResultat
-                        except:
-                            vol80=''
-                        try:
-                            vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
-                                0].valeurResultat
-                        except:
-                            vol90=''
+                try:
+                    vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
+                        0].valeurResultat
+                except:
+                    vol10=''
 
-                        data = {
-                            'laboratoire': laboratoire,
-                            'cargaison': cargaison,
-                            'echantillon': echantillon,
-                            'annee': annee,
-                            'mois': mois,
-                            'province': province,
-                            'aspect': aspect,
-                            'couleursaybolt': couleursaybolt,
-                            'aciditetotal': aciditetotal,
-                            'soufre': soufre,
-                            'soufremercaptan': soufremercaptan,
-                            'docteurtest': docteurtest,
-                            'distillation': distillation,
-                            'pointinitial': pointinitial,
-                            'pointfinal': pointfinal,
-                            'pointfumee': pointfumee,
-                            'freezingpoint': freezingpoint,
-                            'residu': residu,
-                            'perte': perte,
-                            'pointeclair': pointeclair,
-                            'massevolumique15': massevolumique15,
-                            'viscosite': viscosite,
-                            'pointinflammabilite': pointinflammabilite,
-                            'teneureau': teneureau,
-                            'corrosion': corrosion,
-                            'conductivite': conductivite,
-                            'vol10': vol10,
-                            'vol20': vol20,
-                            'vol30': vol30,
-                            'vol40': vol40,
-                            'vol50': vol50,
-                            'vol60': vol60,
-                            'vol70': vol70,
-                            'vol80': vol80,
-                            'vol90': vol90,
-                            'signGauche': signGauche,
-                            'signDroite': signDroite,
-                            'impressionData': impressionData,
-                            'laboratoireData':laboratoireData,
-                        }
-                        # Rendered PDF report
-                        pdf = render_to_pdf(template, data)
-                        pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                        return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                        # return HttpResponse(pdf, content_type='application/pdf')
+                try:
+                    vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
+                        0].valeurResultat
+                except:
+                    vol20=''
+                try:
+                    vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol30=''
+                try:
+                    vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol40=''
+                try:
+                    vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
+                        0].valeurResultat
+                except:
+                    vol50=''
+                try:
+                    vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol60=''
+                try:
+                    vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=14)[
+                        0].valeurResultat
+                except:
+                    vol70=''
+                try:
+                    vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol80=''
+                try:
+                    vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
+                        0].valeurResultat
+                except:
+                    vol90=''
 
-                    else:
-                        if produit == 'PETROLE LAMPANT':
-                            template = 'report/Report1/petrolereport.html'
+                data = {
+                    'laboratoire': laboratoire,
+                    'cargaison': cargaison,
+                    'echantillon': echantillon,
+                    'annee': annee,
+                    'mois': mois,
+                    'province': province,
+                    'aspect': aspect,
+                    'couleursaybolt': couleursaybolt,
+                    'aciditetotal': aciditetotal,
+                    'soufre': soufre,
+                    'soufremercaptan': soufremercaptan,
+                    'docteurtest': docteurtest,
+                    'distillation': distillation,
+                    'pointinitial': pointinitial,
+                    'pointfinal': pointfinal,
+                    'pointfumee': pointfumee,
+                    'freezingpoint': freezingpoint,
+                    'residu': residu,
+                    'perte': perte,
+                    'pointeclair': pointeclair,
+                    'massevolumique15': massevolumique15,
+                    'viscosite': viscosite,
+                    'pointinflammabilite': pointinflammabilite,
+                    'teneureau': teneureau,
+                    'corrosion': corrosion,
+                    'conductivite': conductivite,
+                    'vol10': vol10,
+                    'vol20': vol20,
+                    'vol30': vol30,
+                    'vol40': vol40,
+                    'vol50': vol50,
+                    'vol60': vol60,
+                    'vol70': vol70,
+                    'vol80': vol80,
+                    'vol90': vol90,
+                    'signGauche': signGauche,
+                    'signDroite': signDroite,
+                    'impressionData': impressionData,
+                    'laboratoireData':laboratoireData,
+                }
+                # Rendered PDF report
+                pdf = render_to_pdf(template, data)
+                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                # return HttpResponse(pdf, content_type='application/pdf')
 
-                            # Resultat Gasoil Fetching data into Database
-                            try:
-                                aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
-                                    0].valeurResultatChar
-                            except:
-                                aspect = ''
-                            try:
-                                couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=3)[
-                                    0].valeurResultatChar
-                            except:
-                                couleursaybolt = ''
-                            try:
-                                aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
-                                    0].valeurResultat
-                            except:
-                                aciditetotal = ''
-                            try:
-                                soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=6)[
-                                    0].valeurResultat
-                            except:
-                                soufre = ''
-                            try:
-                                soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=7)[
-                                    0].valeurResultat
-                            except:
-                                soufremercaptan = ''
-                            try:
-                                docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
-                                    0].valeurResultat
-                            except:
-                                docteurtest = ''
-                            try:
-                                distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
-                                    0].valeurResultat
-                            except:
-                                distillation = ''
-                            try:
-                                pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
-                                    0].valeurResultat
-                            except:
-                                pointinitial = ''
-                            try:
-                                pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
-                                    0].valeurResultat
-                            except:
-                                pointfinal = ''
+            if produit == 'PETROLE LAMPANT':
+                template = 'report/Report1/petrolereport.html'
 
-                            try:
-                                pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=19)[
-                                    0].valeurResultat
-                            except:
-                                pointfumee = ''
+                # Resultat Gasoil Fetching data into Database
+                try:
+                    aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[
+                        0].valeurResultatChar
+                except:
+                    aspect = ''
+                try:
+                    couleursaybolt = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[
+                        0].valeurResultatChar
+                except:
+                    couleursaybolt = ''
+                try:
+                    aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                        0].valeurResultat
+                except:
+                    aciditetotal = ''
+                try:
+                    soufre = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=34)[
+                        0].valeurResultat
+                except:
+                    soufre = ''
+                try:
+                    soufremercaptan = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=33)[
+                        0].valeurResultat
+                except:
+                    soufremercaptan = ''
+                try:
+                    docteurtest = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=16)[
+                        0].valeurResultat
+                except:
+                    docteurtest = ''
+                try:
+                    distillation = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    distillation = ''
+                try:
+                    pointinitial = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=30)[
+                        0].valeurResultat
+                except:
+                    pointinitial = ''
+                try:
+                    pointfinal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
+                        0].valeurResultat
+                except:
+                    pointfinal = ''
 
-                            try:
-                                pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=18)[
-                                    0].valeurResultat
-                            except:
-                                pointeclair = ''
+                try:
+                    pointfumee = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
+                        0].valeurResultat
+                except:
+                    pointfumee = ''
 
-                            try:
-                                freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
-                                    0].valeurResultat
-                            except:
-                                freezingpoint = ''
+                try:
+                    pointeclair = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=25)[
+                        0].valeurResultat
+                except:
+                    pointeclair = ''
 
-                            try:
-                                residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=21)[
-                                    0].valeurResultat
-                            except:
-                                residu = ''
+                try:
+                    freezingpoint = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=17)[
+                        0].valeurResultat
+                except:
+                    freezingpoint = ''
 
-                            try:
-                                perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=22)[
-                                    0].valeurResultat
-                            except:
-                                perte = ''
+                try:
+                    residu = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=31)[
+                        0].valeurResultat
+                except:
+                    residu = ''
 
-                            try:
-                                massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=52)[
-                                    0].valeurResultat
-                            except:
-                                massevolumique15 = ''
+                try:
+                    perte = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
+                        0].valeurResultat
+                except:
+                    perte = ''
 
-                            try:
-                                viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=23)[
-                                    0].valeurResultat
-                            except:
-                                viscosite = ''
+                try:
+                    massevolumique15 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=20)[
+                        0].valeurResultat
+                except:
+                    massevolumique15 = ''
 
-                            try:
-                                pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=24)[
-                                    0].valeurResultat
-                            except:
-                                pointinflammabilite = ''
+                try:
+                    viscosite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=37)[
+                        0].valeurResultat
+                except:
+                    viscosite = ''
 
-                            try:
-                                teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=26)[
-                                    0].valeurResultat
-                            except:
-                                teneureau = ''
+                try:
+                    pointinflammabilite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=27)[
+                        0].valeurResultat
+                except:
+                    pointinflammabilite = ''
 
-                            try:
-                                corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=28)[
-                                    0].valeurResultat
-                                corrosion = int(corrosion_str)
+                try:
+                    teneureau = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=35)[
+                        0].valeurResultat
+                except:
+                    teneureau = ''
 
-                            except:
-                                corrosion = ''
+                try:
+                    corrosion_str = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                        0].valeurResultat
+                    corrosion = int(corrosion_str)
 
-                            try:
-                                conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=29)[
-                                    0].valeurResultat
-                            except:
-                                conductivite = ''
+                except:
+                    corrosion = ''
 
-                            try:
-                                vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=39)[
-                                    0].valeurResultat
-                            except:
-                                vol10 = ''
+                try:
+                    conductivite = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=4)[
+                        0].valeurResultat
+                except:
+                    conductivite = ''
 
-                            try:
-                                vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=40)[
-                                    0].valeurResultat
-                            except:
-                                vol20 = ''
-                            try:
-                                vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=41)[
-                                    0].valeurResultat
-                            except:
-                                vol30 = ''
-                            try:
-                                vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=42)[
-                                    0].valeurResultat
-                            except:
-                                vol40 = ''
-                            try:
-                                vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=43)[
-                                    0].valeurResultat
-                            except:
-                                vol50 = ''
-                            try:
-                                vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
-                                    0].valeurResultat
-                            except:
-                                vol60 = ''
-                            try:
-                                vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=45)[
-                                    0].valeurResultat
-                            except:
-                                vol70 = ''
-                            try:
-                                vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=46)[
-                                    0].valeurResultat
-                            except:
-                                vol80 = ''
-                            try:
-                                vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=47)[
-                                    0].valeurResultat
-                            except:
-                                vol90 = ''
+                try:
+                    vol10 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=11)[
+                        0].valeurResultat
+                except:
+                    vol10 = ''
 
-                            data = {
-                                'laboratoire': laboratoire,
-                                'cargaison': cargaison,
-                                'echantillon': echantillon,
-                                'annee': annee,
-                                'mois': mois,
-                                'province': province,
-                                'aspect': aspect,
-                                'couleursaybolt': couleursaybolt,
-                                'aciditetotal': aciditetotal,
-                                'soufre': soufre,
-                                'soufremercaptan': soufremercaptan,
-                                'docteurtest': docteurtest,
-                                'distillation': distillation,
-                                'pointinitial': pointinitial,
-                                'pointfinal': pointfinal,
-                                'pointfumee': pointfumee,
-                                'freezingpoint': freezingpoint,
-                                'residu': residu,
-                                'perte': perte,
-                                'pointeclair': pointeclair,
-                                'massevolumique15': massevolumique15,
-                                'viscosite': viscosite,
-                                'pointinflammabilite': pointinflammabilite,
-                                'teneureau': teneureau,
-                                'corrosion': corrosion,
-                                'conductivite': conductivite,
-                                'vol10': vol10,
-                                'vol20': vol20,
-                                'vol30': vol30,
-                                'vol40': vol40,
-                                'vol50': vol50,
-                                'vol60': vol60,
-                                'vol70': vol70,
-                                'vol80': vol80,
-                                'vol90': vol90,
-                                'signGauche': signGauche,
-                                'signDroite': signDroite,
-                                'impressionData': impressionData,
-                                'laboratoireData':laboratoireData,
-                            }
+                try:
+                    vol20 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=12)[
+                        0].valeurResultat
+                except:
+                    vol20 = ''
+                try:
+                    vol30 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol30 = ''
+                try:
+                    vol40 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol40 = ''
+                try:
+                    vol50 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=13)[
+                        0].valeurResultat
+                except:
+                    vol50 = ''
+                try:
+                    vol60 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=44)[
+                        0].valeurResultat
+                except:
+                    vol60 = ''
+                try:
+                    vol70 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol70 = ''
+                try:
+                    vol80 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=100)[
+                        0].valeurResultat
+                except:
+                    vol80 = ''
+                try:
+                    vol90 = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=15)[
+                        0].valeurResultat
+                except:
+                    vol90 = ''
 
-                            # Rendered PDF report
-                            pdf = render_to_pdf(template, data)
-                            pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-                            return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
-                            # return HttpResponse(pdf, content_type='application/pdf')
-                    return redirect('logout')
+                data = {
+                    'laboratoire': laboratoire,
+                    'cargaison': cargaison,
+                    'echantillon': echantillon,
+                    'annee': annee,
+                    'mois': mois,
+                    'province': province,
+                    'aspect': aspect,
+                    'couleursaybolt': couleursaybolt,
+                    'aciditetotal': aciditetotal,
+                    'soufre': soufre,
+                    'soufremercaptan': soufremercaptan,
+                    'docteurtest': docteurtest,
+                    'distillation': distillation,
+                    'pointinitial': pointinitial,
+                    'pointfinal': pointfinal,
+                    'pointfumee': pointfumee,
+                    'freezingpoint': freezingpoint,
+                    'residu': residu,
+                    'perte': perte,
+                    'pointeclair': pointeclair,
+                    'massevolumique15': massevolumique15,
+                    'viscosite': viscosite,
+                    'pointinflammabilite': pointinflammabilite,
+                    'teneureau': teneureau,
+                    'corrosion': corrosion,
+                    'conductivite': conductivite,
+                    'vol10': vol10,
+                    'vol20': vol20,
+                    'vol30': vol30,
+                    'vol40': vol40,
+                    'vol50': vol50,
+                    'vol60': vol60,
+                    'vol70': vol70,
+                    'vol80': vol80,
+                    'vol90': vol90,
+                    'signGauche': signGauche,
+                    'signDroite': signDroite,
+                    'impressionData': impressionData,
+                    'laboratoireData':laboratoireData,
+                }
+
+                # Rendered PDF report
+                pdf = render_to_pdf(template, data)
+                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+                # return HttpResponse(pdf, content_type='application/pdf')
+
         else:
-            return redirect('logout')
+            return ('logout')
     else:
         return redirect('logout')
 
@@ -4980,7 +4981,7 @@ def responseAffichageanalyse(request):
             )
 
         # Number of items to show per page
-        items_per_page = 8
+        items_per_page = 13
 
         # Initialize the Paginator with the QuerySet and the number of items per page
         paginator = Paginator(qs, items_per_page)
@@ -5325,20 +5326,46 @@ def enchAttenteReception(request):
         'produit__nomproduit','entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteReception(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-    export_format = request.GET.get("_export", None)
-    if TableExport.is_valid_format(export_format):
-        exporter = TableExport(export_format, table)
-        return exporter.response("table.{}".format(export_format))
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
 
     context = {'table': table}
     return render(request,template,context)
 
 
 @login_required(login_url='login')
+def enchAttenteReceptionExport(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        etat='Echantillonner',
+        entrepot__ville__affectationville__username_id=user
+    ).values(
+        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
+        'entrepot__nomentrepot','importateur__nomimportateur',
+        'produit__nomproduit','entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteReception(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+
+    serialized_qs = list(qs)
+
+        # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task', args=[export_format, serialized_qs])
+
+        # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
+
+
+
+@login_required(login_url='login')
 def enchAttenteResultat(request):
     user = request.user.id
-    template = 'laboRapport.html'
+    template = 'laboRapportEnAttenteAnalyse.html'
     qs = Cargaison.objects.filter(
         etat='Analyse Labo en cours',
         entrepot__ville__affectationville__username_id=user,
@@ -5349,7 +5376,7 @@ def enchAttenteResultat(request):
         'entrepot_echantillon__qte'
     )
     table = RapportLaboratoireEnAttenteResultat(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -5360,9 +5387,38 @@ def enchAttenteResultat(request):
 
 
 @login_required(login_url='login')
+def enchAttenteResultatExport(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        etat='Analyse Labo en cours',
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
+        'importateur__nomimportateur','produit__nomproduit',
+        'entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteResultat(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+
+    serialized_qs = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task_Attente_Res', args=[export_format, serialized_qs])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
+
+@login_required(login_url='login')
 def enchAttenteValidation(request):
     user = request.user.id
-    template = 'laboRapport.html'
+    template = 'laboRapportEnAttenteValidation.html'
     qs = Cargaison.objects.filter(
         etat='Validation en cours 2',
         entrepot__ville__affectationville__username_id=user,
@@ -5373,7 +5429,7 @@ def enchAttenteValidation(request):
         'produit__nomproduit'
     )
     table = RapportLaboratoireEnAttenteValidation(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -5386,7 +5442,7 @@ def enchAttenteValidation(request):
 @login_required(login_url='login')
 def enchPrintedCert(request):
     user = request.user.id
-    template = 'laboRapport.html'
+    template = 'laboRapportCertImprimer.html'
     qs = Cargaison.objects.filter(
         impressionresultat__isPrinted=1,
         entrepot__ville__affectationville__username_id=user,
@@ -5397,7 +5453,7 @@ def enchPrintedCert(request):
         'produit__nomproduit'
     )
     table = RapportLaboratoireEnchPrintedCert(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -5407,11 +5463,46 @@ def enchPrintedCert(request):
     return render(request, template, context)
 
 
+@login_required(login_url='login')
+def enchPrintedCertExport(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        impressionresultat__isPrinted=1,
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
+        'produit__nomproduit'
+    )
+    table = RapportLaboratoireEnchPrintedCert(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+    serialized_qs = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task_cert_imprimer', args=[export_format, serialized_qs])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
 
 
 @login_required(login_url='login')
 def rapportCq(request):
     template ='laboRapportsCq.html'
+    form = FiltresDate()
+    context = {'form':form}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def rapportCq2(request):
+    template ='laboRapportsCq2.html'
     form = FiltresDate()
     context = {'form':form}
     return render(request,template,context)
@@ -5443,11 +5534,11 @@ def rapportCqResponse(request):
         'entrepot__nomentrepot',
         'importateur__nomimportateur',
         'immatriculation',
-        'produit__nomproduit',
+        'produit__nomproduit','immatriculation','produit__nomproduit'
     ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
 
     # Number of items to show per page
-    items_per_page = 10
+    items_per_page = 20
 
     # Initialize the Paginator with the QuerySet and the number of items per page
     paginator = Paginator(qs, items_per_page)
@@ -5470,54 +5561,8 @@ def rapportCqResponse(request):
         # If page is out of range (e.g. 9999), return an empty JSON response.
         return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
-    # # Convert the page object to a list of dictionaries
-    # data = list(page)
     # Convert the page object to a list of dictionaries
     data = list(page)
-
-    export = request.GET.get('export', None)
-    if export == 'excel':
-        # Retrieve all data (no lazy pagination) and store it in a list
-        data = list(qs)
-
-        # Create a new Excel workbook
-        workbook = Workbook()
-        sheet = workbook.active
-
-        # Write headers to the Excel file
-        header_row = ['DATE ECHANT.', 'DATE RECEP.','NUM.DOSS', 'NUM.RE', 'CODE LABO', 'ENTREPOT',
-                      'FOURNISSEUR',
-                      'IMMATRICULATION','PRODUIT','CONFORMITE']
-
-        # Combine header and data rows using zip
-        all_rows = [header_row] + [
-            [   row['entrepot_echantillon__laboreception__codelabo'],
-                row['entrepot_echantillon__dateechantillonage__date'],
-                row['numdos'],
-                row['entrepot_echantillon__numrappechauto'],
-                row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
-                row['entrepot__nomentrepot'],
-                row['importateur__nomimportateur'],
-                row['immatriculation'],
-                row['produit__nomproduit'],
-                row['conformiteProduit'],
-            ] for row in data
-        ]
-
-        # Write data rows to the Excel file
-        for row in all_rows:
-            sheet.append(row)
-
-        # Create an in-memory stream to hold the Excel file data
-        excel_stream = io.BytesIO()
-        workbook.save(excel_stream)
-        excel_stream.seek(0)
-
-        # Prepare the response to return the Excel file
-        response = HttpResponse(excel_stream,
-                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-        return response
 
     # Return JSON response with the data
     return JsonResponse({
@@ -5529,6 +5574,51 @@ def rapportCqResponse(request):
 
 
 @login_required(login_url='login')
+def rapportCQExport(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user,
+        entrepot_echantillon__laboreception__isnull=False
+        # impressionresultat__isnull=False
+    ).annotate(
+        conformiteProduit=Case(
+            When(impressionresultat__isConforme__isnull=True, then=Value('EN ATTENTE')),
+            When(impressionresultat__isConforme=False, then=Value('NON CONFORME')),
+            When(impressionresultat__isConforme=True, then=Value('CONFORME')),
+            default=Value('AUTRE CAS'),  # Handle other cases if necessary
+            output_field=CharField()
+        )
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage',
+        'entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'conformiteProduit',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+    table = rapportActiviteCQ(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+    serialized_qs = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task_rapport_cq', args=[export_format, serialized_qs])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
+
+@login_required(login_url='login')
 def rapportCqfiltres(request):
     template ='laboRapportsCQFiltres.html'
     # Get the search value from the request's GET parameters
@@ -5536,8 +5626,23 @@ def rapportCqfiltres(request):
         date_d = request.POST['date_d']
         date_f = request.POST['date_f']
 
-        # print(date_d)
-        # print(date_f)
+        request.session['date_d'] = date_d
+        request.session['date_f'] = date_f
+
+        form = FiltresDate()
+        context = {'form':form}
+        return render(request,template,context)
+    else:
+        return redirect('receptionRapports')
+
+
+@login_required(login_url='login')
+def rapportCqfiltres2(request):
+    template ='laboRapportsCQFiltres2.html'
+    # Get the search value from the request's GET parameters
+    if request.method == 'POST':
+        date_d = request.POST['date_d']
+        date_f = request.POST['date_f']
 
         request.session['date_d'] = date_d
         request.session['date_f'] = date_f
@@ -5569,9 +5674,9 @@ def rapportCqfiltresResponse(request):
         'numdos',
         'entrepot_echantillon__numrappechauto',
         'entrepot_echantillon__laboreception__codelabo',
-        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__dateechantillonage',
         'entrepot_echantillon__laboreception__numcertificatqualite',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo',
         'conformiteProduit',
         'entrepot__nomentrepot',
         'importateur__nomimportateur',
@@ -5581,9 +5686,6 @@ def rapportCqfiltresResponse(request):
 
     date_d = request.session['date_d']
     date_f = request.session['date_f']
-
-    print(date_d)
-    print(date_f)
 
     # Apply search filter to the QuerySet
     if date_d and date_f:
@@ -5602,7 +5704,7 @@ def rapportCqfiltresResponse(request):
                 )
 
     # Number of items to show per page
-    items_per_page = 10
+    items_per_page = 20
 
     # Initialize the Paginator with the QuerySet and the number of items per page
     paginator = Paginator(qs, items_per_page)
@@ -5628,50 +5730,6 @@ def rapportCqfiltresResponse(request):
     # Convert the page object to a list of dictionaries
     data = list(page)
 
-    export = request.GET.get('export', None)
-    if export == 'excel':
-        # Retrieve all data (no lazy pagination) and store it in a list
-        data = list(qs)
-
-        # Create a new Excel workbook
-        workbook = Workbook()
-        sheet = workbook.active
-
-        # Write headers to the Excel file
-        header_row = ['DATE RECEP.', 'DATE ECHANT.','NUM.DOSS', 'NUM.RE', 'CODE LABO', 'ENTREPOT',
-                      'FOURNISSEUR',
-                      'IMMATRICULATION','PRODUIT','CONFORMITE']
-
-        # Combine header and data rows using zip
-        all_rows = [header_row] + [
-            [   row['entrepot_echantillon__laboreception__datereceptionlabo__date'],
-                row['entrepot_echantillon__dateechantillonage__date'],
-                row['numdos'],
-                row['entrepot_echantillon__numrappechauto'],
-                row['entrepot_echantillon__laboreception__codelabo'],
-                row['entrepot__nomentrepot'],
-                row['importateur__nomimportateur'],
-                row['immatriculation'],
-                row['produit__nomproduit'],
-                row['conformiteProduit'],
-            ] for row in data
-        ]
-
-        # Write data rows to the Excel file
-        for row in all_rows:
-            sheet.append(row)
-
-        # Create an in-memory stream to hold the Excel file data
-        excel_stream = io.BytesIO()
-        workbook.save(excel_stream)
-        excel_stream.seek(0)
-
-        # Prepare the response to return the Excel file
-        response = HttpResponse(excel_stream,
-                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-        return response
-
     # Return JSON response with the data
     return JsonResponse({
         'data': data,
@@ -5679,6 +5737,304 @@ def rapportCqfiltresResponse(request):
         'recordsTotal': paginator.count,
         'recordsFiltered': paginator.count,
     })
+
+
+
+@login_required(login_url='login')
+def rapportCqfiltresResponseExport(request):
+    user = request.user.id
+    ville = AffectationVille.objects.filter(username_id=user).values_list('ville_id', flat=True)
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user,
+        entrepot_echantillon__laboreception__isnull=False
+        # impressionresultat__isnull=False
+    ).annotate(
+        conformiteProduit=Case(
+            When(impressionresultat__isConforme__isnull=True, then=Value('EN ATTENTE')),
+            When(impressionresultat__isConforme=False, then=Value('NON CONFORME')),
+            When(impressionresultat__isConforme=True, then=Value('CONFORME')),
+            default=Value('AUTRE CAS'),  # Handle other cases if necessary
+            output_field=CharField()
+        )
+    ).values(
+        'numdos',
+        'entrepot_echantillon__numrappechauto',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__dateechantillonage',
+        'entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot_echantillon__laboreception__datereceptionlabo',
+        'conformiteProduit',
+        'entrepot__nomentrepot',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+    date_d = request.session['date_d']
+    date_f = request.session['date_f']
+
+    # Apply search filter to the QuerySet
+    if date_d and date_f:
+        qs = qs.filter(
+            entrepot_echantillon__laboreception__datereceptionlabo__date__range=(date_d,date_f)
+        )
+    else:
+        if date_d:
+            qs = qs.filter(
+                entrepot_echantillon__laboreception__datereceptionlabo__date=(date_d)
+            )
+        else:
+            if date_f:
+                qs = qs.filter(
+                    entrepot_echantillon__laboreception__datereceptionlabo__date=(date_f)
+                )
+
+    table = rapportActiviteCQ(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+    serialized_qs = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task_rapport_cq', args=[export_format, serialized_qs])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
+
+@login_required(login_url='login')
+def bulkConforme1(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1 or role == 6:
+        if request.method == 'POST':
+            selectedRows = request.POST.getlist('selectedRowIds[]')
+            for data in selectedRows:
+                try:
+                    c = Cargaison.objects.get(idcargaison=data)
+                    print(c.idcargaison)
+                    c.etat = "Validation en cours 2"
+                    c.conformite = "Conforme aux exigences"
+                    c.impression = "0"
+                    c.save(update_fields=['etat', 'conformite', 'impression'])
+                except Cargaison.DoesNotExist:
+                    return JsonResponse({'message': 'An error occured'}, status=400)
+
+            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
+        else:
+            # If the request method is not POST or it's not an AJAX request, return an error
+            return JsonResponse({'error': 'Invalid request.'}, status=400)
+    # If the request method is not POST or it's not an AJAX request, return an error
+    return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+
+
+@login_required(login_url='login')
+def bulkNonConforme1(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1 or role == 6:
+        if request.method == 'POST':
+            selectedRows = request.POST.getlist('selectedRowIds[]')
+            for data in selectedRows:
+                try:
+                    c = Cargaison.objects.get(idcargaison=data)
+                    print(c.idcargaison)
+                    c.etat = "Validation en cours 2"
+                    c.conformite = "Non conforme aux exigences"
+                    c.impression = "0"
+                    c.save(update_fields=['etat', 'conformite', 'impression'])
+                except Cargaison.DoesNotExist:
+                    return JsonResponse({'message': 'An error occured'}, status=400)
+
+            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
+        else:
+            # If the request method is not POST or it's not an AJAX request, return an error
+            return JsonResponse({'error': 'Invalid request.'}, status=400)
+    # If the request method is not POST or it's not an AJAX request, return an error
+    return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+
+
+@login_required(login_url='login')
+def bulkRefaire1(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1 or role == 6:
+        if request.method == 'POST':
+            selectedRows = request.POST.getlist('selectedRowIds[]')
+            for data in selectedRows:
+                try:
+                    c = Cargaison.objects.get(idcargaison=data)
+                    print(c.idcargaison)
+                    c.etat = "Refaire"
+                    print(c.etat)
+                    c.save(update_fields=['etat'])
+                except Cargaison.DoesNotExist:
+                    return JsonResponse({'message': 'An error occured'}, status=400)
+
+            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
+        else:
+            # If the request method is not POST or it's not an AJAX request, return an error
+            return JsonResponse({'error': 'Invalid request.'}, status=400)
+    # If the request method is not POST or it's not an AJAX request, return an error
+    return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+
+
+
+
+@login_required(login_url='login')
+def bulkConforme2(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1 or role == 6:
+        if request.method == 'POST':
+            selectedRows = request.POST.getlist('selectedRowIds[]')
+            for data in selectedRows:
+                try:
+                    c = Cargaison.objects.get(idcargaison=data)
+                    print(c.idcargaison)
+                    # Updated Method
+                    i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
+                    i.save()
+
+                    # A supprimer
+                    c.etat = "Conforme aux exigences"
+                    c.conformite = "Conforme aux exigences"
+                    c.impression = "0"
+                    c.dateHeureAnalyseLabo = datetime.now()
+                    c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+                except Cargaison.DoesNotExist:
+                    return JsonResponse({'message': 'An error occured'}, status=400)
+
+            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
+        else:
+            # If the request method is not POST or it's not an AJAX request, return an error
+            return JsonResponse({'error': 'Invalid request.'}, status=400)
+    # If the request method is not POST or it's not an AJAX request, return an error
+    return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+
+
+@login_required(login_url='login')
+def bulkNonConforme2(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1 or role == 6:
+        if request.method == 'POST':
+            selectedRows = request.POST.getlist('selectedRowIds[]')
+            for data in selectedRows:
+                try:
+                    c = Cargaison.objects.get(idcargaison=data)
+                    print(c.idcargaison)
+                    # Updated Method
+                    i = ImpressionResultat(printDate=datetime.now, isConforme=0, isPrinted=0, idcargaison=c)
+                    i.save()
+
+                    c.etat = "Non conforme aux exigences"
+                    c.impression = "0"
+                    c.dateHeureAnalyseLabo = datetime.now()
+                    c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
+                except Cargaison.DoesNotExist:
+                    return JsonResponse({'message': 'An error occured'}, status=400)
+
+            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
+        else:
+            # If the request method is not POST or it's not an AJAX request, return an error
+            return JsonResponse({'error': 'Invalid request.'}, status=400)
+    # If the request method is not POST or it's not an AJAX request, return an error
+    return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+
+
+@login_required(login_url='login')
+def bulkRefaire2(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1 or role == 6:
+        if request.method == 'POST':
+            selectedRows = request.POST.getlist('selectedRowIds[]')
+            for data in selectedRows:
+                try:
+                    c = Cargaison.objects.get(idcargaison=data)
+                    print(c.idcargaison)
+                    c.etat = "Refaire"
+                    print(c.etat)
+                    c.save(update_fields=['etat'])
+                except Cargaison.DoesNotExist:
+                    return JsonResponse({'message': 'An error occured'}, status=400)
+
+            return JsonResponse({'message': 'Request processed successfully.'}, status=200)
+        else:
+            # If the request method is not POST or it's not an AJAX request, return an error
+            return JsonResponse({'error': 'Invalid request.'}, status=400)
+    # If the request method is not POST or it's not an AJAX request, return an error
+    return JsonResponse({'error': 'Invalid request.'}, status=400)
+
+
+
+# Fonction pour impression Certificat
+@login_required(login_url='login')
+def impressionCertificatBulk(request):
+    user = request.user
+    id = user.id
+    name = user.last_name + ' ' + user.first_name
+    poste = user.poste
+    ville = AffectationVille.objects.get(username_id=id)
+    ville = ville.ville_id
+    province = Ville.objects.get(idville=ville)
+    province = province.province
+    province = province.upper()
+    role = user.role_id
+
+    selectedRows = request.POST.getlist('selectedRowIds[]')
+
+
+    # Recuperation des donnees liees aux signataires
+    affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
+    affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
+    signDroite = MyUser.objects.get(username=affect1.userId)
+    signGauche = MyUser.objects.get(username=affect2.userId)
+
+    signGauche_data = {
+        'first_name': signGauche.first_name,
+        'last_name': signGauche.last_name,
+        # Add any other required fields
+    }
+
+    signDroite_data = {
+        'first_name': signDroite.first_name,
+        'last_name': signDroite.last_name,
+        # Add any other required fields
+    }
+
+    # Recuperation du Laboratoire asssocie a la ville
+    laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+
+    laboratoireData = {
+        'laboratoireName': laboratoireData.denominationLaboratoire,
+        'laboratoireType': laboratoireData.typeLaboratoire,
+    }
+
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.generate_bulk_pdf', args=[selectedRows,province,signGauche_data,signDroite_data,laboratoireData])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
 
 
 

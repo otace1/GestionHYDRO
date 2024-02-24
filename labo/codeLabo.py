@@ -38,6 +38,7 @@ def generate_labo_code(ville_id):
             JOIN enreg_ville v ON e.ville_id = v.idville
             WHERE MONTH(l.datereceptionlabo) = {current_month}
             AND v.idville = {ville_id}
+            GROUP BY l.idcargaison_id, c.idcargaison
         '''
 
     last_code_result = Cargaison.objects.raw(query)

@@ -6,16 +6,14 @@ from rest_framework.routers import DefaultRouter
 from api.views import UserViewSerializer
 from django.contrib import admin
 
-# if settings.DEBUG:
-#     import debug_toolbar
+if settings.DEBUG:
+    import debug_toolbar
 
 urlpatterns = [
-                  # path('__debug__/', include(debug_toolbar.urls)),
+                  path('__debug__/', include(debug_toolbar.urls)),
                   # path('sentry-debug/', trigger_error),
                   path('admin/', admin.site.urls),
                   path('ads/', include('ads.urls')),
-                  # path('ads/', include('ads.urls')),
-                  # path('ads/', include('ads.urls')),
                   path('cargaison/', include('enreg.urls')),
                   path('shydro/', include('shydro.urls')),
                   path('entrepot/', include('entrepot.urls')),
@@ -28,6 +26,9 @@ urlpatterns = [
                   # Api
                   path('api/', include("api.urls")),
                   # path('verification/', include("verification.urls")),
+
+                  # Progress Bar
+                  path('celery-progress/', include('celery_progress.urls')),
 
                   # Auth
                   # path('api-auth/', include('rest_framework.urls')),

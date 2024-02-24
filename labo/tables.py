@@ -457,13 +457,13 @@ class RapportsLaboratoireReception(tables.Table):
 
 
 class RapportLaboratoireEnAttenteReception(tables.Table):
-    numdos = tables.Column(verbose_name="NUM.DOSSIER")
-    entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RE")
-    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name="DATE PRELEVEMENT.")
     entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
     importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
     produit__nomproduit = tables.Column(verbose_name="PRODUIT")
-    entrepot_echantillon__qte = tables.Column(verbose_name="QTE")
+    numdos = tables.Column(verbose_name="NUM.DOSSIER")
+    entrepot_echantillon__numrappechauto = tables.Column(verbose_name="NUM.RAPPORT ECHANT.")
+    entrepot_echantillon__qte = tables.Column(verbose_name="QTE ECHANT.")
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
@@ -514,6 +514,25 @@ class RapportLaboratoireEnchPrintedCert(tables.Table):
     entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
     importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
     produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+
+    class Meta:
+        attrs = {"class": "table table-hover table-bordered table-responsive-sm"}
+        template_name = "django_tables2/bootstrap4.html"
+
+
+
+class rapportActiviteCQ(tables.Table):
+    entrepot_echantillon__dateechantillonage = tables.Column(verbose_name='DATE ECHANT.')
+    entrepot_echantillon__laboreception__datereceptionlabo = tables.Column(verbose_name='DATE RECEP.')
+    numdos = tables.Column(verbose_name='NUM.DOSSIER')
+    entrepot_echantillon__numrappechauto = tables.Column(verbose_name='NUM.RE')
+    entrepot_echantillon__laboreception__codelabo = tables.Column(verbose_name='CODE LABO')
+    entrepot_echantillon__laboreception__numcertificatqualite = tables.Column(verbose_name='NUM.CQ')
+    entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
+    importateur__nomimportateur = tables.Column(verbose_name='IMPORTATEUR')
+    immatriculation = tables.Column(verbose_name='IMMATRICULATION')
+    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
+    conformiteProduit = tables.Column(verbose_name='CONFORMITE')
 
     class Meta:
         attrs = {"class": "table table-hover table-bordered table-responsive-sm"}

@@ -1,4 +1,4 @@
-{% extends 'labo/LaboDetailsResultatDroite.html' %}
+{#{% extends 'labo/LaboDetailsResultatDroite.html' %}#}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
@@ -10,20 +10,20 @@
 
 
 {% block javascript %}
-    <script>
-            $(document).ready(function(){
-              $('table td').each(
-                function(){
-                  var td_value = $(this).text();
-                  if (td_value == "Hors norme" ) {
-                    $(this).css('background', 'red');
-                  } else {
-                      $(this).css('background', 'green')
-                  };
-                }
-              );
-            });
-    </script>
+{#    <script>#}
+{#            $(document).ready(function(){#}
+{#              $('table td').each(#}
+{#                function(){#}
+{#                  var td_value = $(this).text();#}
+{#                  if (td_value == "Hors norme" ) {#}
+{#                    $(this).css('background', 'red');#}
+{#                  } else {#}
+{#                      $(this).css('background', 'green')#}
+{#                  };#}
+{#                }#}
+{#              );#}
+{#            });#}
+{#    </script>#}
 {% endblock %}
 
 

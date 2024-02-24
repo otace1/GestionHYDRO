@@ -187,11 +187,17 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>TRACABILITE</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'codification' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>TRACABILITE</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'gestionGo' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>GESTION GO</p>
+    </a>
+</li>
                             <li class="nav-item">
                                     <a href="{% url 'regularisation' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -281,7 +287,8 @@
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-              <li class="breadcrumb-item active">Validation des résultats</li>
+                            <li class="breadcrumb-item active">Laboratoire</li>
+                            <li class="breadcrumb-item active">Validation des résultats</li>
             </ol>
           </div><!-- /.col -->
         </div><!-- /.row -->
@@ -296,87 +303,29 @@
                </div>
             <!-- /.row -->
 
-              <!-- Small boxes (Stat box) -->
-        <div class="row">
-          <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-info">
-              <div class="inner">
-                <h3>{{ laboreception }}</h3>
-
-                <p>En attente de réception</p>
-              </div>
-              <div class="icon">
-                <i class="ion ion-stats-bars"></i>
-              </div>
-              <a href="{% url 'enchAttenteReception' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-          <!-- ./col -->
-          <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-success">
-              <div class="inner">
-                <h3>{{ enanalyse }}<sup style="font-size: 20px"></sup></h3>
-
-                <p>En attente des résulats</p>
-              </div>
-              <div class="icon">
-                <i class="ion ion-stats-bars"></i>
-              </div>
-              <a href="{% url 'enchAttenteResultat' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-          <!-- ./col -->
-          <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-warning">
-              <div class="inner">
-                <h3>{{ enattente }}</h3>
-
-                <p>En attente de validation</p>
-              </div>
-              <div class="icon">
-                <i class="ion ion-stats-bars"></i>
-              </div>
-              <a href="{% url 'enchAttenteValidation' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-          <!-- ./col -->
-          <div class="col-lg-3 col-6">
-            <!-- small box -->
-            <div class="small-box bg-danger">
-              <div class="inner">
-                <h3>{{ certImprimer }}</h3>
-
-                <p>Certificats imprimés</p>
-              </div>
-              <div class="icon">
-                <i class="ion ion-ios-paper"></i>
-              </div>
-              <a href="{% url 'enchPrintedCert' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-          <!-- ./col -->
-        </div>
-        <!-- /.row -->
-
-             <div class="row">
-                 <a href="{% url 'rapportCq' %}" class="btn btn-app bg-warning">
+            <div class="row">
+                <a href="{% url 'rapportCq2' %}" class="btn btn-app bg-warning">
                   <span class="badge bg-info"></span>
-                  <i class="fas fa-envelope"></i> RAPPORTS D'ACTIVITES
+                  <i class="fas fa-file-archive"></i> RAPPORTS
                 </a>
             </div>
 
 
+{##}
+{#             <div class="row">#}
+{#                 <a href="{% url 'rapportCq' %}" class="btn btn-app bg-warning">#}
+{#                  <span class="badge bg-info"></span>#}
+{#                  <i class="fas fa-envelope"></i> RAPPORTS D'ACTIVITES#}
+{#                </a>#}
+{#            </div>#}
+
+
 
             <div class="row">
-                {% block search %}
-                {% endblock %}
-                <div class="col-12">
+                <div class="col-md-6">
                     <div class="card">
                         <div class="card-header" style="background-color: darkgreen">
-                            <h1 class="card-title" style="color: white"><b>Relevé de résultats en attente de validation</b></h1>
+                            <h1 class="card-title" style="color: white"><b>EN ATTENTE DE VALIDATION</b></h1>
                             <div class="card-tools">
                         </div>
                         </div>
@@ -387,6 +336,74 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="col-md-6">
+                    <!-- Small boxes (Stat box) -->
+                    <div class="row">
+                      <div class="col-lg-6 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-info">
+                          <div class="inner">
+                            <h3>{{ laboreception }}</h3>
+
+                            <p>En attente de réception</p>
+                          </div>
+                          <div class="icon">
+                            <i class="ion ion-stats-bars"></i>
+                          </div>
+                          <a href="{% url 'enchAttenteReception' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                      </div>
+                      <!-- ./col -->
+                      <div class="col-lg-6 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-success">
+                          <div class="inner">
+                            <h3>{{ enanalyse }}<sup style="font-size: 20px"></sup></h3>
+
+                            <p>En attente des résulats</p>
+                          </div>
+                          <div class="icon">
+                            <i class="ion ion-stats-bars"></i>
+                          </div>
+                          <a href="{% url 'enchAttenteResultat' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                      </div>
+                      <!-- ./col -->
+                      <div class="col-lg-6 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-warning">
+                          <div class="inner">
+                            <h3>{{ enattente }}</h3>
+
+                            <p>En attente de validation</p>
+                          </div>
+                          <div class="icon">
+                            <i class="ion ion-stats-bars"></i>
+                          </div>
+                          <a href="{% url 'enchAttenteValidation' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                      </div>
+                      <!-- ./col -->
+                      <div class="col-lg-6 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-danger">
+                          <div class="inner">
+                            <h3>{{ certImprimer }}</h3>
+
+                            <p>Certificats imprimés</p>
+                          </div>
+                          <div class="icon">
+                            <i class="ion ion-ios-paper"></i>
+                          </div>
+                          <a href="{% url 'enchPrintedCert' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                      </div>
+                      <!-- ./col -->
+                    </div>
+                    <!-- /.row -->
+                </div>
+
             </div>
     </section>
         <!-- /.content -->
