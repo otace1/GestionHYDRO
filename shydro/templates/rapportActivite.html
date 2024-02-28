@@ -32,9 +32,9 @@
 
 
 {% block export %}
-   <!-- <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a> -->
+<a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>
 
-    <a id="export-link" href="#" class="btn btn-success">EXPORT. EXCEL</a>
+<!--     <a id="export-link" href="#" class="btn btn-success">EXPORT. EXCEL</a>
 
 <input type="hidden" id="parameter-input" name="parameter" value="2">
 
@@ -43,7 +43,7 @@
         <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
     </div>
     <div id="progress-bar-label" class="mt-2">Exporting...</div>
-</div>
+</div> -->
 
 {% endblock %}
 
@@ -239,7 +239,7 @@ function printRappInspection() {
 
 </script>
 
-<script>
+<!-- <script>
 document.addEventListener("DOMContentLoaded", function() {
     // Add click event listener to the export link
     document.querySelector("#export-link").addEventListener("click", function(event) {
@@ -347,7 +347,7 @@ function downloadFile(fileUrl, fileName) {
     // Remove the anchor from the body
     document.body.removeChild(anchor);
 }
-</script>
+</script> -->
 
 {% endblock %}
 
