@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.http import HttpResponse
 
 # Include the `fusioncharts.py` file that contains functions to embed the charts.
 from ..fusioncharts import FusionCharts
+
 
 # Loading Data from a Static JSON String
 # Example to create a Angular Gauge with the chart data passed as JSON string format.

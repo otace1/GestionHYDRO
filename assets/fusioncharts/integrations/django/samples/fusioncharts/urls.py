@@ -7,26 +7,29 @@ Function views
     1. Add an import:  from samples import views
     2. Add a URL to urlpatterns:  url(r'^$', views.home, name='home')
 """
-from django.urls import path
 from django.conf.urls import url
 from django.contrib import admin
+from fusioncharts.samples import chart_tooltip, rendering_chart_with_different_language, chart_special_chart
+from fusioncharts.samples import drilldown_from_database_example, rendering_charts_by_common_theme
+from fusioncharts.samples import dynamic_chart_resize, dynamic_chart_type, chart_annotation, chart_update_onclick
+from fusioncharts.samples import export_chart_using_export_handler
+from fusioncharts.samples import fetching_json_data_from_url, fetching_xml_data_from_url, fetching_data_from_database
+from fusioncharts.samples import get_data_from_scatter_chart
+from fusioncharts.samples import product_life_cycle_event, special_event, chart_message, interactive_event, \
+    number_format_module
+from fusioncharts.samples import rendering_angular_gauge_using_dictionary_example, \
+    rendering_column2d_chart_using_dictionary_example
+from fusioncharts.samples import rendering_angular_gauge_using_json_example, client_side_chart_export
+from fusioncharts.samples import rendering_column_line_area_combi_using_json_example, rendering_map_using_json_example
+from fusioncharts.samples import rendering_map_using_dictionary_example, \
+    rendering_multiseries_column2d_chart_using_json_example
+from fusioncharts.samples import rendering_multiseries_StackedColumn2dline_using_json_example, \
+    rendering_pie3d_using_json_example
+from fusioncharts.samples import special_chart_type_api, chart_instance_level_api, chart_product_level_api
+from fusioncharts.samples import updating_chart_properties, highlight_specific_data_points, update_data_runtime
 from fusioncharts.views import catalogue
 
 from fusioncharts import datahandler
-from fusioncharts.samples import rendering_angular_gauge_using_dictionary_example, rendering_column2d_chart_using_dictionary_example
-from fusioncharts.samples import rendering_map_using_dictionary_example, rendering_multiseries_column2d_chart_using_json_example
-from fusioncharts.samples import rendering_multiseries_StackedColumn2dline_using_json_example, rendering_pie3d_using_json_example
-from fusioncharts.samples import rendering_column_line_area_combi_using_json_example, rendering_map_using_json_example
-from fusioncharts.samples import rendering_angular_gauge_using_json_example, client_side_chart_export
-from fusioncharts.samples import fetching_json_data_from_url, fetching_xml_data_from_url, fetching_data_from_database
-from fusioncharts.samples import drilldown_from_database_example, rendering_charts_by_common_theme
-from fusioncharts.samples import export_chart_using_export_handler
-from fusioncharts.samples import dynamic_chart_resize, dynamic_chart_type, chart_annotation, chart_update_onclick
-from fusioncharts.samples import chart_tooltip, rendering_chart_with_different_language, chart_special_chart
-from fusioncharts.samples import product_life_cycle_event, special_event, chart_message, interactive_event, number_format_module
-from fusioncharts.samples import special_chart_type_api, chart_instance_level_api, chart_product_level_api
-from fusioncharts.samples import updating_chart_properties, highlight_specific_data_points, update_data_runtime
-from fusioncharts.samples import get_data_from_scatter_chart
 
 urlpatterns = [
     url(r'^$', catalogue),

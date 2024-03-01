@@ -2,11 +2,10 @@
 # -*- coding: UTF-8 -*-
 
 from django.shortcuts import render
-from django.http import HttpResponse
 
 # Include the `fusioncharts.py` file that contains functions to embed the charts.
 from ..fusioncharts import FusionCharts
-from collections import OrderedDict
+
 
 # Loading Data from a Ordered Dictionary
 # Example to create a Map with the chart data passed as Dictionary format.

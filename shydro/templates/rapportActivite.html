@@ -32,20 +32,18 @@
 
 
 {% block export %}
+   <!-- <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a> -->
 
-    <a href="{% export_url "xlsx" %}" class="btn btn-success">EXPORT. EXCEL</a>
+    <a id="export-link" href="#" class="btn btn-success">EXPORT. EXCEL</a>
 
-{#    <a id="export-link" href="#" class="btn btn-success">EXPORT. EXCEL</a>#}
-{##}
-{#<input type="hidden" id="parameter-input" name="parameter" value="2">#}
-{##}
-{#<div id="progress-bar-container" style="display: none;" class="mt-3">#}
-{#    <div id="progress-bar" class="progress" style="border-radius: 25px">#}
-{#        <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>#}
-{#    </div>#}
-{#    <div id="progress-bar-label" class="mt-2">Exporting...</div>#}
-{#</div>#}
+<input type="hidden" id="parameter-input" name="parameter" value="2">
 
+<div id="progress-bar-container" style="display: none;" class="mt-3">
+    <div id="progress-bar" class="progress" style="border-radius: 25px">
+        <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <div id="progress-bar-label" class="mt-2">Exporting...</div>
+</div>
 
 {% endblock %}
 
@@ -241,115 +239,115 @@ function printRappInspection() {
 
 </script>
 
-{#<script>#}
-{#document.addEventListener("DOMContentLoaded", function() {#}
-{#    // Add click event listener to the export link#}
-{#    document.querySelector("#export-link").addEventListener("click", function(event) {#}
-{#        event.preventDefault(); // Prevent the default action of the link#}
-{##}
-{#        // Hide the export link#}
-{#        this.style.display = "none";#}
-{##}
-{#        // Show the progress bar#}
-{#        document.getElementById("progress-bar-container").style.display = "block";#}
-{##}
-{#        // Start the export process#}
-{#        startExport();#}
-{#    });#}
-{#});#}
-{##}
-{#async function startExport() {#}
-{#    event.preventDefault();#}
-{##}
-{#    try {#}
-{##}
-{#        // Make an AJAX request to start the export process#}
-{#        const response = await fetch('{% url "rapportActiviteFiltrePost" %}', {#}
-{#            method: 'POST',#}
-{#            headers: {#}
-{#                'Content-Type': 'application/json', // Specify JSON content type#}
-{#                'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token in the request header#}
-{##}
-{#            },#}
-{##}
-{#        });#}
-{#		console.log(response)#}
-{##}
-{#        // Check if the response is successful#}
-{#        if (!response.ok) {#}
-{#            throw new Error('Failed to start export task.');#}
-{#        }#}
-{##}
-{#        // Parse the response as JSON#}
-{#        const data = await response.json();#}
-{##}
-{#        // Update progress bar based on task ID#}
-{#        if (data.task_id) {#}
-{#            updateProgressBar(data.task_id);#}
-{#        } else {#}
-{#            throw new Error('Task ID not found in response.');#}
-{#        }#}
-{#    } catch (error) {#}
-{#        console.error('An error occurred:', error);#}
-{#    }#}
-{#}#}
-{##}
-{#function updateProgressBar(taskId) {#}
-{#    const progressBar = document.getElementById('progress-bar-inner');#}
-{#    const progressBarLabel = document.getElementById('progress-bar-label');#}
-{##}
-{#    function checkProgress() {#}
-{#        // Get the parameter value from the input field or any other source#}
-{#        const parameterValue = parseInt(document.getElementById('parameter-input').value);#}
-{##}
-{#        fetch(`/shydro/checkExportTaskStatus/${taskId}?parameter=${parameterValue}`)#}
-{#            .then(response => response.json())#}
-{#            .then(data => {#}
-{#                if (data.state === 'PENDING') {#}
-{#                    const progress = data.progress;#}
-{#                    progressBar.style.width = progress + '%';#}
-{#                    progressBar.setAttribute('aria-valuenow', progress);#}
-{#                    progressBarLabel.textContent = `Exporting... ${progress}%`;#}
-{#					const parameterInput = document.getElementById('parameter-input');#}
-{#					parameterInput.value = progress;#}
-{#                    // Check progress again after 1 second#}
-{#                    setTimeout(checkProgress, 1000);#}
-{#                } else if (data.state === 'SUCCESS') {#}
-{#					// Update progress bar to 100%#}
-{#					progressBar.style.width = '100%';#}
-{#					progressBar.setAttribute('aria-valuenow', 100);#}
-{#					progressBarLabel.textContent = 'Export completed!';#}
-{##}
-{#					// Trigger file download#}
-{#					downloadFile(data.result.file_url, data.result.file_name);#}
-{#				} else if (data.state === 'FAILURE') {#}
-{#                    // Task failed, display error message or retry option#}
-{#                    progressBarLabel.textContent = 'Export failed!';#}
-{#                } else {#}
-{#                    // Handle other task states as needed#}
-{#                }#}
-{#            });#}
-{#    }#}
-{##}
-{#    // Start checking progress#}
-{#    checkProgress();#}
-{#}#}
-{##}
-{##}
-{#function downloadFile(fileUrl, fileName) {#}
-{#    // Create an anchor element#}
-{#    const anchor = document.createElement('a');#}
-{#    anchor.href = fileUrl;#}
-{#    anchor.download = fileName;#}
-{##}
-{#    // Append the anchor to the body and trigger a click event#}
-{#    document.body.appendChild(anchor);#}
-{#    anchor.click();#}
-{##}
-{#    // Remove the anchor from the body#}
-{#    document.body.removeChild(anchor);#}
-{#}#}
-{#</script>#}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Add click event listener to the export link
+    document.querySelector("#export-link").addEventListener("click", function(event) {
+        event.preventDefault(); // Prevent the default action of the link
+
+        // Hide the export link
+        this.style.display = "none";
+
+        // Show the progress bar
+        document.getElementById("progress-bar-container").style.display = "block";
+
+        // Start the export process
+        startExport();
+    });
+});
+
+async function startExport() {
+    event.preventDefault();
+
+    try {
+
+        // Make an AJAX request to start the export process
+        const response = await fetch('{% url "rapportActiviteFiltrePost" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // Specify JSON content type
+                'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token in the request header
+
+            },
+
+        });
+		console.log(response)
+
+        // Check if the response is successful
+        if (!response.ok) {
+            throw new Error('Failed to start export task.');
+        }
+
+        // Parse the response as JSON
+        const data = await response.json();
+
+        // Update progress bar based on task ID
+        if (data.task_id) {
+            updateProgressBar(data.task_id);
+        } else {
+            throw new Error('Task ID not found in response.');
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+    }
+}
+
+function updateProgressBar(taskId) {
+    const progressBar = document.getElementById('progress-bar-inner');
+    const progressBarLabel = document.getElementById('progress-bar-label');
+
+    function checkProgress() {
+        // Get the parameter value from the input field or any other source
+        const parameterValue = parseInt(document.getElementById('parameter-input').value);
+
+        fetch(`/shydro/checkExportTaskStatus/${taskId}?parameter=${parameterValue}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.state === 'PENDING') {
+                    const progress = data.progress;
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                    progressBarLabel.textContent = `Exporting... ${progress}%`;
+					const parameterInput = document.getElementById('parameter-input');
+					parameterInput.value = progress;
+                    // Check progress again after 1 second
+                    setTimeout(checkProgress, 1000);
+                } else if (data.state === 'SUCCESS') {
+					// Update progress bar to 100%
+					progressBar.style.width = '100%';
+					progressBar.setAttribute('aria-valuenow', 100);
+					progressBarLabel.textContent = 'Export completed!';
+
+					// Trigger file download
+					downloadFile(data.result.file_url, data.result.file_name);
+				} else if (data.state === 'FAILURE') {
+                    // Task failed, display error message or retry option
+                    progressBarLabel.textContent = 'Export failed!';
+                } else {
+                    // Handle other task states as needed
+                }
+            });
+    }
+
+    // Start checking progress
+    checkProgress();
+}
+
+
+function downloadFile(fileUrl, fileName) {
+    // Create an anchor element
+    const anchor = document.createElement('a');
+    anchor.href = fileUrl;
+    anchor.download = fileName;
+
+    // Append the anchor to the body and trigger a click event
+    document.body.appendChild(anchor);
+    anchor.click();
+
+    // Remove the anchor from the body
+    document.body.removeChild(anchor);
+}
+</script>
 
 {% endblock %}
 

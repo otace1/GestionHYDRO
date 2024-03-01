@@ -1,7 +1,7 @@
-from crispy_forms.layout import Layout, Row, Column
 from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Row, Column
 from django import forms
-from django_countries.fields import CountryField
+
 from enreg.models import *
 
 

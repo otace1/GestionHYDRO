@@ -1,17 +1,15 @@
 import uuid
 from datetime import date
+
 import pyqrcode
 from PIL import Image
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponse, redirect
-from django_tables2 import RequestConfig
-from django_tables2.paginators import LazyPaginator
+
 from .forms import Ajoutcargaison, AjoutCargaison
 from .models import *
-from accounts.models import *
 from .tables import CargaisonTable
-
 
 
 #Function

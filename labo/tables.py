@@ -1,5 +1,6 @@
 import django_tables2 as tables
-from enreg.models import Cargaison, Entrepot_echantillon, LaboReception, Resultat
+
+from enreg.models import Entrepot_echantillon, LaboReception, Resultat
 
 # TEMPLATE = """
 #             <a href="{%url 'reception' record.pk%}" class="btn btn-success">RECEPTION</a>

@@ -1,14 +1,14 @@
-from celery import Celery
 from django_tables2.export.export import TableExport
+import datetime
+
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django_tables2 import RequestConfig
-from django.http import JsonResponse
+from django_tables2.export.export import TableExport
 
 from hydrocarbures.celery import app
 from shydro.tables import RapportActivite
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-import time
-import datetime
+
 
 # app = Celery('tasks', broker='redis://127.0.0.1:6379/0', backend='redis://127.0.0.1:6379/1')
 

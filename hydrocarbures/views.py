@@ -1,9 +1,3 @@
-from django.conf import settings
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
-import firebase_admin
-from rest_framework.generics import GenericAPIView
-from rest_framework import response, permissions
 #
 # from firebase_admin import credentials
 #

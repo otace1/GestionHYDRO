@@ -1,13 +1,14 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from django.db.models import Avg, Sum, Q
 from decimal import Decimal
-from .tables import Facturations, Appuration, Detailsappuration, Facturations1, Liquidat
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.shortcuts import render, redirect
 from django_tables2 import RequestConfig
 from django_tables2.paginators import LazyPaginator
+
 from enreg.models import *
 from .forms import SaisieBL
-from django.contrib.auth.decorators import login_required
+from .tables import Facturations, Appuration, Detailsappuration, Facturations1
 
 
 # Create your views here.

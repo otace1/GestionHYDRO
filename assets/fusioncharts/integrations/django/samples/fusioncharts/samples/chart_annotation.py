@@ -1,8 +1,8 @@
 from django.shortcuts import render
-from django.http import HttpResponse
 
 # Include the `fusioncharts.py` file which has required functions to embed the charts in html page
 from ..fusioncharts import FusionCharts
+
 
 # Loading Data from a Static JSON String
 # It is a example to show a spline chart where data is passed as JSON string format.

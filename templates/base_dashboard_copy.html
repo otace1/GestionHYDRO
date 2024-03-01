@@ -442,25 +442,106 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-md-6">
-                        {% block chart %}
-                        {% endblock %}
-            <!-- /.card -->
-                    </div>
-                    <div class="col-md-6">
-                        {% block latest %}
-                        {% endblock %}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-3">
-                        {% block importateur %}{% endblock %}
-                    </div>
-                    <div class="col-md-3">
-                         {% block products %}{% endblock %}
-                    </div>
-                    <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="card-title"><b>PRODUITS PETROLIERS EN {{ current_year }}</b></h5>
 
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
+                      <i class="fas fa-wrench"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" role="menu">
+                      <a href="#" class="dropdown-item">Action</a>
+                      <a href="#" class="dropdown-item">Another action</a>
+                      <a href="#" class="dropdown-item">Something else here</a>
+                      <a class="dropdown-divider"></a>
+                      <a href="#" class="dropdown-item">Separated link</a>
                     </div>
+                  </div>
+                  <button type="button" class="btn btn-tool" data-card-widget="remove">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <!-- /.card-header -->
+
+
+
+
+
+
+              <div class="card-body">
+                <div class="row">
+
+                  <div class="col-md-8">
+{#                    <p class="text-center">#}
+{#                      <strong>Comparaison des volumes pour l'année <b>{{ current_year }}</b></strong>#}
+{#                    </p>#}
+
+                    <div class="chart">
+                      <!-- Sales Chart Canvas -->
+                      <canvas id="myChart" height="180" style="height: 300px;">
+
+                      </canvas>
+                    </div>
+                    <!-- /.chart-responsive -->
+                  </div>
+                  <!-- /.col -->
+                  <div class="col-md-4">
+                    <p class="text-center">
+                      <strong>VOL. déclaré en mètres cubes</strong>
+                    </p>
+
+                    <div class="progress-group">
+                      GASOIL
+                      <span class="float-right"><b>{{ gasoilVolume }}</b>/{{ totalVolume }}</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-primary" style="width: {{ gasoilPercentage }}%"></div>
+                      </div>
+                    </div>
+                    <!-- /.progress-group -->
+
+                    <div class="progress-group">
+                      MOGAS
+                      <span class="float-right"><b>{{ mogasVolume }}</b>/{{ totalVolume }}</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-danger" style="width: {{ mogasPercentage }}%"></div>
+                      </div>
+                    </div>
+
+                    <!-- /.progress-group -->
+                    <div class="progress-group">
+                      <span class="progress-text">JET A1</span>
+                      <span class="float-right"><b>{{ jetVolume }}</b>/{{ totalVolume }}</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-success" style="width: {{ jetPercentage }}%"></div>
+                      </div>
+                    </div>
+
+                    <!-- /.progress-group -->
+                    <div class="progress-group">
+                      PETROLE LAMPANT
+                      <span class="float-right"><b>{{ petroleVolume }}</b>/{{ totalVolume }}</span>
+                      <div class="progress progress-sm">
+                        <div class="progress-bar bg-warning" style="width: {{ petrolePercentage }}%"></div>
+                      </div>
+                    </div>
+                    <!-- /.progress-group -->
+                  </div>
+                  <!-- /.col -->
+                </div>
+                <!-- /.row -->
+              </div>
+              <!-- ./card-body -->
+              <!-- /.card-footer -->
+            </div>
+            <!-- /.card -->
+          </div>
+
                 </div>
             </div>
 

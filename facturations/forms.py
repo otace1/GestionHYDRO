@@ -1,8 +1,9 @@
-from django import forms
-from crispy_forms.helper import FormHelper, Layout
-from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset, Button
-from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
 from bootstrap_datepicker_plus.widgets import DatePickerInput
+from crispy_forms.bootstrap import Field
+from crispy_forms.helper import FormHelper, Layout
+from crispy_forms.layout import Fieldset
+from django import forms
+
 from enreg.models import BureauDGDA
 
 paiement = [

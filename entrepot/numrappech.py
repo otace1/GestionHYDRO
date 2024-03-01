@@ -1,7 +1,8 @@
-from enreg.models import *
-from accounts.models import *
 import datetime
+
 from django.db.models import *
+
+from enreg.models import *
 
 
 # Numero de Dossier Annuel et unique

@@ -6,7 +6,7 @@
 
 {% block content %}
 
-    <div class="modal fade" id="modal-rapport">
+                <div class="modal fade" id="modal-rapport">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
@@ -15,38 +15,17 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="{% url 'rapportBrut' %}" method="post">
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {% crispy form %}
-                </div>
-              </form>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-      <!-- /.modal -->
-
-    <div class="modal fade" id="modal-details">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Listes des documents</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+          <form action="{% url 'rapportBrutB' %}" method="post">
+          {% csrf_token %}
+            <div class="modal-body">
+                {% crispy form %}
             </div>
-              <form action="" method="post">
-                <div class="modal-body">
-
-                </div>
-              </form>
+          </form>
           </div>
           <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-    </div>
+      </div>
       <!-- /.modal -->
 
 
@@ -129,10 +108,22 @@
                     data: 'idcargaison',
                     render: function (data, type, row) {
                         // 'data' contains the value of 'idcargaison' for this row
+                        // Here, we'll create a JSON input field and a button to submit the data
+                        {##}
+                        {#const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +#}
+                        {#    '<input type="text" class="json-input" id="input-' + data + '">';#}
+
+                         // Include a link to be triggered with the parameter 'data'
+                        const linkURL = '/labo/affichageDetailsResultatsGauche/' + data;
+                        const linkText = 'AFFICHER';
 
                         // Include a button to submit the JSON data for the row
                         const submitAfficher = '<button class="btn btn-info afficher-btn" data-row-id="' + data + '">AFFICHER</button> ';
-
+                        {#const submitConforme = '<button class="btn btn-success" data-row-id="' + data + '">CONFORME</button> ';#}
+                        {#const submitNonConforme = '<button class="btn btn-danger" data-row-id="' + data + '">NON CONFORME</button> ';#}
+                        {#const submitARefaire = '<button class="btn btn-outline-danger" data-row-id="' + data + '">A REFAIRE</button> ';#}
+{##}
+{#                        return submitAfficher + submitConforme + submitNonConforme + submitARefaire;#}
                         return submitAfficher;
                     }
                 }// Use array index to access 'immatriculation'
@@ -144,14 +135,49 @@
         $('#data-table').on('click', '.afficher-btn', function() {
           var rowId = $(this).data('row-id');
           dataRow = rowId;
-          console.log(dataRow);
-
-          {#// Load content into the modal body via AJAX#}
-          {#$('#modal-lg .modal-body').load(linkURL);#}
-          {#// Show the modal#}
-          $('#modal-details').modal('show');
+          var linkURL = '/labo/affichageDetailsResultatsGauche/' + rowId;
+          // Load content into the modal body via AJAX
+          $('#modal-lg .modal-body').load(linkURL);
+          // Show the modal
+          $('#modal-lg').modal('show');
         });
-    })
+
+
+        // Event listener for individual tick boxes
+        $(document).on('change', '.tick-box', function() {
+            var rowId = $(this).data('row-id');
+            if ($(this).prop('checked')) {
+                selectedRowIds.push(rowId); // Store the row ID when the tick box is checked
+                console.log(selectedRowIds);
+            } else {
+                var index = selectedRowIds.indexOf(rowId);
+                if (index !== -1) {
+                    selectedRowIds.splice(index, 1); // Remove the row ID if the tick box is unchecked
+                    console.log(selectedRowIds);
+                }
+            }
+        });
+
+
+        // Event listener for the "Select All" checkbox
+        $('#tick-all').on('change', function() {
+            var checkboxes = $('.tick-box');
+            checkboxes.prop('checked', $(this).prop('checked'));
+            if ($(this).prop('checked')) {
+                selectedRowIds = []; // Clear the selectedRowIds array
+                checkboxes.each(function() {
+                    var rowId = $(this).data('row-id');
+                    selectedRowIds.push(rowId); // Store all row IDs when "Select All" is checked
+                    console.log(selectedRowIds);
+                });
+            } else {
+                selectedRowIds = []; // Clear the selectedRowIds array if "Select All" is unchecked
+                console.log(selectedRowIds);
+            }
+        });
+
+
+    });
 </script>
 
 

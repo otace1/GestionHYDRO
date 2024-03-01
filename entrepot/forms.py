@@ -1,10 +1,9 @@
-from django import forms
+from crispy_forms.bootstrap import Field, FormActions
 from crispy_forms.helper import FormHelper, Layout
-from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset, Button, Div
-from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton, TabHolder, Tab, ContainerHolder, \
-    Container, InlineCheckboxes
+from crispy_forms.layout import Submit, Row, Reset, Column
+from django import forms
+
 from enreg.models import *
-from django.forms.models import inlineformset_factory
 
 etat_physique = [
     ('---', '---'),

@@ -1,20 +1,16 @@
 import base64
-
-from PyPDF3 import PdfFileMerger
-from celery import Celery
-from django.db.models.functions import ExtractYear, ExtractMonth
-from django_tables2.export.export import TableExport
-from django_tables2 import RequestConfig
-from django.http import JsonResponse
-
-from enreg.models import ResultatAnalyse, ImpressionResultat, Produit
-from hydrocarbures.celery import app
-from labo.tables import *
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-import time
 import datetime
 
+from PyPDF3 import PdfFileMerger
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.db.models.functions import ExtractYear, ExtractMonth
+from django_tables2 import RequestConfig
+from django_tables2.export.export import TableExport
+
+from enreg.models import ResultatAnalyse, ImpressionResultat, Produit, Cargaison
+from hydrocarbures.celery import app
+from labo.tables import *
 from labo.utils import render_to_pdf
 
 

@@ -1,7 +1,7 @@
 # Test for faster export to XLSX with PyExcelerate
-from django_pandas.io import read_frame
-import pandas as pd
 from io import BytesIO
+
+import pandas as pd
 
 
 def export_excel(df):

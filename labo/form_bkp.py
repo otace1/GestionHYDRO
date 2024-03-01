@@ -1,9 +1,8 @@
-from django import forms
-from enreg.models import LaboReception
-from crispy_forms.helper import FormHelper, Layout
-from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
-from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
 from bootstrap_datepicker_plus import DatePickerInput
+from crispy_forms.bootstrap import Field, FormActions
+from crispy_forms.helper import FormHelper, Layout
+from crispy_forms.layout import Submit, Reset
+from django import forms
 
 
 class ReceptionEchantillon(forms.Form):

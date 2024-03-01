@@ -1,9 +1,10 @@
-from django import forms
-from enreg.models import LaboReception, Produit
-from crispy_forms.helper import FormHelper, Layout
-from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
-from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
 from bootstrap_datepicker_plus.widgets import DatePickerInput
+from crispy_forms.bootstrap import Field, FormActions
+from crispy_forms.helper import FormHelper, Layout
+from crispy_forms.layout import Submit, Row, Reset, Column
+from django import forms
+
+from enreg.models import Produit
 
 
 class NatureProduitLaboratoire(forms.Form):

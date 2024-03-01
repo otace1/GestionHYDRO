@@ -1,10 +1,10 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-
 from collections import OrderedDict
+
+from django.shortcuts import render
 
 # Include the `fusioncharts.py` file that contains functions to embed the charts.
 from ..fusioncharts import FusionCharts
+
 
 # Loading Data from a Ordered Dictionary
 # Example to create a column 2D chart with the chart data passed as Dictionary format.

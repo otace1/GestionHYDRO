@@ -6,12 +6,13 @@
 #
 
 import argparse
-import sys
+import codecs
+import json
+
+import shapely.geometry
 from osgeo import ogr
 from osgeo import osr
-import json
-import shapely.geometry
-import codecs
+
 
 class Map:
   def __init__(self, name, language):

@@ -1,6 +1,6 @@
 import django_tables2 as tables
-from django_tables2.export.views import ExportMixin
-from enreg.models import Entrepot, Importateur, Ville, Produit, Dechargement, Cargaison, LaboReception, Resultat,Liquidation, Paiement
+
+from enreg.models import Entrepot, Importateur, Ville, Produit, Dechargement, Cargaison, Liquidation
 
 TEMPLATE = """
 <a href="{%url 'edit_entrepot' record.pk%}" class="btn btn-success">Modifier</a>
@@ -22,6 +22,9 @@ TEMPLATE3 = """
 <a href="{%url 'del_produit' record.pk%}"  aria-hidden="true">| Effacer</a> 
  """
 
+TEMPLATE4 = """
+<a href="" class="btn btn-success" id="detailsButton"> Details
+ """
 
 class EntrepotTable(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE)
@@ -259,7 +262,7 @@ class SyntheseEncaissement(tables.Table):
 class RapportBrut(tables.Table):
     dateheurecargaison__date = tables.Column(verbose_name="DATE ENTREE")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE")
-    declaration = tables.Column(verbose_name='DECL.#T1D')
+    declaration = tables.Column(verbose_name='#DECL.')
     importateur__nomimportateur = tables.Column(verbose_name='FOURNISSEUR')
     entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
@@ -278,15 +281,16 @@ class RapportBrut(tables.Table):
     mtaTotal = tables.Column(verbose_name='MTA')
     mtvTotal = tables.Column(verbose_name='MTV')
     gsvJauge = tables.Column(verbose_name='GSV')
-    gsvMeter = tables.Column(verbose_name='GSV (METER)')
-    fraisOcc = tables.Column(verbose_name='FRAIS A PAYER')
+    # gsvMeter = tables.Column(verbose_name='GSV (METER)')
+    fraisOcc_rounded = tables.Column(verbose_name='FRAIS A PAYER')
+    actions = tables.TemplateColumn(TEMPLATE4,verbose_name='')
 
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
             # "id": "example1"
         }
-        template_name = "django_tables2/bootstrap5-responsive.html"
+        template_name = "django_tables2/bootstrap4-responsive.html"
 
 
 

@@ -1,7 +1,6 @@
 import django_tables2 as tables
-from django_tables2.utils import A
-from enreg.models import Cargaison,Dechargement, Entrepot_echantillon
 
+from enreg.models import Cargaison
 
 A1 = """
  <form method=post action="{% url 'numreq' record.pk%}">

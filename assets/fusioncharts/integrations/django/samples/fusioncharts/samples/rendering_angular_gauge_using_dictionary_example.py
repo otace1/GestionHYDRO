@@ -1,9 +1,9 @@
+from collections import OrderedDict
+
 from django.shortcuts import render
-from django.http import HttpResponse
 
 # Include the `fusioncharts.py` file which has required functions to embed the widget in html page
 from ..fusioncharts import FusionCharts
-from collections import OrderedDict
 
 
 # Loading Data from a Ordered Dictionary

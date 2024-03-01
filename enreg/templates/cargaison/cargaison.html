@@ -123,24 +123,24 @@
     {% block javascript %}
         //Function for populating the Table
         //Diplay data into Table with Ajax
-        setInterval(function (){
-                $.ajax({
-                    type:'GET',
-                    url: "{% url 'getCargaison' %}",
-                    succes: function (response){
-                        console.log(response);
+        {#setInterval(function (){#}
+        {#        $.ajax({#}
+        {#            type:'GET',#}
+        {#            url: "{% url 'getCargaison' %}",#}
+        {#            succes: function (response){#}
+        {#                console.log(response);#}
                         {#$("#display").empty();#}
                         {#for (var key in response.cargaison)#}
                         {#{#}
                         {#    var temp = "<tr>"+"<th>"+response.cargaison[key].dateheurecargaison+"</th>"+"</tr>";#}
                         {#    $("#display").append(temp);#}
-                        //{#}#}
-                    },
-                    error: function (response){
-                        alert('An error occured')
-                    }
-                });
-            },1000);
+        {#                //{#}#}
+        {#            },#}
+        {#            error: function (response){#}
+        {#                alert('An error occured')#}
+        {#            }#}
+        {#        });#}
+        {#    },1000);#}
 
         // using jQuery
         function getCookie(name) {

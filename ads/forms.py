@@ -1,11 +1,10 @@
-from django import forms
-from enreg.models import *
-from bootstrap_datepicker_plus.widgets import DatePickerInput
+from crispy_forms.bootstrap import Field, FormActions
 # from bootstrap_daterangepicker import widgets, fields
 from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
-from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton
+from django import forms
 
+from enreg.models import *
 
 
 # Formulaire pour ajout des entrepots
@@ -111,7 +110,38 @@ class RechercheStat(forms.Form):
     date_d = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE DEBUT',required=False)
     date_f = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE FIN',required=False)
 
+    def __init__(self, *args, **kwargs):
+        super(RechercheStat, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'
+        self.helper.form_id = 'registration-form'
+        self.helper.label_class = 'col-md-6'
+        self.helper.field_class = 'col-md-6'
+        self.helper.layout = Layout(
+            Row(
+                Column('ville',css_class='form-group col-md-12 mb-0'),
+            ),
+            Row(
+                Column('produit',css_class='form-group col-md-12 mb-0'),
+            ),
+            Row(
+                Column('importateur',css_class='form-group col-md-12 mb-0'),
+            ),
+            Row(
+                Column('entrepot',css_class='form-group col-md-12 mb-0'),
+            ),
+            Row(
+                Column('date_d',css_class='form-group col-md-12 mb-0'),
+            ),
+            Row(
+                Column('date_f',css_class='form-group col-md-12 mb-0'),
+            ),
 
+            FormActions(
+                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
+                Submit('VALIDER', 'VALIDER', css_class='btn btn-primary'),
+            ),
+        )
 
 
 

@@ -1,35 +1,31 @@
+import datetime
+import decimal
 import json
+import uuid
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import Paginator, EmptyPage
-from django.utils.encoding import force_str
-from rest_framework.decorators import api_view, APIView, permission_classes
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.response import Response
-from rest_framework import status, viewsets, permissions, exceptions
-from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny,IsAuthenticated
-from rest_framework_api_key.permissions import HasAPIKey
-from rest_framework.authtoken.models import Token
-from rest_framework_api_key.models import APIKey
-from django.shortcuts import get_object_or_404
-from accounts.models import MyUser
+from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils.encoding import force_str
 from django_countries.data import COUNTRIES
+from rest_framework import status, viewsets, exceptions
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, APIView, permission_classes
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
+from accounts.models import MyUser
+from entrepot.calculs import *
+from entrepot.numrappech import numRappEch
 from labo.codeLabo import codeLabo
 from labo.numCq import numCq
-from .infiniteScroll import CustomPagination, DateTimeEncoder
+from .infiniteScroll import CustomPagination
 from .serializers import *
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import get_user_model, authenticate
-from django.http import QueryDict, JsonResponse, HttpResponse
-
-from entrepot.numrappech import numRappEch
-from entrepot.calculs import *
-import uuid
-import decimal
-import datetime
 
 
 # This for firebase Login system view Custom JWT

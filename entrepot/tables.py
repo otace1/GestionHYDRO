@@ -1,8 +1,6 @@
 import django_tables2 as tables
-from enreg.models import Cargaison, Entrepot_echantillon, Dechargement
-from django.urls import reverse
-from django.utils.safestring import mark_safe
 
+from enreg.models import Cargaison, Dechargement
 
 # TEMPLATE = """
 #             <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>

@@ -1,46 +1,33 @@
 import base64
+import datetime
+import io
 import json
 import uuid
+from datetime import date
 
 import pandas as pd
-import qrcode
-import io
-from io import BytesIO
-
 from celery.result import AsyncResult
-from celery_progress.backend import ProgressRecorder
-from celery_progress.views import get_progress
-
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.forms import FloatField, model_to_dict
+from django.db.models import Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django_tables2 import RequestConfig
+from django_tables2.export.export import TableExport
+from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
 
-import shydro
-from ads.forms import ImportateurForm, EntrepotForm
-from enreg.forms import Ajoutcargaison
-from enreg.models import *
 from accounts.models import *
 from entrepot.calculs import densite15, vcf, gsv, mta
 from hydrocarbures.celery import app
-from .numact import num_cert_inspection
-from .tables import *
-from .forms import *
-from django.contrib.auth.decorators import login_required
 from shydro.utils import render_to_pdf
-from django_tables2.paginators import LazyPaginator
-from django_tables2.export.export import TableExport
-from django_tables2 import RequestConfig
-from django.db.models import Q, ExpressionWrapper, Sum
-from datetime import date
-import datetime
+from .forms import *
+from .numact import num_cert_inspection
 # from .numact import numeroactcurrent
 from .numdossier import numDossier
-from .tasks import export_report_task
-from celery import Celery
-from celery.result import AsyncResult
+from .tables import *
+
 
 #Class de gestion des codifacations des cargaisons
 class GestionCodification():

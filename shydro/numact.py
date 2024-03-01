@@ -1,10 +1,8 @@
-from django.db import transaction, connection
+from datetime import datetime
 
-from enreg.models import *
+from django.db import connection
+
 from accounts.models import *
-from datetime import datetime
-from django.db.models import *
-from datetime import datetime
 
 
 # Numero de Dossier Annuel et unique

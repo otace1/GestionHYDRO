@@ -1,10 +1,9 @@
-from django.db import transaction
-
-from enreg.models import *
-from accounts.models import *
-from django.db.models import *
-from django.contrib.auth.decorators import login_required
 from datetime import datetime
+
+from django.db.models import *
+
+from accounts.models import *
+from enreg.models import *
 
 
 def codeLabo(v):

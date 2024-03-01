@@ -1,35 +1,26 @@
 import base64
+from datetime import date
 
+from django.contrib.auth.decorators import login_required
+# Sending email
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
+from django.db.models import Q, Sum, Case, When, FloatField, F
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from django_tables2 import RequestConfig
+from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
 
-from shydro.numact import num_cert_inspection
-from .tables import *
-from enreg.models import *
-from django.core.exceptions import BadRequest
 from accounts.models import *
-from .forms import *
 from labo.utils import render_to_pdf
-from xhtml2pdf import pisa
-from io import BytesIO, StringIO
-from django.http import HttpResponse, HttpResponseBadRequest
-from django.contrib.auth.decorators import login_required
-import math
-from django.db.models import Q, Count, Sum, Case, When, FloatField,F
-from django_tables2.paginators import LazyPaginator
-from django_tables2.export.export import TableExport
-from django_tables2 import RequestConfig
-from datetime import date
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse
-from .numrappech import numRappEch
+from shydro.numact import num_cert_inspection
 from .calculs import *
-
-
-#Sending email
-from django.core.mail import send_mail, EmailMessage
-from django.core.cache import cache
+from .forms import *
+from .numrappech import numRappEch
+from .tables import *
 
 
 # Gestion des echantillonages

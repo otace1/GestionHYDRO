@@ -1,10 +1,9 @@
-from django.db import transaction
+from datetime import datetime
 
-from enreg.models import *
-from accounts.models import *
-from datetime import datetime
 from django.db.models import *
-from datetime import datetime
+
+from accounts.models import *
+from enreg.models import *
 
 
 def numDossier(ville,pk):

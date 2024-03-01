@@ -214,36 +214,22 @@ if DEVELOPMENT_MODE is True:
     DATABASES = {
         'default': {
             'NAME': os.getenv("MYSQL_DATABASE_NAME",'hydro'),
-            'ENGINE': 'django.db.backends.mysql',
-            # 'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': os.getenv("SQL_ENGINE","django.db.backends.mysql"),
             'USER': os.getenv("MYSQL_USER",'root'),
-            # 'HOST': os.getenv("MYSQL_HOST",'localhost'),
             'HOST': os.getenv("MYSQL_HOST",'db'),
-            'PORT': '3306',
+            'PORT': os.getenv("DATABASE_PORT",'3306'),
             'PASSWORD': os.getenv("MYSQL_PASSWORD",'P@55w0rd!'),
             'OPTIONS': {
                 'autocommit': True,
             },
         }
-        # 'default': {
-        # 'NAME': 'hydro',
-        # 'ENGINE': 'django.db.backends.mysql',
-        # # 'ENGINE': 'django.db.backends.mysql',
-        # 'USER': 'root',
-        # 'HOST': 'localhost',
-        # 'PORT': '3306',
-        # 'PASSWORD': 'P@55w0rd!',
-        # 'OPTIONS': {
-        #     'autocommit': True,
-        #     },
-        # }
     }
 elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
     if os.getenv("DATABASE_HOST", None) is None:
         raise Exception("DATABASE_HOST environment variable not defined")
     DATABASES = {
             'default': {
-            'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': os.getenv("SQL_ENGINE","django.db.backends.mysql"),
             'NAME': os.getenv("DATABASE_NAME"),
             'USER': os.getenv("DATABASE_USER"),
             'PASSWORD': os.getenv("DATABASE_PASSWORD"),

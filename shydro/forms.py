@@ -1,13 +1,13 @@
-from django import forms
-from django.contrib.auth.decorators import login_required
-
-from enreg.models import *
+from bootstrap_datepicker_plus.widgets import DatePickerInput
+from crispy_forms.bootstrap import Field, FormActions, Div
 from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Submit, Row, Reset, Column, Fieldset
-from crispy_forms.bootstrap import Field, InlineField, FormActions, StrictButton, Div
+from django import forms
 from django_countries.fields import CountryField
-from enreg.models import Cargaison, Entrepot_echantillon
-from bootstrap_datepicker_plus.widgets import DatePickerInput
+
+from enreg.models import *
+from enreg.models import Cargaison
+
 
 class CodificationHydro(forms.Form):
     numdossier = forms.CharField(label="Numero du dossier :", required=True)

@@ -1,36 +1,31 @@
 import base64
 import io
 import json
+from datetime import datetime
 
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q,F, ExpressionWrapper, fields,Case, When, Value, CharField
-from django.db.models.functions import ExtractMonth, ExtractYear, Cast
-from django.shortcuts import render, redirect
-from openpyxl import Workbook
-from .tasks import export_report_task
-
-from enreg.models import *
-from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser
-from hydrocarbures.celery import app
-from .tables import *
-from .forms import *
 from django.contrib.auth.decorators import login_required
-from labo.utils import render_to_pdf
-from django.http import HttpResponse, JsonResponse
-from django_tables2.paginators import LazyPaginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import Q, F, Case, When, Value, CharField
+from django.db.models.functions import ExtractMonth, ExtractYear
+from django.http import HttpResponse
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
-from datetime import datetime
-from django.http import JsonResponse
-from .codeLabo import codeLabo, generate_labo_code
-from .numCq import numCq
-from django.core import serializers
+from django_tables2.paginators import LazyPaginator
+from openpyxl import Workbook
 
+from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser
+from enreg.models import *
+from hydrocarbures.celery import app
+from labo.utils import render_to_pdf
+from .codeLabo import generate_labo_code
+from .forms import *
+from .numCq import numCq
+from .tables import *
 
 
 #Sending email
-from django.core.mail import send_mail, EmailMessage
-from django.core.cache import cache
 
 # from django.core.mail import send_mail #Sending Email
 #

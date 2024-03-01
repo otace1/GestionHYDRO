@@ -1,9 +1,10 @@
-from django.shortcuts import render
+from django.http import HttpResponse
+import json
+
 from django.http import HttpResponse
 from django.http import QueryDict
 from fusioncharts.models import *
 
-import json
 
 def getdata(request):
 

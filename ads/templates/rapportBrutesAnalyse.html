@@ -1,4 +1,4 @@
-{% extends 'rapportsBrutes.html' %}
+{% extends 'rapportsBrutesJournalieAnal.html' %}
 {% load crispy_forms_tags %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
@@ -10,17 +10,17 @@
    <table id="data-table" class="table table-bordered display responsive" style="width:100%">
             <thead>
                 <tr>
-                    <th>Date/Heure</th>
-                    <th>Frontiere</th>
-                    <th>Declaration</th>
-                    <th>Importateur</th>
-                    <th>Entrepot</th>
-                    <th>Immatriculation</th>
-                    <th>Produit</th>
-                    <th>Volume</th>
-                    <th>Date Requisition</th>
-                    <th>Date Echantillonnage</th>
-                    <th>Date Reception Labo</th>
+                    <th>DATE</th>
+                    <th>FRONTIERE</th>
+                    <th>DECLARATION</th>
+                    <th>IMPORTATEUR</th>
+                    <th>ENTREPOT</th>
+                    <th>IMMATRICULATION</th>
+                    <th>PRODUIT</th>
+                    <th>VOLUME</th>
+                    <th>DATE REQUISITION</th>
+                    <th>DATE ECHANTILLONNAGE</th>
+                    <th>DATE RECEPTION LABO</th>
                 </tr>
             </thead>
         </table>
