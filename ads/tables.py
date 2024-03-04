@@ -283,7 +283,7 @@ class RapportBrut(tables.Table):
     gsvJauge = tables.Column(verbose_name='GSV')
     # gsvMeter = tables.Column(verbose_name='GSV (METER)')
     fraisOcc_rounded = tables.Column(verbose_name='FRAIS A PAYER')
-    actions = tables.TemplateColumn(TEMPLATE4,verbose_name='')
+    # actions = tables.TemplateColumn(TEMPLATE4,verbose_name='')
 
     class Meta:
         attrs = {

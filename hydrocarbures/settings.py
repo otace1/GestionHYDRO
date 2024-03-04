@@ -13,23 +13,18 @@ import api.authentication
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+#Env File loading here
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY",get_random_secret_key())
+DEBUG = bool(int(os.getenv("DEBUG",0)))
+ALLOWED_HOSTS = []
+ALLOWED_HOSTS.extend(
+    filter(
+        None,
+        os.getenv("DJANGO_ALLOWED_HOSTS",'').split(','),
+    )
+)
+DEVELOPMENT_MODE = bool(int(os.getenv("DEVELOPMENT_MODE",0)))
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
-DEBUG = os.getenv("DEBUG", "False") == "True"
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
-
-# SECRET_KEY = '%t(w0ix8nx()z01fq@fjbm3w+59ij53qp%h%3g2a4k3cm+)ls)'
-# DEBUG = True
-# ALLOWED HOST
-# # ENV_ALLOWED_HOST = os.environ.get('DJANGO_ALLOWED_HOST') or None
-# ALLOWED_HOSTS = ['*']
-# # if ENV_ALLOWED_HOST is not None:
-# # #     ALLOWED_HOSTS = [ ENV_ALLOWED_HOST ]
-# Random Key = fac2k*ytpgy7ve77hvw7hs(kh713bvmhn*onw_gs5jswu2a+=u
-# DEVELOPMENT_MODE = True
-# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-# ALLOWED_HOSTS = ['*']
 
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -60,6 +55,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'celery_progress',
+    # 'dotenv',
 
     'formtools',
     # 'tailwind',
@@ -75,15 +71,6 @@ INSTALLED_APPS = [
     #Ajax#
     'ajax_datatable',
 
-    #Compressor
-    # 'compressor',
-
-    # 'django-pandas',
-    # 'jquery',
-    # 'django_filters',
-    # 'import_export',
-    # 'bootstrap_modal_forms',
-    # 'reset_migrations',
 
     # My Apps
     'enreg',
@@ -279,17 +266,20 @@ USE_L10N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/static/static/'
+MEDIA_URL = '/static/media/'
 
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'assets'),
-)
+MEDIA_ROOT = '/vol/web/media'
+STATIC_ROOT = '/vol/web/static'
+
+# STATICFILES_DIRS = (
+#     os.path.join(BASE_DIR, 'assets'),
+# )
 
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+#
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-MEDIA_URL = '/media/'
 
 # DB Primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
@@ -303,15 +293,7 @@ sentry_sdk.init(
     ],
 
     traces_sample_rate=1.0,
-
-    # To set a uniform sample rate
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production
     profiles_sample_rate=1.0,
-
-    # If you wish to associate users to errors (assuming you are using
-    # django.contrib.auth) you may enable sending PII data.
     send_default_pii=True
 
 )

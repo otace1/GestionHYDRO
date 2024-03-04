@@ -405,10 +405,12 @@
                   <i class="fas fa-filter"></i> FILTRES
                 </a>
 
-                 <a class="btn btn-app bg-success" href="{% export_url "xlsx" %}">
-                  <span class="badge bg-success"></span>
+                 <a id="export-link" href="#" class="btn btn-app bg-warning">
+                  <span class="badge bg-info"></span>
                   <i class="fas fa-file-excel"></i> EXPORT EXCEL.
                 </a>
+
+                <input type="hidden" id="parameter-input" name="parameter" value="2">
 
 {#                <a class="btn btn-app bg-success" href="{% url 'synthese_importation' %}">#}
 {#                  <span class="badge bg-success"></span>#}
@@ -538,40 +540,6 @@
 }
   </script>
 
-  <script>
-  $(function () {
-    $("#example1").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-    $('#example2').DataTable({
-      "paging": true,
-      "lengthChange": false,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false,
-      "responsive": true,
-    });
-  });
-</script>
+
     </body>
     </html>

@@ -9,37 +9,57 @@ from django.contrib import admin
 if settings.DEBUG:
     import debug_toolbar
 
-urlpatterns = [
-                  path('__debug__/', include(debug_toolbar.urls)),
-                  # path('sentry-debug/', trigger_error),
-                  path('admin/', admin.site.urls),
-                  path('ads/', include('ads.urls')),
-                  path('cargaison/', include('enreg.urls')),
-                  path('shydro/', include('shydro.urls')),
-                  path('entrepot/', include('entrepot.urls')),
-                  path('labo/', include('labo.urls')),
-                  path('accounts/', include('accounts.urls')),
-                  path('facturations/', include('facturations.urls')),
-                  path('', login_user),
-                  path('__reload__/', include("django_browser_reload.urls")),
+    urlpatterns = [
+                      path('__debug__/', include(debug_toolbar.urls)),
+                      # path('sentry-debug/', trigger_error),
+                      path('admin/', admin.site.urls),
+                      path('ads/', include('ads.urls')),
+                      path('cargaison/', include('enreg.urls')),
+                      path('shydro/', include('shydro.urls')),
+                      path('entrepot/', include('entrepot.urls')),
+                      path('labo/', include('labo.urls')),
+                      path('accounts/', include('accounts.urls')),
+                      path('facturations/', include('facturations.urls')),
+                      path('', login_user),
+                      path('__reload__/', include("django_browser_reload.urls")),
 
-                  # Api
-                  path('api/', include("api.urls")),
-                  # path('verification/', include("verification.urls")),
+                      # Api
+                      path('api/', include("api.urls")),
+                      # path('verification/', include("verification.urls")),
 
-                  # Progress Bar
-                  path('celery-progress/', include('celery_progress.urls')),
+                      # Progress Bar
+                      path('celery-progress/', include('celery_progress.urls')),
 
-                  # Auth
-                  # path('api-auth/', include('rest_framework.urls')),
-                  # path('api/token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
-                  # path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
+                  ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
 
-              ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns = [
+        # path('__debug__/', include(debug_toolbar.urls)),
+        # path('sentry-debug/', trigger_error),
+        path('admin/', admin.site.urls),
+        path('ads/', include('ads.urls')),
+        path('cargaison/', include('enreg.urls')),
+        path('shydro/', include('shydro.urls')),
+        path('entrepot/', include('entrepot.urls')),
+        path('labo/', include('labo.urls')),
+        path('accounts/', include('accounts.urls')),
+        path('facturations/', include('facturations.urls')),
+        path('', login_user),
+        path('__reload__/', include("django_browser_reload.urls")),
+
+        # Api
+        path('api/', include("api.urls")),
+        # path('verification/', include("verification.urls")),
+
+        # Progress Bar
+        path('celery-progress/', include('celery_progress.urls')),
+
+    ]
+
 
 router = DefaultRouter()
 router.register('user', UserViewSerializer, basename='user')
 
 urlpatterns += router.urls
 
-# userAccessToken
+

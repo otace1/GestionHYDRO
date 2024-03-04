@@ -20,6 +20,7 @@ from openpyxl import Workbook
 
 from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation, \
     Compartiment
+from hydrocarbures.celery import app
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat
 from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, StatistiquesTable, \
@@ -12536,8 +12537,6 @@ def rapportBrutResponse(request):
         # Convert the page object to a list of dictionaries
         data = list(page)
 
-
-
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
@@ -15244,6 +15243,1126 @@ def rapportBrutResponse(request):
     })
 
 
+@login_required(login_url='login')
+# Fonction Recherche Statistique Detaillé
+def rapportBrutResponseExport(request):
+    qs = Cargaison.objects.annotate(
+        volJauge=Sum('inspection__compartiment__gov'),
+        gsvJauge=Sum('inspection__compartiment__gsv'),
+        govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+        gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+        mtaTotal=Sum('inspection__compartiment__mta'),
+        mtvTotal=Sum('inspection__compartiment__mtv'),
+        fraisOcc=Case(
+            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                 then=Sum('inspection__compartiment__gsv') * 11),
+            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+            output_field=FloatField()
+        ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                      ).values('requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
+                               'idcargaison',
+                               'dateheurecargaison__date',
+                               'requisitiondackdate',
+                               'importateur__nomimportateur',
+                               'entrepot__nomentrepot',
+                               'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                               'entrepot_echantillon__dateechantillonage__date',
+                               'frontiere__nomville',
+                               'immatriculation',
+                               'produit__nomproduit',
+                               'declaration',
+                               'volume',
+                               'inspection__temp',
+                               'impressionresultat__printDate',
+                               'inspection__dens',
+                               'inspection__dateinspection__date',
+                               'volJauge',
+                               'gsvJauge',
+                               'govMeter',
+                               'gsvMeter',
+                               'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                               )
+
+    ville = request.session['ville']
+    produit = request.session['produit']
+    importateur = request.session['importateur']
+    entrepot = request.session['entrepot']
+    date_d = request.session['date_d']
+    date_f = request.session['date_f']
+
+    if ville and produit and importateur and entrepot and date_d and date_f:
+        qs = qs.filter(entrepot__ville__idville=ville,
+                       produit_id=produit,
+                       importateur_id=importateur,
+                       entrepot_id=entrepot,
+                       dateheurecargaison__range=[date_d, date_f])
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+
+    if ville and produit and importateur and entrepot and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and importateur and entrepot and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and importateur and entrepot:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and importateur and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and importateur and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and importateur and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and importateur:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            importateur_id=importateur,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and entrepot and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and entrepot and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and entrepot and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and entrepot:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and produit:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            produit_id=produit,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and entrepot and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and entrepot and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and entrepot and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and entrepot:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and importateur:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            importateur_id=importateur,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and entrepot and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and entrepot and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and entrepot and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and entrepot:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and date_d:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if ville:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and entrepot and date_d and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and entrepot and date_d:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and entrepot and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and entrepot:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and date_d and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and date_d:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and importateur:
+        qs = qs.filter(
+            produit_id=produit,
+            importateur_id=importateur,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and entrepot and date_d and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and entrepot and date_d:
+        qs = qs.filter(
+            produit_id=produit,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and date_d and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and date_d:
+        qs = qs.filter(
+            produit_id=produit,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit and date_f:
+        qs = qs.filter(
+            produit_id=produit,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if produit:
+        qs = qs.filter(
+            produit_id=produit,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and entrepot and date_d and date_f:
+        qs = qs.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and entrepot and date_d:
+        qs = qs.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and entrepot and date_f:
+        qs = qs.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and entrepot:
+        qs = qs.filter(
+            importateur_id=importateur,
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and date_d and date_f:
+        qs = qs.filter(
+            importateur_id=importateur,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and date_d:
+        qs = qs.filter(
+            importateur_id=importateur,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur and date_f:
+        qs = qs.filter(
+            importateur_id=importateur,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if importateur:
+        qs = qs.filter(
+            importateur_id=importateur,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if entrepot and date_d and date_f:
+        qs = qs.filter(
+            entrepot__ville__idville=ville,
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if entrepot and date_d:
+        qs = qs.filter(
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if entrepot and date_f:
+        qs = qs.filter(
+            entrepot_id=entrepot,
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if entrepot:
+        qs = qs.filter(
+            entrepot_id=entrepot,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if date_d and date_f:
+        qs = qs.filter(
+            dateheurecargaison__range=[date_d, date_f],
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if date_d:
+        qs = qs.filter(
+            dateheurecargaison__date=date_d,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if date_f:
+        qs = qs.filter(
+            dateheurecargaison__date=date_f,
+        )
+        data=list(qs)
+
+        # Start Celery task to export report asynchronously
+        result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+        # Retrieve the task ID
+        task_id = result.id
+
+        message = "Export task started. Task ID: {}".format(task_id)
+        return JsonResponse({'task_id': task_id})
+
+    if not (ville and produit and importateur and entrepot and date_d and date_f):
+        qs = Cargaison.objects.annotate(
+            volJauge=Sum('inspection__compartiment__gov'),
+            gsvJauge=Sum('inspection__compartiment__gsv'),
+            govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+            gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+            mtaTotal=Sum('inspection__compartiment__mta'),
+            mtvTotal=Sum('inspection__compartiment__mtv'),
+            fraisOcc=Case(
+                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                     then=Sum('inspection__compartiment__gsv') * 11),
+                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                output_field=FloatField()
+            ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                          ).values('requisitiondackdate__date', 'dateDechargement__date',
+                                   'inspection__compartiment__vcf',
+                                   'idcargaison',
+                                   'dateheurecargaison__date',
+                                   'requisitiondackdate',
+                                   'importateur__nomimportateur',
+                                   'entrepot__nomentrepot',
+                                   'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                                   'entrepot_echantillon__dateechantillonage__date',
+                                   'frontiere__nomville',
+                                   'immatriculation',
+                                   'produit__nomproduit',
+                                   'declaration',
+                                   'volume',
+                                   'inspection__temp',
+                                   'impressionresultat__printDate',
+                                   'inspection__dens',
+                                   'inspection__dateinspection__date',
+                                   'volJauge',
+                                   'gsvJauge',
+                                   'govMeter',
+                                   'gsvMeter',
+                                   'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                                   )
+
+    data = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
 
 
 @login_required(login_url='login')
@@ -15717,7 +16836,7 @@ def topImporters(request):
     # Get the sum of volume for each product type
     top_importers = Cargaison.objects.values('importateur__nomimportateur').annotate(
         total_volume=Round(Sum('volume'), 2)
-    ).order_by('-total_volume')[:10]
+    ).order_by('-total_volume')[:8]
 
     # Serialize the queryset as a list of dictionaries
     data = list(top_importers)

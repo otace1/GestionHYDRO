@@ -48,6 +48,7 @@ urlpatterns = [
     path('rapport/brutJ/', views.rapportBrutJournalier, name='rapportBrutJournalier'),
     path('rapport/response/', views.rapportBrutResponse, name='rapportBrutResponse'),
     path('rapport/response/', views.rapportBrutResponse, name='exportRapportBrutResponse'),
+    path('rapport/export/', views.rapportBrutResponseExport, name='rapportBrutResponseExport'),
 
     path('rapport/brut/echantillonnage/', views.rapportBrutEchantillonnage, name='rapportBrutEchantillonnage'),
     path('rapport/brut/analyse/', views.rapportBrutAnalyse, name='rapportBrutAnalyse'),
