@@ -1,5 +1,7 @@
 import os
 import sys
+from pathlib import Path
+from dotenv import load_dotenv
 import dj_database_url
 import sentry_sdk
 import json
@@ -14,16 +16,24 @@ import api.authentication
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 #Env File loading here
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY",get_random_secret_key())
-DEBUG = bool(int(os.getenv("DEBUG",0)))
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+
+DEBUG = bool(int(os.environ.get("DEBUG")))
+
 ALLOWED_HOSTS = []
 ALLOWED_HOSTS.extend(
     filter(
         None,
-        os.getenv("DJANGO_ALLOWED_HOSTS",'').split(','),
+        os.environ.get("ALLOWED_HOSTS",'').split(','),
     )
 )
-DEVELOPMENT_MODE = bool(int(os.getenv("DEVELOPMENT_MODE",0)))
+
+
+
+DEVELOPMENT_MODE = bool(int(os.environ.get("DEVELOPMENT_MODE")))
 
 
 INTERNAL_IPS = [
@@ -70,7 +80,6 @@ INSTALLED_APPS = [
 
     #Ajax#
     'ajax_datatable',
-
 
     # My Apps
     'enreg',
@@ -134,7 +143,7 @@ REST_FRAMEWORK = {
 }
 
 # API KEY Secret
-API_KEY_SECRET = os.getenv("API_SECRET")
+API_KEY_SECRET = os.environ.get("API_SECRET")
 
 
 IMPORT_EXPORT_USE_TRANSACTIONS = True
@@ -152,12 +161,10 @@ DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap4-responsive.html"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # 'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django_session_timeout.middleware.SessionTimeoutMiddleware',
-
-
     'corsheaders.middleware.CorsMiddleware',
-
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -200,31 +207,32 @@ WSGI_APPLICATION = 'hydrocarbures.wsgi.application'
 if DEVELOPMENT_MODE is True:
     DATABASES = {
         'default': {
-            'NAME': os.getenv("MYSQL_DATABASE_NAME",'hydro'),
-            'ENGINE': os.getenv("SQL_ENGINE","django.db.backends.mysql"),
-            'USER': os.getenv("MYSQL_USER",'root'),
-            'HOST': os.getenv("MYSQL_HOST",'db'),
-            'PORT': os.getenv("DATABASE_PORT",'3306'),
-            'PASSWORD': os.getenv("MYSQL_PASSWORD",'P@55w0rd!'),
+            'NAME':str(os.environ.get("DATABASE_NAME")),
+            'ENGINE': 'django.db.backends.mysql',
+            'USER': str(os.environ.get("DATABASE_USER")),
+            'HOST': str(os.environ.get("DATABASE_HOST")),
+            'PORT': os.environ.get("DATABASE_PORT"),
+            'PASSWORD': str(os.environ.get("DATABASE_PASSWORD")),
             'OPTIONS': {
                 'autocommit': True,
             },
         }
     }
-elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
-    if os.getenv("DATABASE_HOST", None) is None:
+else:
+    if os.environ.get("DATABASE_HOST") is None:
         raise Exception("DATABASE_HOST environment variable not defined")
     DATABASES = {
-            'default': {
-            'ENGINE': os.getenv("SQL_ENGINE","django.db.backends.mysql"),
-            'NAME': os.getenv("DATABASE_NAME"),
-            'USER': os.getenv("DATABASE_USER"),
-            'PASSWORD': os.getenv("DATABASE_PASSWORD"),
-            'HOST': os.getenv("DATABASE_HOST"),
-            'PORT': os.getenv("DATABASE_PORT"),
+        'default': {
+            'NAME':str(os.environ.get("DATABASE_NAME")),
+            'ENGINE': 'django.db.backends.mysql',
+            'USER': str(os.environ.get("DATABASE_USER")),
+            'HOST': str(os.environ.get("DATABASE_HOST")),
+            'PORT': os.environ.get("DATABASE_PORT"),
+            'PASSWORD': str(os.environ.get("DATABASE_PASSWORD")),
             'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'ssl': {'ca': '/app/hydrocarbures/ca.crt'},
+                'autocommit': True,
+                # 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                # 'ssl': {'ca': '/app/hydrocarbures/ca.crt'},
             },
         }
     }
@@ -266,19 +274,16 @@ USE_L10N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = '/static/static/'
-MEDIA_URL = '/static/media/'
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
 
-MEDIA_ROOT = '/vol/web/media'
-STATIC_ROOT = '/vol/web/static'
+STATIC_ROOT = "/vol/web/static"
+MEDIA_ROOT = "/vol/web/media"
 
-# STATICFILES_DIRS = (
-#     os.path.join(BASE_DIR, 'assets'),
-# )
-
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-#
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATICFILES_DIRS = [
+    Path(BASE_DIR).joinpath("assets"),
+    # Add other directories if needed
+]
 
 
 # DB Primary key
@@ -304,7 +309,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # CELERY SETTINGS
 #
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER", "redis://redis:6379/0")
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER")
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

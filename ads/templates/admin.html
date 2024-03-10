@@ -103,7 +103,7 @@
             <th>DATE/HEURE</th>
             <th>FRONTIERE</th>
             <th>IMPORTATEUR</th>
-            <th>ENTREPOT</th>
+{#            <th>ENTREPOT</th>#}
             <th>PRODUIT</th>
             <th>VOLUME</th>
         </tr>
@@ -112,9 +112,9 @@
     <script>
         $(document).ready(function () {
            // Function to reload DataTable
-        function reloadDataTable() {
-            // Destroy the existing DataTable
-            $('#data-table').DataTable().destroy();
+        {#function reloadDataTable() {#}
+        {#    // Destroy the existing DataTable#}
+        {#    $('#data-table').DataTable().destroy();#}
 
             // Reinitialize the DataTable with updated data
             $('#data-table').DataTable({
@@ -141,20 +141,20 @@
                     { data: 'dateheurecargaison' },
                     { data: 'frontiere__nomville' },
                     { data: 'importateur__nomimportateur' },
-                    { data: 'entrepot__nomentrepot' },
+                    {#{ data: 'entrepot__nomentrepot' },#}
                     { data: 'produit__nomproduit' },
                     { data: 'volume' },
                 ],
             });
-        }
-
-        // Initial call to load DataTable
-        reloadDataTable();
-
-        // Set interval to periodically reload DataTable every 30 seconds (adjust interval as needed)
-        setInterval(reloadDataTable, 60000); // 30 seconds
-
         })
+        {##}
+        {#// Initial call to load DataTable#}
+        {#reloadDataTable();#}
+        {##}
+        {#// Set interval to periodically reload DataTable every 30 seconds (adjust interval as needed)#}
+        {#setInterval(reloadDataTable, 60000); // 30 seconds#}
+{##}
+{#        })#}
     </script>
 </table>
 
