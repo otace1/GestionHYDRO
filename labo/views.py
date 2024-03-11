@@ -3554,7 +3554,7 @@ def receptionRapportsResponse(request):
     ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
 
     # Number of items to show per page
-    items_per_page = 10
+    items_per_page = 15
 
     # Initialize the Paginator with the QuerySet and the number of items per page
     paginator = Paginator(qs, items_per_page)
@@ -5326,6 +5326,24 @@ def enchAttenteReception(request):
     context = {'table': table}
     return render(request,template,context)
 
+@login_required(login_url='login')
+def enchAttenteReception2(request):
+    user = request.user.id
+    template = 'laboRapport2.html'
+    qs = Cargaison.objects.filter(
+        etat='Echantillonner',
+        entrepot__ville__affectationville__username_id=user
+    ).values(
+        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
+        'entrepot__nomentrepot','importateur__nomimportateur',
+        'produit__nomproduit','entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteReception(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    context = {'table': table}
+    return render(request,template,context)
+
 
 @login_required(login_url='login')
 def enchAttenteReceptionExport(request):
@@ -5355,6 +5373,33 @@ def enchAttenteReceptionExport(request):
     return JsonResponse({'task_id': task_id})
 
 
+@login_required(login_url='login')
+def enchAttenteReceptionExport2(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        etat='Echantillonner',
+        entrepot__ville__affectationville__username_id=user
+    ).values(
+        'numdos','entrepot_echantillon__numrappechauto','entrepot_echantillon__dateechantillonage',
+        'entrepot__nomentrepot','importateur__nomimportateur',
+        'produit__nomproduit','entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteReception(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+
+    serialized_qs = list(qs)
+
+        # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task', args=[export_format, serialized_qs])
+
+        # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
 
 
 @login_required(login_url='login')
@@ -5378,11 +5423,65 @@ def enchAttenteResultat(request):
         return exporter.response("table.{}".format(export_format))
 
     context = {'table': table}
+    return (render(request, template, context)
+
+
+
+@login_required(login_url='login'))
+def enchAttenteResultat2(request):
+    user = request.user.id
+    template = 'laboRapportEnAttenteAnalyse2.html'
+    qs = Cargaison.objects.filter(
+        etat='Analyse Labo en cours',
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
+        'importateur__nomimportateur','produit__nomproduit',
+        'entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteResultat(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
     return render(request, template, context)
 
 
 @login_required(login_url='login')
 def enchAttenteResultatExport(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        etat='Analyse Labo en cours',
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot__nomentrepot',
+        'importateur__nomimportateur','produit__nomproduit',
+        'entrepot_echantillon__qte'
+    )
+    table = RapportLaboratoireEnAttenteResultat(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+
+    serialized_qs = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task_Attente_Res', args=[export_format, serialized_qs])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
+
+@login_required(login_url='login')
+def enchAttenteResultatExport2(request):
     user = request.user.id
     qs = Cargaison.objects.filter(
         etat='Analyse Labo en cours',
@@ -5435,6 +5534,30 @@ def enchAttenteValidation(request):
 
 
 @login_required(login_url='login')
+def enchAttenteValidation2(request):
+    user = request.user.id
+    template = 'laboRapportEnAttenteValidation2.html'
+    qs = Cargaison.objects.filter(
+        etat='Validation en cours 2',
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot__nomentrepot','importateur__nomimportateur',
+        'produit__nomproduit'
+    )
+    table = RapportLaboratoireEnAttenteValidation(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
 def enchPrintedCert(request):
     user = request.user.id
     template = 'laboRapportCertImprimer.html'
@@ -5459,7 +5582,59 @@ def enchPrintedCert(request):
 
 
 @login_required(login_url='login')
+def enchPrintedCert2(request):
+    user = request.user.id
+    template = 'laboRapportCertImprimer.html'
+    qs = Cargaison.objects.filter(
+        impressionresultat__isPrinted=1,
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
+        'produit__nomproduit'
+    )
+    table = RapportLaboratoireEnchPrintedCert(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+
+    context = {'table': table}
+    return render(request, template, context)
+
+
+@login_required(login_url='login')
 def enchPrintedCertExport(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        impressionresultat__isPrinted=1,
+        entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'entrepot_echantillon__dateechantillonage','entrepot_echantillon__laboreception__datereceptionlabo','numdos',
+        'entrepot_echantillon__numrappechauto','entrepot_echantillon__laboreception__codelabo','entrepot_echantillon__laboreception__numcertificatqualite',
+        'entrepot__nomentrepot','importateur__nomimportateur','impressionresultat__printDate',
+        'produit__nomproduit'
+    )
+    table = RapportLaboratoireEnchPrintedCert(qs)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 20}).configure(table)
+
+    export_format = 'xlsx'
+    serialized_qs = list(qs)
+
+    # Start Celery task to export report asynchronously
+    result = app.send_task('labo.tasks.export_report_task_cert_imprimer', args=[export_format, serialized_qs])
+
+    # Retrieve the task ID
+    task_id = result.id
+
+    message = "Export task started. Task ID: {}".format(task_id)
+    return JsonResponse({'task_id': task_id})
+
+
+@login_required(login_url='login')
+def enchPrintedCertExport2(request):
     user = request.user.id
     qs = Cargaison.objects.filter(
         impressionresultat__isPrinted=1,

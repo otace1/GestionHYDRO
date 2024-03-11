@@ -1,23 +1,10 @@
-from datetime import datetime
-
+from datetime import datetime as dt
 from accounts.models import *
 from enreg.models import *
 
-
 def numCq(v):
-    current_date = datetime.now()
+    current_date = dt.now()
     current_year = current_date.year
-
-    # last_code_result_current = LaboReception.objects.filter(
-    #     datereceptionlabo__year=current_year,
-    #     idcargaison__idcargaison__entrepot__ville__idville=v
-    # ).aggregate(last_code=Max('numcertificatqualite'))
-    #
-    # # Use the 'get' method to retrieve the 'last_code' value
-    # last_code = last_code_result_current.get('last_code', 0)
-    # if last_code is None:
-    #     last_code = 0
-    # return last_code
 
     query = f'''
                 SELECT l.idcargaison_id, c.idcargaison, MAX(l.numcertificatqualite) as last_code
@@ -36,40 +23,4 @@ def numCq(v):
     for result in last_code_result:
         last_code = result.last_code
 
-    # print('LAST CODE:')
-    # print(last_code)
-
     return last_code
-
-
-
-    # with transaction.atomic():
-    #     # Fetch the current maximum numcertificatqualite value while acquiring a lock
-    #     max_cert_query = LaboReception.objects.filter(
-    #         datereceptionlabo__year=year_value,
-    #         idcargaison__idcargaison__entrepot__ville=v
-    #     ).order_by('-numcertificatqualite').first()
-    #
-    #     if max_cert_query:
-    #         numcertificatqualite = max_cert_query.numcertificatqualite
-    #     else:
-    #         numcertificatqualite = 0
-    # return numcertificatqualite
-
-
-# def verificationCQ(num,ville,pk):
-#     c = Entrepot_echantillon.objects.get(idcargaison=pk)
-#     year_value = c.dateechantillonage.year
-#
-#     last_code = LaboReception.objects.filter(
-#         datereceptionlabo__year=year_value,
-#         idcargaison__idcargaison__entrepot__ville=ville
-#     ).aggregate(Max('numcertificatqualite'))['numcertificatqualite__max']
-#
-#     if last_code is None:
-#         if num != 1:
-#             num = 1
-#     else:
-#         if num != last_code + 1:
-#             num = last_code + 1
-#     return num

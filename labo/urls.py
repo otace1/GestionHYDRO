@@ -107,12 +107,19 @@ urlpatterns = [
 
     #Different Rapport et Compteur Labo
     path('enchAttenteReception/', views.enchAttenteReception, name='enchAttenteReception'),
+    path('enchAttenteReception2/', views.enchAttenteReception2, name='enchAttenteReception2'),
     path('enchAttenteReceptionExport/', views.enchAttenteReceptionExport, name='enchAttenteReceptionExport'),
+    path('enchAttenteReceptionExport2/', views.enchAttenteReceptionExport2, name='enchAttenteReceptionExport2'),
     path('enchAttenteResultat/', views.enchAttenteResultat, name='enchAttenteResultat'),
+    path('enchAttenteResultat2/', views.enchAttenteResultat2, name='enchAttenteResultat2'),
     path('enchAttenteResultatExport/', views.enchAttenteResultatExport, name='enchAttenteResultatExport'),
+    path('enchAttenteResultatExport2/', views.enchAttenteResultatExport2, name='enchAttenteResultatExport2'),
     path('enchAttenteValidation/', views.enchAttenteValidation, name='enchAttenteValidation'),
+    path('enchAttenteValidation2/', views.enchAttenteValidation2, name='enchAttenteValidation2'),
     path('enchPrintedCert/', views.enchPrintedCert, name='enchPrintedCert'),
+    path('enchPrintedCert2/', views.enchPrintedCert2, name='enchPrintedCert2'),
     path('enchPrintedCertExport/', views.enchPrintedCertExport, name='enchPrintedCertExport'),
+    path('enchPrintedCertExport2/', views.enchPrintedCertExport2, name='enchPrintedCertExport2'),
 
 
     #Rapport au niveaux des acteurs du labo
