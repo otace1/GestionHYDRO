@@ -45,6 +45,17 @@
   <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
   {% block extra_js%}
   {% endblock %}
+<style>
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+        }
+
+        .content-wrapper {
+            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+        }
+    </style>
 </head>
 <!-- sidebar: style can be found in sidebar.less -->
   <body class="hold-transition sidebar-mini- layout-fixed">
@@ -327,25 +338,16 @@
             <div class="row">
                     <a class="btn btn-app bg-danger" href="{% url 'dashboard' %}">
                   <span class="badge bg-success"></span>
-                  <i class="fas fa-backward"></i> Retour
+                  <i class="fas fa-backward"></i> RETOUR
                 </a>
-{##}
-{#                <a class="btn btn-app bg-success" href="{% url 'synthese_importation' %}">#}
-{#                  <span class="badge bg-success"></span>#}
-{#                  <i class="fas fa-file"></i> Synthèse importation#}
-{#                </a>#}
-{##}
-{#                <a class="btn btn-app bg-warning" href="{% url 'synthese_production' %}">#}
-{#                  <span class="badge bg-success"></span>#}
-{#                  <i class="fas fa-file"></i> Synthèse production#}
-{#                </a>#}
+
             </div>
 
                 <div class="row">
                     <div class="col-12">
                     <div class="card">
               <div class="card-header" style="background-color: darkgreen">
-                <h3 class="card-title font-weight-bold" style="color: white">Rapports en attente d'inspection</h3>
+                <h3 class="card-title font-weight-bold" style="color: white">CARGAISONS EN ATTENTE D'INSPECTION</h3>
               </div>
               <!-- /.card-header -->
               <div class="card-body">

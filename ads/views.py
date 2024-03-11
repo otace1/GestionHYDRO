@@ -16798,7 +16798,8 @@ def chartJsGraph(request):
 def lastRecords(request):
     latest_cargaisons = Cargaison.objects.filter(etat="En attente requisition").values(
         'dateheurecargaison','frontiere__nomville','importateur__nomimportateur','entrepot__nomentrepot','produit__nomproduit','volume'
-    ).order_by('-dateheurecargaison')[:7]
+    ).order_by('-dateheurecargaison')[:5]
+
 
     # Convert the page object to a list of dictionaries
     data = list(latest_cargaisons)
@@ -16836,7 +16837,7 @@ def topImporters(request):
     # Get the sum of volume for each product type
     top_importers = Cargaison.objects.values('importateur__nomimportateur').annotate(
         total_volume=Round(Sum('volume'), 2)
-    ).order_by('-total_volume')[:8]
+    ).order_by('-total_volume')[:10]
 
     # Serialize the queryset as a list of dictionaries
     data = list(top_importers)
