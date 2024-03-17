@@ -318,20 +318,20 @@ CELERY_RESULT_BACKEND = 'django-db'
 # CELERY_TIMEZONE = 'Africa/Lubumbashi'
 
 
-if DEVELOPMENT_MODE is not True:
-    #Static and Media Files Storage
-    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
-    AWS_DEFAULT_ACL = os.environ.get("AWS_DEFAULT_ACL")
-    AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL") # Make sure nyc3 is correct
-    AWS_S3_OBJECT_PARAMETERS = {
-        'CacheControl': 'max-age=86400'
-    }
-
-    AWS_STATIC_LOCATION = 'static'
-    STATIC_URL = '%s/%s' % (AWS_S3_ENDPOINT_URL, AWS_STATIC_LOCATION)
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
+# if DEVELOPMENT_MODE is not True:
+#     #Static and Media Files Storage
+#     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+#     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+#     AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+#     AWS_DEFAULT_ACL = os.environ.get("AWS_DEFAULT_ACL")
+#     AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL") # Make sure nyc3 is correct
+#     AWS_S3_OBJECT_PARAMETERS = {
+#         'CacheControl': 'max-age=86400'
+#     }
+#
+#     AWS_STATIC_LOCATION = 'static'
+#     STATIC_URL = '%s/%s' % (AWS_S3_ENDPOINT_URL, AWS_STATIC_LOCATION)
+#     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+#
 
 
