@@ -19,13 +19,17 @@ from labo.utils import render_to_pdf
 
 
 @app.task
-def exportLargeDataSet(queryset):
+def exportLargeDataSet(export_format, queryset_data, request=None):
     try:
-        export_format = 'xlsx'
-        table = RapportBrut(queryset)
+        # Initialize the table with the queryset data
+        table = RapportBrut(queryset_data)
+
+        # If request is provided, configure pagination
+        if request:
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
         # Export the table
-        exporter = TableExport(export_format, table)
+        exporter = TableExport(export_format, table, exclude_columns=("actions"))
         file_content = exporter.export()
 
         # Generate a unique file name using datetime

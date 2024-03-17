@@ -44,10 +44,11 @@ urlpatterns = [
     path('upload-cvs/ville', views.uploadville, name='upload_ville'),
 
     path('rapport/brut/', views.rapportBrut, name='rapportBrut'),
-    # path('rapport/brutB/', views.rapportBrutB, name='rapportBrutB'),
+    path('rapport/brutEx/', views.rapportBrutExport, name='rapportBrutExport'),
+    path('rapport/filtres/', views.rapportFiltres, name='rapportFiltres'),
     path('rapport/brutJ/', views.rapportBrutJournalier, name='rapportBrutJournalier'),
     path('rapport/response/', views.rapportBrutResponse, name='rapportBrutResponse'),
-    path('rapport/response/', views.rapportBrutResponse, name='exportRapportBrutResponse'),
+    path('rapport/responseExport/', views.rapportBrutResponse, name='exportRapportBrutResponse'),
     path('rapport/export/', views.rapportBrutResponseExport, name='rapportBrutResponseExport'),
 
     path('rapport/brut/echantillonnage/', views.rapportBrutEchantillonnage, name='rapportBrutEchantillonnage'),

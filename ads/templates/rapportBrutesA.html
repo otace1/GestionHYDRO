@@ -15,7 +15,7 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="{% url 'rapportBrut' %}" method="post">
+              <form action="{% url 'rapportFiltres' %}" method="post">
                 <div class="modal-body">
                     {% csrf_token %}
                     {% crispy form %}
@@ -50,122 +50,24 @@
       <!-- /.modal -->
 
 
-{#    {% render_table table %}#}
-    <div id="progress-bar-container" style="display: none;" class="mt-3">
-                    <div id="progress-bar" class="progress" style="border-radius: 25px">
-                        <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <div id="progress-bar-label" class="mt-2">Exporting...</div>
-    </div>
+    {% render_table table %}
 
-
-
-    <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-                <tr>
-                    <th>DATE ENTR.</th>
-                    <th>FRONTIERE</th>
-                    <th>#DECL.</th>
-                    <th>FOURNISSEUR</th>
-                    <th>ENTREPOT</th>
-                    <th>IMMATRICULATION</th>
-                    <th>PRODUIT</th>
-                    <th>DATE REQ.</th>
-                    <th>DATE ECH.</th>
-                    <th>DATE REC.LABO</th>
-                    <th>DATE ANALYSE</th>
-                    <th>DATE INSPEC.</th>
-                    <th>DATE DECH.</th>
-                    <th>VOL. DECL.</th>
-                    <th>VOL. JAUGE</th>
-                    <th>VOL. METER</th>
-                    <th>DENS.</th>
-                    <th>TEMP.</th>
-                    <th>VCF</th>
-                    <th>MTA</th>
-                    <th>MTV</th>
-                    <th>GSV</th>
-                    <th>GSV Meter</th>
-                    <th>FRAIS USD</th>
-                    <th></th>
-                </tr>
-            </thead>
-    </table>
-
-
-<!-- Initialize DataTables -->
 <script>
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            ordering: false,
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'rapportBrutResponse' %}',
-                type: 'GET',
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
-            },
-            columns: [
-                { data: 'dateheurecargaison__date' }, // Use array index to access 'dateheurecargaison__date'
-                { data: 'frontiere__nomville' }, // Use array index to access 'frontiere__nomville'
-                { data: 'declaration' }, // Use array index to access 'importateur__nomimportateur'
-                { data: 'importateur__nomimportateur' }, // Use array index to access 'entrepot__nomentrepot'
-                { data: 'entrepot__nomentrepot' }, // Use array index to access 'produit__nomproduit'
-                { data: 'immatriculation' },
-                { data: 'produit__nomproduit' },
-                { data: 'requisitiondackdate__date' },
-                { data: 'entrepot_echantillon__dateechantillonage__date' },
-                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' },
-                { data: 'impressionresultat__printDate' },
-                { data: 'inspection__dateinspection__date' },
-                { data: 'dateDechargement__date' },
-                { data: 'volume' },
-                { data: 'volJauge' },
-                { data: 'govMeter' },
-                { data: 'inspection__dens' },
-                { data: 'inspection__temp' },
-                { data: 'inspection__compartiment__vcf' },
-                { data: 'mtaTotal' },
-                { data: 'mtvTotal' },
-                { data: 'gsvJauge' },
-                { data: 'gsvMeter' },
-                { data: 'fraisOcc_rounded' },
-                { // New column configuration
-                    data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
+    // Wait for the DOM to be fully loaded
+    document.addEventListener("DOMContentLoaded", function () {
+        // Get the button element by its id
+        var modalOpenBtn = document.getElementById("openModalBtn");
 
-                        // Include a button to submit the JSON data for the row
-                        const submitAfficher = '<button class="btn btn-info afficher-btn" data-row-id="' + data + '">AFFICHER</button> ';
+        // Get the modal element by its id
+        var modal = document.getElementById("modal-details");
 
-                        return submitAfficher;
-                    }
-                }// Use array index to access 'immatriculation'
-            ],
-
-        });
-
-        // Event listener for opening the modal
-        $('#data-table').on('click', '.afficher-btn', function() {
-          var rowId = $(this).data('row-id');
-          dataRow = rowId;
-          console.log(dataRow);
-
-          {#// Load content into the modal body via AJAX#}
-          {#$('#modal-lg .modal-body').load(linkURL);#}
-          {#// Show the modal#}
-          $('#modal-details').modal('show');
-        });
-    })
+        // When the user clicks the button, open the modal
+        modalOpenBtn.onclick = function () {
+            modal.style.display = "block";
+        };
+    });
 </script>
+
 
 
     <script>
@@ -191,7 +93,7 @@ async function startExport() {
     try {
 
         // Make an AJAX request to start the export process
-        const response = await fetch('{% url "rapportBrutResponseExport" %}', {
+        const response = await fetch('{% url "rapportBrutExport" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json', // Specify JSON content type

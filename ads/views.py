@@ -12428,10 +12428,105 @@ def synthese_encaissement(request):
 @login_required(login_url='login')
 def rapportBrut(request):
     template = "rapportBrutesA.html"
-    form = RechercheStat()
-    context = {'form': form}
 
-    if request.method=='POST':
+    request.session['ville'] = ''
+    request.session['produit'] = ''
+    request.session['importateur'] = ''
+    request.session['entrepot'] = ''
+    request.session['date_d'] = ''
+    request.session['date_f'] = ''
+
+    qs = Cargaison.objects.annotate(
+        volJauge=Round(Sum('inspection__compartiment__gov'),3),
+        gsvJauge=Round(Sum('inspection__compartiment__gsv'),3),
+        govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),3),
+        gsvMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),3),
+        mtaTotal=Round(Sum('inspection__compartiment__mta'),3),
+        mtvTotal=Round(Sum('inspection__compartiment__mtv'),3),
+        fraisOcc=Case(
+            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                 then=Sum('inspection__compartiment__gsv') * 11),
+            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+            output_field=FloatField()
+        ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                      ).values('requisitiondackdate__date', 'dateDechargement__date',
+                               'inspection__compartiment__vcf',
+                               'idcargaison',
+                               'dateheurecargaison__date',
+                               'requisitiondackdate',
+                               'importateur__nomimportateur',
+                               'entrepot__nomentrepot',
+                               'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                               'entrepot_echantillon__dateechantillonage__date',
+                               'frontiere__nomville',
+                               'immatriculation',
+                               'produit__nomproduit',
+                               'declaration',
+                               'volume',
+                               'inspection__temp',
+                               'impressionresultat__printDate',
+                               'inspection__dens',
+                               'inspection__dateinspection__date',
+                               'volJauge',
+                               'gsvJauge',
+                               'govMeter',
+                               'gsvMeter',
+                               'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                               )
+    table = RapportBrut(qs)
+    form = RechercheStat()
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                     "per_page": 15}).configure(table)
+
+    context = {
+        'form': form,
+        'table': table,
+    }
+    return render(request, template, context)
+
+
+
+@login_required(login_url='login')
+def rapportFiltres(request):
+    template = "rapportBrutesA.html"
+    qs = Cargaison.objects.annotate(
+        volJauge=Round(Sum('inspection__compartiment__gov'), 3),
+        gsvJauge=Round(Sum('inspection__compartiment__gsv'), 3),
+        govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'), 3),
+        gsvMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'), 3),
+        mtaTotal=Round(Sum('inspection__compartiment__mta'), 3),
+        mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3),
+        fraisOcc=Case(
+            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                 then=Sum('inspection__compartiment__gsv') * 11),
+            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+            output_field=FloatField()
+        ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                      ).values('requisitiondackdate__date', 'dateDechargement__date',
+                               'inspection__compartiment__vcf',
+                               'idcargaison',
+                               'dateheurecargaison__date',
+                               'requisitiondackdate',
+                               'importateur__nomimportateur',
+                               'entrepot__nomentrepot',
+                               'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                               'entrepot_echantillon__dateechantillonage__date',
+                               'frontiere__nomville',
+                               'immatriculation',
+                               'produit__nomproduit',
+                               'declaration',
+                               'volume',
+                               'inspection__temp',
+                               'impressionresultat__printDate',
+                               'inspection__dens',
+                               'inspection__dateinspection__date',
+                               'volJauge',
+                               'gsvJauge',
+                               'govMeter',
+                               'gsvMeter',
+                               'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                               )
+    if request.method == 'POST':
         ville = request.POST['ville']
         produit = request.POST['produit']
         importateur = request.POST['importateur']
@@ -12445,16 +12540,3694 @@ def rapportBrut(request):
         request.session['entrepot'] = entrepot
         request.session['date_d'] = date_d
         request.session['date_f'] = date_f
-        return render(request, template, context)
-    else:
-        request.session['ville'] = ''
-        request.session['produit'] = ''
-        request.session['importateur'] = ''
-        request.session['entrepot'] = ''
-        request.session['date_d'] = ''
-        request.session['date_f'] = ''
-        return render(request, template, context)
 
+        if ville and produit and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(entrepot__ville__idville=ville,
+                           produit_id=produit,
+                           importateur_id=importateur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__range=[date_d, date_f])
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and entrepot and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and entrepot and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit:
+            qs = qs.filter(
+                produit_id=produit,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot and date_d:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and date_d and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and date_d:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur:
+            qs = qs.filter(
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot and date_d:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot and date_f:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if date_d and date_f:
+            qs = qs.filter(
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if date_d:
+            qs = qs.filter(
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if date_f:
+            qs = qs.filter(
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if not (ville and produit and importateur and entrepot and date_d and date_f):
+            qs = Cargaison.objects.annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                              ).values('requisitiondackdate__date', 'dateDechargement__date',
+                                       'inspection__compartiment__vcf',
+                                       'idcargaison',
+                                       'dateheurecargaison__date',
+                                       'requisitiondackdate',
+                                       'importateur__nomimportateur',
+                                       'entrepot__nomentrepot',
+                                       'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                                       'entrepot_echantillon__dateechantillonage__date',
+                                       'frontiere__nomville',
+                                       'immatriculation',
+                                       'produit__nomproduit',
+                                       'declaration',
+                                       'volume',
+                                       'inspection__temp',
+                                       'impressionresultat__printDate',
+                                       'inspection__dens',
+                                       'inspection__dateinspection__date',
+                                       'volJauge',
+                                       'gsvJauge',
+                                       'govMeter',
+                                       'gsvMeter',
+                                       'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                                       )
+
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+    else:
+        ville = request.session['ville']
+        produit = request.session['produit']
+        importateur = request.session['importateur']
+        entrepot = request.session['entrepot']
+        date_d = request.session['date_d']
+        date_f = request.session['date_f']
+
+        if ville and produit and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(entrepot__ville__idville=ville,
+                           produit_id=produit,
+                           importateur_id=importateur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__range=[date_d, date_f])
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and importateur:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and produit:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and importateur:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if ville:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and entrepot:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and importateur:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and entrepot and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and entrepot and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if produit:
+            qs = qs.filter(
+                produit_id=produit,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot and date_d:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and entrepot:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and date_d and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and date_d:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if importateur:
+            qs = qs.filter(
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot and date_d:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot and date_f:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if entrepot:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if date_d and date_f:
+            qs = qs.filter(
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if date_d:
+            qs = qs.filter(
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if date_f:
+            qs = qs.filter(
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+        if not (ville and produit and importateur and entrepot and date_d and date_f):
+            qs = Cargaison.objects.annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                              ).values('requisitiondackdate__date', 'dateDechargement__date',
+                                       'inspection__compartiment__vcf',
+                                       'idcargaison',
+                                       'dateheurecargaison__date',
+                                       'requisitiondackdate',
+                                       'importateur__nomimportateur',
+                                       'entrepot__nomentrepot',
+                                       'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                                       'entrepot_echantillon__dateechantillonage__date',
+                                       'frontiere__nomville',
+                                       'immatriculation',
+                                       'produit__nomproduit',
+                                       'declaration',
+                                       'volume',
+                                       'inspection__temp',
+                                       'impressionresultat__printDate',
+                                       'inspection__dens',
+                                       'inspection__dateinspection__date',
+                                       'volJauge',
+                                       'gsvJauge',
+                                       'govMeter',
+                                       'gsvMeter',
+                                       'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                                       )
+
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+
+            context = {
+                'form': form,
+                'table': table,
+            }
+            return render(request, template, context)
+
+
+@login_required(login_url='login')
+def rapportBrutExport(request):
+    qs = Cargaison.objects.annotate(
+        volJauge=Round(Sum('inspection__compartiment__gov'), 3),
+        gsvJauge=Round(Sum('inspection__compartiment__gsv'), 3),
+        govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'), 3),
+        gsvMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'), 3),
+        mtaTotal=Round(Sum('inspection__compartiment__mta'), 3),
+        mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3),
+        fraisOcc=Case(
+            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                 then=Sum('inspection__compartiment__gsv') * 11),
+            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+            output_field=FloatField()
+        ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                      ).values('requisitiondackdate__date', 'dateDechargement__date',
+                               'inspection__compartiment__vcf',
+                               'idcargaison',
+                               'dateheurecargaison__date',
+                               'requisitiondackdate',
+                               'importateur__nomimportateur',
+                               'entrepot__nomentrepot',
+                               'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                               'entrepot_echantillon__dateechantillonage__date',
+                               'frontiere__nomville',
+                               'immatriculation',
+                               'produit__nomproduit',
+                               'declaration',
+                               'volume',
+                               'inspection__temp',
+                               'impressionresultat__printDate',
+                               'inspection__dens',
+                               'inspection__dateinspection__date',
+                               'volJauge',
+                               'gsvJauge',
+                               'govMeter',
+                               'gsvMeter',
+                               'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                               )
+
+    if request.method == 'POST':
+        ville = request.session['ville']
+        produit = request.session['produit']
+        importateur = request.session['importateur']
+        entrepot = request.session['entrepot']
+        date_d = request.session['date_d']
+        date_f = request.session['date_f']
+
+        if ville and produit and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(entrepot__ville__idville=ville,
+                           produit_id=produit,
+                           importateur_id=importateur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__range=[date_d, date_f])
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+        if ville and produit and importateur and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and importateur and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and importateur and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and importateur and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and importateur and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and importateur and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and importateur:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and produit:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                produit_id=produit,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and importateur and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and importateur and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and importateur and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and importateur and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+
+        if ville and importateur and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and importateur and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and importateur:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and entrepot and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and entrepot and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and entrepot:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and date_d:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if ville:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and entrepot and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and entrepot and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and entrepot:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and importateur:
+            qs = qs.filter(
+                produit_id=produit,
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and entrepot and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and entrepot and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and date_d and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and date_d:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit and date_f:
+            qs = qs.filter(
+                produit_id=produit,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if produit:
+            qs = qs.filter(
+                produit_id=produit,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and entrepot and date_d and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and entrepot and date_d:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and entrepot and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and entrepot:
+            qs = qs.filter(
+                importateur_id=importateur,
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and date_d and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and date_d:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur and date_f:
+            qs = qs.filter(
+                importateur_id=importateur,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if importateur:
+            qs = qs.filter(
+                importateur_id=importateur,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if entrepot and date_d and date_f:
+            qs = qs.filter(
+                entrepot__ville__idville=ville,
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if entrepot and date_d:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if entrepot and date_f:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if entrepot:
+            qs = qs.filter(
+                entrepot_id=entrepot,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if date_d and date_f:
+            qs = qs.filter(
+                dateheurecargaison__range=[date_d, date_f],
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if date_d:
+            qs = qs.filter(
+                dateheurecargaison__date=date_d,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if date_f:
+            qs = qs.filter(
+                dateheurecargaison__date=date_f,
+            )
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
+
+        if not (ville and produit and importateur and entrepot and date_d and date_f):
+            qs = Cargaison.objects.annotate(
+                volJauge=Sum('inspection__compartiment__gov'),
+                gsvJauge=Sum('inspection__compartiment__gsv'),
+                govMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),
+                gsvMeter=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),
+                mtaTotal=Sum('inspection__compartiment__mta'),
+                mtvTotal=Sum('inspection__compartiment__mtv'),
+                fraisOcc=Case(
+                    When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
+                         then=Sum('inspection__compartiment__gsv') * 11),
+                    default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
+                    output_field=FloatField()
+                ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
+                              ).values('requisitiondackdate__date', 'dateDechargement__date',
+                                       'inspection__compartiment__vcf',
+                                       'idcargaison',
+                                       'dateheurecargaison__date',
+                                       'requisitiondackdate',
+                                       'importateur__nomimportateur',
+                                       'entrepot__nomentrepot',
+                                       'entrepot_echantillon__laboreception__datereceptionlabo__date',
+                                       'entrepot_echantillon__dateechantillonage__date',
+                                       'frontiere__nomville',
+                                       'immatriculation',
+                                       'produit__nomproduit',
+                                       'declaration',
+                                       'volume',
+                                       'inspection__temp',
+                                       'impressionresultat__printDate',
+                                       'inspection__dens',
+                                       'inspection__dateinspection__date',
+                                       'volJauge',
+                                       'gsvJauge',
+                                       'govMeter',
+                                       'gsvMeter',
+                                       'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+                                       )
+
+            table = RapportBrut(qs)
+            form = RechercheStat()
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                             "per_page": 15}).configure(table)
+            export_format = 'xlsx'
+            if TableExport.is_valid_format(export_format):
+                serialized_qs = list(qs)
+
+                # Start Celery task to export report asynchronously
+                result = app.send_task('ads.tasks.exportLargeDataSet', args=[export_format, serialized_qs])
+
+                # Retrieve the task ID
+                task_id = result.id
+
+                message = "Export task started. Task ID: {}".format(task_id)
+                return JsonResponse({'task_id': task_id})
+            
 
 @login_required(login_url='login')
 # Fonction Recherche Statistique Detaillé

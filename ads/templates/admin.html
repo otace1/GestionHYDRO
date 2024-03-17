@@ -256,11 +256,15 @@
     {#</div>#}
 
     <script>
+    const csrfToken = '{{ csrf_token }}';
         $(document).ready(function () {
             // Fetch data from the productCount view
             $.ajax({
                 url: '{% url 'productCount' %}',
-                type: 'GET',
+                type: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+                },
                 success: function (response) {
                     // Update the info-boxes with the retrieved data
                     $('#gasoilCount').text(response.data.gasoilCount.toLocaleString());

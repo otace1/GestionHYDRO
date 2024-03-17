@@ -23,7 +23,7 @@ TEMPLATE3 = """
  """
 
 TEMPLATE4 = """
-<a href="" class="btn btn-success" id="detailsButton"> Details
+<a class="btn btn-success" id="openModalBtn">DETAILS
  """
 
 class EntrepotTable(tables.Table):
@@ -275,16 +275,16 @@ class RapportBrut(tables.Table):
     entrepot__cargaison__dateDechargement = tables.Column(verbose_name='DATE DECH.')
     volume = tables.Column(verbose_name='VOL. DECL.')
     volJauge = tables.Column(verbose_name='VOL. JAUGE')
-    vol = tables.Column(verbose_name='VOL. JAUGE')
+    govMeter = tables.Column(verbose_name='VOL. METER')
     inspection__dens = tables.Column(verbose_name='DENS.15')
     inspection__temp = tables.Column(verbose_name='TEMP.')
     inspection__compartiment__vcf = tables.Column(verbose_name='VCF')
     mtaTotal = tables.Column(verbose_name='MTA')
     mtvTotal = tables.Column(verbose_name='MTV')
-    gsvJauge = tables.Column(verbose_name='GSV')
-    gsvMeter = tables.Column(verbose_name='GSV (COMPT.)')
+    gsvJauge = tables.Column(verbose_name='GSV JAUGE')
+    gsvMeter = tables.Column(verbose_name='GSV METER')
     fraisOcc_rounded = tables.Column(verbose_name='FRAIS A PAYER')
-    # actions = tables.TemplateColumn(TEMPLATE4,verbose_name='')
+    actions = tables.TemplateColumn(TEMPLATE4,verbose_name='')
 
     class Meta:
         attrs = {

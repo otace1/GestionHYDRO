@@ -6,3 +6,5 @@ venv/
 gestionhydro-k8s-kubeconfig.yaml
 minikube-darwin-arm64
 data
+/DevDocker
+.kube/k8s-gestionhydro-kubeconfig.yaml

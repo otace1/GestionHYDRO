@@ -337,67 +337,6 @@
             <!-- Main content -->
             <div class="container-fluid">
             <!-- Info boxes -->
-{#        <div class="row">#}
-{#          <div class="col-12 col-sm-6 col-md-3">#}
-{#            <div class="info-box">#}
-{#              <span class="info-box-icon bg-info elevation-1"><i class="fas fa-file-archive"></i></span>#}
-{##}
-{#              <div class="info-box-content">#}
-{#                <span class="info-box-text">Nombre d'importations</span>#}
-{#                <span class="info-box-number">#}
-{#                  10#}
-{#                  <small>%</small>#}
-{#                </span>#}
-{#              </div>#}
-{#              <!-- /.info-box-content -->#}
-{#            </div>#}
-{#            <!-- /.info-box -->#}
-{#          </div>#}
-{#          <!-- /.col -->#}
-{#          <div class="col-12 col-sm-6 col-md-3">#}
-{#            <div class="info-box mb-3">#}
-{#              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-thumbtack"></i></span>#}
-{##}
-{#              <div class="info-box-content">#}
-{#                <span class="info-box-text">Volume déclaré</span>#}
-{#                <span class="info-box-number">41,410</span>#}
-{#              </div>#}
-{#              <!-- /.info-box-content -->#}
-{#            </div>#}
-{#            <!-- /.info-box -->#}
-{#          </div>#}
-{#          <!-- /.col -->#}
-{##}
-{#          <!-- fix for small devices only -->#}
-{#          <div class="clearfix hidden-md-up"></div>#}
-{##}
-{#          <div class="col-12 col-sm-6 col-md-3">#}
-{#            <div class="info-box mb-3">#}
-{#              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-thumbs-up"></i></span>#}
-{##}
-{#              <div class="info-box-content">#}
-{#                <span class="info-box-text">Volume Certifié</span>#}
-{#                <span class="info-box-number">760</span>#}
-{#              </div>#}
-{#              <!-- /.info-box-content -->#}
-{#            </div>#}
-{#            <!-- /.info-box -->#}
-{#          </div>#}
-{#          <!-- /.col -->#}
-{#          <div class="col-12 col-sm-6 col-md-3">#}
-{#            <div class="info-box mb-3">#}
-{#              <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>#}
-{##}
-{#              <div class="info-box-content">#}
-{#                <span class="info-box-text"></span>#}
-{#                <span class="info-box-number">2,000</span>#}
-{#              </div>#}
-{#              <!-- /.info-box-content -->#}
-{#            </div>#}
-{#            <!-- /.info-box -->#}
-{#          </div>#}
-{#          <!-- /.col -->#}
-{#        </div>#}
         <!-- /.row -->
             <div class="row">
                     <a class="btn btn-app bg-danger" href="{% url 'dashboard' %}">
@@ -405,7 +344,7 @@
                   <i class="fas fa-backward"></i> RETOUR
                 </a>
 
-                 <a class="btn btn-app bg-danger" href="">
+                 <a class="btn btn-app bg-danger" href="{% url 'rapportBrut' %}">
                   <span class="badge bg-success"></span>
                   <i class="fas fa-recycle"></i> CLEAR
                 </a>
@@ -442,6 +381,12 @@
               </div>
               <!-- /.card-header -->
               <div class="card-body">
+                  <div id="progress-bar-container" style="display: none;" class="mt-3">
+                    <div id="progress-bar" class="progress" style="border-radius: 25px">
+                        <div id="progress-bar-inner" class="progress-bar" role="progressbar" style="width: 0%;border-radius: 25px;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div id="progress-bar-label" class="mt-2">Exporting...</div>
+    </div>
                 {% block content %}
                 {% endblock %}
               </div>
