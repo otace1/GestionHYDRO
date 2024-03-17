@@ -1,5 +1,6 @@
 FROM nginxinc/nginx-unprivileged:1.15
 
+
 ## Copy configuration files
 #RUN rm /etc/nginx/conf.d/defaul.conf
 COPY ./default.conf /etc/nginx/conf.d/default.conf
