@@ -15,5 +15,6 @@ COPY ./requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+
 ## Run Celery worker when the container launches
 #CMD celery -A hydrocarbures worker --loglevel=info --concurrency 4 -E -b rediss://default:AVNS_BYb1N7gemjfX_bH3Zc5@db-redis-sfo3-68436-do-user-4618658-0.c.db.ondigitalocean.com:25061
