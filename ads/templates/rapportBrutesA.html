@@ -5,13 +5,181 @@
 
 
 {% block content %}
+
+    <div class="modal fade" id="modal-rapport">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Filtres des rapports</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+              <form action="{% url 'rapportFiltres' %}" method="post">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </div>
+              </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+      <!-- /.modal -->
+
+    <div class="modal fade" id="modal-details">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Listes des documents</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+              <form action="" method="post">
+                <div class="modal-body">
+
+                </div>
+              </form>
+          </div>
+          <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
+      <!-- /.modal -->
+
+
     {% render_table table %}
 
-     <!-- Optional: Add Bootstrap JavaScript for table styling -->
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    // Wait for the DOM to be fully loaded
+    document.addEventListener("DOMContentLoaded", function () {
+        // Get the button element by its id
+        var modalOpenBtn = document.getElementById("openModalBtn");
 
-    <!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+        // Get the modal element by its id
+        var modal = document.getElementById("modal-details");
+
+        // When the user clicks the button, open the modal
+        modalOpenBtn.onclick = function () {
+            modal.style.display = "block";
+        };
+    });
+</script>
+
+
+
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Add click event listener to the export link
+    document.querySelector("#export-link").addEventListener("click", function(event) {
+        event.preventDefault(); // Prevent the default action of the link
+
+        // Hide the export link
+        this.style.display = "none";
+
+        // Show the progress bar
+        document.getElementById("progress-bar-container").style.display = "block";
+
+        // Start the export process
+        startExport();
+    });
+});
+
+async function startExport() {
+    event.preventDefault();
+
+    try {
+
+        // Make an AJAX request to start the export process
+        const response = await fetch('{% url "rapportBrutExport" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // Specify JSON content type
+                'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token in the request header
+
+            },
+
+        });
+		console.log(response)
+
+        // Check if the response is successful
+        if (!response.ok) {
+            throw new Error('Failed to start export task.');
+        }
+
+        // Parse the response as JSON
+        const data = await response.json();
+
+        // Update progress bar based on task ID
+        if (data.task_id) {
+            updateProgressBar(data.task_id);
+        } else {
+            throw new Error('Task ID not found in response.');
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
+    }
+}
+
+function updateProgressBar(taskId) {
+    const progressBar = document.getElementById('progress-bar-inner');
+    const progressBarLabel = document.getElementById('progress-bar-label');
+
+    function checkProgress() {
+        // Get the parameter value from the input field or any other source
+        const parameterValue = parseInt(document.getElementById('parameter-input').value);
+
+        fetch(`/shydro/checkExportTaskStatus/${taskId}?parameter=${parameterValue}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.state === 'PENDING') {
+                    const progress = data.progress;
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                    progressBarLabel.textContent = `Exporting... ${progress}%`;
+					const parameterInput = document.getElementById('parameter-input');
+					parameterInput.value = progress;
+                    // Check progress again after 1 second
+                    setTimeout(checkProgress, 1000);
+                } else if (data.state === 'SUCCESS') {
+					// Update progress bar to 100%
+					progressBar.style.width = '100%';
+					progressBar.setAttribute('aria-valuenow', 100);
+					progressBarLabel.textContent = 'Export completed!';
+
+					// Trigger file download
+					downloadFile(data.result.file_url, data.result.file_name);
+				} else if (data.state === 'FAILURE') {
+                    // Task failed, display error message or retry option
+                    progressBarLabel.textContent = 'Export failed!';
+                } else {
+                    // Handle other task states as needed
+                }
+            });
+    }
+
+    // Start checking progress
+    checkProgress();
+}
+
+
+function downloadFile(fileUrl, fileName) {
+    // Create an anchor element
+    const anchor = document.createElement('a');
+    anchor.href = fileUrl;
+    anchor.download = fileName;
+
+    // Append the anchor to the body and trigger a click event
+    document.body.appendChild(anchor);
+    anchor.click();
+
+    // Remove the anchor from the body
+    document.body.removeChild(anchor);
+}
+</script>
+
 
 {% endblock %}
 

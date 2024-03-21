@@ -1,4 +1,5 @@
-from django.urls import path, include
+from django.urls import path
+
 from ads import views
 
 urlpatterns = [
@@ -43,16 +44,18 @@ urlpatterns = [
     path('upload-cvs/ville', views.uploadville, name='upload_ville'),
 
     path('rapport/brut/', views.rapportBrut, name='rapportBrut'),
+    path('rapport/brutEx/', views.rapportBrutExport, name='rapportBrutExport'),
+    path('rapport/filtres/', views.rapportFiltres, name='rapportFiltres'),
     path('rapport/brutJ/', views.rapportBrutJournalier, name='rapportBrutJournalier'),
     path('rapport/response/', views.rapportBrutResponse, name='rapportBrutResponse'),
-    path('rapport/response/', views.rapportBrutResponse, name='exportRapportBrutResponse'),
+    path('rapport/responseExport/', views.rapportBrutResponse, name='exportRapportBrutResponse'),
+    path('rapport/export/', views.rapportBrutResponseExport, name='rapportBrutResponseExport'),
 
     path('rapport/brut/echantillonnage/', views.rapportBrutEchantillonnage, name='rapportBrutEchantillonnage'),
     path('rapport/brut/analyse/', views.rapportBrutAnalyse, name='rapportBrutAnalyse'),
 
     path('rapport/brut/inspection/', views.rapportBrutInspection, name='rapportBrutInspection'),
-    path('chartJs/', views.chartJs, name='chartJs'),
-
+    path('chartJs/', views.chartJsGraph, name='chartJs'),
 
     path('response/brut/journalier/', views.responseBrutJournalier, name='responseBrutJournalier'),
     path('response/brut/journalier/', views.responseBrutJournalier, name='exportBrutJournalier'),
@@ -63,7 +66,9 @@ urlpatterns = [
     path('response/brut/inspection/', views.responseRapportBrutInspection, name='responseRapportBrutInspection'),
     path('response/brut/inspection/', views.responseRapportBrutInspection, name='exportRapportBrutInspection'),
 
-
+    path('response/latest/', views.lastRecords, name='lastRecords'),
+    path('response/products/', views.productCount, name='productCount'),
+    path('response/topImporters/', views.topImporters, name='topImporters'),
 
 
 ]
