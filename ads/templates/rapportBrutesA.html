@@ -37,11 +37,12 @@
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-              <form action="" method="post">
-                <div class="modal-body">
-
-                </div>
-              </form>
+              <div class="modal-body" id="impressionResultatsList">
+                    <!-- File list will be displayed here -->
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              </div>
           </div>
           <!-- /.modal-content -->
         </div>
@@ -49,26 +50,7 @@
     </div>
       <!-- /.modal -->
 
-
     {% render_table table %}
-
-<script>
-    // Wait for the DOM to be fully loaded
-    document.addEventListener("DOMContentLoaded", function () {
-        // Get the button element by its id
-        var modalOpenBtn = document.getElementById("openModalBtn");
-
-        // Get the modal element by its id
-        var modal = document.getElementById("modal-details");
-
-        // When the user clicks the button, open the modal
-        modalOpenBtn.onclick = function () {
-            modal.style.display = "block";
-        };
-    });
-</script>
-
-
 
     <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -179,6 +161,89 @@ function downloadFile(fileUrl, fileName) {
     document.body.removeChild(anchor);
 }
 </script>
+
+<script>
+$(document).ready(function() {
+    // Add click event listener to the button class
+    $('.openModalBtn').click(function() {
+        // Retrieve the idcargaison value from the data attribute
+        var idcargaison = $(this).data('idcargaison');
+
+        // Trigger the modal corresponding to the clicked button
+        openModal(idcargaison);
+    });
+
+    function openModal(idcargaison) {
+        // Make an AJAX request to fetch files for the given idcargaison
+        $.ajax({
+            url: "{% url 'getDocuments' %}", // Use Django url template tag to get the URL
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token in request headers
+            },
+            data: {
+                idcargaison: idcargaison  // Pass idcargaison as data
+            },
+            success: function(response) {
+            // Display data in modal body
+            var pdf_re = response.pdf_re;
+            var pdf_ri = response.pdf_ri;
+            var pdf_cq = response.pdf_cq;
+
+            // Display PDFs
+            displayPdf('pdf_re', pdf_re, '#pdf_re_container');
+            displayPdf('pdf_ri', pdf_ri, '#pdf_ri_container');
+            displayPdf('pdf_cq', pdf_cq, '#pdf_cq_container');
+        },
+        error: function(xhr, status, error) {
+            console.error('Failed to fetch files:', error);
+        }
+        });
+
+        // Open the modal corresponding to the idcargaison
+        $('#modal-details').modal('show');
+
+        // Store the idcargaison into a variable or perform any other operation
+        console.log("idcargaison:", idcargaison);
+    }
+
+    // Function to display PDFs
+function displayPdf(pdfType, pdfData, containerSelector) {
+    var container = $(containerSelector);
+    if (pdfData) {
+        // If PDF data is available, display "Document available" and add a download button
+        container.html('<p>Document available</p><button onclick="downloadPdf(\'' + pdfData + '\')">Download</button>');
+    } else {
+        // If PDF data is not available, display "Document not available"
+        container.html('<p>Document not available</p>');
+    }
+}
+
+// Function to download PDF
+function downloadPdf(pdfData) {
+    // Decode base64 encoded string and create a blob
+    var byteCharacters = atob(pdfData);
+    var byteNumbers = new Array(byteCharacters.length);
+    for (var i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    var byteArray = new Uint8Array(byteNumbers);
+    var blob = new Blob([byteArray], { type: 'application/pdf' });
+
+    // Create a temporary anchor element and trigger download
+    var a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = 'document.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+
+
+});
+</script>
+
 
 
 {% endblock %}

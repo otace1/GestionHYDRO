@@ -59,6 +59,8 @@ class GestionCodification():
                         entrepot__ville__affectationville__username_id=id
                         ).count()
 
+                    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,entrepot__ville__affectationville__username_id=id).count()
+
                     return render(request, 'shydro.html', {
                         'e':e,
                         'd':d,
@@ -66,6 +68,7 @@ class GestionCodification():
                         'n':n,
                         'p':p,
                         'c':c,
+                        'i':i
 
                     })
                 else:
@@ -88,13 +91,17 @@ class GestionCodification():
                         entrepot__ville__affectationville__username_id=id
                     ).count()
 
+                    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+                                                 entrepot__ville__affectationville__username_id=id).count()
+
                     return render(request, 'shydro.html', {
-                        'e':e,
-                        'd':d,
-                        'l':l,
-                        'n':n,
-                        'p':p,
-                        'c':c,
+                        'e': e,
+                        'd': d,
+                        'l': l,
+                        'n': n,
+                        'p': p,
+                        'c': c,
+                        'i': i
 
                     })
             else:
@@ -115,14 +122,19 @@ class GestionCodification():
                     entrepot__ville__affectationville__username_id=id
                 ).count()
 
-                context = {
-                    'e':e,
-                    'd':d,
-                    'l':l,
-                    'n':n,
-                    'p':p,
-                    'c':c,
-                }
+                i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+                                             entrepot__ville__affectationville__username_id=id).count()
+
+                return render(request, 'shydro.html', {
+                    'e': e,
+                    'd': d,
+                    'l': l,
+                    'n': n,
+                    'p': p,
+                    'c': c,
+                    'i': i
+
+                })
                 return render(request, 'shydro.html', context)
         else:
             return redirect('logout')
@@ -703,7 +715,7 @@ def enAttenteEchantillonnage(request):
     template = 'enAttenteEchantillonnage.html'
     qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
     table = EnAttenteEchantillonage(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -729,7 +741,7 @@ def enAttenteDechargement(request):
             AND aa.username_id = %s",[user,])
 
     table = EnAttenteDechargement(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -744,7 +756,7 @@ def enAttenteResultatLabo(request):
     template = 'enAttenteResultatLabo.html'
     qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteResultatLabo(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -772,7 +784,36 @@ def enAttenteReceptionLabo(request):
         'dateechantillonage__date',
     )
     table = EnAttenteReceptionLabo(qs)
-    RequestConfig(request, paginate={"per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
+
+
+
+
+@login_required(login_url='login')
+def enAttenteInspection(request):
+    user = request.user.id
+    template = 'enAttenteInspection.html'
+    qs = Entrepot_echantillon.objects.filter(
+        idcargaison__inspection__dateinspection__isnull=True,
+        idcargaison__entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'idcargaison__numdos',
+        'idcargaison__declaration',
+        'idcargaison__importateur__nomimportateur',
+        'idcargaison__entrepot__nomentrepot',
+        'idcargaison__produit__nomproduit',
+        'idcargaison__immatriculation',
+        'idcargaison__requisitiondackdate',
+        'dateechantillonage__date',
+    )
+    table = EnAttenteInspection(qs)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
@@ -800,7 +841,7 @@ def rapportActivite(request):
 
     # qs = list(qs)
     table = RapportActivite(qs)
-    RequestConfig(request, paginate={"per_page": 7}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     context = {
         'table':table,
         'form':form
@@ -841,7 +882,7 @@ def responseRapportActivite(request):
         )
 
     # Number of items to show per page
-    items_per_page = 8
+    items_per_page = 15
 
     # Initialize the Paginator with the QuerySet and the number of items per page
     paginator = Paginator(qs, items_per_page)
@@ -947,7 +988,7 @@ def regularisation(request):
         ).order_by('-dateheurecargaison')
 
     table = Regularisation(qs)
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
     context = {
         'table':table,
         'form':form,
@@ -1122,7 +1163,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1163,7 +1204,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1204,7 +1245,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1244,7 +1285,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1284,7 +1325,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1324,7 +1365,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1370,7 +1411,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1410,7 +1451,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1450,7 +1491,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1490,7 +1531,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1529,7 +1570,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1568,7 +1609,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1607,7 +1648,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1646,7 +1687,7 @@ def rapportActiviteFiltrePost(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = 'xlsx'
             if TableExport.is_valid_format(export_format):
@@ -1707,7 +1748,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -1740,7 +1781,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -1773,7 +1814,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1804,7 +1845,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -1836,7 +1877,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1867,7 +1908,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1898,7 +1939,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1928,7 +1969,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1959,7 +2000,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -1990,7 +2031,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2021,7 +2062,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2051,7 +2092,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2081,7 +2122,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2111,7 +2152,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2141,7 +2182,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2462,7 +2503,7 @@ def rapportActiviteFiltre(request):
             ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2985,7 +3026,7 @@ def regularisationRecherche(request):
             ).order_by('-dateheurecargaison')
 
             table = Regularisation(qs)
-            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             context = {
                 'table': table,
                 'form': form,
@@ -3564,4 +3605,11 @@ def gestionGoResponse(request):
         'recordsFiltered': paginator.count,
     })
 
+
+
+@login_required(login_url='login')
+def tableaudeBordHydro(request):
+    template = 'dashboardHydro.html'
+    context={}
+    return render(request,template,context)
 

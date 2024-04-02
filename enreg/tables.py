@@ -24,11 +24,11 @@ class CargaisonTable(tables.Table):
     produit = tables.Column(verbose_name='PRODUIT')
 
     class Meta:
-        attrs = {
-            "class": "table table-bordered table-striped",
-            "id": "example1"
-        }
-        # template_name = "django_tables2/bootstrap4.html"
+        # attrs = {
+        #     "class": "table table-bordered table-striped",
+        #     "id": "example1"
+        # }
+        template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume','print']
         exclude = ['dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
@@ -37,4 +37,4 @@ class CargaisonTable(tables.Table):
                     'tonnageair','transitaire',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
-                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration']
+                   'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration','numCertInspection']

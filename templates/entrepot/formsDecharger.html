@@ -219,23 +219,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}

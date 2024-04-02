@@ -187,23 +187,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -310,37 +317,12 @@
                 </a>
             </div>
 
-
-{##}
-{#             <div class="row">#}
-{#                 <a href="{% url 'rapportCq' %}" class="btn btn-app bg-warning">#}
-{#                  <span class="badge bg-info"></span>#}
-{#                  <i class="fas fa-envelope"></i> RAPPORTS D'ACTIVITES#}
-{#                </a>#}
-{#            </div>#}
-
-
-
             <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header" style="background-color: darkgreen">
-                            <h1 class="card-title" style="color: white"><b>EN ATTENTE DE VALIDATION</b></h1>
-                            <div class="card-tools">
-                        </div>
-                        </div>
-                        <div class="card-body">
-                            {% block content %}
 
-                            {% endblock %}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <!-- Small boxes (Stat box) -->
                     <div class="row">
-                      <div class="col-lg-6 col-6">
+                      <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-info">
                           <div class="inner">
@@ -355,7 +337,7 @@
                         </div>
                       </div>
                       <!-- ./col -->
-                      <div class="col-lg-6 col-6">
+                      <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-success">
                           <div class="inner">
@@ -370,7 +352,7 @@
                         </div>
                       </div>
                       <!-- ./col -->
-                      <div class="col-lg-6 col-6">
+                      <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-warning">
                           <div class="inner">
@@ -385,7 +367,7 @@
                         </div>
                       </div>
                       <!-- ./col -->
-                      <div class="col-lg-6 col-6">
+                      <div class="col-lg-3 col-6">
                         <!-- small box -->
                         <div class="small-box bg-danger">
                           <div class="inner">
@@ -404,6 +386,22 @@
                     <!-- /.row -->
                 </div>
 
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header" style="background-color: darkgreen">
+                            <h1 class="card-title" style="color: white"><b>EN ATTENTE DE VALIDATION</b></h1>
+                            <div class="card-tools">
+                        </div>
+                        </div>
+                        <div class="card-body">
+                            {% block content %}
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
             </div>
     </section>
         <!-- /.content -->

@@ -221,23 +221,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -318,13 +325,13 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0 text-dark"><b>Dashboard & KPIs</b></h1>
+                    <h1 class="m-0 text-dark"><b>Tableau de bord</b></h1>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
                         <li class="breadcrumb-item"><a href="#">Accueil</a></li>
                         <li class="breadcrumb-item active">Département</li>
-                        <li class="breadcrumb-item active">Dashboard</li>
+                        <li class="breadcrumb-item active">Tableau de bord</li>
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -343,7 +350,7 @@
                 </div>
             </div><!-- /.row -->
             <div class="row">
-                <div class="col-md-3 col-sm-6 col-12">
+                <div class="col-md-2 col-sm-3 col-12">
                     <div class="info-box bg-info">
                         <span class="info-box-icon"><i class="far fa-file"></i></span>
                         <div class="info-box-content">
@@ -355,7 +362,7 @@
                     </div>
                     <!-- /.info-box -->
                 </div>
-                <div class="col-md-3 col-sm-6 col-12">
+                <div class="col-md-2 col-sm-3 col-12">
                     <div class="info-box bg-success">
                         <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
                         <div class="info-box-content">
@@ -367,11 +374,23 @@
                     </div>
                     <!-- /.info-box -->
                 </div>
-                <div class="col-md-3 col-sm-6 col-12">
+                <div class="col-md-2 col-sm-3 col-12">
                     <div class="info-box bg-warning">
                         <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
                         <div class="info-box-content">
-                            <span class="info-box-text">En cours d'analyse</span>
+                            <span class="info-box-text">En attente de réception Labo</span>
+                            <span class="info-box-number">{{ i }}</span>
+                            <a href="{% url 'rapportAttenteReception' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-3 col-12">
+                    <div class="info-box bg-warning">
+                        <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente de résultat d'analyse</span>
                             <span class="info-box-number">{{ l }}</span>
                             <a href="{% url 'rapportBrutAnalyse' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
@@ -379,11 +398,23 @@
                     </div>
                     <!-- /.info-box -->
                 </div>
-                <div class="col-md-3 col-sm-6 col-12">
+                <div class="col-md-2 col-sm-3 col-12">
                     <div class="info-box bg-danger">
                         <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
                         <div class="info-box-content">
                             <span class="info-box-text">En attente d'inspection</span>
+                            <span class="info-box-number">{{ m }}</span>
+                            <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-3 col-12">
+                    <div class="info-box bg-danger">
+                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente de déchargement</span>
                             <span class="info-box-number">{{ m }}</span>
                             <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
                         </div>

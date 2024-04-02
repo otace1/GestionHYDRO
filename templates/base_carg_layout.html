@@ -229,23 +229,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -335,11 +342,20 @@
                       </div><!-- /.col -->
                   </div><!-- /.row -->
 
-                  <div class="col-md-2">
-                      <button type="button" class="btn btn-outline-success" data-toggle="modal" data-target="#modal-xl">
-                          NOUVEL ENREGISTREMENT
-                      </button>
+                  <div class="row">
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-success" data-toggle="modal" data-target="#modal-xl">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-plus-circle"></i>AJOUT
+                        </button>
+                    </div>
                   </div>
+
+{#                  <div class="col-md-2">#}
+{#                      <button type="button" class="btn btn-outline-success" data-toggle="modal" data-target="#modal-xl">#}
+{#                          NOUVEL ENREGISTREMENT#}
+{#                      </button>#}
+{#                  </div>#}
 
               </div><!-- /.container-fluid -->
           </div>
@@ -349,29 +365,24 @@
               <div class="container-fluid">
                   <div class="row">
                       <div class="col-12">
-
                           <div class="card">
-              <div class="card-header" style="background-color: darkgreen">
-                <h3 class="card-title font-weight-bold" style="color: white">Relevé des cargaisons enregistrées</h3>
-              </div>
-              <!-- /.card-header -->
-              <div class="card-body">
-                <table id="example2" class="table-responsive table-bordered table-hover">
-                                                      {% block content %}
-                                  {% endblock %}
-                </table>
-              </div>
-              <!-- /.card-body -->
-            </div>
-
-
-
+                              <div class="card-header" style="background-color: darkgreen">
+                                <h3 class="card-title font-weight-bold" style="color: white">RELEVÉ DES CARGAISONS ENREGISTRÉES</h3>
+                              </div>
+                              <!-- /.card-header -->
+                              <div class="card-body">
+                                <table id="example2" class="table-responsive table-bordered table-hover">
+                                    {% block content %}
+                                    {% endblock %}
+                                </table>
+                              </div>
+                              <!-- /.card-body -->
+                          </div>
                       </div>
                   </div>
 
               </div>
               <!-- /.col -->
-
       <!-- /.row -->
     </section>
     <!-- /.content -->
@@ -457,66 +468,6 @@
         {% endblock %}
 
     })
-</script>
-
-   <script>
-  $(function () {
-    $("#example1").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 7, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-    $("#DechargementTable").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-
-    $('#example2').DataTable({
-      "paging": true,
-      "lengthChange": false,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false,
-      "responsive": true,
-    });
-  });
 </script>
 
 </body>

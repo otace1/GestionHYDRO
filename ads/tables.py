@@ -23,7 +23,7 @@ TEMPLATE3 = """
  """
 
 TEMPLATE4 = """
-<a class="btn btn-success" id="openModalBtn">DETAILS
+<a class="btn btn-success openModalBtn" data-toggle="modal" data-target="#modal-details-{{ record.idcargaison }}" data-idcargaison="{{ record.idcargaison }}" data-url="{% url 'getDocuments' %}">DETAILS</a>
  """
 
 class EntrepotTable(tables.Table):
@@ -260,6 +260,7 @@ class SyntheseEncaissement(tables.Table):
 
 
 class RapportBrut(tables.Table):
+    idcargaison = tables.Column(visible=False)
     dateheurecargaison__date = tables.Column(verbose_name="DATE ENTREE")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE")
     declaration = tables.Column(verbose_name='#DECL.')

@@ -229,23 +229,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -331,7 +338,8 @@
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="">Accueil</a></li>
-                            <li class="breadcrumb-item active">Controle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Régularisation des cargaisons</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -343,10 +351,10 @@
         <section class="content">
             <div class="container-fluid">
             <div class="row">
-                <a class="btn btn-app bg-danger" href="{% url 'codification' %}">
-                  <span class="badge bg-purple"></span>
-                  <i class="fas fa-backward"></i> Retour
-                </a>
+{#                <a class="btn btn-app bg-danger" href="{% url 'codification' %}">#}
+{#                  <span class="badge bg-purple"></span>#}
+{#                  <i class="fas fa-backward"></i> Retour#}
+{#                </a>#}
                 <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-enreg">
                   <span class="badge bg-purple"></span>
                   <i class="fas fa-trailer"></i> N.Enreg.
@@ -374,7 +382,7 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header bg-gradient-dark">
-                                <h1 class="card-title"><b>IMPORTATIONS DE L'ENTITE</b></h1>
+                                <h1 class="card-title"><b>LISTES DES CARGAISONS DE L'ENTITE</b></h1>
                                 <div class="card-tools">
                                     {% block export %}{% endblock %}
                                 </div>

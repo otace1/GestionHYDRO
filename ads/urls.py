@@ -65,10 +65,19 @@ urlpatterns = [
     path('response/brut/analyse/', views.responseRapportBrutAnalyse, name='exportRapportBrutAnalyse'),
     path('response/brut/inspection/', views.responseRapportBrutInspection, name='responseRapportBrutInspection'),
     path('response/brut/inspection/', views.responseRapportBrutInspection, name='exportRapportBrutInspection'),
+    path('response/brut/attenteReception/', views.rapportAttenteReception, name='rapportAttenteReception'),
+    path('response/brut/attenteReception/rsp/', views.responseRapportattenteReception, name='responseRapportattenteReception'),
+
 
     path('response/latest/', views.lastRecords, name='lastRecords'),
     path('response/products/', views.productCount, name='productCount'),
     path('response/topImporters/', views.topImporters, name='topImporters'),
+
+
+    path('document/getDocuments/', views.getDocuments, name='getDocuments'),
+
+
+
 
 
 ]

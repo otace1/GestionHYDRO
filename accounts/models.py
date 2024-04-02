@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
@@ -13,6 +14,10 @@ import firebase_admin
 from firebase_admin import credentials, auth
 import datetime
 import os
+
+#Env File loading here
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 from enreg.models import Entrepot, Ville
 
@@ -126,16 +131,16 @@ class MyUser(AbstractBaseUser):
         """
         if not firebase_admin._apps:
             crt = {
-                  "type": os.getenv("TYPE"),
-                  "project_id": os.getenv("POJECT_ID"),
-                  "private_key_id": os.getenv("PRIVATE_KEY_ID"),
-                  "private_key": os.getenv("PRIVATE_KEY"),
-                  "client_email": os.getenv("CLIENT_EMAIL"),
-                  "client_id": os.getenv("CLIENT_ID"),
-                  "auth_uri": os.getenv("AUTH_URL"),
-                  "token_uri": os.getenv("TOKEN_URL"),
-                  "auth_provider_x509_cert_url": os.getenv("AUTH_PROVIDER"),
-                  "client_x509_cert_url": os.getenv("CLIENT_X509")
+                  "type": os.environ.get("TYPE"),
+                  "project_id": os.environ.get("POJECT_ID"),
+                  "private_key_id": os.environ.get("PRIVATE_KEY_ID"),
+                  "private_key": os.environ.get("PRIVATE_KEY"),
+                  "client_email": os.environ.get("CLIENT_EMAIL"),
+                  "client_id": os.environ.get("CLIENT_ID"),
+                  "auth_uri": os.environ.get("AUTH_URL"),
+                  "token_uri": os.environ.get("TOKEN_URL"),
+                  "auth_provider_x509_cert_url": os.environ.get("AUTH_PROVIDER"),
+                  "client_x509_cert_url": os.environ.get("CLIENT_X509")
                 }
 
             cred = credentials.Certificate(crt)

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime as dt
 
 from django.db.models import *
 
@@ -7,7 +7,7 @@ from enreg.models import *
 
 
 def numDossier(ville,pk):
-    current_date = datetime.now()
+    current_date = dt.now()
     current_year = current_date.year
 
     # Get the record

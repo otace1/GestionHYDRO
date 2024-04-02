@@ -232,8 +232,8 @@ else:
             'PASSWORD': str(os.environ.get("DATABASE_PASSWORD")),
             'OPTIONS': {
                 'autocommit': True,
-                # 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                # 'ssl': {'ca': '/app/hydrocarbures/ca.crt'},
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'ssl': {'ca': '/app/hydrocarbures/ca.crt'},
             },
         }
     }

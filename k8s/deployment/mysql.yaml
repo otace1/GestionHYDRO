@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  labels:
+    app: mysql-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mysql-deployment
+  template:
+    metadata:
+      labels:
+        app: mysql-deployment
+    spec:
+      initContainers:
+        - name: init-mysql
+          image: mysql
+          envFrom:
+            #            - configMapRef:
+            #                name: django-configmap
+            - secretRef:
+                name: django-deploy-env
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Creating database and user..."
+              mysql -h mysql -u root -p"${MYSQL_ROOT_PASSWORD}" <<-EOSQL
+                CREATE DATABASE IF NOT EXISTS your_database_name;
+                CREATE USER 'your_username'@'%' IDENTIFIED BY 'your_password';
+                GRANT ALL PRIVILEGES ON your_database_name.* TO 'your_username'@'%';
+                FLUSH PRIVILEGES;
+              EOSQL
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: database-pvc
+      containers:
+        - name: mysql-server
+          image: mysql
+          envFrom:
+            #            - configMapRef:
+            #                name: django-configmap
+            - secretRef:
+                name: django-deploy-env
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: database-pvc
+      volumes:
+        - name: database-pvc
+          persistentVolumeClaim:
+            claimName: database-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql-deployment
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306

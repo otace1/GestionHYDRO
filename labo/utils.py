@@ -24,13 +24,18 @@ def link_callback(uri, rel):
     elif uri.startswith(sUrl):
         path = os.path.join(sRoot, uri.replace(sUrl, ""))
     else:
+        print('TEST')
+        print('TEST FIRS CONDI')
+        print(uri)
         return uri  # handle absolute uri (ie: http://some.tld/foo.png)
 
-    # make sure that file exists
-    if not os.path.isfile(path):
-        raise Exception(
-            'media URI must start with %s or %s' % (sUrl, mUrl)
-        )
+    # # make sure that file exists
+    # if not os.path.isfile(path):
+    #     print('TEST')
+    #     print(uri)
+    #     raise Exception(
+    #         'media URI must start with %s or %s' % (sUrl, mUrl)
+    #     )
     return path
 
 

@@ -6,6 +6,7 @@ from PIL import Image
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponse, redirect
+from django_tables2 import RequestConfig, LazyPaginator
 
 from .forms import Ajoutcargaison, AjoutCargaison
 from .models import *
@@ -33,7 +34,7 @@ def showTableauTemplate(request):
     form = Ajoutcargaison()
     table = CargaisonTable(qs)
     template = 'cargaison/cargaison.html'
-    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 12}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
     context = {
         'table':table,
         'form':form,
@@ -77,10 +78,7 @@ class GestionCargaison():
                 qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,dateheurecargaison__year=today.year)
                 table = CargaisonTable(qs)
                 data = list(qs.values())
-                # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-
-                # return JsonResponse({'data': data})
-                #
+                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
                 return render(request, 'cargaison/cargaison.html', {
                     'cargaison': table,
                     'form': form,
@@ -93,9 +91,7 @@ class GestionCargaison():
                     qs = Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison')
                     table = CargaisonTable(qs)
                     data = list(qs.values())
-                    # RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-                    # return JsonResponse({'data': data})
-
+                    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
                     return render(request, 'cargaison/cargaison.html', {
                         'cargaison': table,
                         'form': form,
@@ -124,69 +120,6 @@ class GestionCargaison():
             context = {'form': form}
             return render(request, template, context)
 
-    # @login_required(login_url='login')
-    # def enregistrementCargaison(request):
-    #     user = request.user
-    #     role = user.role_id
-    #     id = user.id
-    #     u = user.username
-    #     d = date.today()
-    #     if role == 2 or role == 1 or role == 7:
-    #         template = 'cargaison/cargaison_form.html'
-    #
-    #         if request.method == "POST":
-    #             # Get Form DATA
-    #             voie = request.POST['voie']
-    #             importateur = request.POST['importateur']
-    #             produit = request.POST['produit']
-    #             frontiere = request.POST['frontiere']
-    #             provenance = request.POST['provenance']
-    #             entrepot = request.POST['entrepot']
-    #             volume = float(request.POST['volume'])
-    #             immatriculation = request.POST['immatriculation']
-    #
-    #             # Field ajouter
-    #             typeunitetransport = request.POST['typeunitetransport']
-    #             volume15 = float(request.POST['volume15'])
-    #             volume20 = float(request.POST['volume20'])
-    #             tonnagevide = float(request.POST['tonnagevide'])
-    #             tonnageair = float(request.POST['tonnagevide'])
-    #
-    #             if voie == '' or frontiere == '' or importateur == '' or provenance == '' or entrepot == '' or produit == '' or volume == '' or immatriculation == '':
-    #                 vide = 0
-    #                 return JsonResponse({'error': form.errors, 'vide': vide}, status=400)
-    #
-    #             # verification de la quantite saisie
-    #             volume = float(volume)
-    #             if volume > 500:
-    #                 vol = 0
-    #                 return JsonResponse({'error': form.errors, 'vol': vol},
-    #                                     status=400)
-    #
-    #             # Gestion des cles etrangeres
-    #             v = Voie.objects.get(pk=voie)
-    #             i = Importateur.objects.get(pk=importateur)
-    #             p = Produit.objects.get(pk=produit)
-    #             f = Ville.objects.get(pk=frontiere)
-    #             e = Entrepot.objects.get(pk=entrepot)
-    #             g = TypeUniteTransport.objects.get(idunite=typeunitetransport)
-    #
-    #             # Assignation de l'etat de l'enregistrenment
-    #             etat = ("En attente requisition")
-    #
-    #             # Utilisation de l'UUID comme id unique dans la base de donnee
-    #             code = str(uuid.uuid4())
-    #             p = Cargaison(voie=v, importateur=i, produit=p, frontiere=f, provenance=provenance, entrepot=e,
-    #                           volume=volume, immatriculation=immatriculation, typeunitetransport=g, volume15=volume15,
-    #                           volume20=volume20, tonnagevide=tonnagevide, tonnageair=tonnageair,
-    #                           qrcode=code, etat=etat, user=u)
-    #             p.save()
-    #             return JsonResponse(code, safe=False, status=200)
-    #         else:
-    #             form = Ajoutcargaison()
-    #         return render(request, template, {'form': form})
-    #     else:
-    #         return redirect('logout')
 
     @login_required(login_url='login')
     def effacer(request, pk):
@@ -198,6 +131,7 @@ class GestionCargaison():
             return redirect('cargaison')
         else:
             return redirect('logout')
+
 
     @login_required(login_url='login')
     def showqrcode(request, pk):

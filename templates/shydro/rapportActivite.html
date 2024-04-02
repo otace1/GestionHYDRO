@@ -229,23 +229,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -326,12 +333,13 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>RAPPORT(S) D'ACTIVITE(S)</b></h1>
+                        <h1 class="m-0 text-dark"><b>RAPPORT D'ACTIVITES</b></h1>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="">Accueil</a></li>
-                            <li class="breadcrumb-item active">Controle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Rapport d'activités</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -342,24 +350,25 @@
         <!-- Content Wrapper. Contains page content -->
         <section class="content">
             <div class="container-fluid">
-                <div>
-                    <a href="{% url 'codification' %}" class="btn btn-danger">RETOUR</a>
-                    <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-default">
-                        FILTRES
-                    </button>
-                    {% block export %}{% endblock %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <a class="btn btn-app bg-danger" href="{% url 'rapportActivite' %}">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-recycle"></i> CLEAR
+                        </a>
+                        <a class="btn btn-app bg-warning" data-toggle="modal" data-target="#modal-default">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-filter"></i> FILTRES
+                        </a>
+                        {% block export %}{% endblock %}
+                    </div>
                 </div>
-                <br/>
-                <div>
-                    {% block search %}{% endblock %}
-                </div>
-
                 <!-- Search Form -->
                 <form id="search-form" action="{% url 'rechercheRapportActivite' %}" method="GET" class="form-inline">
                     <div class="input-group mb-1">
                         <input type="text" id="search-input" name="search" class="form-control" placeholder="Immatriculation|Num.Dossier|T1..." style="width: 300px; height: 40px;">
                         <div class="input-group-append">
-                            <button class="btn btn-primary" id="search-button" type="submit">Search</button>
+                            <button class="btn btn-primary" id="search-button" type="submit">RECHERCHE</button>
                         </div>
                     </div>
                 </form>

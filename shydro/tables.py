@@ -63,15 +63,15 @@ regularisationButtons = """
                   RE-ROUTAGE
                 </button>
                 <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-trans">
-                  TRANSBORDEMENT
+                  TRANSBOR.
                 </button>
                 <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-fourn">
-                  FOURNISSEUR
+                  IMPORT.
                 </button>
                 <button type="button" onclick="getRowId(this)" id="data" class="btn btn-default" data-toggle="modal" data-target="#modal-nat">
-                  NATURE PRODUIT
+                  PRODUIT
                 </button>
- <a href="{%url 'pertes' record.pk%}" class="btn btn-danger" onclick="return confirmAction();">PERTE</a>
+ <a href="{%url 'pertes' record.pk%}" class="btn btn-danger" onclick="return confirmAction();">SUPPR.</a>
 """
 
 # <button type="button" onclick="getRowId(this)" class="btn btn-default" id="record" data-toggle="modal" data-target="#modal-default">
@@ -198,13 +198,13 @@ class NonConformeLaboratoire(tables.Table):
 
 
 class EnAttenteEchantillonage(tables.Table):
-    numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.(T1D)")
-    importateur = tables.Column(verbose_name="FOURNISSEUR")
+    numdos = tables.Column(verbose_name="#. DOSSIER")
+    declaration = tables.Column(verbose_name="#. DECLARATION")
+    importateur = tables.Column(verbose_name="IMPORTATEUR")
     entrepot = tables.Column(verbose_name="ENTREPOT")
     produit = tables.Column(verbose_name="PRODUIT")
-    immatriculation = tables.Column(verbose_name="IMMAT.")
-    requisitiondackdate = tables.Column(verbose_name="DATE REQ.", attrs={"td": {"bgcolor": "red"}})
+    immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    requisitiondackdate = tables.Column(verbose_name="DATE REQUISITION", attrs={"td": {"bgcolor": "red"}})
 
 
     class Meta:
@@ -217,15 +217,15 @@ class EnAttenteEchantillonage(tables.Table):
 
 
 class EnAttenteDechargement(tables.Table):
-    numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.(T1D)")
-    nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    numdos = tables.Column(verbose_name="#. DOSSIER")
+    declaration = tables.Column(verbose_name="#. DECLARATION")
+    nomimportateur = tables.Column(verbose_name="IMPORTATEUR")
     nomentrepot = tables.Column(verbose_name="ENTREPOT")
     nomproduit = tables.Column(verbose_name="PRODUIT")
-    immatriculation = tables.Column(verbose_name="IMMAT.")
-    requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
-    dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
-    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO')
+    immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    requisitiondackdate = tables.Column(verbose_name="DATE REQUISITION")
+    dateechantillonage = tables.Column(verbose_name="DATE ECHANTILLONNAGE")
+    datereceptionlabo = tables.Column(verbose_name='DATE RECEPTION LABO')
     printDate = tables.Column(verbose_name="DATE D'ANALYSE", attrs={"td": {"bgcolor": "red"}})
 
     class Meta:
@@ -237,14 +237,31 @@ class EnAttenteDechargement(tables.Table):
 
 
 class EnAttenteReceptionLabo(tables.Table):
-    idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
-    idcargaison__importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__numdos = tables.Column(verbose_name="#. DOSSIER")
+    idcargaison__declaration = tables.Column(verbose_name="#. DECLARATION")
+    idcargaison__importateur__nomimportateur = tables.Column(verbose_name="IMPORTATEUR")
     idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
-    idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
-    idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
-    dateechantillonage__date = tables.Column(verbose_name="DATE ECHANT.")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQUISITION")
+    dateechantillonage__date = tables.Column(verbose_name="DATE ECHANTILLONNAGE")
+
+    class Meta:
+        attrs = {
+            "class": "table table-bordered table-striped",
+        }
+        template_name = "django_tables2/bootstrap5-responsive.html"
+
+
+class EnAttenteInspection(tables.Table):
+    idcargaison__numdos = tables.Column(verbose_name="#. DOSSIER")
+    idcargaison__declaration = tables.Column(verbose_name="#. DECLARATION")
+    idcargaison__importateur__nomimportateur = tables.Column(verbose_name="IMPORTATEUR")
+    idcargaison__entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")
+    idcargaison__produit__nomproduit = tables.Column(verbose_name="PRODUIT")
+    idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQUISITION")
+    # dateechantillonage__date = tables.Column(verbose_name="DATE ECHANTILLONNAGE")
 
     class Meta:
         attrs = {
@@ -254,15 +271,15 @@ class EnAttenteReceptionLabo(tables.Table):
 
 
 class EnAttenteResultatLabo(tables.Table):
-    idcargaison__idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
-    idcargaison__idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
+    idcargaison__idcargaison__numdos = tables.Column(verbose_name="#. DOSSIER")
+    idcargaison__idcargaison__declaration = tables.Column(verbose_name="#. DECLARATION")
+    idcargaison__idcargaison__importateur = tables.Column(verbose_name="IMPORTATEUR")
     idcargaison__idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__idcargaison__produit = tables.Column(verbose_name="PRODUIT")
-    idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMAT.")
-    idcargaison__idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQ.")
-    idcargaison__dateechantillonage = tables.Column(verbose_name="DATE ECHANT.")
-    datereceptionlabo = tables.Column(verbose_name='DATE REC.LABO', attrs={"td": {"bgcolor": "red"}})
+    idcargaison__idcargaison__immatriculation = tables.Column(verbose_name="IMMATRICULATION")
+    idcargaison__idcargaison__requisitiondackdate = tables.Column(verbose_name="DATE REQUISITION")
+    idcargaison__dateechantillonage = tables.Column(verbose_name="DATE ECHANTILLONNAGE")
+    datereceptionlabo = tables.Column(verbose_name='DATE RECEPTION LABO', attrs={"td": {"bgcolor": "red"}})
 
     class Meta:
         attrs = {
@@ -309,13 +326,13 @@ class RapportActivite(tables.Table):
 
 
 class Regularisation(tables.Table):
-    dateheurecargaison = tables.Column(verbose_name='DATE ENTR.')
-    frontiere = tables.Column(verbose_name='FRONTIERE ENTR.')
-    importateur = tables.Column(verbose_name='FOURNISSEUR.')
-    produit = tables.Column(verbose_name='PRODUIT.')
+    dateheurecargaison = tables.Column(verbose_name='DATE ENTREE')
+    frontiere = tables.Column(verbose_name="FRONTIERE")
+    importateur = tables.Column(verbose_name='IMPORTATEUR')
+    produit = tables.Column(verbose_name='PRODUIT')
     entrepot = tables.Column(verbose_name="ENTREPOT")
     immatriculation = tables.Column(verbose_name="IMMATRICULATION")
-    volume = tables.Column(verbose_name="VOL.DECL", attrs={"td": {"bgcolor": "green"}})
+    volume = tables.Column(verbose_name="VOL.DECL")
     actions = tables.TemplateColumn(regularisationButtons, verbose_name='',exclude_from_export=True)
 
     class Meta:

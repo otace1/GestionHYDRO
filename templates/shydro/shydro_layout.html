@@ -207,23 +207,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -304,12 +311,13 @@
               <div class="container-fluid">
                   <div class="row mb-2">
                       <div class="col-sm-6">
-                          <h1 class="m-0 text-dark"><b>GESTION CENTRALISEE DES PRODUITS PETROLIERS</b></h1>
+                          <h1 class="m-0 text-dark"><b>GESTION DES REQUISITIONS</b></h1>
                       </div><!-- /.col -->
                       <div class="col-sm-6">
                           <ol class="breadcrumb float-sm-right">
                               <li class="breadcrumb-item"><a href="">Accueil</a></li>
-                              <li class="breadcrumb-item active">Controle des Hydrocarbures</li>
+                              <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+                              <li class="breadcrumb-item active">Gestion des réquisitions</li>
                           </ol>
                       </div><!-- /.col -->
                   </div><!-- /.row -->
@@ -320,115 +328,83 @@
           <!-- Content Wrapper. Contains page content -->
           <section class="content">
               <div class="container-fluid">
-
                   <div class="row">
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-info">
-                              <div class="inner">
-                                  <h3>{{ e }}</h3>
-                                  <p><b>EN ATTENTE D'ECHANTILLONNAGE</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-alert-circled"></i>
-                              </div>
-                              <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-info">
-                              <div class="inner">
-                                  <h3>{{ d }}</h3>
-                                  <p><b>EN ATTENTE DE DECHARGEMENT</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-alert-circled"></i>
-                              </div>
-                              <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
+                <div class="col-md-2 col-sm-2 col-12">
+                    <div class="info-box bg-info">
+                        <span class="info-box-icon"><i class="far fa-file"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente d'échantillonnage</span>
+                            <span class="info-box-number">{{ e }}</span>
+                            <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-2 col-12">
+                    <div class="info-box bg-success">
+                        <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente de réception Labo</span>
+                            <span class="info-box-number">{{ p }}</span>
+                            <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-2 col-12">
+                    <div class="info-box bg-warning">
+                        <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente des résultats</span>
+                            <span class="info-box-number">{{ l }}</span>
+                            <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-2 col-12">
+                    <div class="info-box bg-danger">
+                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente d'inspection</span>
+                            <span class="info-box-number">{{ i }}</span>
+                            <a href="{% url 'enAttenteInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-2 col-12">
+                    <div class="info-box bg-danger">
+                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">En attente de déchargement</span>
+                            <span class="info-box-number">{{ d }}</span>
+                            <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+                <div class="col-md-2 col-sm-2 col-12">
+                    <div class="info-box bg-danger">
+                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">Total des cargaisons</span>
+                            <span class="info-box-number">{{ c }}</span>
+                            <a href="" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                        <!-- /.info-box-content -->
+                    </div>
+                    <!-- /.info-box -->
+                </div>
+            </div><!-- /.row -->
 
-
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-warning">
-                              <div class="inner">
-                                  <h3>{{ p }}</h3>
-                                  <p><b>EN ATTENTE DE RECEPTION LABO</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-android-bar"></i>
-                              </div>
-                              <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
-
-
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-green">
-                              <div class="inner">
-                                  <h3>{{ l }}</h3>
-                                  <p><b>EN ATTENTE DES RESULTATS LABO</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-funnel"></i>
-                              </div>
-                              <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-
-
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-danger">
-                              <div class="inner">
-                                  <h3>{{ n }}</h3>
-                                  <p><b>CARGAISON(S) NON CONFORME(S)</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-android-bar"></i>
-                              </div>
-                              <a href="{% url 'affichageNonConforme' %}" class="small-box-footer">DETAILS <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
-
-
-                      <div class="col-lg-2 col-6">
-                          <!-- small box -->
-                          <div class="small-box bg-blue">
-                              <div class="inner">
-                                  <h3>{{ c }}</h3>
-                                  <p><b>TOTAL DES CARGAISON(S) DE L'ENTITE</b></p>
-                              </div>
-                              <div class="icon">
-                                  <i class="ion ion-android-bar"></i>
-                              </div>
-                              <a href="" class="small-box-footer"> <i
-                                      class="fas fa-arrow-circle-right"></i></a>
-                          </div>
-                      </div>
-                      <!-- ./col -->
-
-
-                  </div>
-
-                  <div>
-                      <a href="{% url 'rapportActivite' %}" class="btn btn-success">RAPPORT(S) D'ACTIVITE(S)</a>
-                  </div>
-                  <br/>
 
               {% block modal %}{% endblock %}
-
 
                   <!-- Main content -->
                   <div class="row">
@@ -436,25 +412,6 @@
                           <div class="card">
                               <div class="card-header bg-gradient-dark">
                                   <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
-{#                                  <div class="card-tools">#}
-{#                                      <form action="" type="get">#}
-{#                                          <div class="input-group input-group-sm" style="width: 400px;">#}
-{#                                              <select name="search" class="form-control mr-sm-2">#}
-{#                                                  <option value="" class="form-control mr-sm-2">--------------------#}
-{#                                                  </option>#}
-{#                                                  {% for value in filter %}#}
-{#                                                    <option value="{{ value.nomentrepot }}"#}
-{#                                                            class="form-control mr-sm-2">{{ value.nomentrepot }}</option>#}
-{#                                                {% endfor %}#}
-{##}
-{#                                            </select>#}
-{#                                            <div class="input-group-append">#}
-{#                                                <button type="submit" class="btn btn-default"><i#}
-{#                                                        class="fas fa-search"></i></button>#}
-{#                                            </div>#}
-{#                                        </div>#}
-{#                                    </form>#}
-{#                                </div>#}
                             </div>
 
                             <div class="card-body">

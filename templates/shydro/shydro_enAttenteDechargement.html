@@ -230,23 +230,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -332,7 +339,8 @@
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="">Accueil</a></li>
-                            <li class="breadcrumb-item active">Controle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Cargaison en attente de déchargement</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -343,11 +351,24 @@
         <!-- Content Wrapper. Contains page content -->
         <section class="content">
             <div class="container-fluid">
-                <div>
-                    <a href="{% url 'codification' %}" class="btn btn-danger">RETOUR</a>
-                    <a href="{% export_url "xlsx" %}" class="btn btn-warning">Export.</a>
+                <div class="row">
+                    <div class="col-md-6">
+                        <a class="btn btn-app bg-success" href="{% url 'codification' %}">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-backward"></i> RETOUR
+                        </a>
+                        <a class="btn btn-app bg-warning" href="{% export_url "xlsx" %}">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-file-excel"></i> EXPORT.
+                        </a>
+                    </div>
                 </div>
-                <br/>
+
+{#                <div>#}
+{#                    <a href="{% url 'codification' %}" class="btn btn-danger">RETOUR</a>#}
+{#                    <a href="{% export_url "xlsx" %}" class="btn btn-warning">Export.</a>#}
+{#                </div>#}
+{#                <br/>#}
 
 
                 <!-- Main content -->

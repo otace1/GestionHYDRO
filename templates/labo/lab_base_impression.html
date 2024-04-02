@@ -228,23 +228,30 @@
                             </a>
                         <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>TRACABILITE</p>
+    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+        <i class="nav-icon fas fa-tachometer-alt"></i>
+        <p>TABLEAU DE BORD</p>
     </a>
 </li>
 <li class="nav-item">
-    <a href="{% url 'gestionGo' %}" class="nav-link">
+    <a href="{% url 'codification' %}" class="nav-link">
         <i class="far fa-circle nav-icon"></i>
-        <p>GESTION GO</p>
+        <p>GESTION REQUISITION</p>
     </a>
 </li>
+
                             <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
+    <a href="{% url 'regularisation' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>REGULARISATION</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{% url 'rapportActivite' %}" class="nav-link">
+        <i class="far fa-circle nav-icon"></i>
+        <p>RAPPORT D'ACTIVITE</p>
+    </a>
+</li>
                             </ul>
                         </li>
                     {% endif %}
@@ -329,7 +336,7 @@
                         <div class="col-sm-6">
                             <ol class="breadcrumb float-sm-right">
                                 <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                                <li class="breadcrumb-item active">Centrale d'impression CQ</li>
+                                <li class="breadcrumb-item active">Impression des certificats de qualité</li>
                             </ol>
                         </div><!-- /.col -->
                     </div><!-- /.row -->
@@ -341,54 +348,56 @@
                 <div class="container-fluid">
                    <!-- Main content -->
                    <div class="row">
-
                         <div class="col-md-6">
                             {% block formsearch %}{% endblock %}
                         </div>
 
-                   <div class="col-9">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">EN ATTENTE D'IMPRESSION</h3>
-                <div class="card-tools">
+{#                        <div class="col-md-6">#}
+{#                            <!-- Info Boxes Style 2 -->#}
+{#                            <div class="info-box mb-3 bg-warning">#}
+{#                              <span class="info-box-icon"><i class="fa fa-file-alt"></i></span>#}
+{##}
+{#                              <div class="info-box-content">#}
+{#                                <span class="info-box-text">CQ Non Imprimer</span>#}
+{#                                <span class="info-box-number">{{ cqNotPrinted }}</span>#}
+{#                              </div>#}
+{#                              <!-- /.info-box-content -->#}
+{#                            </div>#}
+{#                            <!-- /.info-box -->#}
+{#                            <div class="info-box mb-3 bg-success">#}
+{#                              <span class="info-box-icon"><i class="fa fa-archive"></i></span>#}
+{##}
+{#                              <div class="info-box-content">#}
+{#                                <span class="info-box-text">CQ Imprimer</span>#}
+{#                                <span class="info-box-number">{{ cqPrinted }}</span>#}
+{#                              </div>#}
+{#                              <!-- /.info-box-content -->#}
+{#                            </div>#}
+{#                            <!-- /.info-box -->#}
+{#                        </div>#}
 
-                </div>
-              </div>
-              <!-- /.card-header -->
-              <div class="card-body">
-                  {% block content %}
-                                          {% endblock %}
-              </div>
-              <!-- /.card-body -->
-            </div>
-            <!-- /.card -->
-          </div>
-                   <div class="col-md-3">
-            <!-- Info Boxes Style 2 -->
-            <div class="info-box mb-3 bg-warning">
-              <span class="info-box-icon"><i class="fa fa-file-alt"></i></span>
-
-              <div class="info-box-content">
-                <span class="info-box-text">CQ Non Imprimer</span>
-                <span class="info-box-number">{{ cqNotPrinted }}</span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-            <!-- /.info-box -->
-            <div class="info-box mb-3 bg-success">
-              <span class="info-box-icon"><i class="fa fa-archive"></i></span>
-
-              <div class="info-box-content">
-                <span class="info-box-text">CQ Imprimer</span>
-                <span class="info-box-number">{{ cqPrinted }}</span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-
-            <!-- /.info-box -->
                    </div>
+
+
+                   <div class="col-12">
+                       <div class="card">
+                          <div class="card-header">
+                            <h3 class="card-title">EN ATTENTE D'IMPRESSION</h3>
+                            <div class="card-tools">
+
+                            </div>
+                          </div>
+                          <!-- /.card-header -->
+                          <div class="card-body">
+                              {% block content %}{% endblock %}
+                          </div>
+                      <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
                    </div>
-                </div>
+
+                   </div>
+
 
                <!-- /.row -->
         </section>

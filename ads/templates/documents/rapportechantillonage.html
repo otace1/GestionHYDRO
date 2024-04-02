@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sampling Report</title>
+    <style>
+        hr {
+            display: block;
+            margin-top: 0em;
+            margin-bottom: 0em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
+        }
+    </style>
+</head>
+
+{#<div align="right"><img src="/media/conforme.png" width="180px" height="50px"/></div>#}
+
+<table cellspacing="4" cellpadding="4" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tbody>
+    <tr>
+        <td align="center" style="width: 20%">
+            <img src="{% static '/media/occ.png' %}" width="150px" height="150px"/><br/>
+        </td>
+        <td colspan="3" style="width:80%;font-size:10.5px;font-family:'Times New Roman'">
+            <span><center><b style="font-size:16px">OFFICE CONGOLAIS DE CONTROLE</b></center></span><br/>
+            <span><center><b style="font-size:16px">RAPPORT D’ECHANTILLONNAGE N° {{ numrappechauto }}</b></center></span><br/>
+            <span><center><b style="font-size:10px">Etablissement Public à caractère technique et scientifique créé par Ordonnance-loi n° 74-013 du 10 janvier 1974</b></center></span>
+            <span><center><b style="font-size:10px">telle que modifiée par le décret n° 09/42 du 03 décembre 2009 fixant ses statuts.</b></center></span>
+            <span><center><b style="font-size:10px">98, avenue du Port, Kinshasa/Gombe – B.P. 8806 – NIF A0700325M – E-mail : occ_dg@occ.cd – site Web : www.occ.cd</b></center></span><br/>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+         <td align="left" style="width: 20%;font-size: 12px;font-family: 'Times New Roman';"><b>N° DOSSIER: {{ numdos }}</b></td>
+         <td align="left" style="width: 55%;font-size: 12px;font-family: 'Times New Roman';"><b>Imp. Entité: {{ importateur }}</b></td>
+         <td align="left" style="width: 30%;font-size: 12px;font-family: 'Times New Roman';"><center><b>Le {{ dateech }}</b></center></td>
+    </tr>
+</table>
+
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+         <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Conformément aux dispositions légales, nous avons procédé dans les installations de <b>{{ entrepot }}</b> au prélèvement d’échantillons.</td>
+    </tr>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;"><b>Agent échantillonneur</b></td>
+    </tr>
+</table>
+
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Noms & post-noms :<b></b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">N° de Téléphone :<b></b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Matricule :<b>{{ matricule }}</b></td>
+    </tr>
+</table>
+<br/>
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;"><b>Client</b></td>
+    </tr>
+</table>
+
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Noms :<b> {{ importateur }}</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Qualité :<b> IMPORTATEUR</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Adresse :<b> {{ adresseimportateur }}</b></td>
+    </tr>
+</table>
+<br/>
+
+{#<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
+{#    <tr>#}
+{#        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;"><b>Agence en Douane / Déclarant</b></td>#}
+{#    </tr>#}
+{#</table>#}
+{##}
+{#<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
+{#    <tr>#}
+{#        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Noms :<b> {{ declarant }}</b></td>#}
+{#    </tr>#}
+{#    <tr>#}
+{#        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Qualité :<b> DECLARANT</b></td>#}
+{#    </tr>#}
+{#    <tr>#}
+{#        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Adresse :<b> </b></td>#}
+{#    </tr>#}
+{#</table>#}
+{#<br/>#}
+
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;"><b>Marchandise</b></td>
+    </tr>
+</table>
+
+<table cellspacing="1" cellpadding="3px" border="0" style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Nature de la marchandise :<b> PRODUIT PETROLIER</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Marque du produit :<b> {{ produit }}</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Quantité de la marchandise :<b> {{ volume }} m<sup>3</sup></b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Pays d'origine/de provenance :<b> {{ provenance }}</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Nombre de LT : <b>1</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Arrivée par :<b> VOIE {{ voie }} </b>  dans : <b> {{ immatriculation }}</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Type d'emballage :<b>BOITE METALLIQUE</b></td>
+    </tr>
+    <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Nombres de plombs :<b></b> N° <b>{{ numplombh }}</b></td>
+    </tr>
+     <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Méthodes d'échantillonnage utilisées : <b>{{ methodeutilisee }}</b></td>
+    </tr>
+     <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Date et Heure d'échantillonnage:<b> Le {{ dateechantillonage }}</b></td>
+    </tr>
+     <tr>
+        <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Date et Heure d'expédition au Laboratoire:<b></b></td>
+    </tr>
+     <tr>
+         <td align="left" style="width: 100%;font-size: 12px;font-family: 'Times New Roman';">Nombre de produit remis au Laboratoire: <b>{{ qtelabo }} L</b></td>
+    </tr>
+</table>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+</html>
