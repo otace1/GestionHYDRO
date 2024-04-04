@@ -365,11 +365,16 @@
                     </div>
                     <!-- ./col -->
                 </div>
-                <div>
-                    <a href="{% url 'tableaurapports' %}" class="btn btn-outline-danger">RAPPORTS D'ACTIVITES </a>
+                <div class="row">
+                    <a class="btn btn-app bg-success" href="{% url 'tableaurapports' %}">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-archive"></i> RAPPORTS
+                    </a>
                 </div>
+{#                    <a href="{% url 'tableaurapports' %}" class="btn btn-outline-danger">RAPPORTS D'ACTIVITES </a>#}
+{#                </div>#}
             </div>
-            <br/>
+
 
 {#        Modal form#}
 

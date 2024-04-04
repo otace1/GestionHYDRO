@@ -1,12 +1,9 @@
+import os
 import base64
 import datetime
-from io import BytesIO
 
-from PyPDF3 import PdfFileMerger
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.db.models.functions import ExtractYear, ExtractMonth
-from django.http import HttpResponse
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from xlsxwriter import Workbook
@@ -36,15 +33,30 @@ def exportLargeDataSet(export_format, queryset_data, request=None):
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file
-        file_path = default_storage.save(file_name, ContentFile(file_content))
-        file_url = default_storage.url(file_path)
+        # if bool(int(os.environ.get("DEBUG"))) is True:
+        #     # Save the exported file
+        #     file_path = default_storage.save(file_name, ContentFile(file_content))
+        #     file_url = default_storage.url(file_path)
+        #
+        #     # Return the URL of the exported file
+        #     return {
+        #         'file_url': file_url,
+        #         'file_name': file_name,
+        #     }
+        # else:
+
+        # Save the exported file to the mounted volume
+        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
+        with default_storage.open(file_path, "wb") as destination:
+            destination.write(file_content)
 
         # Return the URL of the exported file
+        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
         return {
             'file_url': file_url,
             'file_name': file_name,
         }
+
     except Exception as e:
         return {'error': str(e)}
 

@@ -10,6 +10,7 @@ from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q, Sum
+from django.db.models.functions import Round
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -725,9 +726,51 @@ def enAttenteEchantillonnage(request):
 
 
 @login_required(login_url='login')
+def enAttenteEchantillonnage1(request):
+    user = request.user.id
+    template = 'enAttenteEchantillonnage1.html'
+    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
+    table = EnAttenteEchantillonage(qs)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
 def enAttenteDechargement(request):
     user = request.user.id
     template = 'enAttenteDechargement.html'
+    # qs = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",idcargaison__entrepot__ville__affectationville__username_id=user)
+    qs = ImpressionResultat.objects.raw("SELECT ei.idImpression ,ei.idcargaison_id, ec.numdos, ec.declaration , i.nomimportateur, ec.immatriculation, ee.nomentrepot, ep.nomproduit, ec.requisitiondackdate, eee.dateechantillonage, el.datereceptionlabo, ei.printDate \
+            FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_entrepot_echantillon eee, enreg_laboreception el, accounts_affectationville aa  \
+            WHERE ei.idcargaison_id = ec.idcargaison \
+            AND ec.importateur_id = i.idimportateur \
+            AND ec.entrepot_id = ee.identrepot \
+            AND ec.produit_id = ep.idproduit \
+            AND ec.idcargaison = eee.idcargaison_id \
+            AND eee.idcargaison_id = el.idcargaison_id \
+            AND ec.etat = 'Conforme aux exigences' \
+            AND aa.username_id = %s",[user,])
+
+    table = EnAttenteDechargement(qs)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
+
+
+
+@login_required(login_url='login')
+def enAttenteDechargement1(request):
+    user = request.user.id
+    template = 'enAttenteDechargement1.html'
     # qs = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",idcargaison__entrepot__ville__affectationville__username_id=user)
     qs = ImpressionResultat.objects.raw("SELECT ei.idImpression ,ei.idcargaison_id, ec.numdos, ec.declaration , i.nomimportateur, ec.immatriculation, ee.nomentrepot, ep.nomproduit, ec.requisitiondackdate, eee.dateechantillonage, el.datereceptionlabo, ei.printDate \
             FROM enreg_impressionresultat ei, enreg_cargaison ec, enreg_importateur i, enreg_entrepot ee, enreg_produit ep, enreg_entrepot_echantillon eee, enreg_laboreception el, accounts_affectationville aa  \
@@ -767,9 +810,52 @@ def enAttenteResultatLabo(request):
 
 
 @login_required(login_url='login')
+def enAttenteResultatLabo1(request):
+    user = request.user.id
+    template = 'enAttenteResultatLabo1.html'
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    table = EnAttenteResultatLabo(qs)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
+
+
+
+@login_required(login_url='login')
 def enAttenteReceptionLabo(request):
     user = request.user.id
     template = 'enAttenteReceptionLabo.html'
+    qs = Entrepot_echantillon.objects.filter(
+        idcargaison__etat="Echantillonner",
+        idcargaison__entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'idcargaison__numdos',
+        'idcargaison__declaration',
+        'idcargaison__importateur__nomimportateur',
+        'idcargaison__entrepot__nomentrepot',
+        'idcargaison__produit__nomproduit',
+        'idcargaison__immatriculation',
+        'idcargaison__requisitiondackdate',
+        'dateechantillonage__date',
+    )
+    table = EnAttenteReceptionLabo(qs)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def enAttenteReceptionLabo1(request):
+    user = request.user.id
+    template = 'enAttenteReceptionLabo1.html'
     qs = Entrepot_echantillon.objects.filter(
         idcargaison__etat="Echantillonner",
         idcargaison__entrepot__ville__affectationville__username_id=user,
@@ -821,6 +907,32 @@ def enAttenteInspection(request):
     context = {'table':table}
     return render(request,template,context)
 
+
+@login_required(login_url='login')
+def enAttenteInspection1(request):
+    user = request.user.id
+    template = 'enAttenteInspection1.html'
+    qs = Entrepot_echantillon.objects.filter(
+        idcargaison__inspection__dateinspection__isnull=True,
+        idcargaison__entrepot__ville__affectationville__username_id=user,
+    ).values(
+        'idcargaison__numdos',
+        'idcargaison__declaration',
+        'idcargaison__importateur__nomimportateur',
+        'idcargaison__entrepot__nomentrepot',
+        'idcargaison__produit__nomproduit',
+        'idcargaison__immatriculation',
+        'idcargaison__requisitiondackdate',
+        'dateechantillonage__date',
+    )
+    table = EnAttenteInspection(qs)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    export_format = request.GET.get("_export", None)
+    if TableExport.is_valid_format(export_format):
+        exporter = TableExport(export_format, table)
+        return exporter.response("table.{}".format(export_format))
+    context = {'table':table}
+    return render(request,template,context)
 
 
 @login_required(login_url='login')
@@ -3609,7 +3721,134 @@ def gestionGoResponse(request):
 
 @login_required(login_url='login')
 def tableaudeBordHydro(request):
+    user = request.user
+    id = user.id
+    role = user.role_id
+
+    current_year = date.today().year
+
     template = 'dashboardHydro.html'
-    context={}
+
+    e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                 entrepot__ville__affectationville__username_id=id).count()
+    d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+                                          idcargaison__entrepot__ville__affectationville__username_id=id).count()
+    l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+                                 entrepot__ville__affectationville__username_id=id).count()
+    n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                          isConforme=0, control=0).count()
+    p = Entrepot_echantillon.objects.filter(
+        idcargaison__etat='Echantillonner',
+        idcargaison__entrepot__ville__affectationville__username_id=id
+    ).count()
+
+    c = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=id
+    ).count()
+
+    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+                                 entrepot__ville__affectationville__username_id=id).count()
+
+    # Nouveau Produtc list
+    totalVolume = Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']
+    totalVolume = round(totalVolume) if totalVolume is not None else 0
+
+    gasoilVolume = Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']
+    gasoilVolume = round(gasoilVolume) if gasoilVolume is not None else 0
+
+    mogasVolume = Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']
+    mogasVolume = round(mogasVolume) if mogasVolume is not None else 0
+
+    jetVolume = Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']
+    jetVolume = round(jetVolume) if jetVolume is not None else 0
+
+    petroleVolume = Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']
+    petroleVolume = round(petroleVolume) if petroleVolume is not None else 0
+
+    # Pourcentage
+    gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
+    mogasPercentage = round(((mogasVolume / totalVolume) * 100 if totalVolume else 0))
+    jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
+    petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
+
+    context={
+        'e': e,
+        'd': d,
+        'l': l,
+        'n': n,
+        'p': p,
+        'c': c,
+        'i': i,
+        'gasoilVolume': gasoilVolume,
+        'mogasVolume': mogasVolume,
+        'jetVolume': jetVolume,
+        'petroleVolume': petroleVolume,
+        'totalVolume': totalVolume,
+        'gasoilPercentage': gasoilPercentage,
+        'mogasPercentage': mogasPercentage,
+        'jetPercentage': jetPercentage,
+        'petrolePercentage': petrolePercentage,
+        'current_year': current_year,
+    }
     return render(request,template,context)
 
+
+@login_required(login_url='login')
+def lastrecordShydro(request):
+    user = request.user
+    id = user.id
+    latest_cargaisons = Cargaison.objects.filter(etat="En attente requisition",
+                                                 entrepot__ville__affectationville__username_id=id
+    ).values(
+        'dateheurecargaison','frontiere__nomville','importateur__nomimportateur','entrepot__nomentrepot','produit__nomproduit','volume'
+    ).order_by('-dateheurecargaison')[:5]
+
+
+    # Convert the page object to a list of dictionaries
+    data = list(latest_cargaisons)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data
+    })
+
+
+
+@login_required(login_url='login')
+def topImportersShydro(request):
+    user = request.user
+    id = user.id
+    # Get the sum of volume for each product type
+    top_importers = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id).values('importateur__nomimportateur').annotate(
+        total_volume=Round(Sum('volume'), 2)
+    ).order_by('-total_volume')[:10]
+
+    # Serialize the queryset as a list of dictionaries
+    data = list(top_importers)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data
+    })
+
+
+@login_required(login_url='login')
+def productCountShydro(request):
+    user = request.user
+    id = user.id
+    gasoilCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=2).count()
+    mogasCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=1).count()
+    jetCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=3).count()
+    petroleCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=4).count()
+
+    data = {
+        'gasoilCount':gasoilCount,
+        'mogasCount':mogasCount,
+        'jetCount':jetCount,
+        'petroleCount':petroleCount,
+    }
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data
+    })

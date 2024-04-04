@@ -25,10 +25,15 @@ urlpatterns = [
     path('go/<int:pk>', views.GestionDecharger.godechargement, name='go'),
 
     path('enAttenteEchantillonnage/', views.enAttenteEchantillonnage, name='enAttenteEchantillonnage'),
+    path('enAttenteEchantillonnage1/', views.enAttenteEchantillonnage1, name='enAttenteEchantillonnage1'),
     path('enAttenteDechargement/', views.enAttenteDechargement, name='enAttenteDechargement'),
+    path('enAttenteDechargement1/', views.enAttenteDechargement1, name='enAttenteDechargement1'),
     path('enAttenteResultatLabo/', views.enAttenteResultatLabo, name='enAttenteResultatLabo'),
+    path('enAttenteResultatLabo1/', views.enAttenteResultatLabo1, name='enAttenteResultatLabo1'),
     path('enAttenteReceptionLabo/', views.enAttenteReceptionLabo, name='enAttenteReceptionLabo'),
+    path('enAttenteReceptionLabo1/', views.enAttenteReceptionLabo1, name='enAttenteReceptionLabo1'),
     path('enAttenteInspection/', views.enAttenteInspection, name='enAttenteInspection'),
+    path('enAttenteInspection1/', views.enAttenteInspection1, name='enAttenteInspection1'),
     path('rapportActivite/', views.rapportActivite, name='rapportActivite'),
     path('responseRapportActivite/', views.responseRapportActivite, name='responseRapportActivite'), #Json response
     path('exportResponseRapportActivite/', views.responseRapportActivite, name='exportResponseRapportActivite'), #Json response
@@ -75,6 +80,10 @@ urlpatterns = [
 
 
     path('tableaudeBordHydro/', views.tableaudeBordHydro, name='tableaudeBordHydro'),
+
+    path('lastrecordShydro/', views.lastrecordShydro, name='lastrecordShydro'),
+    path('topImportersShydro/', views.topImportersShydro, name='topImportersShydro'),
+    path('productCountShydro/', views.productCountShydro, name='productCountShydro'),
     #
 
 

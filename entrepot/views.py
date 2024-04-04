@@ -43,9 +43,9 @@ class GestionEchantillonage():
             table = EchantillonTable(qs1, prefix="1_")
             # table1 = CargaisonEnAttenteRequisition(qs, prefix="2_")
             table2 = RapportEchantillonage(qs2, prefix='3_')
-            RequestConfig(request, paginate={"per_page": 5}).configure(table)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
             # RequestConfig(request, paginate={"per_page": 5}).configure(table1)
-            RequestConfig(request, paginate={"per_page": 5}).configure(table2)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table2)
 
             # #Compteur de la page principale de l'entrepot
             n = Cargaison.objects.filter(etat='En attente requisition',entrepot__affectationentrepot__username_id=id).count()

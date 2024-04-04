@@ -6191,14 +6191,20 @@ def impressionCertificatBulk(request):
     # Recuperation du Laboratoire asssocie a la ville
     laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
 
-    laboratoireData = {
-        'laboratoireName': laboratoireData.denominationLaboratoire,
-        'laboratoireType': laboratoireData.typeLaboratoire,
-    }
+    laboratoireName = laboratoireData.denominationLaboratoire
+    #
+    #     {
+    #     'laboratoireName': laboratoireData.denominationLaboratoire,
+    #     'laboratoireType': laboratoireData.typeLaboratoire,
+    # }
+    #
+    # print("Print BULK")
+    # print(laboratoireData['laboratoireName'])
+    # print(laboratoireData['laboratoireType'])
 
 
     # Start Celery task to export report asynchronously
-    result = app.send_task('labo.tasks.generate_bulk_pdf', args=[selectedRows,province,signGauche_data,signDroite_data,laboratoireData])
+    result = app.send_task('labo.tasks.generate_bulk_pdf', args=[selectedRows,province,signGauche_data,signDroite_data,laboratoireName])
 
     # Retrieve the task ID
     task_id = result.id

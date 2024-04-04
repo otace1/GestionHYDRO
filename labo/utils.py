@@ -12,30 +12,27 @@ def link_callback(uri, rel):
     Convert HTML URIs to absolute system paths so xhtml2pdf can access those
     resources
     """
-    # use short variable names
+    # Define the base URLs and roots
     sUrl = settings.STATIC_URL  # Typically /static/
     sRoot = settings.STATIC_ROOT  # Typically /home/userX/project_static/
-    mUrl = settings.MEDIA_URL  # Typically /static/media/
-    mRoot = settings.MEDIA_ROOT  # Typically /home/userX/project_static/media/
+    mUrl = settings.MEDIA_URL  # Typically /media/
+    mRoot = settings.MEDIA_ROOT  # Typically /home/userX/project_media/
 
-    # convert URIs to absolute system paths
+    # Convert URIs to absolute system paths
     if uri.startswith(mUrl):
+        # If URI starts with MEDIA_URL, replace it with MEDIA_ROOT
         path = os.path.join(mRoot, uri.replace(mUrl, ""))
     elif uri.startswith(sUrl):
+        # If URI starts with STATIC_URL, replace it with STATIC_ROOT
         path = os.path.join(sRoot, uri.replace(sUrl, ""))
     else:
-        print('TEST')
-        print('TEST FIRS CONDI')
-        print(uri)
-        return uri  # handle absolute uri (ie: http://some.tld/foo.png)
+        # If URI is absolute, return it as is
+        return uri
 
-    # # make sure that file exists
-    # if not os.path.isfile(path):
-    #     print('TEST')
-    #     print(uri)
-    #     raise Exception(
-    #         'media URI must start with %s or %s' % (sUrl, mUrl)
-    #     )
+    # Ensure that the file exists
+    if not os.path.isfile(path):
+        raise Exception(f'File does not exist: {path}')
+
     return path
 
 

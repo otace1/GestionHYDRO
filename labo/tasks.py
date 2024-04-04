@@ -1,3 +1,4 @@
+import os
 import base64
 import datetime
 
@@ -40,15 +41,27 @@ def export_report_task(export_format, queryset_data, request=None):
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file
-        file_path = default_storage.save(file_name, ContentFile(file_content))
-        file_url = default_storage.url(file_path)
+        # Save the exported file to the mounted volume
+        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
+        with default_storage.open(file_path, "wb") as destination:
+            destination.write(file_content)
 
         # Return the URL of the exported file
+        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
         return {
             'file_url': file_url,
             'file_name': file_name,
         }
+
+        # # Save the exported file
+        # file_path = default_storage.save(file_name, ContentFile(file_content))
+        # file_url = default_storage.url(file_path)
+        #
+        # # Return the URL of the exported file
+        # return {
+        #     'file_url': file_url,
+        #     'file_name': file_name,
+        # }
     except Exception as e:
         return {'error': str(e)}
 
@@ -71,15 +84,27 @@ def export_report_task_Attente_Res(export_format, queryset_data, request=None):
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file
-        file_path = default_storage.save(file_name, ContentFile(file_content))
-        file_url = default_storage.url(file_path)
+        # Save the exported file to the mounted volume
+        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
+        with default_storage.open(file_path, "wb") as destination:
+            destination.write(file_content)
 
         # Return the URL of the exported file
+        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
         return {
             'file_url': file_url,
             'file_name': file_name,
         }
+
+        # # Save the exported file
+        # file_path = default_storage.save(file_name, ContentFile(file_content))
+        # file_url = default_storage.url(file_path)
+        #
+        # # Return the URL of the exported file
+        # return {
+        #     'file_url': file_url,
+        #     'file_name': file_name,
+        # }
     except Exception as e:
         return {'error': str(e)}
 
@@ -102,15 +127,26 @@ def export_report_task_Attente_Res(export_format, queryset_data, request=None):
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file
-        file_path = default_storage.save(file_name, ContentFile(file_content))
-        file_url = default_storage.url(file_path)
+        # Save the exported file to the mounted volume
+        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
+        with default_storage.open(file_path, "wb") as destination:
+            destination.write(file_content)
 
         # Return the URL of the exported file
+        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
         return {
             'file_url': file_url,
             'file_name': file_name,
         }
+        # # Save the exported file
+        # file_path = default_storage.save(file_name, ContentFile(file_content))
+        # file_url = default_storage.url(file_path)
+        #
+        # # Return the URL of the exported file
+        # return {
+        #     'file_url': file_url,
+        #     'file_name': file_name,
+        # }
     except Exception as e:
         return {'error': str(e)}
 
@@ -134,15 +170,27 @@ def export_report_task_cert_imprimer(export_format, queryset_data, request=None)
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file
-        file_path = default_storage.save(file_name, ContentFile(file_content))
-        file_url = default_storage.url(file_path)
+        # Save the exported file to the mounted volume
+        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
+        with default_storage.open(file_path, "wb") as destination:
+            destination.write(file_content)
 
         # Return the URL of the exported file
+        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
         return {
             'file_url': file_url,
             'file_name': file_name,
         }
+
+    #     # Save the exported file
+    #     file_path = default_storage.save(file_name, ContentFile(file_content))
+    #     file_url = default_storage.url(file_path)
+    #
+    #     # Return the URL of the exported file
+    #     return {
+    #         'file_url': file_url,
+    #         'file_name': file_name,
+    #     }
     except Exception as e:
         return {'error': str(e)}
 
@@ -209,7 +257,7 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
 
         # Test pour afficher les differents rapports
         if produit == 'GASOIL':
-            template = 'report/Report1/gasoilreport.html'
+            template = 'report/Report2/gasoilreport.html'
 
             # Resultat Gasoil Fetching data into Database
             try:
@@ -343,7 +391,7 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
             bulk_pdf_data.append(pdf_base64)
 
         if produit == 'MOGAS':
-            template = 'report/Report1/mogasreport.html'
+            template = 'report/Report2/mogasreport.html'
             # Resultat Gasoil Fetching data into Database
             try:
                 aspect = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=2)[0].valeurResultatChar
@@ -456,7 +504,7 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
             bulk_pdf_data.append(pdf_base64)
 
         if produit == 'JET A1':
-            template = 'report/Report1/jeta1report.html'
+            template = 'report/Report2/jeta1report.html'
 
             # Resultat Gasoil Fetching data into Database
             try:
@@ -666,7 +714,7 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
             bulk_pdf_data.append(pdf_base64)
 
         if produit == 'PETROLE LAMPANT':
-            template = 'report/Report1/petrolereport.html'
+            template = 'report/Report2/petrolereport.html'
 
             # Resultat Gasoil Fetching data into Database
             try:
@@ -887,20 +935,45 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
     current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"merged_pdf_{current_datetime}.pdf"
 
-    # Save the merged PDF content to a file
-    with default_storage.open(file_name, 'wb') as merged_pdf_file:
+    # Define the media directory
+    media_dir = os.path.join("/vol/web/media", 'pdf')
+    os.makedirs(media_dir, exist_ok=True)  # Ensure the directory exists
+
+    # Save the exported file to the media directory
+    file_path = os.path.join(media_dir, file_name)
+    with default_storage.open(file_path, "wb") as merged_pdf_file:
         merged_pdf.write(merged_pdf_file)
 
-    file_url = default_storage.url(file_name)
-
-    # print('INSIDE CELERY')
-    # print(file_url)
-    # print(file_name)
-
+    # Return the URL of the exported file
+    file_url = os.path.join("/media", 'pdf', file_name)
     return {
         'file_url': file_url,
         'file_name': file_name,
     }
+
+    # # Save the exported file to the mounted volume
+    # file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
+    # with default_storage.open(file_path, "wb") as merged_pdf_file:
+    #     merged_pdf.write(merged_pdf_file)
+    #
+    # # Return the URL of the exported file
+    # file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
+    # return {
+    #     'file_url': file_url,
+    #     'file_name': file_name,
+    # }
+
+    # # Save the merged PDF content to a file
+    # with default_storage.open(file_name, 'wb') as merged_pdf_file:
+    #     merged_pdf.write(merged_pdf_file)
+    #
+    # file_url = default_storage.url(file_name)
+
+    #
+    # return {
+    #     'file_url': file_url,
+    #     'file_name': file_name,
+    # }
 
 
 
