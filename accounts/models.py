@@ -198,6 +198,12 @@ class AffectationVille(models.Model):
     ville = models.ForeignKey(Ville, on_delete=models.PROTECT)
 
 
+class SignaturesModel(models.Model):
+    idSignature = models.AutoField(primary_key=True, auto_created=True)
+    userId = models.ForeignKey(MyUser, on_delete=models.PROTECT)
+    signatureData = models.BinaryField()
+
+
 # # Gestion des signatures electroniques
 # class SignatureModel(JSignatureFieldsMixin):
 #     username = models.IntegerField(null=True, blank=True)

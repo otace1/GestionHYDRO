@@ -1,10 +1,1204 @@
 {% extends 'base_userlist_layout.html' %}
+{% load crispy_forms_filters %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 {% load crispy_forms_tags %}
 {% load bootstrap4 %}
 
 {% block dashboard%}
-    {% render_table users %}
-{% endblock %}
 
+
+<div class="modal fade" id="modal-default-role">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Changement de rôle de l'utilisateur.</h4>
+            </div>
+            <form id="default-role-form">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ affectationRol | crispy }}
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary role-btn">Save</button>
+                </div>
+            </form>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+<div class="modal fade" id="modal-default-entr">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Nouvelle affectation de l'entrepôt.</h4>
+            </div>
+            <form id="default-entr-form">
+                <div class="modal-body">
+                    {{ affectationEntr | crispy }}
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary entr-btn">Save</button>
+                </div>
+            </form>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+
+<div class="modal fade" id="modal-default-vil">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Nouvelle affectation de ville.</h4>
+            </div>
+             <form id="default-ville-form">
+                <div class="modal-body">
+                    {{ affectationVil | crispy }}
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary ville-btn">Save</button>
+                </div>
+             </form>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+<div class="modal fade" id="modal-default-labo">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Nouvelle affectation de Laboratoire.</h4>
+            </div>
+            <form id="default-labo-form">
+                <div class="modal-body">
+                    {{ affectationLab | crispy }}
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary labo-btn">Save</button>
+                </div>
+            </form>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+
+
+<div class="modal fade" id="modal-default-signature">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Upload de signature</h4>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="imageUpload">Choisir une image en PNG:</label>
+                        <input type="file" class="form-control-file" id="imageUpload" accept="image/png" required>
+                    </div>
+                    <div class="text-center">
+                        <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="form-group">
+                    <label for="signatureImage">Signature:</label>
+                    <img id="signatureImage" class="img-fluid" alt="Signature">
+                </div>
+
+                <div class="card-body">
+                    <div id="data-table-wrapper" style="position: relative;">
+                      <div class="loading-spinner"></div>
+                      <table id="data-table-signature" class="table table-bordered display responsive" style="width:100%">
+                        <thead>
+                          <tr>
+                            <th>ID SIGNATURE</th>
+                            <th>FIRST NAME</th>
+                            <th>LAST NAME</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary submit-signature">Save</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+
+<div class="modal fade" id="modal-xl">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Affectations de l'utilisateur</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+
+                    <a class="btn btn-app bg-success roleaffect">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-recycle"></i>ROLE
+                    </a>
+
+                    <a class="btn btn-app bg-success entraffect">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-building"></i>ENTREPOT
+                    </a>
+{##}
+{#                    <a class="btn btn-app bg-warning laboaffect">#}
+{#                        <span class="badge bg-success"></span>#}
+{#                        <i class="fas fa-building"></i>LABORATOIRE#}
+{#                    </a>#}
+{##}
+{#                    <a class="btn btn-app bg-warning villeaffect">#}
+{#                        <span class="badge bg-success"></span>#}
+{#                        <i class="fas fa-tools"></i>VILLE#}
+{#                    </a>#}
+
+                </div>
+                <div class="card-body">
+{#                    <div id="data-table-wrapper" style="position: absolute;">#}
+                        <div class="loading-spinner"></div>
+{#                        <div class="table-responsive">#}
+                            <table id="data-table-details" class="table table-bordered display responsive" style="width:100%">
+                                <colgroup>
+                                    <col style="width: auto;">
+                                    <col style="width: auto">
+                                    <col style="width: auto">
+                                    <col style="width: auto">
+ <!-- Set width to auto for the last column -->
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>USER ID</th>
+                                        <th>FIRST NAME</th>
+                                        <th>LAST NAME</th>
+                                        <th>APP LEVEL</th>
+                                        <th>ENTREPOT</th>
+                                        <!-- Uncomment these lines if you want to include LABORATOIRE and VILLE columns -->
+                                        <!-- <th>LABORATOIRE</th>
+                                        <th>VILLE</th> -->
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                            </table>
+{#                        </div>#}
+{#                    </div>#}
+                </div>
+
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+<div class="modal fade" id="modal-xl-laboratoire">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Affectations de l'utilisateur au LABO</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                </div>
+                <div class="card-body">
+{#                    <div id="data-table-wrapper" style="position: absolute;">#}
+                        <div class="loading-spinner"></div>
+{#                        <div class="table-responsive">#}
+                            <table id="data-table-details-laboratoire" class="table table-bordered display responsive" style="width:100%">
+                                <colgroup>
+                                    <col style="width: auto;">
+                                    <col style="width: auto">
+                                    <col style="width: auto">
+                                    <col style="width: auto">
+ <!-- Set width to auto for the last column -->
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>USER ID</th>
+                                        <th>FIRST NAME</th>
+                                        <th>LAST NAME</th>
+                                        <th>APP LEVEL</th>
+                                        <th>LABORATOIRE</th>
+                                        <!-- Uncomment these lines if you want to include LABORATOIRE and VILLE columns -->
+                                        <!-- <th>LABORATOIRE</th>
+                                        <th>VILLE</th> -->
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                            </table>
+{#                        </div>#}
+{#                    </div>#}
+                </div>
+
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
+
+    <div id="data-table-wrapper" style="position: relative;">
+      <div class="loading-spinner"></div>
+      <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+        <thead>
+          <tr>
+            <th>USER ID</th>
+            <th>FIRST NAME</th>
+            <th>LAST NAME</th>
+            <th>USERNAME</th>
+{#            <th>APP.LEVEL</th>#}
+            <th>DERNIERE CONNEXION</th>
+            <th></th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+<!-- Include FileSaver.js library for saving the Excel file -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+
+<script>
+    var dataRow;
+    const csrfToken = '{{ csrf_token }}';
+
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'listeutilisateursResponse' %}',
+                type: 'GET',
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+            },
+            columns: [
+                { data: 'id' }, // Use array index to access 'dateheurecargaison__date'
+                { data: 'first_name' }, // Use array index to access 'frontiere__nomville'
+                { data: 'last_name' }, // Use array index to access 'importateur__nomimportateur'
+                { data: 'username' }, // Use array index to access 'entrepot__nomentrepot'
+                {#{ data: 'role__role' }, // Use array index to access 'produit__nomproduit'#}
+                { data: 'last_login' },
+                { // New column configuration
+                    data: 'id',
+                    render: function (data, type, row) {
+                        const linkURL = '/labo/affichageDetailsResultatsGauche/' + data;
+                        const linkText = 'AFFICHER';
+
+                        // Include a button to submit the JSON data for the row
+                        {#const submitDetails = '<button class="btn btn-info afficher-btn" data-row-id="' + data + '">DETAIL</button> ';#}
+                        const submitAffectationEntr = '<button class="btn btn-outline-info affectation-btn" data-row-id="' + data + '">ENTR</button> ';
+                        const submitAffectationLabo = '<button class="btn btn-outline-info affectation-labo-btn" data-row-id="' + data + '">LABO</button> ';
+                        {#const submitAffectation = '<button class="btn btn-outline-info affectation-btn" data-row-id="' + data + '"></button> ';#}
+                        const submitSignature = '<button class="btn btn-success signature-btn" data-row-id="' + data + '">SIGNATURE</button> ';
+                        const submitToken = '<button class="btn btn-warning token-btn" data-row-id="' + data + '">APP TOKEN</button> ';
+                        const submitReset = '<button class="btn btn-warning reset-btn" data-row-id="' + data + '">RESET PWD</button> ';
+                        const submitEffacer = '<button class="btn btn-danger delete-btn" data-row-id="' + data + '">EFFACER</button> ';
+
+                        return submitAffectationEntr+submitAffectationLabo+submitSignature+submitToken+submitReset+submitEffacer;
+                    }
+                }// Use array index to access 'immatriculation'
+            ],
+        });
+
+
+        // Attach click event listener to the DETAIL button
+    $(document).on('click', '.affectation-btn', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        $('#modal-xl').on('show.bs.modal', function () {
+
+            // Destroy the DataTable instance if it exists
+            var dataTable = $('#data-table-details').DataTable();
+            if ($.fn.DataTable.isDataTable('#data-table-details')) {
+                dataTable.destroy();
+            }
+
+            var dataTable = $('#data-table-details').DataTable({
+                lengthChange: false, // Display the length change dropdown
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                ajax: {
+                    url: '/accounts/detailsAffectationUtilisateur/' + dataRow,
+                    type: 'GET',
+                    beforeSend: function () {
+                        $('#data-table-wrapper .loading-spinner').show();
+                    },
+                    // Hide the loading spinner after DataTable processing
+                    complete: function () {
+                        $('#data-table-wrapper .loading-spinner').hide();
+                    }
+                },
+                columns: [
+                    {data: 'username_id'}, // Use array index to access 'dateheurecargaison__date'
+                    {data: 'username__first_name'}, // Use array index to access 'frontiere__nomville'
+                    {data: 'username__last_name'}, // Use array index to access 'importateur__nomimportateur'
+                    {data: 'username__role__role' },
+                    {data: 'entrepot__nomentrepot'}, // Use array index to access 'entrepot__nomentrepot'
+                    {#{data: 'denominationLaboratoire'}, // Use array index to access 'produit__nomproduit'#}
+                    {#{data: 'nomville'},#}
+                    { // New column configuration
+                        data: 'idaffectation_entrepot',
+                        render: function (data, type, row) {
+                            // Include a button to submit the JSON data for the row
+                            const submitRetraitEntrepot = '<button class="btn btn-outline-danger retrait-entr" data-row-id="' + data + '">RETIRER</button>';
+                            // Add spaces between the buttons
+                            const buttonGroup = submitRetraitEntrepot;
+
+                            return buttonGroup;
+                        }
+                    }// Use array index to access 'immatriculation'
+                ],
+            });
+        })
+
+        // Open a modal (replace 'myModal' with your modal ID)
+        $('#modal-xl').modal('show');
+
+
+        $('.roleaffect').click(function() {
+
+            // Hide the first modal
+            $('#modal-xl').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-role').modal('show');
+
+        });
+
+
+        $('.entraffect').click(function() {
+            // Hide the first modal
+            $('#modal-xl').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-entr').modal('show');
+        });
+
+
+        $('.laboaffect').click(function() {
+            // Hide the first modal
+            $('#modal-xl').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-labo').modal('show');
+        });
+
+
+        $('.villeaffect').click(function() {
+            // Hide the first modal
+            $('#modal-xl').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-vil').modal('show');
+        });
+
+    });
+
+
+    // Event handler for when the modal is hidden
+    $('#modal-default-role').on('hidden.bs.modal', function () {
+        $('#modal-xl').modal('show');
+        $('#data-table-details').DataTable().ajax.reload(); // Reload the table
+    });
+
+    // Event handler for when the modal is hidden
+    $('#modal-default-entr').on('hidden.bs.modal', function () {
+        $('#modal-xl').modal('show');
+        $('#data-table-details').DataTable().ajax.reload(); // Reload the table
+    });
+
+    // Event handler for when the modal is hidden
+    $('#modal-default-labo').on('hidden.bs.modal', function () {
+        $('#modal-xl-laboratoire').modal('show');
+        $('#data-table-details-laboratoire').DataTable().ajax.reload(); // Reload the table
+    });
+
+    // Event handler for when the modal is hidden
+    $('#modal-default-vil').on('hidden.bs.modal', function () {
+        $('#modal-xl').modal('show');
+        $('#data-table-details').DataTable().ajax.reload(); // Reload the table
+    });
+
+
+
+
+            // Attach click event listener to the DETAIL button
+    $(document).on('click', '.token-btn', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        // Print the value in console log
+        console.log('Row data ID:', dataRow);
+
+        // Send an AJAX request to the createToken view
+        $.ajax({
+            type: 'GET',
+            url: '/accounts/createToken/' + dataRow,
+            dataType: 'json',
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Token applicatif créé pour cet utilisateur.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Cet utilisateur possède déjà un Token.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            }
+        });
+
+    });
+
+
+
+
+            // Attach click event listener to the DETAIL button
+    $(document).on('click', '.retrait-entr', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+        {##}
+        {#// Print the value in console log#}
+        {#console.log('Row data ID:', dataRow);#}
+
+        // Send an AJAX request to the createToken view
+        $.ajax({
+            type: 'GET',
+            url: '/accounts/retireraffectationEntrepot/' + dataRow,
+            dataType: 'json',
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Token applicatif créé pour cet utilisateur.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table-details').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Cet utilisateur possède déjà un Token.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table-details').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            }
+        });
+
+    });
+
+
+
+            // Attach click event listener to the DETAIL button
+    $(document).on('click', '.retrait-labo', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+        {##}
+        {#// Print the value in console log#}
+        console.log('Row data ID:', dataRow);
+
+        // Send an AJAX request to the createToken view
+        $.ajax({
+            type: 'GET',
+            url: '/accounts/retireraffectationLabo/' + dataRow,
+            dataType: 'json',
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Affectation du laboratoire retirée pour cet utilisateur.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table-details-laboratoire').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: "Une erreur s'est produite lors de l'exécution de la requête."
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table-details-laboratoire').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            }
+        });
+
+    });
+
+
+
+            // Attach click event listener to the DETAIL button
+    $(document).on('click', '.delete-btn', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        // Print the value in console log
+        console.log('Row data ID:', dataRow);
+
+        // Send an AJAX request to the createToken view
+        $.ajax({
+            type: 'GET',
+            url: '/accounts/delete/' + dataRow,
+            dataType: 'json',
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Cet utilisateur a été supprimé.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Une erreur est survenue lors de la suppression.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#data-table').DataTable().ajax.reload(); // Reload the table
+                    }
+                });
+            }
+        });
+
+    });
+
+
+                // Attach click event listener to the DETAIL button
+    $(document).on('click', '.signature-btn', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        console.log(dataRow);
+
+        $('#modal-default-signature').modal('show');
+
+    })
+
+
+    $('#modal-default-signature').on('show.bs.modal', function () {
+
+            // Destroy the DataTable instance if it exists
+            var dataTable = $('#data-table-signature').DataTable();
+            if ($.fn.DataTable.isDataTable('#data-table-signature')) {
+                dataTable.destroy();
+            }
+
+            var dataTable = $('#data-table-signature').DataTable({
+                lengthChange: false, // Display the length change dropdown
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                ajax: {
+                    url: '/accounts/listeSignature/' + dataRow,
+                    type: 'GET',
+                    beforeSend: function () {
+                        $('#data-table-wrapper .loading-spinner').show();
+                    },
+                    // Hide the loading spinner after DataTable processing
+                    complete: function () {
+                        $('#data-table-wrapper .loading-spinner').hide();
+                    }
+                },
+                columns: [
+                    {data: 'idSignature'}, // Use array index to access 'dateheurecargaison__date'
+                    {data: 'userId__first_name'}, // Use array index to access 'frontiere__nomville'
+                    {data: 'userId__last_name'}, // Use array index to access 'importateur__nomimportateur'
+                    { // New column configuration
+                        data: 'idSignature',
+                        render: function (data, type, row) {
+                            // Include a button to submit the JSON data for the row
+                            const voirSignature = '<button class="btn btn-warning afficher-signature" data-row-id="' + data + '">AFFICHER</button>';
+                            const retraitSignature = '<button class="btn btn-danger retrait-signature" data-row-id="' + data + '">RETIRER</button>';
+                            // Add spaces between the buttons
+                            const buttonGroup = voirSignature + ' ' + retraitSignature;
+
+                            return buttonGroup;
+                        }
+                    }// Use array index to access 'immatriculation'
+                ],
+            });
+        })
+
+    $(document).on('click', '.afficher-signature', function() {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        // Perform AJAX request to fetch the signature data
+        $.ajax({
+            url: '/accounts/getSignature/' + dataRow ,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                // Check if the response contains base64_image
+                if ('base64_image' in response) {
+                    console.log('RETOUR SIGNATURE');
+                    // Assuming you have an image element with ID 'signatureImage' to display the signature
+                    $('#signatureImage').attr('src', 'data:image/png;base64,' + response.base64_image);
+                } else {
+                    Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No Image Found.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        {#Todo#}
+                    }
+                });
+                }
+            },
+            error: function(xhr, status, error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No Image Found.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        {#Todo#}
+                    }
+                });
+            }
+        });
+    });
+
+
+    $(document).on('click', '.retrait-signature', function() {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+        // Perform actions for removing the signature associated with this row
+        console.log('Retrait signature for row ID: ' + dataRowId);
+    });
+
+
+    $(document).on('click', '.submit-signature', function() {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        console.log('SIGNATURE SUBMIT');
+
+        // Get the form data
+        var formData = new FormData($('#uploadForm')[0]);
+
+        // Append the dataRowId to the form data
+        formData.append('dataRow', dataRow);
+
+        // Send an AJAX request
+        $.ajax({
+            type: 'POST',
+            url: '/accounts/ajoutSignature/', // Replace '/path/to/ajoutSignature/' with the actual URL of your ajoutSignature view
+            data: formData,
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            processData: false, // Prevent jQuery from processing the data
+            contentType: false, // Prevent jQuery from setting the contentType
+            beforeSend: function() {
+                // Display the loading spinner
+                $('#loadingSpinner').show();
+            },
+            success: function(response) {
+                // Hide the loading spinner
+                $('#loadingSpinner').hide();
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'File uploaded successfully!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        {#Todo#}
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Hide the loading spinner
+                $('#loadingSpinner').hide();
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error occurred while uploading file.'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        {#Todo#}
+                    }
+                });
+            }
+        });
+    });
+
+
+
+
+
+    $('.role-btn').click(function(event) {
+        event.preventDefault(); // Prevent the default button behavior
+        // Submit the form with the id default-role-form
+        $('#default-role-form').submit();
+    });
+
+
+
+    // Event listener for form submission
+    $('#default-role-form').submit(function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Serialize the form data
+        var formData = $(this).serialize();
+
+        // Append the dataRow value to the form data
+        formData += '&dataRow=' + dataRow;
+
+        // Fetch the CSRF token
+        var csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+        // Include the CSRF token in the data
+        formData += '&csrfmiddlewaretoken=' + csrfToken;
+
+        // Send an AJAX request
+        $.ajax({
+            type: 'POST',
+            url: '{% url 'affectationrole' %}', // Replace 'affectationrole' with the actual URL name
+            data: formData,
+            dataType: 'json',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'User role assigned successfully!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-role').modal('hide');
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error occurred while assigning user role..'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-role').modal('hide');
+                    }
+                });
+            }
+        });
+    })
+
+
+
+
+    $('.entr-btn').click(function(event) {
+        event.preventDefault(); // Prevent the default button behavior
+        // Submit the form with the id default-role-form
+        $('#default-entr-form').submit();
+    });
+
+
+
+        // Event listener for form submission
+    $('#default-entr-form').submit(function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Serialize the form data
+        var formData = $(this).serialize();
+
+        // Append the dataRow value to the form data
+        formData += '&dataRow=' + dataRow;
+
+        // Fetch the CSRF token
+        var csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+        // Include the CSRF token in the data
+        formData += '&csrfmiddlewaretoken=' + csrfToken;
+
+        // Send an AJAX request
+        $.ajax({
+            type: 'POST',
+            url: '{% url 'affectationentreprot' %}', // Replace 'affectationrole' with the actual URL name
+            data: formData,
+            dataType: 'json',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'User role assigned successfully!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-entr').modal('hide');
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error occurred while assigning user role..'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-entr').modal('hide');
+                    }
+                });
+            }
+        });
+    })
+
+
+
+    $('.labo-btn').click(function(event) {
+        event.preventDefault(); // Prevent the default button behavior
+        // Submit the form with the id default-role-form
+        $('#default-labo-form').submit();
+    });
+
+
+
+        // Event listener for form submission
+    $('#default-labo-form').submit(function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Serialize the form data
+        var formData = $(this).serialize();
+
+        // Append the dataRow value to the form data
+        formData += '&dataRow=' + dataRow;
+
+        console.log('FORM DATA');
+        console.log(formData);
+
+        // Fetch the CSRF token
+        var csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+        // Include the CSRF token in the data
+        formData += '&csrfmiddlewaretoken=' + csrfToken;
+
+        // Send an AJAX request
+        $.ajax({
+            type: 'POST',
+            url: '{% url 'affectationlabo' %}', // Replace 'affectationrole' with the actual URL name
+            data: formData,
+            dataType: 'json',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'User role assigned successfully!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-labo').modal('hide');
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error occurred while assigning user role..'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-labo').modal('hide');
+                    }
+                });
+            }
+        });
+    })
+
+
+
+
+    $('.ville-btn').click(function(event) {
+        event.preventDefault(); // Prevent the default button behavior
+        // Submit the form with the id default-role-form
+        $('#default-ville-form').submit();
+    });
+
+
+
+        // Event listener for form submission
+    $('#default-ville-form').submit(function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Serialize the form data
+        var formData = $(this).serialize();
+
+        // Append the dataRow value to the form data
+        formData += '&dataRow=' + dataRow;
+
+        // Fetch the CSRF token
+        var csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+        // Include the CSRF token in the data
+        formData += '&csrfmiddlewaretoken=' + csrfToken;
+
+        // Send an AJAX request
+        $.ajax({
+            type: 'POST',
+            url: '{% url 'affectationville' %}', // Replace 'affectationrole' with the actual URL name
+            data: formData,
+            dataType: 'json',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(response) {
+                // Handle success response
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'User role assigned successfully!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-vil').modal('hide');
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                // Handle error response
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error occurred while assigning user role..'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#modal-default-vil').modal('hide');
+                    }
+                });
+            }
+        });
+    })
+
+
+
+                // Attach click event listener to the DETAIL button
+    $(document).on('click', '.affectation-labo-btn', function () {
+        // Extract the data-row-id attribute value
+        dataRow = $(this).data('row-id');
+
+        $('#modal-xl-laboratoire').on('show.bs.modal', function () {
+
+            // Destroy the DataTable instance if it exists
+            var dataTable = $('#data-table-details-laboratoire').DataTable();
+            if ($.fn.DataTable.isDataTable('#data-table-details-laboratoire')) {
+                dataTable.destroy();
+            }
+
+            var dataTable = $('#data-table-details-laboratoire').DataTable({
+                lengthChange: false, // Display the length change dropdown
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                ajax: {
+                    url: '/accounts/detailsAffectationLabo/' + dataRow,
+                    type: 'GET',
+                    beforeSend: function () {
+                        $('#data-table-wrapper .loading-spinner').show();
+                    },
+                    // Hide the loading spinner after DataTable processing
+                    complete: function () {
+                        $('#data-table-wrapper .loading-spinner').hide();
+                    }
+                },
+                columns: [
+                    {data: 'userId_id'}, // Use array index to access 'dateheurecargaison__date'
+                    {data: 'userId__first_name'}, // Use array index to access 'frontiere__nomville'
+                    {data: 'userId__last_name'}, // Use array index to access 'importateur__nomimportateur'
+                    {data: 'userId__role__role' },
+                    {data: 'idLaboratoire__denominationLaboratoire'}, // Use array index to access 'entrepot__nomentrepot'
+                    {#{data: 'denominationLaboratoire'}, // Use array index to access 'produit__nomproduit'#}
+                    {#{data: 'nomville'},#}
+                    { // New column configuration
+                        data: 'idAffectation',
+                        render: function (data, type, row) {
+                            // Include a button to submit the JSON data for the row
+                            const submitRetraitLabo = '<button class="btn btn-outline-danger retrait-labo" data-row-id="' + data + '">RETIRER</button>';
+                            // Add spaces between the buttons
+                            const buttonGroup = submitRetraitLabo;
+
+                            return buttonGroup;
+                        }
+                    }// Use array index to access 'immatriculation'
+                ],
+            });
+        })
+
+        // Open a modal (replace 'myModal' with your modal ID)
+        $('#modal-xl-laboratoire').modal('show');
+
+
+        $('.roleaffect').click(function() {
+
+            // Hide the first modal
+            $('#modal-xl-laboratoire').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-role').modal('show');
+
+        });
+
+
+        $('.entraffect').click(function() {
+            // Hide the first modal
+            $('#modal-xl-laboratoire').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-entr').modal('show');
+        });
+
+
+        $('.laboaffect').click(function() {
+            // Hide the first modal
+            $('#modal-xl-laboratoire').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-labo').modal('show');
+        });
+
+
+        $('.villeaffect').click(function() {
+            // Hide the first modal
+            $('#modal-xl-laboratoire').modal('hide');
+
+            // Show the second modal
+            $('#modal-default-vil').modal('show');
+        });
+
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+
+
+
+
+{% endblock %}

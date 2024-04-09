@@ -27,3 +27,5 @@ admin.site.register(AffectationParametre)
 admin.site.register(ResultatAnalyse)
 admin.site.register(ListeLaboratoire)
 admin.site.register(AffectationLaboratoire)
+admin.site.register(AffectationVille)
+

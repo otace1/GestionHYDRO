@@ -51,7 +51,17 @@
   {% block extra_js%}
 
 {% endblock %}
+    <style>
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+        }
 
+        .content-wrapper {
+            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+        }
+    </style>
 
 </head>
 
@@ -323,12 +333,12 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark">LISTE D'UTILISATEURS</h1>
+                        <h1 class="m-0 text-dark">Gestion des utilisateurs</h1>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Utilisateurs</li>
+                            <li class="breadcrumb-item active">Gestion des utilisateurs</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -339,13 +349,15 @@
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
-                <div class="row col-6">
-                    {% block extra %}
-                        <a href="{% url 'usersadd' %}" class="btn btn-success" aria-hidden="true">AJOUT
-                            D'UTILISATEUR</a>
-                    {% endblock %}
+            <div class="row">
+                <div class="col-md-6">
+                    <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-default">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-plus-circle"></i> AJOUTER
+                    </a>
                 </div>
-                <br>
+            </div>
+
 
                 <div class="row">
                     <div class="col-md-12">

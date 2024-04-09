@@ -3,10 +3,22 @@ import django_tables2 as tables
 from .models import MyUser, AffectationEntrepot, AffectationVille
 
 TEMPLATE = """
-<a href="{%url 'edit' record.pk%}" class="btn btn-success" aria-hidden="true">Details</a>
+<a class="btn btn-success" aria-hidden="true" id="detail-button">Details </a>
+<a class="btn btn-success" aria-hidden="true" id="detail-button">Signature </a>
 <a href="{%url 'createToken' record.pk%}" class="btn btn-success" aria-hidden="true">Create APP Token</a>
 <a href="{%url 'delete_user' record.pk%}" class="btn btn-danger" aria-hidden="true">Effacer</a>
             """
+
+# FILEUPLOAD = """
+#     <form id="upload-form" method="post" enctype="multipart/form-data">
+#         {% csrf_token %}
+#         <input type="file" name="file" id="file" accept="image/png">
+#         <!-- Hidden input field to store the row id -->
+#         <input type="hidden" name="row_id" id="row_id">
+#         <button type="submit">Signature</button>
+#     </form>
+# """
+
 TEMPLATE1 = """
 <a href="{%url 'retireraffectation' record.pk%}"  class="btn btn-danger" aria-hidden="true">Retirer</a>
 """
@@ -22,12 +34,13 @@ TEMPLATE3 = """
 
 class ListeUtilisateurs(tables.Table):
     actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
+    # file_upload = tables.TemplateColumn(FILEUPLOAD, verbose_name='')
     id = tables.Column(verbose_name='USER ID')
     first_name = tables.Column(verbose_name='FIRSTNAME')
     last_name = tables.Column(verbose_name='LASTNAME')
     username = tables.Column(verbose_name='USERNAME')
-    fonction = tables.Column(verbose_name='FONCTION')
-    poste = tables.Column(verbose_name='POSTE   ')
+    # fonction = tables.Column(verbose_name='FONCTION')
+    # poste = tables.Column(verbose_name='POSTE   ')
     role = tables.Column(verbose_name='APP LEVEL')
     last_login = tables.Column(verbose_name='DERNIERE CONNEXION')
 
@@ -35,12 +48,15 @@ class ListeUtilisateurs(tables.Table):
     class Meta:
         attrs = {
             "class": "table table-bordered table-striped",
-            "id": "example1"
+            "id": "liste-user"
         }
-        # template_name = "django_tables2/bootstrap4.html"
+        row_attrs = {
+            "id": lambda record: record.pk
+        }
+        template_name = "django_tables2/bootstrap4.html"
         model = MyUser
-        sequence = ['id', 'first_name', 'last_name', 'username','fonction','poste', 'role', 'last_login']
-        exclude = ['password', 'is_admin', 'is_staff', 'entrepot', 'ville']
+        sequence = ['id', 'first_name', 'last_name', 'username', 'role', 'last_login',]
+        exclude = ['password', 'is_admin', 'is_staff', 'entrepot', 'ville','fonction','poste']
 
 
 class DetailsAffectation(tables.Table):

@@ -1,14 +1,23 @@
+import base64
+import io
+
 from django.contrib.auth import (
     authenticate,
     login,
     logout,
 )
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
+from django.db.models import Q, F
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from jsignature.utils import draw_signature
+from xlsxwriter import Workbook
 
 from accounts.models import *
-from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm
+from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm, \
+    Affectation_Role, Affectation_Labo
 from .tables import ListeUtilisateurs, DetailsAffectation, DetailsVille, SignatureTable
 
 
@@ -82,13 +91,126 @@ def logout_user(request):
 def listeutilisateurs(request):
     user = request.user
     role = user.role_id
+    userForm = UserRegisterForm(request.POST)
+    affectationRol = Affectation_Role()
+    affectationEntr = Affectation_Entrepot()
+    affectationVil = Affectation_Ville()
+    affectationLab = Affectation_Labo()
+
     if role == 1:
         template = 'accounts/userslist.html'
-        table = ListeUtilisateurs(MyUser.objects.all())
-        # table.paginate(page=request.GET.get('page', 1), per_page=10)
-        return render(request, template, {'users': table})
+        context = {
+            'form':userForm,
+            'affectationRol':affectationRol,
+            'affectationEntr':affectationEntr,
+            'affectationVil':affectationVil,
+            'affectationLab':affectationLab,
+        }
+        return render(request, template,context)
     else:
         return redirect('logout')
+
+
+
+@login_required(login_url='login')
+# fonctions pour afficher la liste des utilisateurs
+def listeutilisateursResponse(request):
+    user = request.user
+    role = user.role_id
+
+    if role == 1:
+        qs = MyUser.objects.all().values(
+            'id','first_name','last_name','username','role__role','last_login'
+                                        )
+        # Get the search value from the request's GET parameters
+        search_value = request.GET.get('search[value]', '')
+
+        # Apply search filter to the QuerySet
+        if search_value:
+            qs = qs.filter(
+                Q(first_name__icontains=search_value) |
+                Q(last_name__icontains=search_value) |
+                Q(username__icontains=search_value)
+            )
+
+        # Number of items to show per page
+        items_per_page = 15
+
+        # Initialize the Paginator with the QuerySet and the number of items per page
+        paginator = Paginator(qs, items_per_page)
+
+        # Get the current page number from the request's GET parameters
+        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+        # Calculate the current page number based on start and length
+        current_page = (start // length) + 1
+
+        try:
+            # Get the current page from the Paginator
+            page = paginator.page(current_page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver the first page.
+            page = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), return an empty JSON response.
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+        # Convert the page object to a list of dictionaries
+        data = list(page)
+
+        # Check if it's an AJAX request and if the export flag is set
+        # Check if it's an AJAX request and if the export flag is set
+        export = request.GET.get('export', None)
+        if export == 'excel':
+            # Retrieve all data (no lazy pagination) and store it in a list
+            data = list(qs)
+
+            # Create a new Excel workbook
+            workbook = Workbook()
+            sheet = workbook.active
+
+            # Write headers to the Excel file
+            header_row = ['USER ID', 'FIRST NAME', 'LAST NAME', 'USERNAME', 'APP.RIGHT LVL', 'DERNIERE CONNEXION']
+
+            # Combine header and data rows using zip
+            all_rows = [header_row] + [
+                [
+                    row['id'],
+                    row['first_name'],
+                    row['last_name'],
+                    row['username'],
+                    row['role__role'],
+                    row['last_login'],
+                ] for row in data
+            ]
+
+            # Write data rows to the Excel file
+            for row in all_rows:
+                sheet.append(row)
+
+            # Create an in-memory stream to hold the Excel file data
+            excel_stream = io.BytesIO()
+            workbook.save(excel_stream)
+            excel_stream.seek(0)
+
+            # Prepare the response to return the Excel file
+            response = HttpResponse(excel_stream,
+                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = 'attachment; filename="rapport.xlsx"'
+            return response
+
+        # Return JSON response with the data
+        return JsonResponse({
+            'data': data,
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+    else:
+        return redirect('logout')
+
 
 
 @login_required(login_url='login')
@@ -108,6 +230,22 @@ def ajoututilisateurs(request):
         return render(request, template, {'form': form})
     else:
         return redirect('logout')
+
+
+
+@login_required(login_url='login')
+def addUser(request):
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST)
+        print('Form is NOT Valid')
+        if form.is_valid():
+            print('Form is Valid')
+            form.save()
+            return redirect('userslist')
+    return redirect('userslist')
+
+
+
 
 @login_required(login_url='login')
 # Fonction details des affectations entrepots
@@ -135,12 +273,12 @@ def editionutilisateurs(request, pk):
         template = 'accounts/profile.html'
         instance = get_object_or_404(MyUser, id=pk)
         table = DetailsAffectation(AffectationEntrepot.objects.filter(username_id=pk))
-        table1 = DetailsVille(AffectationVille.objects.filter(username__id=pk))
+        # table1 = DetailsVille(AffectationVille.objects.filter(username__id=pk))
         table.paginate(page=request.GET.get('page', 1), per_page=15)
-        table1.paginate(page=request.GET.get('page', 1), per_page=15)
+        # table1.paginate(page=request.GET.get('page', 1), per_page=15)
         form = UserEdit(request.POST or None, instance=instance, prefix='user')
-        form1 = Affectation_Entrepot()
-        form2 = Affectation_Ville()
+        # form1 = Affectation_Entrepot()
+        # form2 = Affectation_Ville()
         # form3 = SignatureForm(request.POST or None)
         url = request.session['url']
 
@@ -151,10 +289,10 @@ def editionutilisateurs(request, pk):
 
         args = {
             'form': form,
-            'form1': form1,
+            # 'form1': form1,
             'table': table,
-            'table1': table1,
-            'form2': form2,
+            # 'table1': table1,
+            # 'form2': form2,
             # 'form3':form3,
         }
         return render(request, template, args)
@@ -170,66 +308,143 @@ def effacerutilisateurs(request, pk):
     if role == 1:
         object = MyUser.objects.get(id=pk)
         object.delete()
-        return redirect('userslist')
+        return JsonResponse(status=200)
     else:
-        return redirect('logout')
+        return JsonResponse(status=400)
+
 
 
 @login_required(login_url='login')
 # fonction pour affectation dans les entrepots
 def affectationentreprot(request):
-    user = request.user
-    role = user.role_id
-    if role == 1:
-        url = request.session['url']
-        pk = request.session['pk']
-        template = 'accounts/profile.html'
-        form = Affectation_Entrepot()
-        if request.method == 'POST':
-            username = pk
-            entrepot = request.POST['entrepot']
-            p = AffectationEntrepot(username_id=username, entrepot_id=entrepot)
-            p.save()
-            return redirect(url)
-        else:
-            return render(request, template, {'form': form})
-    else:
-        return redirect('logout')
+    if request.method == 'POST':
+        pk = request.POST.get('dataRow')
+        entrepot = request.POST.get('entrepot')
+        try:
+            u = MyUser.objects.get(id=pk)
+            e = Entrepot.objects.get(identrepot=entrepot)
+            a = AffectationEntrepot(username=u, entrepot=e)
+            a.save()
+            return JsonResponse({'status': 200})
+        except:
+            return JsonResponse({'status': 400})
+
+
+
+
+@login_required(login_url='login')
+# fonction pour affectation dans les entrepots
+def affectationlabo(request):
+    if request.method == 'POST':
+        pk = request.POST.get('dataRow')
+        laboratoire = request.POST.get('laboratoire')
+        print('TEST')
+        try:
+            user = MyUser.objects.get(id=pk)
+            laboratoire = ListeLaboratoire.objects.get(idLaboratoire=laboratoire)
+            ville = AffectationVille.objects.get(username_id=pk)
+            ville = Ville.objects.get(idville=ville.ville_id)
+            print('TEST')
+            print(user.id)
+            print(laboratoire.idLaboratoire)
+            print(ville.idville)
+
+            AffectationLaboratoire.objects.create(
+                idLaboratoire=laboratoire,
+                userId=user,
+                ville=ville
+            )
+
+            # a = AffectationLaboratoire(
+            #     idLaboratoire=laboratoire.idLaboratoire,
+            #     userId=user.id,
+            #     ville_id=ville.idville
+            # )
+            # a.save()
+            return JsonResponse({'status': 200})
+        except:
+            return JsonResponse({'status': 400})
+
+    return redirect('logout')
+
+
+
+
+@login_required(login_url='login')
+def affectationrole(request):
+    if request.method == 'POST':
+        try:
+            pk = request.POST.get('dataRow')
+            role = request.POST.get('role')
+            u = MyUser.objects.get(id=pk)
+            r = Roles.objects.get(idrole=role)
+            u.role = r
+            u.save(update_fields=['role'])
+            return JsonResponse({'status': 200})
+        except:
+            return JsonResponse({'status': 400})
+
+
 
 
 @login_required(login_url='login')
 # fonction pour affectation dans les Ville
 def affectationville(request):
-    user = request.user
-    role = user.role_id
-    if role == 1:
-        template = 'accounts/profileville.html'
-        form = Affectation_Ville()
-        url = request.session['url']
-        if request.method == 'POST':
-            username = request.session['pk']
-            ville = request.POST['ville']
-            p = AffectationVille(username_id=username, ville_id=ville)
+    if request.method == 'POST':
+        pk = request.POST.get('dataRow')
+        ville = request.POST.get('ville')
+        try:
+            u = MyUser.objects.get(id=pk)
+            v = Ville.objects.get(idville=ville)
+            p = AffectationVille(username_id=u.id, ville_id=v.idville)
             p.save()
-            return redirect(url)
-        else:
-            return render(request, template, {'form': form})
-    else:
-        return redirect('logout')
+            return JsonResponse({'status': 200})
+        except:
+            return JsonResponse({'status': 400})
+
 
 
 @login_required(login_url='login')
 #Retrait des affectations entrepots
-def retireraffectation(request, pk):
+def retireraffectationEntrepot(request, pk):
     user = request.user
     role = user.role_id
     if role == 1:
-        url = request.session['url']
-        object = AffectationEntrepot.objects.get(idaffectation_entrepot=pk)
-        object.delete()
-        return redirect(url)
+        if request.method == 'GET':
+            # print('TEST DELETE')
+            # print(pk)
+            object = AffectationEntrepot.objects.get(idaffectation_entrepot=pk)
+            object.delete()
+            return JsonResponse({'status': 200})
+        else:
+            return JsonResponse({'status': 400})
     else:
         return redirect('logout')
+
+
+
+@login_required(login_url='login')
+#Retrait des affectations entrepots
+def retireraffectationLabo(request, pk):
+    user = request.user
+    role = user.role_id
+    if role == 1:
+        if request.method == 'GET':
+            try:
+                print('TEST DELETE')
+                print(pk)
+                o = AffectationLaboratoire.objects.get(
+                    idAffectation=pk
+                )
+                o.delete()
+                return JsonResponse({'status': 200})
+            except:
+                return JsonResponse({'status': 400})
+        else:
+            return JsonResponse({'status': 400})
+    else:
+        return redirect('logout')
+
 
 
 @login_required(login_url='login')
@@ -241,7 +456,7 @@ def retireraffectationville(request, pk):
         url = request.session['url']
         object = AffectationVille.objects.get(idaffectation_ville=pk)
         object.delete()
-        return redirect(url)
+        return redirect('userslist')
     else:
         return redirect('logout')
 
@@ -274,15 +489,271 @@ def sign_it(request, pk):
 
 
 @login_required(login_url='login')
-def createToken(request,pk):
-    user = MyUser.objects.get(id=pk)
-    if user:
+def createToken(request, pk):
+    # Get the user instance or return a 404 if not found
+    print('HIT')
+    user = get_object_or_404(MyUser, pk=pk)
+
+    # Check if a token already exists for the user
+    if Token.objects.filter(user=user).exists():
+        # Return a JsonResponse with an error message indicating token already exists
+        print('TEST')
+        print(Token.objects.filter(user=user))
+        return JsonResponse({'error': 'Token already exists for this user'}, status=400)
+    else:
+        # Create a new token for the user
         Token.objects.create(user=user)
-        return redirect('userslist')
-    return redirect('userslist')
+        # Return a JsonResponse indicating successful token creation
+        return JsonResponse({'message': 'Token created successfully'}, status=201)
+
+
+@login_required(login_url='login')
+def ajoutSignature(request):
+    if request.method == 'POST' and request.FILES.get('image') and request.POST.get('dataRow'):
+        image_file = request.FILES['image']
+        tr_id = request.POST['dataRow']
+        try:
+            MyUser.objects.get(id=tr_id)
+            return JsonResponse({'error': 'Invalid request'}, status=400)
+        except:
+            # Save the base64 encoded image data to the database along with the tr_id
+            SignaturesModel.objects.create(signatureData=image_file.read(), userId_id=tr_id)
+            return JsonResponse({'message': 'Signature uploaded successfully'}, status=200)
+    else:
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+@login_required(login_url='login')
+def getSignature(request,pk):
+    try:
+        # Assuming your model has a field named 'image_data' where base64 data is stored
+        obj = SignaturesModel.objects.get(idSignature=pk)
+
+        # Fetch the base64 data from the model
+        base64_data = base64.b64encode(obj.signatureData).decode('utf-8')  # Encode bytes to base64 string
+
+        # Return the base64 data in a JSON response
+        return JsonResponse({'base64_image': base64_data}, status=200)
+
+    except ObjectDoesNotExist:
+        return JsonResponse({'error': 'Object not found'}, status=404)
+
+    except Exception as e:
+        print('SIGNATURE')
+        print(e)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 
+@login_required(login_url='login')
+def listeSignature(request,pk):
+    qs = SignaturesModel.objects.filter(userId=pk).values(
+        'idSignature',
+        'userId__first_name',
+        'userId__last_name'
+    )
+
+    # Number of items to show per page
+    items_per_page = 15
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+
+
+
+
+@login_required(login_url='login')
+def detailsAffectationUtilisateur(request,pk):
+    # qs = MyUser.objects.filter(id=pk).annotate(
+    #     roleaff=F('role__role'),
+    #     nomentrepot=F('affectationentrepot__entrepot__nomentrepot'),
+    #     denominationLaboratoire=F('affectationlaboratoire__idLaboratoire__denominationLaboratoire'),
+    #     nomville=F('affectationentrepot__entrepot__ville__nomville')
+    # ).values(
+    #     'id',
+    #     'first_name',
+    #     'last_name',
+    #     'roleaff',
+    #     'nomentrepot',
+    #     'denominationLaboratoire',
+    #     'nomville'
+    # )
+
+    qs = AffectationEntrepot.objects.filter(username_id=pk).values(
+        'username_id','idaffectation_entrepot',
+        'username__first_name',
+        'username__last_name',
+        'username__role__role',
+        'entrepot__nomentrepot',
+        'entrepot__ville'
+    )
+
+    # Number of items to show per page
+    items_per_page = 15
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+
+
+@login_required(login_url='login')
+def detailsAffectationLabo(request,pk):
+    qs = AffectationLaboratoire.objects.filter(userId=pk).values(
+        'userId_id',
+        'userId__first_name',
+        'userId__last_name',
+        'userId__role__role',
+        'idLaboratoire__denominationLaboratoire',
+        'idAffectation'
+    )
+
+    # Number of items to show per page
+    items_per_page = 15
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+
+@login_required(login_url='login')
+def detailsAffectationVille(request,pk):
+    qs = AffectationVille.objects.filter(username_id=pk).values(
+        'username_id',
+        'username__first_name',
+        'username__last_name',
+        'username__role__role',
+        'ville__nomville',
+    )
+
+    # Number of items to show per page
+    items_per_page = 15
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+
+
+@login_required(login_url='login')
 def privacyPolicy(request):
     template = 'privacyPolicy.html'
     context = {}
