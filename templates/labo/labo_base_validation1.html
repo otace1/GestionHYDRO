@@ -9,99 +9,102 @@
 
 <html>
 
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>TrackFlow+</title>
-  <!-- Tell the browser to be responsive to screen width -->
-  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>TrackFlow+</title>
+<!-- Tell the browser to be responsive to screen width -->
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-    <!-- Font Awesome -->
-  <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
-  <!-- Ionicons -->
-  <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
+<!-- Ionicons -->
+<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 
-  <!-- Tempusdominus Bbootstrap 4 -->
-  <link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+<!-- Tempusdominus Bbootstrap 4 -->
+<link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
 
-   <!-- iCheck -->
-  <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-  <!-- JQVMap -->
-  <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-  <!-- overlayScrollbars -->
-  <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-  <!-- Daterange picker -->
-  <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-  <!-- summernote -->
-  <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-  <!-- DataTables -->
-  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css'%}">
-  <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+<!-- iCheck -->
+<link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+<!-- JQVMap -->
+<link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+<!-- Theme style -->
+<link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+<!-- overlayScrollbars -->
+<link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+<!-- Daterange picker -->
+<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+<!-- summernote -->
+<link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+<!-- DataTables -->
+<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
 
-   <!-- Google Font: Source Sans Pro -->
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<!-- Google Font: Source Sans Pro -->
+<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 
-    <!-- Date picker -->
+<!-- Date picker -->
 {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
+{% block extra_js %}
 
 {% endblock %}
 
-  <style>
-        .wrapper {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
-        }
+<style>
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+    }
 
-        .content-wrapper {
-            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
-        }
-    </style>
+    .content-wrapper {
+        flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+    }
+</style>
 
-  </head>
-  <body class="hold-transition sidebar-mini- layout-fixed">
-  <div class="wrapper">
+</head>
+<body class="hold-transition sidebar-mini- layout-fixed">
+<div class="wrapper">
 
-      <!-- Navbar -->
-      <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-          <!-- Left navbar links -->
-          <ul class="navbar-nav">
-              <li class="nav-item">
-                  <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link"></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'logout' %}" class="nav-link" style="background-color: red; color: white">Déconnexion</a>
-              </li>
-          </ul>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
+                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link"></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url 'logout' %}" class="nav-link"
+                   style="background-color: red; color: white">Déconnexion</a>
+            </li>
+        </ul>
 
-          <!-- Right navbar links -->
-          <ul class="navbar-nav ml-auto">
-              <!-- Navbar Search -->
-              <li class="nav-item">
-                  <div class="navbar-search-block">
-                  </div>
-              </li>
-          </ul>
-      </nav>
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <aside class="main-sidebar sidebar-dark-secondary elevation-4">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
-                  <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold" style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
+            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-bold"
+                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
         </a>
         <!-- Sidebar -->
         <div class="sidebar">
@@ -113,12 +116,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -226,33 +229,40 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                        <ul class="nav nav-treeview">
+                            {% if user.role_id == 1 or user.role_id == 7 %}
+                            <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-        <i class="nav-icon fas fa-tachometer-alt"></i>
-        <p>TABLEAU DE BORD</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>GESTION REQUISITION</p>
-    </a>
-</li>
+                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>TABLEAU DE BORD</p>
+                                    </a>
+                                </li>
+                                {% endif %}
 
-                            <li class="nav-item">
-    <a href="{% url 'regularisation' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>REGULARISATION</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'rapportActivite' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>RAPPORT D'ACTIVITE</p>
-    </a>
-</li>
+                            {% if user.role_id == 1 or user.role_id == 11%}
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION REQUISITION</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'regularisation' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITE</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
                             </ul>
+                            {% endif %}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -295,7 +305,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
+                                <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -348,121 +358,126 @@
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
-{#                <div class="col-sm-6">#}
-{#                    <h1 class="m-0 text-dark"><b></b></h1>#}
-{#                </div>#}
+                {#                <div class="col-sm-6">#}
+                {#                    <h1 class="m-0 text-dark"><b></b></h1>#}
+                {#                </div>#}
                 <!-- /.row -->
 
                 <!-- Small boxes (Stat box) -->
 
-        <!-- /.row -->
+                <!-- /.row -->
 
-            <div class="row">
-                <a href="{% url 'rapportCq' %}" class="btn btn-app bg-warning">
-                  <span class="badge bg-info"></span>
-                  <i class="fas fa-file-archive"></i> RAPPORTS
-                </a>
-            </div>
+                <div class="row">
+                    <a href="{% url 'rapportCq' %}" class="btn btn-app bg-warning">
+                        <span class="badge bg-info"></span>
+                        <i class="fas fa-file-archive"></i> RAPPORTS
+                    </a>
+                </div>
 
-            <div class="col-md-12">
-                       <div class="row">
-                          <div class="col-lg-3 col-6">
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
                             <!-- small box -->
                             <div class="small-box bg-info">
-                              <div class="inner">
-                                <h3>{{ laboreception }}</h3>
+                                <div class="inner">
+                                    <h3>{{ laboreception }}</h3>
 
-                                <p>En attente de réception</p>
-                              </div>
-                              <div class="icon">
-                                <i class="ion ion-stats-bars"></i>
-                              </div>
-                              <a href="{% url 'enchAttenteReception' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                                    <p>En attente de réception</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="ion ion-stats-bars"></i>
+                                </div>
+                                <a href="{% url 'enchAttenteReception' %}" class="small-box-footer">Plus d'infos <i
+                                        class="fas fa-arrow-circle-right"></i></a>
                             </div>
-                          </div>
-                          <!-- ./col -->
-                          <div class="col-lg-3 col-6">
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
                             <!-- small box -->
                             <div class="small-box bg-success">
-                              <div class="inner">
-                                <h3>{{ enanalyse }}<sup style="font-size: 20px"></sup></h3>
+                                <div class="inner">
+                                    <h3>{{ enanalyse }}<sup style="font-size: 20px"></sup></h3>
 
-                                <p>En attente des résulats</p>
-                              </div>
-                              <div class="icon">
-                                <i class="ion ion-stats-bars"></i>
-                              </div>
-                              <a href="{% url 'enchAttenteResultat' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                                    <p>En attente des résulats</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="ion ion-stats-bars"></i>
+                                </div>
+                                <a href="{% url 'enchAttenteResultat' %}" class="small-box-footer">Plus d'infos <i
+                                        class="fas fa-arrow-circle-right"></i></a>
                             </div>
-                          </div>
-                          <!-- ./col -->
-                          <div class="col-lg-3 col-6">
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
                             <!-- small box -->
                             <div class="small-box bg-warning">
-                              <div class="inner">
-                                <h3>{{ enattente }}</h3>
+                                <div class="inner">
+                                    <h3>{{ enattente }}</h3>
 
-                                <p>En attente de validation</p>
-                              </div>
-                              <div class="icon">
-                                <i class="ion ion-stats-bars"></i>
-                              </div>
-                              <a href="{% url 'enchAttenteValidation' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                                    <p>En attente de validation</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="ion ion-stats-bars"></i>
+                                </div>
+                                <a href="{% url 'enchAttenteValidation' %}" class="small-box-footer">Plus d'infos <i
+                                        class="fas fa-arrow-circle-right"></i></a>
                             </div>
-                          </div>
-                          <!-- ./col -->
-                          <div class="col-lg-3 col-6">
+                        </div>
+                        <!-- ./col -->
+                        <div class="col-lg-3 col-6">
                             <!-- small box -->
                             <div class="small-box bg-danger">
-                              <div class="inner">
-                                <h3>{{ certImprimer }}</h3>
+                                <div class="inner">
+                                    <h3>{{ certImprimer }}</h3>
 
-                                <p>Certificats imprimés</p>
-                              </div>
-                              <div class="icon">
-                                <i class="ion ion-ios-paper"></i>
-                              </div>
-                              <a href="{% url 'enchPrintedCert' %}" class="small-box-footer">Plus d'infos <i class="fas fa-arrow-circle-right"></i></a>
+                                    <p>Certificats imprimés</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="ion ion-ios-paper"></i>
+                                </div>
+                                <a href="{% url 'enchPrintedCert' %}" class="small-box-footer">Plus d'infos <i
+                                        class="fas fa-arrow-circle-right"></i></a>
                             </div>
-                          </div>
+                        </div>
                         <!-- ./col -->
-                       </div>
-                   </div>
+                    </div>
+                </div>
 
 
-               <div class="row">
-                   <div class="col-md-12">
-                       <div class="card">
-                           <div class="card-header border-0" style="background-color: darkgreen">
-                               <h3 class="card-title" style="color: white"><b>EN ATTENTE DE VALIDATION</b></h3>
-                           </div>
-                           <div class="card-body">
-                               {% block content %}
-                               {% endblock %}
-                           </div>
-                       </div>
-                   </div>
-               </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header border-0" style="background-color: darkgreen">
+                                <h3 class="card-title" style="color: white"><b>EN ATTENTE DE VALIDATION</b></h3>
+                            </div>
+                            <div class="card-body">
+                                {% block content %}
+                                {% endblock %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
 
-           </div>
+            </div>
 
-           <!-- /.row -->
-       </section>
-   </div>
+            <!-- /.row -->
+        </section>
+    </div>
     <!-- /.content-wrapper -->
     <footer class="main-footer">
-        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
-    All rights reserved.
-    <div class="float-right d-none d-sm-inline-block">
-      <b>Version</b> 3.0
-    </div>
-  </footer>
-  <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-  </aside>
-  <!-- /.control-sidebar -->
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong>
+        All rights reserved.
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 3.0
+        </div>
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
+    <!-- /.control-sidebar -->
 
 </div>
 
@@ -473,7 +488,7 @@
 <script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
-  $.widget.bridge('uibutton', $.ui.button)
+    $.widget.bridge('uibutton', $.ui.button)
 </script>
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -499,9 +514,10 @@
 <script src="{% static 'dist/js/adminlte.js' %}"></script>
 
 
-  <!-- /.JS script for modal -->
-   <!-- jQuery 3 -->
-<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+<!-- /.JS script for modal -->
+<!-- jQuery 3 -->
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
 
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -521,75 +537,75 @@
 
 <script>
 
-var Id;
+    var Id;
 
-$(document).ready(function () {
+    $(document).ready(function () {
 
-    {% block javascript %}
+        {% block javascript %}
 
-    {% endblock %}
+        {% endblock %}
 
-})
+    })
 </script>
 
-  <script>
-  $(function () {
-    $("#example1").DataTable({
-        dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+<script>
+    $(function () {
+        $("#example1").DataTable({
+            dom: 'Bfrtip',
+            "responsive": true, "lengthChange": true, "autoWidth": false, "info": true, "paging": true, pageLength: 10, // Set the pagination to 10 records per page
+            "buttons": [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    exportOptions: {
+                        format: {
+                            body: function (data, row, column, node) {
+                                // Replace "," with "." for decimal numbers during export
+                                if (typeof data === 'string' && data.includes(',')) {
+                                    data = data.replace(',', '.');
+                                }
+                                return data;
+                            }
+                        }
+                    }
+                },
+                'print'
+            ]
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
-    $("#DechargementTable").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
-        }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+        $("#DechargementTable").DataTable({
+            dom: 'Bfrtip',
+            "responsive": true, "lengthChange": true, "autoWidth": false, "info": true, "paging": true, pageLength: 10, // Set the pagination to 10 records per page
+            "buttons": [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    exportOptions: {
+                        format: {
+                            body: function (data, row, column, node) {
+                                // Replace "," with "." for decimal numbers during export
+                                if (typeof data === 'string' && data.includes(',')) {
+                                    data = data.replace(',', '.');
+                                }
+                                return data;
+                            }
+                        }
+                    }
+                },
+                'print'
+            ]
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
 
-    $('#example2').DataTable({
-      "paging": true,
-      "lengthChange": false,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false,
-      "responsive": true,
+        $('#example2').DataTable({
+            "paging": true,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+        });
     });
-  });
 </script>
 
 </body>

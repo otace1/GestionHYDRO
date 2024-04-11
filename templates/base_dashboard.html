@@ -17,34 +17,35 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
-<!-- Ionicons -->
-  <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-  <!-- Tempusdominus Bbootstrap 4 -->
-  <link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
-   <!-- iCheck -->
-  <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-  <!-- JQVMap -->
-  <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-  <!-- overlayScrollbars -->
-  <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-  <!-- Daterange picker -->
-  <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-  <!-- summernote -->
-  <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-  <!-- DataTables -->
-  <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css'%}">
-  <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
-   <!-- Google Font: Source Sans Pro -->
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bbootstrap 4 -->
+    <link rel="stylesheet"
+          href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+    <!-- summernote -->
+    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+    <!-- Google Font: Source Sans Pro -->
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- Date picker -->
-{#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
-  {% block extra_js%}
-  {% endblock %}
+    {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
+    <link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+    <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+    {% block extra_js %}
+    {% endblock %}
     <style>
         .wrapper {
             display: flex;
@@ -58,42 +59,45 @@
     </style>
 </head>
 <!-- sidebar: style can be found in sidebar.less -->
-  <body class="hold-transition sidebar-mini- layout-fixed">
-  <div class="wrapper">
+<body class="hold-transition sidebar-mini- layout-fixed">
+<div class="wrapper">
 
-      <!-- Navbar -->
-      <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-          <!-- Left navbar links -->
-          <ul class="navbar-nav">
-              <li class="nav-item">
-                  <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link"></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'logout' %}" class="nav-link" style="background-color: red; color: white">Déconnexion</a>
-              </li>
-          </ul>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
+                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link"></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url 'logout' %}" class="nav-link"
+                   style="background-color: red; color: white">Déconnexion</a>
+            </li>
+        </ul>
 
-          <!-- Right navbar links -->
-          <ul class="navbar-nav ml-auto">
-              <!-- Navbar Search -->
-              <li class="nav-item">
-                  <div class="navbar-search-block">
-                  </div>
-              </li>
-          </ul>
-      </nav>
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <aside class="main-sidebar sidebar-dark-secondary elevation-4">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
-                  <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold" style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
+            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-bold"
+                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
         </a>
 
         <!-- Sidebar -->
@@ -106,12 +110,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -219,33 +223,40 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                        <ul class="nav nav-treeview">
+                            {% if user.role_id == 1 or user.role_id == 7 %}
+                            <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-        <i class="nav-icon fas fa-tachometer-alt"></i>
-        <p>TABLEAU DE BORD</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>GESTION REQUISITION</p>
-    </a>
-</li>
+                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>TABLEAU DE BORD</p>
+                                    </a>
+                                </li>
+                                {% endif %}
 
-                            <li class="nav-item">
-    <a href="{% url 'regularisation' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>REGULARISATION</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'rapportActivite' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>RAPPORT D'ACTIVITE</p>
-    </a>
-</li>
+                            {% if user.role_id == 1 or user.role_id == 11%}
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION REQUISITION</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'regularisation' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITE</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
                             </ul>
+                            {% endif %}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -288,7 +299,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
+                                <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -319,152 +330,158 @@
 
 
     <!-- Content Wrapper. Contains page content -->
-<div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0 text-dark"><b>Tableau de bord</b></h1>
-                </div><!-- /.col -->
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                        <li class="breadcrumb-item active">Département</li>
-                        <li class="breadcrumb-item active">Tableau de bord</li>
-                    </ol>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark"><b>Tableau de bord</b></h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                            <li class="breadcrumb-item active">Département</li>
+                            <li class="breadcrumb-item active">Tableau de bord</li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-6">
+                        <a class="btn btn-app bg-success" href="{% url 'rapportBrut' %}">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-archive"></i> RAPPORTS
+                        </a>
+                    </div>
+                </div><!-- /.row -->
+                <div class="row">
+                    <div class="col-md-2 col-sm-3 col-12">
+                        <div class="info-box bg-info">
+                            <span class="info-box-icon"><i class="far fa-file"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente de réquisition</span>
+                                <span class="info-box-number">{{ j }}</span>
+                                <a href="{% url 'rapportBrutJournalier' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                    <div class="col-md-2 col-sm-3 col-12">
+                        <div class="info-box bg-success">
+                            <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente d'échantillonnage</span>
+                                <span class="info-box-number">{{ k }}</span>
+                                <a href="{% url 'rapportBrutEchantillonnage' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                    <div class="col-md-2 col-sm-3 col-12">
+                        <div class="info-box bg-warning">
+                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente de réception Labo</span>
+                                <span class="info-box-number">{{ i }}</span>
+                                <a href="{% url 'rapportAttenteReception' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                    <div class="col-md-2 col-sm-3 col-12">
+                        <div class="info-box bg-warning">
+                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente de résultat d'analyse</span>
+                                <span class="info-box-number">{{ l }}</span>
+                                <a href="{% url 'rapportBrutAnalyse' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                    <div class="col-md-2 col-sm-3 col-12">
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente d'inspection</span>
+                                <span class="info-box-number">{{ m }}</span>
+                                <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                    <div class="col-md-2 col-sm-3 col-12">
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente de déchargement</span>
+                                <span class="info-box-number">{{ m }}</span>
+                                <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                </div><!-- /.row -->
+                <div class="row">
+                    <div class="col-md-6">
+                        {% block chart %}
+                        {% endblock %}
+                    </div>
+                    <div class="col-md-6">
+                        {% block latest %}
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% block importateur %}{% endblock %}
+                    </div>
+                    <div class="col-md-6">
+                        {% block products %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- /.content -->
     </div>
-    <!-- /.content-header -->
-
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    <a class="btn btn-app bg-success" href="{% url 'rapportBrut' %}">
-                        <span class="badge bg-success"></span>
-                        <i class="fas fa-archive"></i> RAPPORTS
-                    </a>
-                </div>
-            </div><!-- /.row -->
-            <div class="row">
-                <div class="col-md-2 col-sm-3 col-12">
-                    <div class="info-box bg-info">
-                        <span class="info-box-icon"><i class="far fa-file"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente de réquisition</span>
-                            <span class="info-box-number">{{ j }}</span>
-                            <a href="{% url 'rapportBrutJournalier' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                        <!-- /.info-box-content -->
-                    </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-3 col-12">
-                    <div class="info-box bg-success">
-                        <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente d'échantillonnage</span>
-                            <span class="info-box-number">{{ k }}</span>
-                            <a href="{% url 'rapportBrutEchantillonnage' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                        <!-- /.info-box-content -->
-                    </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-3 col-12">
-                    <div class="info-box bg-warning">
-                        <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente de réception Labo</span>
-                            <span class="info-box-number">{{ i }}</span>
-                            <a href="{% url 'rapportAttenteReception' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                        <!-- /.info-box-content -->
-                    </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-3 col-12">
-                    <div class="info-box bg-warning">
-                        <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente de résultat d'analyse</span>
-                            <span class="info-box-number">{{ l }}</span>
-                            <a href="{% url 'rapportBrutAnalyse' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                        <!-- /.info-box-content -->
-                    </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-3 col-12">
-                    <div class="info-box bg-danger">
-                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente d'inspection</span>
-                            <span class="info-box-number">{{ m }}</span>
-                            <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                        <!-- /.info-box-content -->
-                    </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-3 col-12">
-                    <div class="info-box bg-danger">
-                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente de déchargement</span>
-                            <span class="info-box-number">{{ m }}</span>
-                            <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                        <!-- /.info-box-content -->
-                    </div>
-                    <!-- /.info-box -->
-                </div>
-            </div><!-- /.row -->
-            <div class="row">
-                <div class="col-md-6">
-                    {% block chart %}
-                    {% endblock %}
-                </div>
-                <div class="col-md-6">
-                    {% block latest %}
-                    {% endblock %}
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    {% block importateur %}{% endblock %}
-                </div>
-                <div class="col-md-6">
-                     {% block products %}{% endblock %}
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- /.content -->
-</div>
 
     <!-- /.content-wrapper -->
     <!-- /.content-wrapper -->
 
-      <footer class="main-footer">
+    <footer class="main-footer">
         <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
             SARL</a>.</strong>
         All rights reserved.
         <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.0
+            <b>Version</b> 3.0
         </div>
-      </footer>
-      <!-- Control Sidebar -->
-      <aside class="control-sidebar control-sidebar-dark">
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
         <!-- Control sidebar content goes here -->
-      </aside>
-      <!-- /.control-sidebar -->
-  </div>
+    </aside>
+    <!-- /.control-sidebar -->
+</div>
 
 
 <!-- jQuery -->
@@ -500,7 +517,8 @@
 
 <!-- /.JS script for modal -->
 <!-- jQuery 3 -->
-<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
 
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -521,56 +539,56 @@
         {% endblock %}
 
     })
-    </script>
+</script>
 
 <script>
-        // Fetch the dataset from the Django view's URL using AJAX
-        fetch("{% url 'chartJs' %}")
-            .then(response => response.json())
-            .then(data => {
-                // Extract product names, controlled volumes, and declared volumes from the data
-                const productNames = data.map(item => item.idinspection__idcargaison__produit__nomproduit);
-                const declaredVolumes = data.map(item => item.totalVolume);
-                const certifiedVolumes = data.map(item => item.totalCertified);
+    // Fetch the dataset from the Django view's URL using AJAX
+    fetch("{% url 'chartJs' %}")
+        .then(response => response.json())
+        .then(data => {
+            // Extract product names, controlled volumes, and declared volumes from the data
+            const productNames = data.map(item => item.idinspection__idcargaison__produit__nomproduit);
+            const declaredVolumes = data.map(item => item.totalVolume);
+            const certifiedVolumes = data.map(item => item.totalCertified);
 
-                // Create the Chart.js chart with the fetched data
-                const ctx = document.getElementById('myChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: productNames,
-                        datasets: [
-                            {
+            // Create the Chart.js chart with the fetched data
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: productNames,
+                    datasets: [
+                        {
                             label: 'Volume déclaré',
                             data: declaredVolumes,
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
                             borderColor: 'rgba(255, 99, 132, 1)',
                             borderWidth: 1
                         },
-                            {
+                        {
                             label: 'Volume certifié',
                             data: certifiedVolumes,
                             backgroundColor: 'rgba(75, 192, 192, 0.2)',
                             borderColor: 'rgba(75, 192, 192, 0.2)',
                             borderWidth: 1
                         }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
+                }
             });
-    </script>
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });
+</script>
 
 
-    </body>
-    </html>
+</body>
+</html>

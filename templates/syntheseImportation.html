@@ -17,17 +17,18 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
-<!-- Ionicons -->
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 
-<!-- Tempusdominus Bbootstrap 4 -->
-<link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <!-- Tempusdominus Bbootstrap 4 -->
+    <link rel="stylesheet"
+          href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
 
-<!-- iCheck -->
-<link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-<!-- JQVMap -->
-<link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-<!-- Theme style -->
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+    <!-- Theme style -->
     <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
     <!-- overlayScrollbars -->
     <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
@@ -49,51 +50,54 @@
     <link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
     <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
+    {% block extra_js %}
 
-{% endblock %}
+    {% endblock %}
 
 
 </head>
 
 <!-- sidebar: style can be found in sidebar.less -->
 <!-- sidebar: style can be found in sidebar.less -->
-  <body class="hold-transition sidebar-mini- layout-fixed">
-  <div class="wrapper">
+<body class="hold-transition sidebar-mini- layout-fixed">
+<div class="wrapper">
 
-      <!-- Navbar -->
-      <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-          <!-- Left navbar links -->
-          <ul class="navbar-nav">
-              <li class="nav-item">
-                  <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link"></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'logout' %}" class="nav-link" style="background-color: red; color: white">Déconnexion</a>
-              </li>
-          </ul>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
+                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link"></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url 'logout' %}" class="nav-link"
+                   style="background-color: red; color: white">Déconnexion</a>
+            </li>
+        </ul>
 
-          <!-- Right navbar links -->
-          <ul class="navbar-nav ml-auto">
-              <!-- Navbar Search -->
-              <li class="nav-item">
-                  <div class="navbar-search-block">
-                  </div>
-              </li>
-          </ul>
-      </nav>
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <aside class="main-sidebar sidebar-dark-secondary elevation-4">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
-                  <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold" style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
+            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-bold"
+                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
         </a>
         <!-- Sidebar -->
         <div class="sidebar">
@@ -105,12 +109,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -218,33 +222,40 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                        <ul class="nav nav-treeview">
+                            {% if user.role_id == 1 or user.role_id == 7 %}
+                            <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-        <i class="nav-icon fas fa-tachometer-alt"></i>
-        <p>TABLEAU DE BORD</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>GESTION REQUISITION</p>
-    </a>
-</li>
+                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>TABLEAU DE BORD</p>
+                                    </a>
+                                </li>
+                                {% endif %}
 
-                            <li class="nav-item">
-    <a href="{% url 'regularisation' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>REGULARISATION</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'rapportActivite' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>RAPPORT D'ACTIVITE</p>
-    </a>
-</li>
+                            {% if user.role_id == 1 or user.role_id == 11%}
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION REQUISITION</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'regularisation' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITE</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
                             </ul>
+                            {% endif %}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -287,7 +298,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
+                                <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -331,45 +342,45 @@
                             <li class="breadcrumb-item"><a href="#">Departement</a></li>
                             <li class="breadcrumb-item"><a href="#">Rapport</a></li>
                             <li class="breadcrumb-item"><a href="#">Synthese</a></li>
-{#                            <li class="breadcrumb-item active"></li>#}
+                            {#                            <li class="breadcrumb-item active"></li>#}
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
             </div><!-- /.container-fluid -->
         </div>
-    <!-- /.content-header -->
+        <!-- /.content-header -->
 
-    <!-- Main content -->
+        <!-- Main content -->
         <section class="content">
-        <div class="row">
-                    <a class="btn btn-app bg-warning" href="{% url 'dashboard' %}">
-                  <span class="badge bg-success"></span>
-                  <i class="fas fa-file"></i> Retour
+            <div class="row">
+                <a class="btn btn-app bg-warning" href="{% url 'dashboard' %}">
+                    <span class="badge bg-success"></span>
+                    <i class="fas fa-file"></i> Retour
                 </a>
 
-          <div class="container-fluid">
-      <div class="row">
-      <div class="col-12">
-      <div class="card">
-      <div class="card-body">
-              {% block content %}
-              {% endblock %}
-      </div>
-      </div>
-      </div>
-      </div>
-              <!-- /.box-body -->
-          </div>
-        <!-- /.box -->
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    {% block content %}
+                                    {% endblock %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.box-body -->
+                </div>
+                <!-- /.box -->
 
-        <!-- /.col -->
+                <!-- /.col -->
 
-        {#   </div>#}
-        {#</div>#}
-        <!-- /.row -->
-    </section>
-       <!-- /.content -->
-   </div>
+                {#   </div>#}
+                {#</div>#}
+                <!-- /.row -->
+        </section>
+        <!-- /.content -->
+    </div>
     <!-- /.content-wrapper -->
     <!-- /.content-wrapper -->
     <footer class="main-footer">
@@ -395,7 +406,7 @@
 <script src="{% static 'plugins/jquery-ui/jquery-ui.min.js' %}"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
-  $.widget.bridge('uibutton', $.ui.button)
+    $.widget.bridge('uibutton', $.ui.button)
 </script>
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -422,8 +433,9 @@
 
 
 <!-- /.JS script for modal -->
-   <!-- jQuery 3 -->
-<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+<!-- jQuery 3 -->
+<script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+        crossorigin="anonymous"></script>
 
 <!-- Bootstrap 4 -->
 <!-- Bootstrap 4 -->
@@ -452,52 +464,52 @@
         {% endblock %}
     })
 </script>
-  <script>
-      function getRowId(button) {
-  var row = button.closest('tr');
+<script>
+    function getRowId(button) {
+        var row = button.closest('tr');
 
-  if (row) {
-    rowId = row.id;
-    {#console.log('Row ID:', rowId);#}
-    // Perform further actions with the row ID, such as making an AJAX request
-  }
-}
-  </script>
-
-  <script>
-  $(function () {
-    $("#example1").DataTable({
-       dom: 'Bfrtip',
-      "responsive": true, "lengthChange": true, "autoWidth": false, "info": true,"paging": true, pageLength: 10, // Set the pagination to 10 records per page
-      "buttons": [
-          {
-      extend: 'excelHtml5',
-      text: 'Export to Excel',
-      exportOptions: {
-        format: {
-          body: function (data, row, column, node) {
-            // Replace "," with "." for decimal numbers during export
-            if (typeof data === 'string' && data.includes(',')) {
-              data = data.replace(',', '.');
-            }
-            return data;
-          }
+        if (row) {
+            rowId = row.id;
+            {#console.log('Row ID:', rowId);#}
+            // Perform further actions with the row ID, such as making an AJAX request
         }
-      }
-    },
-    'print'
-      ]
-    }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-    $('#example2').DataTable({
-      "paging": true,
-      "lengthChange": false,
-      "searching": false,
-      "ordering": true,
-      "info": true,
-      "autoWidth": false,
-      "responsive": true,
+    }
+</script>
+
+<script>
+    $(function () {
+        $("#example1").DataTable({
+            dom: 'Bfrtip',
+            "responsive": true, "lengthChange": true, "autoWidth": false, "info": true, "paging": true, pageLength: 10, // Set the pagination to 10 records per page
+            "buttons": [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    exportOptions: {
+                        format: {
+                            body: function (data, row, column, node) {
+                                // Replace "," with "." for decimal numbers during export
+                                if (typeof data === 'string' && data.includes(',')) {
+                                    data = data.replace(',', '.');
+                                }
+                                return data;
+                            }
+                        }
+                    }
+                },
+                'print'
+            ]
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+        $('#example2').DataTable({
+            "paging": true,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+        });
     });
-  });
 </script>
 </body>
 </html>

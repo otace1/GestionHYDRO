@@ -25,70 +25,70 @@
 <link rel="stylesheet" href="{% static '/dist/css/AdminLTE.min.css' %}">
 <!-- AdminLTE Skins-->
 <link rel="stylesheet" href="{% static '/dist/css/skins/_all-skins.min.css' %}">
-  <script src="{% static '/dist/js/pages/tml5shiv.min.js'%}"></script>
-  <script src="{% static '/dist/js/pages/respond.min.js'%}"></script>
-  <!-- jQuery 3 -->
-  <script src="{% static '/bower_components/jquery/dist/jquery.min.js'%}"></script>
-  <!-- AdminLTE App -->
-  <script src="{% static '/dist/js/adminlte.min.js'%}"></script>
-  <!-- Google Font -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
-  <!-- Date picker -->
-  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+<script src="{% static '/dist/js/pages/tml5shiv.min.js' %}"></script>
+<script src="{% static '/dist/js/pages/respond.min.js' %}"></script>
+<!-- jQuery 3 -->
+<script src="{% static '/bower_components/jquery/dist/jquery.min.js' %}"></script>
+<!-- AdminLTE App -->
+<script src="{% static '/dist/js/adminlte.min.js' %}"></script>
+<!-- Google Font -->
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+<!-- Date picker -->
+<script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
+<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
+{% block extra_js %}
 
 {% endblock %}
 
 </head>
 
-    <!-- sidebar: style can be found in sidebar.less -->
+<!-- sidebar: style can be found in sidebar.less -->
 
 <body class="hold-transition skin-blue sidebar-mini">
 <div class="wrapper">
 
     <header class="main-header">
-    <!-- Logo -->
-    <a href="" class="logo">
-      <!-- mini logo for sidebar mini 50x50 pixels -->
-      <span class="logo-mini"><b>CGW</b></span>
-      <!-- logo for regular state and mobile devices -->
-      <span class="logo-lg"><b>CGW</b>APP</span>
-    </a>
-    <!-- Header Navbar: style can be found in header.less -->
-    <nav class="navbar navbar-static-top">
-      <!-- Sidebar toggle button-->
-      <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </a>
+        <!-- Logo -->
+        <a href="" class="logo">
+            <!-- mini logo for sidebar mini 50x50 pixels -->
+            <span class="logo-mini"><b>CGW</b></span>
+            <!-- logo for regular state and mobile devices -->
+            <span class="logo-lg"><b>CGW</b>APP</span>
+        </a>
+        <!-- Header Navbar: style can be found in header.less -->
+        <nav class="navbar navbar-static-top">
+            <!-- Sidebar toggle button-->
+            <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
 
-      <div class="navbar-custom-menu">
-        <ul class="nav navbar-nav">
+            <div class="navbar-custom-menu">
+                <ul class="nav navbar-nav">
 
-          <li class="dropdown user user-menu">
-            <a href="{%url 'logout'%}"  type="button" class="btn btn-danger btn-rounded">Déconnexion</a>
+                    <li class="dropdown user user-menu">
+                        <a href="{% url 'logout' %}" type="button" class="btn btn-danger btn-rounded">Déconnexion</a>
 
 
-          </li>
-          <!-- Control Sidebar Toggle Button -->
-          <!--<li>
-            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-          </li>-->
-        </ul>
-          </li>
-          <!-- Control Sidebar Toggle Button -->
-          <!--<li>
-            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-          </li>-->
-          </ul>
-      </div>
-    </nav>
+                    </li>
+                    <!-- Control Sidebar Toggle Button -->
+                    <!--<li>
+                      <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+                    </li>-->
+                </ul>
+                </li>
+                <!-- Control Sidebar Toggle Button -->
+                <!--<li>
+                  <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+                </li>-->
+                </ul>
+            </div>
+        </nav>
     </header>
 
 
@@ -119,12 +119,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -357,20 +357,21 @@
                 <div class="box col-md-8">
                     {% block content %}
 
-              {% endblock %}
-          </div>
+                    {% endblock %}
+                </div>
+            </div>
+        </section>
+        <!-- /.content -->
     </div>
-    </section>
-    <!-- /.content -->
-  </div>
-  <!-- /.content-wrapper -->
-  <footer class="main-footer">
-    <div class="pull-right hidden-xs">
-      <b>Version</b> 2.0
-    </div>
-    <strong>Copyright &copy; {% now 'Y' %} <a href="https://cgworldwide.org">Compass Green WorldWide SARL</a>.</strong> All rights
-    reserved.
-  </footer>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <div class="pull-right hidden-xs">
+            <b>Version</b> 2.0
+        </div>
+        <strong>Copyright &copy; {% now 'Y' %} <a href="https://cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong> All rights
+        reserved.
+    </footer>
 </div>
 </body>
 </html>

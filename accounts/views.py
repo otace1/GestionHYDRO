@@ -237,11 +237,14 @@ def ajoututilisateurs(request):
 def addUser(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
-        print('Form is NOT Valid')
         if form.is_valid():
-            print('Form is Valid')
             form.save()
-            return redirect('userslist')
+            return JsonResponse({'success': True},status=200)
+        else:
+            errors = form.errors.as_json()
+            return JsonResponse({'success': False, 'errors': errors}, status=400)
+
+    # Redirect for non-ajax requests or other HTTP methods
     return redirect('userslist')
 
 

@@ -4,83 +4,86 @@
 {% bootstrap_javascript jquery='full' %}
 
 {% block extrahead %}
-     {{ form.media }}
+    {{ form.media }}
 {% endblock %}
 <html>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>TrackFlow+</title>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>TrackFlow+</title>
 <!-- Tell the browser to be responsive to screen width -->
 <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-  <!-- Google Font: Source Sans Pro -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="{% static '/dist/css/adminlte.min.css' %}">
+<!-- Google Font: Source Sans Pro -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
+<!-- Theme style -->
+<link rel="stylesheet" href="{% static '/dist/css/adminlte.min.css' %}">
 
 
-    <!-- Date picker -->
+<!-- Date picker -->
 {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
+{% block extra_js %}
 
 {% endblock %}
 
-  <style>
-        .wrapper {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
-        }
+<style>
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+    }
 
-        .content-wrapper {
-            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
-        }
-    </style>
+    .content-wrapper {
+        flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+    }
+</style>
 
-  </head>
+</head>
 
 
-  <!-- sidebar: style can be found in sidebar.less -->
-  <body class="hold-transition sidebar-mini- layout-fixed">
-  <div class="wrapper">
+<!-- sidebar: style can be found in sidebar.less -->
+<body class="hold-transition sidebar-mini- layout-fixed">
+<div class="wrapper">
 
-      <!-- Navbar -->
-      <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-          <!-- Left navbar links -->
-          <ul class="navbar-nav">
-              <li class="nav-item">
-                  <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link"></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'logout' %}" class="nav-link" style="background-color: red; color: white">Déconnexion</a>
-              </li>
-          </ul>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
+                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link"></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url 'logout' %}" class="nav-link"
+                   style="background-color: red; color: white">Déconnexion</a>
+            </li>
+        </ul>
 
-          <!-- Right navbar links -->
-          <ul class="navbar-nav ml-auto">
-              <!-- Navbar Search -->
-              <li class="nav-item">
-                  <div class="navbar-search-block">
-                  </div>
-              </li>
-          </ul>
-      </nav>
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <aside class="main-sidebar sidebar-dark-secondary elevation-4">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
-                  <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold" style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
+            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-bold"
+                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
         </a>
         <!-- Sidebar -->
         <div class="sidebar">
@@ -92,12 +95,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -205,33 +208,40 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                        <ul class="nav nav-treeview">
+                            {% if user.role_id == 1 or user.role_id == 7 %}
+                            <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-        <i class="nav-icon fas fa-tachometer-alt"></i>
-        <p>TABLEAU DE BORD</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>GESTION REQUISITION</p>
-    </a>
-</li>
+                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>TABLEAU DE BORD</p>
+                                    </a>
+                                </li>
+                                {% endif %}
 
-                            <li class="nav-item">
-    <a href="{% url 'regularisation' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>REGULARISATION</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'rapportActivite' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>RAPPORT D'ACTIVITE</p>
-    </a>
-</li>
+                            {% if user.role_id == 1 or user.role_id == 11%}
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION REQUISITION</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'regularisation' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITE</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
                             </ul>
+                            {% endif %}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -274,7 +284,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
+                                <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -304,148 +314,154 @@
     </aside>
 
 
-      <!-- Content Wrapper. Contains page content -->
-      <div class="content-wrapper">
-          <!-- Content Header (Page header) -->
-          <div class="content-header">
-              <div class="container-fluid">
-                  <div class="row mb-2">
-                      <div class="col-sm-6">
-                          <h1 class="m-0 text-dark"><b>GESTION DES REQUISITIONS</b></h1>
-                      </div><!-- /.col -->
-                      <div class="col-sm-6">
-                          <ol class="breadcrumb float-sm-right">
-                              <li class="breadcrumb-item"><a href="">Accueil</a></li>
-                              <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
-                              <li class="breadcrumb-item active">Gestion des réquisitions</li>
-                          </ol>
-                      </div><!-- /.col -->
-                  </div><!-- /.row -->
-              </div><!-- /.container-fluid -->
-          </div>
-          <!-- /.content-header -->
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper">
+        <!-- Content Header (Page header) -->
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0 text-dark"><b>GESTION DES REQUISITIONS</b></h1>
+                    </div><!-- /.col -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="">Accueil</a></li>
+                            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+                            <li class="breadcrumb-item active">Gestion des réquisitions</li>
+                        </ol>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+        <!-- /.content-header -->
 
-          <!-- Content Wrapper. Contains page content -->
-          <section class="content">
-              <div class="container-fluid">
-                  <div class="row">
-                <div class="col-md-2 col-sm-2 col-12">
-                    <div class="info-box bg-info">
-                        <span class="info-box-icon"><i class="far fa-file"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente d'échantillonnage</span>
-                            <span class="info-box-number">{{ e }}</span>
-                            <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+        <!-- Content Wrapper. Contains page content -->
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-2 col-sm-2 col-12">
+                        <div class="info-box bg-info">
+                            <span class="info-box-icon"><i class="far fa-file"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente d'échantillonnage</span>
+                                <span class="info-box-number">{{ e }}</span>
+                                <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box-content -->
+                        <!-- /.info-box -->
                     </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-2 col-12">
-                    <div class="info-box bg-success">
-                        <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente de réception Labo</span>
-                            <span class="info-box-number">{{ p }}</span>
-                            <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                    <div class="col-md-2 col-sm-2 col-12">
+                        <div class="info-box bg-success">
+                            <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente de réception Labo</span>
+                                <span class="info-box-number">{{ p }}</span>
+                                <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box-content -->
+                        <!-- /.info-box -->
                     </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-2 col-12">
-                    <div class="info-box bg-warning">
-                        <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente des résultats</span>
-                            <span class="info-box-number">{{ l }}</span>
-                            <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                    <div class="col-md-2 col-sm-2 col-12">
+                        <div class="info-box bg-warning">
+                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente des résultats</span>
+                                <span class="info-box-number">{{ l }}</span>
+                                <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box-content -->
+                        <!-- /.info-box -->
                     </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-2 col-12">
-                    <div class="info-box bg-danger">
-                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente d'inspection</span>
-                            <span class="info-box-number">{{ i }}</span>
-                            <a href="{% url 'enAttenteInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                    <div class="col-md-2 col-sm-2 col-12">
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente d'inspection</span>
+                                <span class="info-box-number">{{ i }}</span>
+                                <a href="{% url 'enAttenteInspection' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box-content -->
+                        <!-- /.info-box -->
                     </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-2 col-12">
-                    <div class="info-box bg-danger">
-                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">En attente de déchargement</span>
-                            <span class="info-box-number">{{ d }}</span>
-                            <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                    <div class="col-md-2 col-sm-2 col-12">
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">En attente de déchargement</span>
+                                <span class="info-box-number">{{ d }}</span>
+                                <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box-content -->
+                        <!-- /.info-box -->
                     </div>
-                    <!-- /.info-box -->
-                </div>
-                <div class="col-md-2 col-sm-2 col-12">
-                    <div class="info-box bg-danger">
-                        <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Total des cargaisons</span>
-                            <span class="info-box-number">{{ c }}</span>
-                            <a href="" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+                    <div class="col-md-2 col-sm-2 col-12">
+                        <div class="info-box bg-danger">
+                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total des cargaisons</span>
+                                <span class="info-box-number">{{ c }}</span>
+                                <a href="" class="small-box-footer">DETAILS <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box-content -->
+                        <!-- /.info-box -->
                     </div>
-                    <!-- /.info-box -->
-                </div>
-            </div><!-- /.row -->
+                </div><!-- /.row -->
 
 
-              {% block modal %}{% endblock %}
+                {% block modal %}{% endblock %}
 
-                  <!-- Main content -->
-                  <div class="row">
-                      <div class="col-md-12">
-                          <div class="card">
-                              <div class="card-header bg-gradient-dark">
-                                  <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
+                <!-- Main content -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-gradient-dark">
+                                <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
                             </div>
 
                             <div class="card-body">
                                 {% block content %}
-              {% endblock %}
-            <!-- /.box-header -->
-              </div>
-          </div>
-    </div>
+                                {% endblock %}
+                                <!-- /.box-header -->
+                            </div>
+                        </div>
+                    </div>
 
-    </div>
-    </div>
+                </div>
+            </div>
 
-      <!-- /.row -->
+            <!-- /.row -->
 
-    </section>
-    <!-- /.content -->
-  </div>
+        </section>
+        <!-- /.content -->
+    </div>
     <!-- /.content-wrapper --> <!-- /.content-wrapper -->
     <footer class="main-footer">
-        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.</strong>
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong>
         All rights reserved.
         <div class="float-right d-none d-sm-inline-block">
-          <b>Version</b> 3.0
+            <b>Version</b> 3.0
         </div>
-      </footer>
-      <!-- Control Sidebar -->
-      <aside class="control-sidebar control-sidebar-dark">
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
         <!-- Control sidebar content goes here -->
-      </aside>
-      <!-- /.control-sidebar -->
+    </aside>
+    <!-- /.control-sidebar -->
 
-    </div>
-
+</div>
 
 
 <!-- jQuery -->
@@ -488,5 +504,5 @@
 </script>
 
 
-    </body>
-    </html>
+</body>
+</html>

@@ -20,18 +20,18 @@
     <link rel="stylesheet" href="{% static '/dist/css/skins/skin-blue.min.css' %}">
 
     <!-- Google Font -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
 
-  <!-- Date picker -->
-  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+    <!-- Date picker -->
+    <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
+    <link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+    <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
 
-  {% block script %}
+    {% block script %}
 
-  {% endblock %}
+    {% endblock %}
 
 
 </head>
@@ -39,61 +39,59 @@
 <div class="wrapper">
 
     <header class="main-header">
-    <!-- Logo -->
-    <a href="" class="logo">
-      <!-- mini logo for sidebar mini 50x50 pixels -->
-      <span class="logo-mini"><b>CGW</b></span>
-      <!-- logo for regular state and mobile devices -->
-      <span class="logo-lg"><b>CGW</b>APP</span>
-    </a>
-    <!-- Header Navbar: style can be found in header.less -->
-    <nav class="navbar navbar-static-top">
-      <!-- Sidebar toggle button-->
-      <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </a>
-
-      <div class="navbar-custom-menu">
-        <ul class="nav navbar-nav">
-
-          <li class="dropdown user user-menu">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-
-              <span class="hidden-xs">Alexander Pierce</span>
+        <!-- Logo -->
+        <a href="" class="logo">
+            <!-- mini logo for sidebar mini 50x50 pixels -->
+            <span class="logo-mini"><b>CGW</b></span>
+            <!-- logo for regular state and mobile devices -->
+            <span class="logo-lg"><b>CGW</b>APP</span>
+        </a>
+        <!-- Header Navbar: style can be found in header.less -->
+        <nav class="navbar navbar-static-top">
+            <!-- Sidebar toggle button-->
+            <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
             </a>
-            <ul class="dropdown-menu">
-              <!-- User image -->
-              <li class="user-header">
-                <p>
-                  {{request.user.username}}
-                  <small>Member since Nov. 2012</small>
-                </p>
-              </li>
-              <!-- Menu Body -->
-              <li class="user-body">
 
-                <div class="pull-right">
-                  <a href="" class="btn btn-default btn-flat">Deconnexion</a>
-                </div>
+            <div class="navbar-custom-menu">
+                <ul class="nav navbar-nav">
 
-              </li>
-              <!-- Menu Footer-->
+                    <li class="dropdown user user-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+
+                            <span class="hidden-xs">Alexander Pierce</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <!-- User image -->
+                            <li class="user-header">
+                                <p>
+                                    {{ request.user.username }}
+                                    <small>Member since Nov. 2012</small>
+                                </p>
+                            </li>
+                            <!-- Menu Body -->
+                            <li class="user-body">
+
+                                <div class="pull-right">
+                                    <a href="" class="btn btn-default btn-flat">Deconnexion</a>
+                                </div>
+
+                            </li>
+                            <!-- Menu Footer-->
 
 
-
-
-            </ul>
-          </li>
-          <!-- Control Sidebar Toggle Button -->
-            <!--<li>
-              <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-            </li>-->
-        </ul>
-      </div>
-    </nav>
+                        </ul>
+                    </li>
+                    <!-- Control Sidebar Toggle Button -->
+                    <!--<li>
+                      <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+                    </li>-->
+                </ul>
+            </div>
+        </nav>
     </header>
 
 
@@ -124,12 +122,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -363,57 +361,58 @@
                 <small>Details cargaisons</small>
             </h1>
             <ol class="breadcrumb">
-        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
-        <li><a href="#">Cargaisons</a></li>
-        <li class="active">Details</li>
-      </ol>
-    </section>
+                <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+                <li><a href="#">Cargaisons</a></li>
+                <li class="active">Details</li>
+            </ol>
+        </section>
 
-    <!-- Main content -->
-    <section class="content container-fluid">
-      <div class="row">
-        <div class="col-xs-12">
+        <!-- Main content -->
+        <section class="content container-fluid">
+            <div class="row">
+                <div class="col-xs-12">
 
-          <div class="box">
-            <div class="box-header">
-              <h3 class="box-title">Details cargaisons</h3>
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Details cargaisons</h3>
+                        </div>
+                        <!-- /.box-header -->
+                        <div class="box-body">
+                            {% block content %}
+
+                            {% endblock %}
+                        </div>
+                        <!-- /.box-body -->
+                    </div>
+                    <!-- /.box -->
+                </div>
+                <!-- /.col -->
             </div>
-            <!-- /.box-header -->
-            <div class="box-body">
-              {% block content %}
+            <!-- /.row -->
+            <div class="content-fluid">
+                {% block form %}
+                {% endblock %}
 
-              {% endblock %}
-              </div>
-            <!-- /.box-body -->
-          </div>
-          <!-- /.box -->
-        </div>
-        <!-- /.col -->
-      </div>
-      <!-- /.row -->
-      <div class="content-fluid">
-        {% block form %}
-        {% endblock %}
-
-      </div>
-    </section>
-    <!-- /.content -->
-  </div>
-  <!-- /.content-wrapper -->
-  <footer class="main-footer">
-    <div class="pull-right hidden-xs">
-      <b>Version</b> 2.0
+            </div>
+        </section>
+        <!-- /.content -->
     </div>
-    <strong>Copyright &copy; 2019 <a href="https://cgworldwide.org">Compass Green WorldWide SARL</a>.</strong> All rights
-    reserved.
-  </footer>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <div class="pull-right hidden-xs">
+            <b>Version</b> 2.0
+        </div>
+        <strong>Copyright &copy; 2019 <a href="https://cgworldwide.org">Compass Green WorldWide SARL</a>.</strong> All
+        rights
+        reserved.
+    </footer>
 
-  <div class="control-sidebar-bg"></div>
+    <div class="control-sidebar-bg"></div>
 </div>
 <!-- ./wrapper -->
 
 
-    <!-- jQuery 3 -->
+<!-- jQuery 3 -->
 <script src="{% static 'bower_components/jquery/dist/jquery.min.js' %}"></script>
 <!-- Bootstrap 3.3.7 -->
 <script src="{% static 'bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>

@@ -25,30 +25,30 @@
 <!-- AdminLTE Skins-->
 <link rel="stylesheet" href="{% static '/dist/css/skins/_all-skins.min.css' %}">
 <script src="{% static '/dist/js/pages/tml5shiv.min.js' %}"></script>
-  <script src="{% static '/dist/js/pages/respond.min.js'%}"></script>
-  <!-- jQuery 3 -->
-  <script src="{% static '/bower_components/jquery/dist/jquery.min.js' %}"></script>
-  <!-- AdminLTE App -->
-  <script src="{% static '/dist/js/adminlte.min.js' %}"></script>
-  <!-- Google Font -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
-  <!-- Date picker -->
-  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
-  <link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+<script src="{% static '/dist/js/pages/respond.min.js' %}"></script>
+<!-- jQuery 3 -->
+<script src="{% static '/bower_components/jquery/dist/jquery.min.js' %}"></script>
+<!-- AdminLTE App -->
+<script src="{% static '/dist/js/adminlte.min.js' %}"></script>
+<!-- Google Font -->
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+<!-- Date picker -->
+<script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
+<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  <link rel="stylesheet" href="{% static 'assets/css/bootstrap.css' %}">
+<link rel="stylesheet" href="{% static 'assets/css/bootstrap.css' %}">
 
 </head>
 
-    <!-- sidebar: style can be found in sidebar.less -->
+<!-- sidebar: style can be found in sidebar.less -->
 
 <body class="hold-transition skin-blue sidebar-mini">
 <div class="wrapper">
 
     <header class="main-header">
-    <!-- Logo -->
+        <!-- Logo -->
         <a href="" class="logo">
             <!-- mini logo for sidebar mini 50x50 pixels -->
             <span class="logo-mini"><b>CGW</b></span>
@@ -106,12 +106,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -218,32 +218,32 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                        <ul class="nav nav-treeview">
+                            <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-        <i class="nav-icon fas fa-tachometer-alt"></i>
-        <p>TABLEAU DE BORD</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>GESTION REQUISITION</p>
-    </a>
-</li>
+                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>TABLEAU DE BORD</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION REQUISITION</p>
+                                    </a>
+                                </li>
 
-                            <li class="nav-item">
-    <a href="{% url 'regularisation' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>REGULARISATION</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'rapportActivite' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>RAPPORT D'ACTIVITE</p>
-    </a>
-</li>
+                                <li class="nav-item">
+                                    <a href="{% url 'regularisation' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>RAPPORT D'ACTIVITE</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     {% endif %}
@@ -287,7 +287,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
+                                <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -342,53 +342,48 @@
                     <div class="box col-md-6">
                         <div class="box-header">
                             <h3 class="box-title">Listes des échantillons réceptionner</h3>
-            </div>
-            <!-- /.box-header -->
-            <div>
-              {% block content1 %}
+                        </div>
+                        <!-- /.box-header -->
+                        <div>
+                            {% block content1 %}
 
 
-              {% endblock %}
-              </div>
-          </div>
-          <!-- /.col -->
-      </div>
-      <!-- /.row -->
-    </section>
-    <!-- /.content -->
-  </div>
-  <!-- /.content-wrapper -->
-  <footer class="main-footer">
-    <div class="pull-right hidden-xs">
-      <b>Version</b> 2.0
+                            {% endblock %}
+                        </div>
+                    </div>
+                    <!-- /.col -->
+                </div>
+                <!-- /.row -->
+            </section>
+            <!-- /.content -->
     </div>
-    <strong>Copyright &copy; {% now 'Y' %} <a href="https://cgworldwide.org">Compass Green WorldWdide SARL</a>.</strong> All rights
-    reserved.
-  </footer>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <div class="pull-right hidden-xs">
+            <b>Version</b> 2.0
+        </div>
+        <strong>Copyright &copy; {% now 'Y' %} <a href="https://cgworldwide.org">Compass Green WorldWdide
+            SARL</a>.</strong> All rights
+        reserved.
+    </footer>
 </div>
 
 
-
-
-
-    <script src="{% static 'assets/js/bootstrap.js' %}"></script>
-    <script src="{% static 'assets/js/jquery.js' %}"></script>
-    <script src="{% static 'js/jquery.bootstrap.modal.forms.js' %}"></script>
-    <!-- You can alternatively load the minified version -->
-    <script src="{% static 'js/jquery.bootstrap.modal.forms.min.js' %}"></script>
+<script src="{% static 'assets/js/bootstrap.js' %}"></script>
+<script src="{% static 'assets/js/jquery.js' %}"></script>
+<script src="{% static 'js/jquery.bootstrap.modal.forms.js' %}"></script>
+<!-- You can alternatively load the minified version -->
+<script src="{% static 'js/jquery.bootstrap.modal.forms.min.js' %}"></script>
 
 <script type="text/javascript">
-$(document).ready(function() {
+    $(document).ready(function () {
 
-    $(".create-book").modalForm({
-        formURL: "{% url 'reception' %}"
+        $(".create-book").modalForm({
+            formURL: "{% url 'reception' %}"
+        });
+
     });
-
-});
 </script>
-
-
-
 
 
 </body>

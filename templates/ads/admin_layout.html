@@ -32,56 +32,59 @@
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 
-  <!-- HighCharts Script -->
-  <script src="{% static '/highcharts/code/highcharts.js'%}"></script>
+    <!-- HighCharts Script -->
+    <script src="{% static '/highcharts/code/highcharts.js' %}"></script>
 
 
-  <!-- Google Font -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
-  {% block script %}
+    <!-- Google Font -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+    {% block script %}
 
-  {% endblock %}
+    {% endblock %}
 
 
 </head>
 <!-- sidebar: style can be found in sidebar.less -->
-  <body class="hold-transition sidebar-mini- layout-fixed">
-  <div class="wrapper">
+<body class="hold-transition sidebar-mini- layout-fixed">
+<div class="wrapper">
 
-      <!-- Navbar -->
-      <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-          <!-- Left navbar links -->
-          <ul class="navbar-nav">
-              <li class="nav-item">
-                  <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="" class="nav-link"></a>
-              </li>
-              <li class="nav-item d-none d-sm-inline-block">
-            <a href="{% url 'logout' %}" class="nav-link" style="background-color: red; color: white">Déconnexion</a>
-              </li>
-          </ul>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
+                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link"></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url 'logout' %}" class="nav-link"
+                   style="background-color: red; color: white">Déconnexion</a>
+            </li>
+        </ul>
 
-          <!-- Right navbar links -->
-          <ul class="navbar-nav ml-auto">
-              <!-- Navbar Search -->
-              <li class="nav-item">
-                  <div class="navbar-search-block">
-                  </div>
-              </li>
-          </ul>
-      </nav>
+        <!-- Right navbar links -->
+        <ul class="navbar-nav ml-auto">
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                </div>
+            </li>
+        </ul>
+    </nav>
 
     <aside class="main-sidebar sidebar-dark-secondary elevation-4">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
-                  <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold" style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
+            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-bold"
+                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
         </a>
         <!-- Sidebar -->
         <div class="sidebar">
@@ -93,12 +96,12 @@
                          with font-awesome or any other icon font library -->
                     {% if user.role_id == 1 or user.role_id == 8 %}
                         <li class="header" style="color: red">DEPARTEMENT</li>
-<li class="nav-item has-treeview menu-open">
+                        <li class="nav-item has-treeview menu-open">
                             <a href="{% url 'dashboard' %}" class="nav-link active">
                                 <i class="nav-icon fas fa-tachometer-alt"></i>
                                 <p>TABLEAU DE BORD</p>
                             </a>
-</li>
+                        </li>
 
                     {% endif %}
 
@@ -206,33 +209,40 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                        <ul class="nav nav-treeview">
+                            {% if user.role_id == 1 or user.role_id == 7 %}
+                            <ul class="nav nav-treeview">
                                 <li class="nav-item">
-    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-        <i class="nav-icon fas fa-tachometer-alt"></i>
-        <p>TABLEAU DE BORD</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'codification' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>GESTION REQUISITION</p>
-    </a>
-</li>
+                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>TABLEAU DE BORD</p>
+                                    </a>
+                                </li>
+                                {% endif %}
 
-                            <li class="nav-item">
-    <a href="{% url 'regularisation' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>REGULARISATION</p>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="{% url 'rapportActivite' %}" class="nav-link">
-        <i class="far fa-circle nav-icon"></i>
-        <p>RAPPORT D'ACTIVITE</p>
-    </a>
-</li>
+                            {% if user.role_id == 1 or user.role_id == 11%}
+                                <li class="nav-item">
+                                    <a href="{% url 'codification' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>GESTION REQUISITION</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{% url 'regularisation' %}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>REGULARISATION</p>
+                                    </a>
+                                </li>
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITE</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
                             </ul>
+                            {% endif %}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -275,7 +285,7 @@
                             </a>
                             <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
+                                <li class="nav-item">
                                     <a href="{% url 'userslist' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>LISTE D'UTILISATEURS</p>
@@ -314,75 +324,76 @@
                 <li><a href="#">Cargaisons</a></li>
                 <li class="active">Details</li>
             </ol>
-    </section>
+        </section>
 
-    <!-- Main content -->
-    <section class="content">
-      <div class="row">
-        <div class="col-xs-12">
+        <!-- Main content -->
+        <section class="content">
+            <div class="row">
+                <div class="col-xs-12">
 
-          <div class="box">
-            <div class="box-header">
-              <h3 class="box-title">Details cargaisons</h3>
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Details cargaisons</h3>
+                        </div>
+                        <!-- /.box-header -->
+                        <div class="box-body">
+                            {% block content %}
+
+
+                            {% endblock %}
+                        </div>
+                        <!-- /.box-body -->
+                    </div>
+                    <!-- /.box -->
+                </div>
+                <!-- /.col -->
             </div>
-            <!-- /.box-header -->
-            <div class="box-body">
-              {% block content %}
-
-
-              {% endblock %}
-              </div>
-            <!-- /.box-body -->
-          </div>
-          <!-- /.box -->
-        </div>
-        <!-- /.col -->
-      </div>
-      <!-- /.row -->
-    </section>
-    <!-- /.content -->
-  </div>
-  <!-- /.content-wrapper -->
-  <footer class="main-footer">
-    <div class="pull-right hidden-xs">
-      <b>Version</b> 2.0
+            <!-- /.row -->
+        </section>
+        <!-- /.content -->
     </div>
-    <strong>Copyright &copy; 2019 <a href="https://cgworldwide.org">Compass Green WorldWdide SARL</a>.</strong> All rights
-    reserved.
-  </footer>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <div class="pull-right hidden-xs">
+            <b>Version</b> 2.0
+        </div>
+        <strong>Copyright &copy; 2019 <a href="https://cgworldwide.org">Compass Green WorldWdide SARL</a>.</strong> All
+        rights
+        reserved.
+    </footer>
 
-  <div class="control-sidebar-bg"></div>
+    <div class="control-sidebar-bg"></div>
 </div>
 <!-- ./wrapper -->
 
 <!-- jQuery 3 -->
-<script src="{% static '/bower_components/jquery/dist/jquery.min.js'%}"></script>
+<script src="{% static '/bower_components/jquery/dist/jquery.min.js' %}"></script>
 <!-- Bootstrap 3.3.7 -->
-<script src="{% static '/bower_components/bootstrap/dist/js/bootstrap.min.js'%}"></script>
+<script src="{% static '/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
 <!-- DataTables -->
-<script src="{% static '/bower_components/datatables.net/js/jquery.dataTables.min.js'%}"></script>
-<script src="{% static '/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js'%}"></script>
+<script src="{% static '/bower_components/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static '/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js' %}"></script>
 <!-- SlimScroll -->
-<script src="{% static '/bower_components/jquery-slimscroll/jquery.slimscroll.min.js'%}"></script>
+<script src="{% static '/bower_components/jquery-slimscroll/jquery.slimscroll.min.js' %}"></script>
 <!-- FastClick -->
-<script src="{% static '/bower_components/fastclick/lib/fastclick.js'%}"></script>
+<script src="{% static '/bower_components/fastclick/lib/fastclick.js' %}"></script>
 <!-- AdminLTE App -->
-<script src="{% static '/dist/js/adminlte.min.js'%}"></script>
+<script src="{% static '/dist/js/adminlte.min.js' %}"></script>
 <!-- AdminLTE for demo purposes -->
-<script src="{% static '/dist/js/demo.js'%}"></script>
+<script src="{% static '/dist/js/demo.js' %}"></script>
 <!-- page script -->
 <script>
-  $(function () {
-    $('#example1').DataTable();
-    $('#example2').DataTable({
-      'paging'      : true,
-      'lengthChange': false,
-      'searching'   : false,
-      'ordering'    : true,
-      'info'        : true,
-      'autoWidth'   : false
+    $(function () {
+        $('#example1').DataTable();
+        $('#example2').DataTable({
+            'paging': true,
+            'lengthChange': false,
+            'searching': false,
+            'ordering': true,
+            'info': true,
+            'autoWidth': false
+        })
     })
-  })
 </script>
 </body>
 </html>

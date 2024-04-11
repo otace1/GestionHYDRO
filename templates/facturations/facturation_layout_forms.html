@@ -25,15 +25,15 @@
 <link rel="stylesheet" href="{% static '/dist/css/skins/skin-blue.min.css' %}">
 
 <!-- Google Font -->
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
 
-  <!-- Date picker -->
-  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
-  <link  href="{% static '/bower_components/datepicker/dist/datepicker.css'%}" rel="stylesheet">
-  <script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+<!-- Date picker -->
+<script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->
+<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
+<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
 
-  {% block extra_js%}
+{% block extra_js %}
 
 
 
@@ -41,281 +41,301 @@
 
 </head>
 
-    <!-- sidebar: style can be found in sidebar.less -->
+<!-- sidebar: style can be found in sidebar.less -->
 
 <body class="hold-transition skin-blue sidebar-mini">
 <div class="wrapper">
 
     <header class="main-header">
-    <!-- Logo -->
-    <a href="" class="logo">
-      <!-- mini logo for sidebar mini 50x50 pixels -->
-      <span class="logo-mini"><b>CGW</b></span>
-      <!-- logo for regular state and mobile devices -->
-      <span class="logo-lg"><b>CGW</b>APP</span>
-    </a>
-    <!-- Header Navbar: style can be found in header.less -->
-    <nav class="navbar navbar-static-top">
-      <!-- Sidebar toggle button-->
-      <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </a>
+        <!-- Logo -->
+        <a href="" class="logo">
+            <!-- mini logo for sidebar mini 50x50 pixels -->
+            <span class="logo-mini"><b>CGW</b></span>
+            <!-- logo for regular state and mobile devices -->
+            <span class="logo-lg"><b>CGW</b>APP</span>
+        </a>
+        <!-- Header Navbar: style can be found in header.less -->
+        <nav class="navbar navbar-static-top">
+            <!-- Sidebar toggle button-->
+            <a href="#" class="sidebar-toggle" data-toggle="push-menu" role="button">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
 
-      <div class="navbar-custom-menu">
-        <ul class="nav navbar-nav">
+            <div class="navbar-custom-menu">
+                <ul class="nav navbar-nav">
 
-          <li class="dropdown user user-menu">
-            <a href="{%url 'logout'%}"  type="button" class="btn btn-danger btn-rounded">Déconnexion</a>
+                    <li class="dropdown user user-menu">
+                        <a href="{% url 'logout' %}" type="button" class="btn btn-danger btn-rounded">Déconnexion</a>
 
 
-          </li>
-          <!-- Control Sidebar Toggle Button -->
-          <!--<li>
-            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-          </li>-->
-        </ul>
-          </li>
-          <!-- Control Sidebar Toggle Button -->
-          <!--<li>
-            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-          </li>-->
-        </ul>
-      </div>
-    </nav>
-  </header>
+                    </li>
+                    <!-- Control Sidebar Toggle Button -->
+                    <!--<li>
+                      <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+                    </li>-->
+                </ul>
+                </li>
+                <!-- Control Sidebar Toggle Button -->
+                <!--<li>
+                  <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
+                </li>-->
+                </ul>
+            </div>
+        </nav>
+    </header>
 
 
     <!-- Left side column. contains the logo and sidebar -->
-  <aside class="main-sidebar">
-    <!-- sidebar: style can be found in sidebar.less -->
-  <!-- sidebar: style can be found in sidebar.less -->
-    <section class="sidebar">
-      <!-- sidebar menu: : style can be found in sidebar.less -->
-      <ul class="sidebar-menu" data-widget="tree">
-        <li class="header">MENU PRINCIPAL</li>
+    <aside class="main-sidebar">
+        <!-- sidebar: style can be found in sidebar.less -->
+        <!-- sidebar: style can be found in sidebar.less -->
+        <section class="sidebar">
+            <!-- sidebar menu: : style can be found in sidebar.less -->
+            <ul class="sidebar-menu" data-widget="tree">
+                <li class="header">MENU PRINCIPAL</li>
 
-        {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 'st'%}
+                {% if user.role_id == 1 or user.role_id == 7 or user.role_id == 'st' %}
 
-        <li><a href="{%url 'dashboard'%}"><i class="fa fa-pie-chart"></i> <span>Dashboard</span></a></li>
+                    <li><a href="{% url 'dashboard' %}"><i class="fa fa-pie-chart"></i> <span>Dashboard</span></a></li>
 
-        {% endif %}
+                {% endif %}
 
-        {% if user.role_id == 2 or user.role_id == 1 or user.role_id == 7 %}
+                {% if user.role_id == 2 or user.role_id == 1 or user.role_id == 7 %}
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-truck"></i>
-            <span>Enregistrement Cargaisons</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-truck"></i>
+                            <span>Enregistrement Cargaisons</span>
+                            <span class="pull-right-container">
               <span class="fa fa-angle-left pull-right"></span>
             </span>
-          </a>
+                        </a>
 
-          <ul class="treeview-menu">
-            {% if user.role_id == 2 or user.role_id == 1 or user.role_id == 7  %}
-            <li><a href="{% url 'nouvelle'%}"><i class="fa fa-circle-o"></i> Nouvelle cargaison</a></li>
-            {% endif %}
+                        <ul class="treeview-menu">
+                            {% if user.role_id == 2 or user.role_id == 1 or user.role_id == 7 %}
+                                <li><a href="{% url 'nouvelle' %}"><i class="fa fa-circle-o"></i> Nouvelle cargaison</a>
+                                </li>
+                            {% endif %}
 
-            {% if user.role_id == 2 or user.role_id == 1 %}
-            <li><a href="{% url 'cargaison'%}"><i class="fa fa-circle-o"></i> Listes des enregistrements</a></li>
-{#            <li><a href="pages/layout/fixed.html"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
-            {% endif %}
+                            {% if user.role_id == 2 or user.role_id == 1 %}
+                                <li><a href="{% url 'cargaison' %}"><i class="fa fa-circle-o"></i> Listes des
+                                    enregistrements</a></li>
+                                {#            <li><a href="pages/layout/fixed.html"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
+                            {% endif %}
 
-          </ul>
-        </li>
+                        </ul>
+                    </li>
 
-        {% endif %}
+                {% endif %}
 
-        {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
+                {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 'st' %}
 
-        <li class="header">ENTREPOT</li>
+                    <li class="header">ENTREPOT</li>
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-industry"></i>
-            <span>Entrepot</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-industry"></i>
+                            <span>Entrepot</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{% url 'entrepot'%}"><i class="fa fa-circle-o"></i> Echantillonage</a></li>
-            <li><a href="{% url 'dechargement'%}"><i class="fa fa-circle-o"></i> Déchargement</a></li>
-{#            <li><a href="{% url 'rapport'%}"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'entrepot' %}"><i class="fa fa-circle-o"></i> Echantillonage</a></li>
+                            <li><a href="{% url 'dechargement' %}"><i class="fa fa-circle-o"></i> Déchargement</a></li>
+                            {#            <li><a href="{% url 'rapport'%}"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
 
-          </ul>
-        </li>
+                        </ul>
+                    </li>
 
-        {% endif %}
+                {% endif %}
 
-        {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1%}
+                {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 'v2' or user.role_id == 1 %}
 
-        <li class="header">CERTIFICATION</li>
+                    <li class="header">CERTIFICATION</li>
 
-            <li class="treeview">
-                <a href="#">
-                    <i class="fa fa-flask"></i>
-                    <span>Laboratoire</span>
-                    <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-flask"></i>
+                            <span>Laboratoire</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-                </a>
-                <ul class="treeview-menu">
+                        </a>
+                        <ul class="treeview-menu">
 
-                    {% if user.role_id == 6 or user.role_id == 1 %}
-                        <li class="nav-item">
-                            <a href="{% url 'labodashboard' %}" class="nav-link">
-                                <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>Dashboard LABO</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% if user.role_id == 4 or user.role_id == 1 %}
-                        <li><a href="{% url 'labo' %}"><i class="fa fa-circle-o"></i>Réception d'échantillons</a></li>
-                    {% endif %}
+                            {% if user.role_id == 6 or user.role_id == 1 %}
+                                <li class="nav-item">
+                                    <a href="{% url 'labodashboard' %}" class="nav-link">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>Dashboard LABO</p>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if user.role_id == 4 or user.role_id == 1 %}
+                                <li><a href="{% url 'labo' %}"><i class="fa fa-circle-o"></i>Réception
+                                    d'échantillons</a></li>
+                            {% endif %}
 
-                    {% if user.role_id == 5 or user.role_id == 1 %}
-                        <li><a href="{% url 'analyse' %}"><i class="fa fa-circle-o"></i>Encodage des résultats</a></li>
-                    {% endif %}
+                            {% if user.role_id == 5 or user.role_id == 1 %}
+                                <li><a href="{% url 'analyse' %}"><i class="fa fa-circle-o"></i>Encodage des
+                                    résultats</a></li>
+                            {% endif %}
 
-                    {% if user.role_id == 6 or user.role_id == 1 %}
-                        <li><a href="{% url 'validation1' %}"><i class="fa fa-circle-o"></i>Service PP Validation</a>
-                        </li>
-            {% endif %}
+                            {% if user.role_id == 6 or user.role_id == 1 %}
+                                <li><a href="{% url 'validation1' %}"><i class="fa fa-circle-o"></i>Service PP
+                                    Validation</a>
+                                </li>
+                            {% endif %}
 
-           {% comment %} {% if user.role == 'v2' or user.role == 'ad'%}
+                            {% comment %} {% if user.role == 'v2' or user.role == 'ad'%}
             <li><a href="{%url 'validation2'%}"><i class="fa fa-circle-o"></i>Validation Labo</a></li>
             {% endif %}{% endcomment %}
 
-            {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5%}
-            <li><a href="{%url 'impression'%}"><i class="fa fa-circle-o"></i> Gestion Documentaire</a></li>
-            {% endif %}
+                            {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
+                                <li><a href="{% url 'impression' %}"><i class="fa fa-circle-o"></i> Gestion Documentaire</a>
+                                </li>
+                            {% endif %}
 
-          </ul>
-        </li>
+                        </ul>
+                    </li>
 
-        {% endif %}
+                {% endif %}
 
 
-        {% if user.role_id == 7 or user.role_id == 1%}
-        <li class="header">EXPLOITATION</li>
+                {% if user.role_id == 7 or user.role_id == 1 %}
+                    <li class="header">EXPLOITATION</li>
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-building-o"></i> <span>Hydro OCC</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-building-o"></i> <span>Hydro OCC</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'laboresult'%}"><i class="fa fa-circle-o"></i> Gestion des Go</a></li>
-            <li><a href="{%url 'gestionact'%}"><i class="fa fa-circle-o"></i> Gestion des ACT</a></li>
-            <li><a href="{%url 'avarie'%}"><i class="fa fa-circle-o"></i> Gestion des Avariés</a></li>
-{#            <li><a href="pages/forms/editors.html"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
-          </ul>
-        </li>
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-files-o"></i> <span>Facturations</span>
-            <span class="pull-right-container">
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'laboresult' %}"><i class="fa fa-circle-o"></i> Gestion des Go</a></li>
+                            <li><a href="{% url 'gestionact' %}"><i class="fa fa-circle-o"></i> Gestion des ACT</a></li>
+                            <li><a href="{% url 'avarie' %}"><i class="fa fa-circle-o"></i> Gestion des Avariés</a></li>
+                            {#            <li><a href="pages/forms/editors.html"><i class="fa fa-circle-o"></i> Rapport d'activites</a></li>#}
+                        </ul>
+                    </li>
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-files-o"></i> <span>Facturations</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
+                        </a>
 
-          <ul class="treeview-menu">
-            <li><a href="{% url 'facturations' %}"><i class="fa fa-circle-o"></i> Gestion Liquidation</a></li>
-            <li><a href="{% url 'appuration' %}"><i class="fa fa-circle-o"></i> Details Appuration</a></li>
-          </ul>
-        </li>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'facturations' %}"><i class="fa fa-circle-o"></i> Gestion
+                                Liquidation</a></li>
+                            <li><a href="{% url 'appuration' %}"><i class="fa fa-circle-o"></i> Details Appuration</a>
+                            </li>
+                        </ul>
+                    </li>
 
-        {% endif %}
+                {% endif %}
 
 
-        {% if user.role_id == 1%}
+                {% if user.role_id == 1 %}
 
-<li class="header">ADMINISTRATION</li>
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-share"></i> <span>Utilisateurs</span>
-            <span class="pull-right-container">
+                    <li class="header">ADMINISTRATION</li>
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-share"></i> <span>Utilisateurs</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'usersadd'%}"><i class="fa fa-circle-o"></i> Ajout d'utilisateurs</a></li>
-            <li><a href="{%url 'userslist'%}"><i class="fa fa-circle-o"></i> Liste d'utilisateurs</a></li>
-            <li><a href="{%url 'affectationentreprot'%}"><i class="fa fa-circle-o"></i> Affectation Entrepots</a></li>
-            <li><a href="{%url 'affectationville'%}"><i class="fa fa-circle-o"></i> Affectation Villes</a></li>
-          </ul>
-          </li>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'usersadd' %}"><i class="fa fa-circle-o"></i> Ajout d'utilisateurs</a>
+                            </li>
+                            <li><a href="{% url 'userslist' %}"><i class="fa fa-circle-o"></i> Liste d'utilisateurs</a>
+                            </li>
+                            <li><a href="{% url 'affectationentreprot' %}"><i class="fa fa-circle-o"></i> Affectation
+                                Entrepots</a></li>
+                            <li><a href="{% url 'affectationville' %}"><i class="fa fa-circle-o"></i> Affectation Villes</a>
+                            </li>
+                        </ul>
+                    </li>
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Entrepots</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-file"></i> <span>Entrepots</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_entrepot'%}"><i class="fa fa-circle-o"></i> Ajout d'entrepots</a></li>
-            <li><a href="{%url 'gest_entrepot'%}"><i class="fa fa-circle-o"></i> Listes d'entrepots</a></li>
-          </ul>
-          </li>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'add_entrepot' %}"><i class="fa fa-circle-o"></i> Ajout d'entrepots</a>
+                            </li>
+                            <li><a href="{% url 'gest_entrepot' %}"><i class="fa fa-circle-o"></i> Listes
+                                d'entrepots</a></li>
+                        </ul>
+                    </li>
 
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Importateurs</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-file"></i> <span>Importateurs</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_importateur'%}"><i class="fa fa-circle-o"></i> Ajout d'importateurs</a></li>
-            <li><a href="{%url 'gest_importateur'%}"><i class="fa fa-circle-o"></i> Listes d'importateurs</a></li>
-          </ul>
-          </li>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'add_importateur' %}"><i class="fa fa-circle-o"></i> Ajout
+                                d'importateurs</a></li>
+                            <li><a href="{% url 'gest_importateur' %}"><i class="fa fa-circle-o"></i> Listes
+                                d'importateurs</a></li>
+                        </ul>
+                    </li>
 
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Points d'entrée</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-file"></i> <span>Points d'entrée</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_frontiere'%}"><i class="fa fa-circle-o"></i> Ajout Frontière</a></li>
-            <li><a href="{%url 'gest_frontiere'%}"><i class="fa fa-circle-o"></i> Listes Frontière</a></li>
-          </ul>
-          </li>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'add_frontiere' %}"><i class="fa fa-circle-o"></i> Ajout Frontière</a>
+                            </li>
+                            <li><a href="{% url 'gest_frontiere' %}"><i class="fa fa-circle-o"></i> Listes Frontière</a>
+                            </li>
+                        </ul>
+                    </li>
 
-        <li class="treeview">
-          <a href="#">
-            <i class="fa fa-file"></i> <span>Produits</span>
-            <span class="pull-right-container">
+                    <li class="treeview">
+                        <a href="#">
+                            <i class="fa fa-file"></i> <span>Produits</span>
+                            <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="{%url 'add_produit'%}"><i class="fa fa-circle-o"></i> Ajout Produits</a></li>
-            <li><a href="{%url 'gest_produit'%}"><i class="fa fa-circle-o"></i> Listes Produits</a></li>
-          </ul>
-          </li>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li><a href="{% url 'add_produit' %}"><i class="fa fa-circle-o"></i> Ajout Produits</a></li>
+                            <li><a href="{% url 'gest_produit' %}"><i class="fa fa-circle-o"></i> Listes Produits</a>
+                            </li>
+                        </ul>
+                    </li>
 
 
-        <li><a href=""><i class="fa fa-book"></i> <span>Monitoring Admin</span></a></li>
-        <li><a href="{% url 'upload_sydonia' %}"><i class="fa fa-book"></i> <span>Importation SYDONIA</span></a></li>
+                    <li><a href=""><i class="fa fa-book"></i> <span>Monitoring Admin</span></a></li>
+                    <li><a href="{% url 'upload_sydonia' %}"><i class="fa fa-book"></i> <span>Importation SYDONIA</span></a>
+                    </li>
 
 
-        {% endif %}
+                {% endif %}
 
-        <li><a href=""><i class="fa fa-book"></i> <span>Documentation</span></a></li>
+                <li><a href=""><i class="fa fa-book"></i> <span>Documentation</span></a></li>
 
-{% comment %}
+                {% comment %}
         <li class="treeview">
           <a href="#">
             <i class="fa fa-file"></i> <span>Upload des données</span>
@@ -330,38 +350,39 @@
             <li><a href="{%url 'upload_cargaison'%}"><i class="fa fa-circle-o"></i>Cargaison</a></li>
           </ul>
           </li>{% endcomment %}
-      </ul>
-    </section>
-    <!-- /.sidebar -->
-  </aside>
+            </ul>
+        </section>
+        <!-- /.sidebar -->
+    </aside>
 
     <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
-    <!-- Main content -->
-    <section class="content container-fluid">
-      <div class="row">
-      <div class="col-md-6">
-              {% block content %}
+    <div class="content-wrapper">
+        <!-- Main content -->
+        <section class="content container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    {% block content %}
 
-              {% endblock %}
-      </div>
-      </div>
-      <!-- /.row -->
-    </section>
-    <!-- /.content -->
-  </div>
- <!-- /.content-wrapper -->
-  <footer class="main-footer">
-    <div class="pull-right hidden-xs">
-      <b>Version</b> 2.0
+                    {% endblock %}
+                </div>
+            </div>
+            <!-- /.row -->
+        </section>
+        <!-- /.content -->
     </div>
-    <strong>Copyright &copy; {% now 'Y' %} <a href="https://cgworldwide.org">Compass Green WorldWide SARL</a>.</strong> All rights
-    reserved.
-  </footer>
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <div class="pull-right hidden-xs">
+            <b>Version</b> 2.0
+        </div>
+        <strong>Copyright &copy; {% now 'Y' %} <a href="https://cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong> All rights
+        reserved.
+    </footer>
 </div>
 
 
-    <!-- jQuery 3 -->
+<!-- jQuery 3 -->
 <script src="{% static 'bower_components/jquery/dist/jquery.min.js' %}"></script>
 <!-- Bootstrap 3.3.7 -->
 <script src="{% static 'bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
