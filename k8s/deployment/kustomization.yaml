@@ -1,0 +1,6 @@
+secretGenerator:
+  - name: db-password
+    literals:
+      - password=P@55w0rd!
+resources:
+  - django.yaml

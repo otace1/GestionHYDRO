@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: django-configmap
+data:
+  DEBUG: "0"
+  DEVELOPMENT_MODE: "0"
+  DJANGO_SECRET_KEY: "gh@64*sp@=wio-m1(=2$$m0j8#fv6a6ps#&)^9qua1l+!9e%^q"
+  ALLOWED_HOSTS: "localhost,127.0.0.1,django-web"
+  CELERY_BROKER: "rediss://default:AVNS_0EohqpDCuMap5qshtCo@db-redis-sfo3-87615-do-user-4618658-0.c.db.ondigitalocean.com:25061"
+  DATABASE_HOST: "db-mysql-sfo2-99144-do-user-4618658-0.b.db.ondigitalocean.com"
+  DATABASE_NAME: "hydro"
+  DATABASE_USER: "doadmin"
+  DATABASE_PASSWORD: "AVNS_OOXOcFUmEKYWhII"
+  DATABASE_PORT: "25060"
+#  DB_IGNNORE_SSL: "true"
+#  MYSQL_DATABASE: "hydro"
+#  MYSQL_ROOT_PASSWORD: "P@55w0rd!"

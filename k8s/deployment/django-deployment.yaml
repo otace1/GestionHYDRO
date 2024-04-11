@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gestionhydro-deployment
+  labels:
+    app: gestionhydro-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: gestionhydro-deployment
+  template:
+    metadata:
+      labels:
+        app: gestionhydro-deployment
+    spec:
+      imagePullSecrets:
+        - name: otace
+      initContainers:
+        - name: copy-media-files
+#          image: otace1/gestionhydro-amd64:latest
+          image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
+          imagePullPolicy: Always
+          command: [ "sh", "-c", "cp -r assets/img/* /vol/web/media" ]
+          volumeMounts:
+            - name: media-volume
+              mountPath: /vol/web/media
+      containers:
+        - name: django-server
+#          image: otace1/gestionhydro-amd64:latest
+          image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
+          imagePullPolicy: Always
+          envFrom:
+#            - configMapRef:
+#                name: django-configmap
+            - secretRef:
+                name: django-deploy-env
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: static-volume
+              mountPath: /vol/web/static
+            - name: media-volume
+              mountPath: /vol/web/media
+#            - name: db-data
+#              mountPath: /var/lib/mysql
+          command: [ "/bin/sh", "-c", "python manage.py collectstatic --noinput; python manage.py migrate --noinput; python manage.py migrate django_celery_results; gunicorn hydrocarbures.wsgi --bind 0.0.0.0:8000 --worker-tmp-dir /dev/shm" ]
+        - name: celery-worker
+#          image: otace1/gestionhydro-amd64:latest
+          image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
+          imagePullPolicy: Always
+          envFrom:
+            #            - configMapRef:
+            #                name: django-configmap
+            - secretRef:
+                name: django-deploy-env
+          volumeMounts:
+            - name: static-volume
+              mountPath: /vol/web/static
+            - name: media-volume
+              mountPath: /vol/web/media
+#            - name: db-data
+#              mountPath: /var/lib/mysql
+          command: [ "/bin/sh", "-c", "celery -A hydrocarbures worker --loglevel=info" ]
+#        - name: flower-worker
+#          image: mher/flower
+#          ports:
+#            - containerPort: 5555
+#          command: [ "/bin/sh", "-c", "celery --broker=redis://10.244.0.12:6379/0 flower" ]
+      volumes:
+        - name: static-volume
+          persistentVolumeClaim:
+            claimName: static-pvc
+        - name: media-volume
+          persistentVolumeClaim:
+            claimName: media-pvc
+        - name: nginx-config
+          configMap:
+            name: nginx-configmap
+
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: database-pvc

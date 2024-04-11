@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-server
+spec:
+  containers:
+    - name: redis-server
+      image: redis
+      ports:
+        - protocol: TCP
+          containerPort: 6379
