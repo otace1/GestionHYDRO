@@ -233,6 +233,71 @@ function printRappInspection() {
 }
 
 
+function printDossimport() {
+    event.preventDefault(); // Prevent the default action of the anchor element
+
+    // Get the row element containing the clicked button
+    const row = event.target.closest('tr');
+
+    // Get the value of the "id" attribute from the row element
+    rowId = row.getAttribute('id');
+
+    // Store the rowId in a variable or use it as needed
+    console.log('Row ID:', rowId);
+
+    // Display a confirmation dialog to the user
+    const confirmed = confirm("Afficher les elements du dossier?");
+
+    // If the user confirms, send the rowId to your endpoint
+    if (confirmed) {
+        // Make an AJAX request to your endpoint with the rowId
+        // Replace 'yourEndpointURL' with your actual endpoint URL
+        fetch('{% url "afficherDossImport" %}', {
+            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
+            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
+            headers: {
+                'Content-Type': 'application/json', // Set content type to JSON
+                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+        // Create a URL for the Blob object
+        const url = URL.createObjectURL(blob);
+
+        // Create a link element
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'file.pdf'; // Specify the filename for the downloaded file
+
+        // Append the link to the document body
+        document.body.appendChild(link);
+
+        // Simulate a click event on the link
+        link.click();
+
+        // Remove the link from the document body
+        document.body.removeChild(link);
+
+        // Reload the current page after triggering the download
+        location.reload();
+    })
+    .catch(error => {
+        console.error('An error occurred:', error);
+        alert("Failed to fetch file or invalid response.");
+    });
+}
+    // Return false to prevent the anchor from navigating
+    return false;
+}
+
+
+
 
 </script>
 

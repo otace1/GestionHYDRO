@@ -15,7 +15,7 @@ from django_tables2.export.export import TableExport
 from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
 
-from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser
+from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser, UserActivityLog
 from enreg.models import *
 from hydrocarbures.celery import app
 from labo.utils import render_to_pdf
@@ -115,8 +115,6 @@ class GestionLaboratoire():
         if request.method == 'POST':
             data = json.loads(request.body)
             pk = data.get('idcargaison')
-            print('Test')
-            print(pk)
 
             if pk is None:
                 response_data = {
@@ -129,12 +127,11 @@ class GestionLaboratoire():
             id = user.id
 
             # Get Town du point de dechargement pour l'attribution automatique des numeros
-            print(pk)
+
             c = Cargaison.objects.get(idcargaison=pk)
             c = c.entrepot_id
             c = Entrepot.objects.get(identrepot=c)
             v = c.ville_id
-            print(v)
 
             role = user.role_id
             if role == 4 or role == 1:
@@ -157,12 +154,16 @@ class GestionLaboratoire():
                     codelabo = 0
                 codeToUse = codelabo + 1
 
-                print('TEST CODE')
-                print(codeToUse)
 
                 p = LaboReception(idcargaison_id=pk, codelabo=codeToUse,
                                   numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
                 p.save()
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Sample receiving acknowledgement",
+                    description=f"User has confirm reception of the sample of the record {d.idcargaison}",
+                )
 
                 # Prepare the JSON response
                 response_data = {
@@ -3369,10 +3370,24 @@ def natureProduitLabo(request, pk):
                     c.natureProduitLabo = produit.nomproduit
                     c.userLabo = user
                     c.save(update_fields=['natureProduitLabo','userLabo'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Product denomination update",
+                        description=f"User has changed the nature of the product for the record {cargaison.idcargaison}"
+                    )
+
                     return redirect('reception', pk=pk)
                 except:
                     c = ControlNatureProduit(idcargaison=cargaison,natureProduitLabo=produit.nomproduit,userLabo=user)
                     c.save()
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Product denomination update",
+                        description=f"User has changed the nature of the product for the record {cargaison.idcargaison}"
+                    )
+
                     return redirect('reception', pk=pk)
     else:
         context = {'form': form}
@@ -3414,6 +3429,7 @@ def saisieResultat(request,pk):
 
 @login_required(login_url='login')
 def saisieResultatParametre(request,pk):
+    user = request.user
     id = request.session['pk']
     cargaison = Cargaison.objects.get(idcargaison=id)
     parametre = ParametresProduits.objects.get(idParametre=pk)
@@ -3424,11 +3440,22 @@ def saisieResultatParametre(request,pk):
                 r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
                 r.valeurResultatChar = valeurResultat
                 r.save(update_fields=['valeurResultatChar'])
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 # print('OK')
                 return redirect('saisieResultat', id)
             except:
                 r = ResultatAnalyse(valeurResultatChar=valeurResultat, idParametre=parametre, idcargaison=cargaison)
                 r.save()
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 # print('OK')
                 return redirect('saisieResultat',id)
         else:
@@ -3436,11 +3463,21 @@ def saisieResultatParametre(request,pk):
                 r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
                 r.valeurResultat = valeurResultat
                 r.save(update_fields=['valeurResultat'])
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 # print('OK')
                 return redirect('saisieResultat', id)
             except:
                 r = ResultatAnalyse(valeurResultat=valeurResultat, idParametre=parametre, idcargaison=cargaison)
                 r.save()
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 # print('OK')
                 return redirect('saisieResultat',id)
     else:
@@ -3449,11 +3486,19 @@ def saisieResultatParametre(request,pk):
 
 @login_required(login_url='login')
 def validationResulat(request):
+    user = request.user
     if request.method == 'POST':
         id = request.POST['idcargaison']
         cargaison = Cargaison.objects.get(idcargaison=id)
         cargaison.etat = 'Validation en cours 1'
         cargaison.save(update_fields=['etat'])
+
+        UserActivityLog.objects.create(
+            user=user,
+            action="Test result form confirmation",
+            description=f"User has confirm the results for the record {cargaison.idcargaison}",
+        )
+
         context = {
             'status':'success'
         }
@@ -3540,7 +3585,8 @@ def receptionRapports(request):
 def receptionRapportsResponse(request):
     user = request.user.id
     qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user
+        entrepot__ville__affectationville__username_id=user,
+        entrepot_echantillon__laboreception__datereceptionlabo__isnull=False
     ).values(
         'numdos',
         'entrepot_echantillon__numrappechauto',
@@ -3782,13 +3828,18 @@ def refaireAjx(request):
     if role == 6 or role == 1 or role == 10:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
-            print(idcargaison)
+
             try:
                 c = Cargaison.objects.get(idcargaison=idcargaison)
-                print(c.idcargaison)
                 c.etat = "Refaire"
-                print(c.etat)
                 c.save(update_fields=['etat'])
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Request to re-do the Test",
+                    description=f"User has requested that the record  {c.idcargaison} test need to be done again",
+                )
+
                 response_data = {'status': 'success', 'message': 'Cargaison marked as REFAIRE'}
                 return JsonResponse(response_data)
             except Cargaison.DoesNotExist:
@@ -3815,14 +3866,21 @@ def conformeAjx(request):
     if role == 1 or role == 6:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
-            print(idcargaison)
+
             try:
                 c = Cargaison.objects.get(idcargaison=idcargaison)
-                print(c.idcargaison)
+
                 c.etat = "Validation en cours 2"
                 c.conformite = "Conforme aux exigences"
                 c.impression = "0"
                 c.save(update_fields=['etat', 'conformite', 'impression'])
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result first validation CONFORME",
+                    description=f"User has done the first validation for the results for the record {idcargaison}",
+                )
+
                 response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
                 return JsonResponse(response_data)
             except Cargaison.DoesNotExist:
@@ -3854,6 +3912,13 @@ def nonconformeAjx(request):
                 c.conformite = "Non conforme aux exigences"
                 c.impression = "0"
                 c.save(update_fields=['etat', 'conformite', 'impression'])
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result first validation NON CONFORME",
+                    description=f"User has done the first validation for the results for the record {c.idcargaison}",
+                )
+
                 response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
                 return JsonResponse(response_data)
             except Cargaison.DoesNotExist:
@@ -4043,6 +4108,12 @@ def conformeAjx2(request):
                 c.dateHeureAnalyseLabo = datetime.now()
                 c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
 
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result second validation CONFORME",
+                    description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                )
+
                 response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
                 return JsonResponse(response_data)
             except Cargaison.DoesNotExist:
@@ -4077,6 +4148,13 @@ def nonconformeAjx2(request):
                 c.impression = "0"
                 c.dateHeureAnalyseLabo = datetime.now()
                 c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result second validation NON CONFORME",
+                    description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                )
+
                 response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
                 return JsonResponse(response_data)
             except Cargaison.DoesNotExist:
@@ -5060,6 +5138,7 @@ def saisieResultatAjax(request):
 
 @login_required(login_url='login')
 def saisieResultatParametreAjax(request):
+    user = request.user
     if request.method == 'POST':
         parametreId = request.POST['idParametre']
         idcargaison = request.POST['idcargaison']
@@ -5072,20 +5151,41 @@ def saisieResultatParametreAjax(request):
                 r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
                 r.valeurResultatChar = inputValue
                 r.save(update_fields=['valeurResultatChar'])
+
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 return JsonResponse({'status': 'success'})
             except:
                 r = ResultatAnalyse(valeurResultatChar=inputValue, idParametre=parametre, idcargaison=cargaison)
                 r.save()
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 return JsonResponse({'status': 'success'})
         else:
             try:
                 r = ResultatAnalyse.objects.get(idParametre=parametre,idcargaison=cargaison)
                 r.valeurResultat = inputValue
                 r.save(update_fields=['valeurResultat'])
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 return JsonResponse({'status': 'success'})
             except:
                 r = ResultatAnalyse(valeurResultat=inputValue, idParametre=parametre, idcargaison=cargaison)
                 r.save()
+                UserActivityLog.objects.create(
+                    user=user,
+                    action="Test result input",
+                    description=f"User has input the test result for the record {cargaison.idcargaison}",
+                )
                 return JsonResponse({'status': 'success'})
     else:
         redirect('logout')
@@ -5986,11 +6086,17 @@ def bulkConforme1(request):
             for data in selectedRows:
                 try:
                     c = Cargaison.objects.get(idcargaison=data)
-                    print(c.idcargaison)
                     c.etat = "Validation en cours 2"
                     c.conformite = "Conforme aux exigences"
                     c.impression = "0"
                     c.save(update_fields=['etat', 'conformite', 'impression'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Test result first validation CONFORME",
+                        description=f"User has done the first validation for the results for the record {c.idcargaison}",
+                    )
+
                 except Cargaison.DoesNotExist:
                     return JsonResponse({'message': 'An error occured'}, status=400)
 
@@ -6019,6 +6125,13 @@ def bulkNonConforme1(request):
                     c.conformite = "Non conforme aux exigences"
                     c.impression = "0"
                     c.save(update_fields=['etat', 'conformite', 'impression'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Test result first validation NON CONFORME",
+                        description=f"User has done the first validation for the results for the record {c.idcargaison}",
+                    )
+
                 except Cargaison.DoesNotExist:
                     return JsonResponse({'message': 'An error occured'}, status=400)
 
@@ -6042,10 +6155,17 @@ def bulkRefaire1(request):
             for data in selectedRows:
                 try:
                     c = Cargaison.objects.get(idcargaison=data)
-                    print(c.idcargaison)
+
                     c.etat = "Refaire"
-                    print(c.etat)
+
                     c.save(update_fields=['etat'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Request to re-do the Test",
+                        description=f"User has requested that the record  {c.idcargaison} test need to be done again",
+                    )
+
                 except Cargaison.DoesNotExist:
                     return JsonResponse({'message': 'An error occured'}, status=400)
 
@@ -6071,7 +6191,7 @@ def bulkConforme2(request):
             for data in selectedRows:
                 try:
                     c = Cargaison.objects.get(idcargaison=data)
-                    print(c.idcargaison)
+
                     # Updated Method
                     i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
                     i.save()
@@ -6081,6 +6201,14 @@ def bulkConforme2(request):
                     c.conformite = "Conforme aux exigences"
                     c.impression = "0"
                     c.dateHeureAnalyseLabo = datetime.now()
+
+                    #Activity Log
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Test result second validation CONFORME",
+                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                    )
+
                     c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
                 except Cargaison.DoesNotExist:
                     return JsonResponse({'message': 'An error occured'}, status=400)
@@ -6105,7 +6233,7 @@ def bulkNonConforme2(request):
             for data in selectedRows:
                 try:
                     c = Cargaison.objects.get(idcargaison=data)
-                    print(c.idcargaison)
+
                     # Updated Method
                     i = ImpressionResultat(printDate=datetime.now, isConforme=0, isPrinted=0, idcargaison=c)
                     i.save()
@@ -6114,6 +6242,13 @@ def bulkNonConforme2(request):
                     c.impression = "0"
                     c.dateHeureAnalyseLabo = datetime.now()
                     c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Test result second validation NON CONFORME",
+                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                    )
+
                 except Cargaison.DoesNotExist:
                     return JsonResponse({'message': 'An error occured'}, status=400)
 
@@ -6137,10 +6272,18 @@ def bulkRefaire2(request):
             for data in selectedRows:
                 try:
                     c = Cargaison.objects.get(idcargaison=data)
-                    print(c.idcargaison)
+
                     c.etat = "Refaire"
-                    print(c.etat)
+
                     c.save(update_fields=['etat'])
+
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Request to re-do the Test",
+                        description=f"User has requested that the record  {c.idcargaison} test need to be done again",
+                    )
+
+
                 except Cargaison.DoesNotExist:
                     return JsonResponse({'message': 'An error occured'}, status=400)
 

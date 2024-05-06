@@ -33,25 +33,18 @@ def exportLargeDataSet(export_format, queryset_data, request=None):
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # if bool(int(os.environ.get("DEBUG"))) is True:
-        #     # Save the exported file
-        #     file_path = default_storage.save(file_name, ContentFile(file_content))
-        #     file_url = default_storage.url(file_path)
-        #
-        #     # Return the URL of the exported file
-        #     return {
-        #         'file_url': file_url,
-        #         'file_name': file_name,
-        #     }
-        # else:
+        # Define the media directory
+        media_dir = os.path.join("/vol/web/media", 'xlsx')
+        os.makedirs(media_dir, exist_ok=True)  # Ensure the directory exists
+
 
         # Save the exported file to the mounted volume
         file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
-        with default_storage.open(file_path, "wb") as destination:
-            destination.write(file_content)
+        with default_storage.open(file_path, "wb") as file_content_file:
+            file_content_file.write(file_content)
 
         # Return the URL of the exported file
-        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
+        file_url = os.path.join("/media",'xlsx', file_name)  # Assuming MEDIA_URL is /media/
         return {
             'file_url': file_url,
             'file_name': file_name,

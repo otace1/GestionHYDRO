@@ -92,6 +92,7 @@ rapportButtons = """
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" onclick="return printRappEchantillonnage();">Rapport d'Ech.</a>
               <a class="dropdown-item" onclick="return printRappInspection();">Rapport d'Insp.</a>
+              <a class="dropdown-item" onclick="return printDossimport();">Dossier Import.</a>
             </div>
         </div>
 """
@@ -109,7 +110,7 @@ class CodificationTable(tables.Table):
     produit__nomproduit = tables.Column(verbose_name='PRODUIT')
     volume = tables.Column(verbose_name='VOLUME')
     immatriculation = tables.Column(verbose_name='IMMATRICULATION')
-    declaration = tables.Column(verbose_name='#.DECL.(T1D)')
+    declaration = tables.Column(verbose_name='#.DECL.(T1E)')
     # numdos = tables.Column(verbose_name='NUM DE DOSSIER')
     numreq = tables.Column(verbose_name='REF.REQUISITION')
     numreqi = tables.TemplateColumn(A1, verbose_name='SAISIE REF.REQUISITION')
@@ -163,7 +164,7 @@ class ResultatGoLabo(tables.Table):
 
 class NonConformeOrganoleptique(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1E)")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT DECL.")
@@ -181,7 +182,7 @@ class NonConformeOrganoleptique(tables.Table):
 
 class NonConformeLaboratoire(tables.Table):
     idcargaison__numdos = tables.Column(verbose_name="#.DOS")
-    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1D)")
+    idcargaison__declaration = tables.Column(verbose_name="#.DECL.(T1E)")
     idcargaison__importateur = tables.Column(verbose_name="FOURNISSEUR")
     idcargaison__entrepot = tables.Column(verbose_name="ENTREPOT")
     idcargaison__produit = tables.Column(verbose_name="PRODUIT")
@@ -199,7 +200,7 @@ class NonConformeLaboratoire(tables.Table):
 
 class EnAttenteEchantillonage(tables.Table):
     numdos = tables.Column(verbose_name="#. DOSSIER")
-    declaration = tables.Column(verbose_name="#. DECLARATION")
+    declaration = tables.Column(verbose_name="#.DECL.(T1E)")
     importateur = tables.Column(verbose_name="IMPORTATEUR")
     entrepot = tables.Column(verbose_name="ENTREPOT")
     produit = tables.Column(verbose_name="PRODUIT")
@@ -291,7 +292,7 @@ class EnAttenteResultatLabo(tables.Table):
 
 class RapportActivite(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
-    declaration = tables.Column(verbose_name="#.DECL.(T1D)")
+    declaration = tables.Column(verbose_name="#.DECL.(T1E)")
     importateur__nomimportateur = tables.Column(verbose_name="FOURNISSEUR")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE")
     entrepot__nomentrepot = tables.Column(verbose_name="ENTREPOT")

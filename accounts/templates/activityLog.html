@@ -1,0 +1,77 @@
+{% extends 'accounts/activityLog.html' %}
+
+
+{% block content %}
+
+    <!-- Default box -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Journal d'activités</h3>
+
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button type="button" class="btn btn-tool" data-card-widget="remove" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>UTILISATEUR</th>
+                    <th>DATE/HEURE</th>
+                    <th>ACTION</th>
+                    <th>DESCRIPTION</th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+        <!-- /.card-body -->
+        <div class="card-footer">
+
+        </div>
+        <!-- /.card-footer-->
+    </div>
+    <!-- /.card -->
+
+
+    <script>
+
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Display the length change dropdown
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ajax: {
+                url: '{% url 'activityLogResponse' %}',
+                type: 'GET',
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+            },
+            columns: [
+                { data: 'id' }, // Use array index to access 'dateheurecargaison__date'
+                { data: 'user__username' }, // Use array index to access 'frontiere__nomville'
+                { data: 'timestamp' }, // Use array index to access 'importateur__nomimportateur'
+                { data: 'action' }, // Use array index to access 'entrepot__nomentrepot'
+                {#{ data: 'role__role' }, // Use array index to access 'produit__nomproduit'#}
+                { data: 'description' },
+            ],
+        });
+    })
+
+    </script>
+
+
+
+{% endblock %}

@@ -692,6 +692,12 @@ def echantillonage(request):
             e = Entrepot_echantillon(idcargaison=c, numrappechauto=numrappechauto, matricule=matricule,methodeutilisee=methodeutilisee, qte=qte, dateechantillonage=today)
             e.save()
 
+            UserActivityLog.objects.create(
+                user=user,
+                action="Sample Data creation",
+                description=f"User has created a new sampling record for {c.idcargaison} successfully",
+            )
+
             # Generer le rapport d'echantillonage
             template = 'rapportechantillonage.html'
             e = Entrepot_echantillon.objects.get(idcargaison=pk)
@@ -732,21 +738,6 @@ def echantillonage(request):
 
             # Render PDF Files
             pdf = render_to_pdf(template, data)
-
-            # # Create an email message
-            # subject = 'OCC Sampling Report ' + str(numrappech) + str(today.year)
-            # message = 'Please find attached the Sampling Report'
-            # email_from = 'otace1@gmail.com'  # Replace with your email address
-            # recipient_list = ['cedric@malabar-group.com']  # Replace with recipient email address(es)
-            # email = EmailMessage(subject, message, email_from, recipient_list)
-            #
-            # # Add the PDF report as an attachment
-            # filename = 'SamplingReport.pdf'
-            # email.attach(filename, pdf.getvalue(), 'application/pdf')
-            #
-            # # Send the email
-            # email.send()
-            # Convert PDF content to Base64-encoded string
             pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
             return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
         else:
@@ -1438,9 +1429,9 @@ def meterafter(request):
         idcargaison = request.POST['idcargaison']
         meterafter = request.POST['meterafter']
         meterbefore = request.POST['meterbefore']
-        print('TEST')
-        print(idcargaison)
-        print(meterbefore)
+        # print('TEST')
+        # print(idcargaison)
+        # print(meterbefore)
 
         try:
             cargaison = Cargaison.objects.get(idcargaison=idcargaison)
@@ -1455,6 +1446,13 @@ def meterafter(request):
             inspection.save(update_fields=['meterafter', 'meterbefore'])
             cargaison.etat = 'Cargaison dechargee'
             cargaison.dateDechargement = datetime.datetime.today()
+
+            UserActivityLog.objects.create(
+                user=request.user,
+                action="Offload of the Truck",
+                description=f"User has confirmed the offload of the Truck for the record  {cargaison.idcargaison}",
+            )
+
             cargaison.save(update_fields=['etat', 'dateDechargement'])
             return JsonResponse({'status': 'success'})
 
@@ -1911,7 +1909,7 @@ def affichageInspection(request):
 
 
 @login_required(login_url='login')
-def marquageInspection(request):
+def marquageInspectionWeb(request):
     user = request.user.id
     ville = AffectationVille.objects.get(username_id=user)
     pk = request.session['id']
@@ -1919,8 +1917,14 @@ def marquageInspection(request):
     c.etatInspection = 0
     c.numact = num_cert_inspection(ville)
     c.save(update_fields=['etatInspection','numact'])
-    print('ACT DEBUG')
-    print(c.numact)
+    # print('ACT DEBUG')
+    # print(c.numact)
+
+    UserActivityLog.objects.create(
+        user=request.user,
+        action="Inspection completed",
+        description=f"User has completed the inspection of the record  {c.idcargaison}",
+    )
 
     # Create a dictionary with the data you want to return
     response_data = {

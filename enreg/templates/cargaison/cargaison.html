@@ -13,58 +13,7 @@
 
 {% block content %}
 
-        {% render_table table %}
-{##}
-{#     <div class="table-responsive">#}
-{#        <table id="myTable" class="table table-bordered table-striped" style="text-align: center;">#}
-{#            <thead class="table-success">#}
-{#                 <tr>#}
-{#                 <th>DATE & HEURE</th>#}
-{#                 <th>IMPORTATEUR</th>#}
-{#                 <th>ENTREPOT</th>#}
-{#                 <th>IMMATRICULATION</th>#}
-{#                 <th>VOL.AMBIANT</th>#}
-{#                 <th>VOL.15°C</th>#}
-{#                 <th>VOL.20°C</th>#}
-{#                 <th>TONNAGE VIDE</th>#}
-{#                 <th>TONNAGE AIR</th>#}
-{#                 <th class="table-danger">ACTIONS</th>#}
-{#                 </tr>#}
-{#            </thead>#}
-{#            <tbody >#}
-{#            {% for data in data %}#}
-{#                <tr>#}
-{#                    <td>{{ data.dateheurecargaison }}</td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                    <td></td>#}
-{#                </tr>#}
-{#            {% endfor %}#}
-{#            </tbody>#}
-{#            <tfoot>#}
-{#                  <tr>#}
-{#                    <th>DATE & HEURE</th>#}
-{#                    <th>IMPORTATEUR</th>#}
-{#                    <th>ENTREPOT</th>#}
-{#                    <th>IMMATRICULATION</th>#}
-{#                    <th>VOL.AMBIANT</th>#}
-{#                    <th>VOL.15°C</th>#}
-{#                    <th>VOL.20°C</th>#}
-{#                    <th>TONNAGE VIDE</th>#}
-{#                    <th>TONNAGE AIR</th>#}
-{#                    <th>ACTIONS</th>#}
-{#                  </tr>#}
-{#            </tfoot>#}
-{#        </table>#}
-{#    </div>#}
-
+    {% render_table table %}
 
     <div class="modal fade" id="modal-xl">
         <div class="modal-dialog modal-xl">
@@ -98,12 +47,12 @@
                 <div class="modal-header">
                     <h4 class="modal-title">QR Code</h4>
                 </div>
-                    <div class="modal-body">
-                        <div id="codeQR"></div>
-                    </div>
-                     <div class="modal-footer justify-content-between">
+                <div class="modal-body">
+                    <div id="codeQR"></div>
+                </div>
+                <div class="modal-footer justify-content-between">
 
-                    </div>
+                </div>
             </div>
             <!-- /.modal-content -->
         </div>
@@ -121,90 +70,112 @@
 <script>
 
     {% block javascript %}
-        // using jQuery
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
+ // Function to get CSRF token
+function getCSRFToken() {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+                break;
             }
-            return cookieValue;
         }
+    }
+    return cookieValue;
+}
 
-        var csrftoken = getCookie('csrftoken');
-
-        function csrfSafeMethod(method) {
-            // these HTTP methods do not require CSRF protection
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+// AJAX setup for CSRF token
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+            xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
         }
-        $.ajaxSetup({
-            beforeSend: function (xhr, settings) {
-                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                }
+    }
+});
+
+
+// Click handler for submit button
+$('.btn.btn-success').click(function(e) {
+    e.preventDefault();
+    // Disable the button to prevent multiple submissions
+    $(this).attr("disabled", true);
+
+    // Create FormData object
+    var formData = new FormData();
+
+    // Serialize the form data and append to FormData
+    var form = $('#post-form')[0];
+    var formDataSerialized = $(form).serializeArray();
+    $.each(formDataSerialized, function(_, kv) {
+        formData.append(kv.name, kv.value);
+    });
+
+    // Get the selected file
+    var file = $('#id_files')[0].files[0];
+    if (!file) {
+        alert('Please select a file.');
+        // Re-enable the button
+        $(this).attr("disabled", false);
+        return;
+    } else if (file.type !== 'application/pdf') {
+        alert('Please select a PDF file.');
+        // Re-enable the button
+        $(this).attr("disabled", false);
+        return;
+    }
+
+    // Append the file to FormData
+    formData.append('files', file);
+
+    // Read the file as text using FileReader
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        // File content as Base64
+        var fileContent = event.target.result;
+
+        // Append the file content to the FormData
+        formData.append('file_content', fileContent);
+
+        // Send AJAX request
+        $.ajax({
+            url: "{% url 'nouvelle' %}",
+            type: "POST",
+            data: formData,
+            processData: false, // Prevent jQuery from processing the data
+            contentType: false, // Prevent jQuery from setting contentType
+            success: function(data) {
+                console.log(data);
+                var qrcode = new QRCode(document.getElementById("codeQR"), {
+                    text: data,
+                    width: 250,
+                    height: 250,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                $('#modal-xl').modal('hide');
+                alert("Data saved successfully");
+
+                $('#modal_qrcode').modal('show');
+                var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Close</button>';
+                $('.modal-footer').html(modalFooter);
+            },
+            error: function(xhr, status, error) {
+                console.log(xhr.responseText);
+                alert('Error! Please check the mandatory fields and volume values entered');
+                // Re-enable the button on error
+                $('.btn.btn-success').attr("disabled", false);
             }
         });
+    };
 
-        //script for submitting data in ajax
-        $('.btn.btn-info').click(function () {
-            Id = $(this).data('id'); //getting the id of the row which equal to the pk into the database
-        });
+    // Read the file as text
+    reader.readAsDataURL(file);
+});
 
-
-        $('.btn.btn-success').click((function (e) {
-            e.preventDefault()
-            //Disable our button
-            $('.btn.btn-success').attr("disabled", true);
-            var APIurl = "{% url 'nouvelle' %}";
-            var SerializedData = $("#post-form").serialize();
-            console.log(SerializedData);
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dateType: "json",
-                success: function (data) {
-                    console.log(data)
-                    var qrcode = new QRCode(document.getElementById("codeQR"), {
-                        text: data,
-                        width: 250,
-                        height: 250,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-
-                    $('#modal-xl').modal('hide');
-                    alert("Données sauvegardées");
-
-                    $('#modal_qrcode').modal('show');
-                    var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Fermer</button>';
-                    $('.modal-footer').html(modalFooter);
-                },
-
-                error: function (vol) {
-                    console.log(vol);
-                    alert('Echec! Veuillez verifier le volume introduit');
-                    $('.btn.btn-success').attr("disabled", false);
-                    location.reload();
-                },
-
-                error: function (vide) {
-                    console.log(vide);
-                    alert('Echec! Verifier les champs obligatoires et la valeur du volume introduite');
-                    $('.btn.btn-success').attr("disabled", false);
-                    location.reload();
-                },
-
-            })
-        }))
 
     {% endblock %}
 </script>

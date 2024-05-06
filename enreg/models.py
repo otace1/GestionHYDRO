@@ -187,6 +187,9 @@ class Cargaison(models.Model):
     isConsignated = models.BooleanField(default=False)
     isRefouler = models.BooleanField(default=False)
 
+    #File path saving
+    files_path = models.CharField(blank=True,null=True, max_length=256)
+
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
 

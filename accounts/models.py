@@ -1,3 +1,5 @@
+import json
+
 from dotenv import load_dotenv
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.contrib.auth.models import User
@@ -130,21 +132,26 @@ class MyUser(AbstractBaseUser):
                         date set to 60 days into the future.
         """
         if not firebase_admin._apps:
+
+            # Load Firebase config from JSON file
+            with open('hydrocarbures/firebaseData.json') as f:
+                firebase_config = json.load(f)
+
             crt = {
-                  "type": os.environ.get("TYPE"),
-                  "project_id": os.environ.get("POJECT_ID"),
-                  "private_key_id": os.environ.get("PRIVATE_KEY_ID"),
-                  "private_key": os.environ.get("PRIVATE_KEY"),
-                  "client_email": os.environ.get("CLIENT_EMAIL"),
-                  "client_id": os.environ.get("CLIENT_ID"),
-                  "auth_uri": os.environ.get("AUTH_URL"),
-                  "token_uri": os.environ.get("TOKEN_URL"),
-                  "auth_provider_x509_cert_url": os.environ.get("AUTH_PROVIDER"),
-                  "client_x509_cert_url": os.environ.get("CLIENT_X509")
-                }
+                "type": firebase_config.get("type"),
+                "project_id": firebase_config.get("project_id"),
+                "private_key_id": firebase_config.get("private_key_id"),
+                "private_key": firebase_config.get("private_key"),
+                "client_email": firebase_config.get("client_email"),
+                "client_id": firebase_config.get("client_id"),
+                "auth_uri": firebase_config.get("auth_uri"),
+                "token_uri": firebase_config.get("token_uri"),
+                "auth_provider_x509_cert_url": firebase_config.get("auth_provider_x509_cert_url"),
+                "client_x509_cert_url": firebase_config.get("client_x509_cert_url")
+            }
 
             cred = credentials.Certificate(crt)
-            default_app = firebase_admin.initialize_app(cred)
+            firebase_admin.initialize_app(cred)
 
         additional_claims = {
             'names': self.get_full_name(),
@@ -219,7 +226,6 @@ class ListeLaboratoire(models.Model):
         return self.denominationLaboratoire
 
 
-
 class AffectationLaboratoire(models.Model):
     idAffectation = models.AutoField(primary_key=True, auto_created=True)
     idLaboratoire = models.ForeignKey(ListeLaboratoire, on_delete=models.PROTECT)
@@ -227,3 +233,16 @@ class AffectationLaboratoire(models.Model):
     ville = models.ForeignKey(Ville,on_delete=models.PROTECT)
     signGauche = models.BooleanField(null=True, blank=True)
 
+
+
+
+#Table to follow activity Logs
+class UserActivityLog(models.Model):
+    id = models.AutoField(primary_key=True, auto_created=True)
+    user = models.ForeignKey(MyUser, on_delete=models.PROTECT)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    action = models.CharField(max_length=100)
+    description = models.TextField()
+
+    def __str__(self):
+        return f"{self.user.username} - {self.timestamp}"

@@ -84,6 +84,9 @@ urlpatterns = [
     path('lastrecordShydro/', views.lastrecordShydro, name='lastrecordShydro'),
     path('topImportersShydro/', views.topImportersShydro, name='topImportersShydro'),
     path('productCountShydro/', views.productCountShydro, name='productCountShydro'),
+
+
+    path('afficherDossImport/', views.afficherDossImport, name='afficherDossImport'),
     #
 
 

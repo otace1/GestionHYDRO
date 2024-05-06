@@ -9,7 +9,7 @@ import pandas as pd
 from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Prefetch
 from django.db.models.functions import Round
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
@@ -20,6 +20,7 @@ from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
 
 from accounts.models import *
+from enreg.uploadToStorage import download_file_from_space
 from entrepot.calculs import densite15, vcf, gsv, mta
 from hydrocarbures.celery import app
 from shydro.utils import render_to_pdf
@@ -281,7 +282,6 @@ def numreq(request):
             name = MyUser.objects.get(id=user.id)
             name = name.username
 
-    
             #Numerotation auto des Dossier
             numDos = numDossier(ville,int(pk))
 
@@ -291,6 +291,12 @@ def numreq(request):
             c.requisitionack = name
             c.etat = "En attente d'echantillonage"
             c.save(update_fields=['numreq','requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
+
+            UserActivityLog.objects.create(
+                user=user,
+                action="Control order data creation",
+                description=f"User has authorize a control on the record {c.idcargaison}",
+            )
 
             context = {
                 'num':c.numdos
@@ -944,12 +950,13 @@ def rapportActivite(request):
     qs = Cargaison.objects.annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
-        mtaTotal=Sum('inspection__compartiment__mta')
+        mtaTotal=Sum('inspection__compartiment__mta'),
+        mtvTotal=Round(Sum('inspection__compartiment__mtv'),3)
     ).values('idcargaison',
         'numdos','declaration','frontiere__nomville','inspection__dens','inspection__temp','mtaTotal',
         'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
         'requisitiondackdate','entrepot_echantillon__dateechantillonage__date','entrepot_echantillon__laboreception__datereceptionlabo__date','impressionresultat__printDate',
-        'inspection__dateinspection','volume','volConst','gsvT').order_by('-dateheurecargaison')
+        'inspection__dateinspection','volume','volConst','gsvT','mtvTotal').order_by('-dateheurecargaison')
 
     # qs = list(qs)
     table = RapportActivite(qs)
@@ -1244,7 +1251,6 @@ def checkExportTaskStatus(request, task_id):
 
 @login_required(login_url='login')
 def rapportActiviteFiltrePost(request):
-
     user = request.user.id
     template = 'rapportActivite.html'
     form = Filters(user=user)
@@ -1255,24 +1261,28 @@ def rapportActiviteFiltrePost(request):
         dateDebut = request.session['dateDebut']
         dateFin = request.session['dateFin']
 
+        qs = Cargaison.objects.annotate(
+            volConst=Sum('inspection__compartiment__gov'),
+            gsvT=Sum('inspection__compartiment__gsv'),
+            mtaTotal=Sum('inspection__compartiment__mta'),
+            mtvTotal=Sum('inspection__compartiment__mtv')
+        ).values(
+            'inspection__idinspection',  # Group by idinspection_id
+            'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp',
+            'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+            'produit__nomproduit', 'dateheurecargaison', 'requisitiondackdate',
+            'entrepot_echantillon__dateechantillonage__date',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate', 'volume',
+            'volConst', 'gsvT', 'mtaTotal', 'mtvTotal'
+        ).order_by('-inspection__dateinspection')
+
+
         if fournisseur and entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv'),
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1297,23 +1307,11 @@ def rapportActiviteFiltrePost(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1339,22 +1337,10 @@ def rapportActiviteFiltrePost(request):
 
 
         if fournisseur and entrepot:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1379,22 +1365,10 @@ def rapportActiviteFiltrePost(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1419,22 +1393,10 @@ def rapportActiviteFiltrePost(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut :
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1459,22 +1421,10 @@ def rapportActiviteFiltrePost(request):
             return render(request,template,context)
 
         if fournisseur and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1500,7 +1450,7 @@ def rapportActiviteFiltrePost(request):
 
 
         if fournisseur:
-            qs = Cargaison.objects.filter(
+            qs = qs.filter(
                 entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
             ).annotate(
@@ -1545,22 +1495,10 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1585,22 +1523,10 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if entrepot and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1625,22 +1551,10 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if entrepot and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1665,21 +1579,9 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if entrepot:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1704,21 +1606,9 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1743,21 +1633,9 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1782,21 +1660,9 @@ def rapportActiviteFiltrePost(request):
             return render(request, template, context)
 
         if dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1840,24 +1706,28 @@ def rapportActiviteFiltre(request):
         request.session['dateDebut'] = dateDebut
         request.session['dateFin'] = dateFin
 
+        qs = Cargaison.objects.annotate(
+            volConst=Sum('inspection__compartiment__gov'),
+            gsvT=Sum('inspection__compartiment__gsv'),
+            mtaTotal=Sum('inspection__compartiment__mta'),
+            mtvTotal=Sum('inspection__compartiment__mtv')
+        ).values(
+            'inspection__idinspection',  # Group by idinspection_id
+            'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp',
+            'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+            'produit__nomproduit', 'dateheurecargaison', 'requisitiondackdate',
+            'entrepot_echantillon__dateechantillonage__date',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate', 'volume',
+            'volConst', 'gsvT', 'mtaTotal', 'mtvTotal'
+        ).order_by('-inspection__dateinspection')
+
+
         if fournisseur and entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv'),
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1874,23 +1744,11 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1907,23 +1765,11 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1939,22 +1785,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and entrepot:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 entrepot_id=entrepot,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1971,22 +1805,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2002,22 +1824,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateDebut :
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2033,22 +1843,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2064,21 +1862,9 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if fournisseur:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2094,22 +1880,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2125,22 +1899,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2156,22 +1918,10 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2187,21 +1937,9 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if entrepot:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 entrepot_id=entrepot,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2217,21 +1955,9 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2247,21 +1973,9 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2277,21 +1991,9 @@ def rapportActiviteFiltre(request):
             return render(request,template,context)
 
         if dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
                 dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2312,27 +2014,44 @@ def rapportActiviteFiltre(request):
         dateDebut = request.session['dateDebut']
         dateFin = request.session['dateFin']
 
+        qs = Cargaison.objects.annotate(
+            volConst=Sum('inspection__compartiment__gov'),
+            gsvT=Sum('inspection__compartiment__gsv'),
+            mtaTotal=Sum('inspection__compartiment__mta'),
+            mtvTotal=Sum('inspection__compartiment__mtv')
+        ).values(
+            'inspection__idinspection',  # Group by idinspection_id
+            'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp',
+            'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+            'produit__nomproduit', 'dateheurecargaison', 'requisitiondackdate',
+            'entrepot_echantillon__dateechantillonage__date',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate', 'volume',
+            'volConst', 'gsvT', 'mtaTotal', 'mtvTotal'
+        ).order_by('-inspection__dateinspection')
+
         if fournisseur and entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          entrepot_id=entrepot,
+                                          dateheurecargaison__date__range=[dateDebut, dateFin]
+                                          ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
+                mtvTotal=Sum('inspection__compartiment__mtv'),
             ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+                     'idcargaison', 'numdos', 'declaration', 'frontiere__nomville', 'inspection__idinspection',
+                     'entrepot__ville__nomville',
+                     'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot',
+                     'immatriculation',
+                     'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
+                     'entrepot_echantillon__dateechantillonage__date', 'inspection__dens', 'inspection__temp',
+                     'entrepot_echantillon__laboreception__datereceptionlabo__date', 'mtaTotal', 'mtvTotal',
+                     'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+                     ).order_by('-inspection__dateinspection')
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -2346,26 +2065,14 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and entrepot and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          entrepot_id=entrepot,
+                                          dateheurecargaison__date=dateDebut
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -2379,26 +2086,14 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and entrepot and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          entrepot_id=entrepot,
+                                          dateheurecargaison__date=dateFin
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2411,25 +2106,13 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and entrepot:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          entrepot_id=entrepot,
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
@@ -2443,25 +2126,13 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          dateheurecargaison__date__range=[dateDebut, dateFin]
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2474,25 +2145,13 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          dateheurecargaison__date=dateDebut
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2505,25 +2164,13 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          dateheurecargaison__date=dateFin
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2536,24 +2183,12 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if fournisseur:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          importateur_id=fournisseur,
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2566,25 +2201,13 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot and dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          entrepot_id=entrepot,
+                                          dateheurecargaison__date__range=[dateDebut, dateFin]
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2597,22 +2220,10 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot and dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          entrepot_id=entrepot,
+                                          dateheurecargaison__date=dateDebut
+                                          )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2628,25 +2239,13 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          entrepot_id=entrepot,
+                                          dateheurecargaison__date=dateFin
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2659,24 +2258,12 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if entrepot:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          entrepot_id=entrepot,
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2689,24 +2276,12 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if dateDebut and dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          dateheurecargaison__date__range=[dateDebut, dateFin]
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2719,24 +2294,12 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if dateDebut:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date=dateDebut
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          dateheurecargaison__date=dateDebut
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -2749,24 +2312,12 @@ def rapportActiviteFiltre(request):
             return render(request, template, context)
 
         if dateFin:
-            qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date=dateFin
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values('inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville','inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur', 'entrepot__nomentrepot', 'immatriculation',
-                'produit__nomproduit', 'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date','inspection__dens','inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date','mtaTotal','mtvTotal',
-                'impressionresultat__printDate', 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user,
+                                          dateheurecargaison__date=dateFin
+                                          )
 
             table = RapportActivite(qs)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
+            RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             export_format = request.GET.get("_export", None)
             if TableExport.is_valid_format(export_format):
                 exporter = TableExport(export_format, table)
@@ -3746,7 +3297,7 @@ def tableaudeBordHydro(request):
         entrepot__ville__affectationville__username_id=id
     ).count()
 
-    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+    i = Cargaison.objects.filter(etatInspection=1,
                                  entrepot__ville__affectationville__username_id=id).count()
 
     # Nouveau Produtc list
@@ -3852,3 +3403,34 @@ def productCountShydro(request):
     return JsonResponse({
         'data': data
     })
+
+
+
+@login_required(login_url='login')
+def afficherDossImport(request):
+    if request.method == 'POST':
+        user = request.user
+        id = user.id
+
+        data = json.loads(request.body)
+        pk = data.get('rowId')
+
+        cargaison = Cargaison.objects.get(idcargaison=pk)
+
+        file_path = cargaison.files_path  # Specify the path to your file in the Space
+
+        # Fetch file content from DigitalOcean Space
+        file_content = download_file_from_space(file_path)
+
+        if file_content:
+            # Encode the file content as Base64
+            encoded_content = base64.b64encode(file_content).decode('utf-8')
+
+            # Return the encoded file content in the JSON response
+            return JsonResponse({'file_content': encoded_content}, status=200)
+        else:
+            return JsonResponse({'error': "File not found or unable to download."}, status=404)
+    else:
+        return JsonResponse({'error': "Invalid request method."}, status=400)
+
+

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime as dt
 
 from django.db import connection
 
@@ -7,7 +7,8 @@ from accounts.models import *
 
 # Numero de Dossier Annuel et unique
 def num_cert_inspection(ville):
-    current_year = datetime.now().year
+    current_year = dt.now()
+    current_year = current_year.year
 
     # max_value_query = Cargaison.objects.filter(
     #     dateheurecargaison__year=current_year,

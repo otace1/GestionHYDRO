@@ -31,7 +31,7 @@ class CargaisonTable(tables.Table):
         template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
         sequence = ['dateheurecargaison', 'importateur', 'entrepot', 'immatriculation', 'produit', 'volume','print']
-        exclude = ['dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
+        exclude = ['files_path','dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'controlOrganoleptique','dateDechargement','volume15',
                     'volume20', 'tonnagevide','toBeRefouler','toBeConsignated','isConsignated','isRefouler',
                     'tonnageair','transitaire',

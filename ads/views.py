@@ -12440,42 +12440,18 @@ def rapportBrut(request):
     request.session['date_f'] = ''
 
     qs = Cargaison.objects.annotate(
-        volJauge=Round(Sum('inspection__compartiment__gov'),3),
-        gsvJauge=Round(Sum('inspection__compartiment__gsv'),3),
-        govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'),3),
-        gsvMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'),3),
-        mtaTotal=Round(Sum('inspection__compartiment__mta'),3),
-        mtvTotal=Round(Sum('inspection__compartiment__mtv'),3),
-        fraisOcc=Case(
-            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                 then=Sum('inspection__compartiment__gsv') * 11),
-            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-            output_field=FloatField()
-        ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
-                      ).values('requisitiondackdate__date', 'dateDechargement__date',
-                               'inspection__compartiment__vcf',
-                               'idcargaison',
-                               'dateheurecargaison__date',
-                               'requisitiondackdate',
-                               'importateur__nomimportateur',
-                               'entrepot__nomentrepot',
-                               'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                               'entrepot_echantillon__dateechantillonage__date',
-                               'frontiere__nomville',
-                               'immatriculation',
-                               'produit__nomproduit',
-                               'declaration',
-                               'volume',
-                               'inspection__temp',
-                               'impressionresultat__printDate',
-                               'inspection__dens',
-                               'inspection__dateinspection__date',
-                               'volJauge',
-                               'gsvJauge',
-                               'govMeter',
-                               'gsvMeter',
-                               'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
-                               )
+        volConst=Sum('inspection__compartiment__gov'),
+        gsvT=Sum('inspection__compartiment__gsv'),
+        mtaTotal=Sum('inspection__compartiment__mta'),
+        mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3)
+    ).values('idcargaison',
+             'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
+             'entrepot__nomentrepot', 'inspection__dateinspection__date', 'importateur__nomimportateur', 'immatriculation',
+             'produit__nomproduit', 'dateheurecargaison','entrepot__cargaison__dateDechargement',
+             'requisitiondackdate', 'entrepot_echantillon__dateechantillonage__date',
+             'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
+             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
+
     table = RapportBrut(qs)
     form = RechercheStat()
     RequestConfig(request, paginate={"paginator_class": LazyPaginator,

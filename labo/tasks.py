@@ -951,30 +951,6 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
         'file_name': file_name,
     }
 
-    # # Save the exported file to the mounted volume
-    # file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
-    # with default_storage.open(file_path, "wb") as merged_pdf_file:
-    #     merged_pdf.write(merged_pdf_file)
-    #
-    # # Return the URL of the exported file
-    # file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
-    # return {
-    #     'file_url': file_url,
-    #     'file_name': file_name,
-    # }
-
-    # # Save the merged PDF content to a file
-    # with default_storage.open(file_name, 'wb') as merged_pdf_file:
-    #     merged_pdf.write(merged_pdf_file)
-    #
-    # file_url = default_storage.url(file_name)
-
-    #
-    # return {
-    #     'file_url': file_url,
-    #     'file_name': file_name,
-    # }
-
 
 
 

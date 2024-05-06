@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gestionhydro-ingress
+  annotations:
+#    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+        - suivicargo.com
+      secretName: gestionhydro-tls
+  rules:
+  - host: suivicargo.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: "/"
+          backend:
+            service:
+              name: nginx-service
+              port:
+                number: 80
+        - pathType: Prefix
+          path: "/static"
+          backend:
+            service:
+              name: nginx-service
+              port:
+                number: 80
+        - pathType: Prefix
+          path: "/media"
+          backend:
+            service:
+              name: nginx-service
+              port:
+                number: 80
+
+
+

@@ -38,6 +38,13 @@ def login_user(request):
                 re = request.user
                 role = re.role_id
 
+                #Activity Log
+                UserActivityLog.objects.create(
+                    user=re,
+                    action="System login",
+                    description="User logged in successfully",
+                )
+
                 # Roles frontière
                 if role == 2:
                     return redirect('cargaison')
@@ -83,6 +90,13 @@ def login_user(request):
 # Fontion pour logout les utilisateurs
 def logout_user(request):
     logout(request)
+
+    UserActivityLog.objects.create(
+        user=request.user,
+        action="System logout",
+        description="User logged out successfully",
+    )
+
     return redirect('/')
 
 
@@ -761,3 +775,71 @@ def privacyPolicy(request):
     template = 'privacyPolicy.html'
     context = {}
     return render(request,template,context)
+
+
+
+@login_required(login_url='login')
+def activityLog(request):
+    template = 'activityLog.html'
+    context = {}
+    return render(request,template,context)
+
+
+@login_required(login_url='login')
+def activityLogResponse(request):
+    qs = UserActivityLog.objects.all().order_by('-timestamp').values(
+        'id',
+        'user__username',
+        'timestamp',
+        'action',
+        'description'
+    )
+
+    # Get the search value from the request's GET parameters
+    search_value = request.GET.get('search[value]', '')
+
+    # Apply search filter to the QuerySet
+    if search_value:
+        qs = qs.filter(
+            Q(user__username__icontains=search_value) |
+            Q(action__icontains=search_value) |
+            Q(description__icontains=search_value)
+        )
+
+    # Number of items to show per page
+    items_per_page = 15
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+

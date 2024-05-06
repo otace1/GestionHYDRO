@@ -19,7 +19,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.models import MyUser
+from accounts.models import MyUser, UserActivityLog
 from entrepot.calculs import *
 from entrepot.numrappech import numRappEch
 from labo.codeLabo import codeLabo
@@ -56,6 +56,14 @@ def loginApiView(request):
         'access_token': access_token,
         'apiKey': apiKey,
     }
+
+    # Activity Log
+    UserActivityLog.objects.create(
+        user=user,
+        action="System login",
+        description="User logged in successfully",
+    )
+
     return response
 
 
@@ -425,6 +433,13 @@ class AddCargo(APIView):
             qrcode = str(uuid.uuid4())
             etat = "En attente requisition"
             serializer.save(qrcode=qrcode, etat=etat)
+
+            UserActivityLog.objects.create(
+                user=request.user,
+                action="Data creation",
+                description="User has created new import record successfully",
+            )
+
             context = {'qrcode': qrcode}
             return Response(context, status=status.HTTP_200_OK)
         else:
@@ -522,27 +537,13 @@ class GetQrcode(APIView):
 class Provenance(APIView):
     queryset = Cargaison.objects.all()
 
-    # permission_classes = [HasAPIKey]
-    # serializer_class = CargaisonSerializer
     def get(self, request):
         data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
         json_data = json.dumps(data, ensure_ascii=False)
         response = JsonResponse(json.loads(json_data), safe=False)
         response['Content-Type'] = 'application/json; charset=utf-8'
         return response
-        # data = list(map(force_str, COUNTRIES.values()))  # Convert __proxy__ to regular strings
-        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        # response = JsonResponse(json_data, safe=False)
-        # response['Content-Type'] = 'application/json; charset=utf-8'
-        # return response
-        # data = list(COUNTRIES.values())  # Convert dict_values to a list
-        # json_data = json.dumps(data, ensure_ascii=False).encode('utf-8')
-        # response = JsonResponse(json_data, safe=False)
-        # response['Content-Type'] = 'application/json; charset=utf-8'
-        # return response
-        # data = COUNTRIES.values()
-        # context = {'provenance': data}
-        # return Response(context, status=status.HTTP_200_OK)
+
 
 
 class GetCargoList(APIView):
@@ -795,6 +796,13 @@ def enregistrementEchantillonnage(request):
             'methodeEchantillonnage':methodeUtilisee,
             'matriculeAgent':matriculeAgent,
         }
+
+        UserActivityLog.objects.create(
+            user=request.user,
+            action="Sample Data creation",
+            description=f"User has created a new sampling record for {c.idcargaison} successfully",
+        )
+
         return Response(context,status=status.HTTP_200_OK)
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -972,6 +980,13 @@ def sealsInspection(request):
     sealState = SealState.objects.get(sealstate=sealstate)
     a = InspectionSeal(manifoldnumber=manifoldnumber,sealstate=sealState,idcargaison=cargaison)
     a.save()
+
+    UserActivityLog.objects.create(
+        user=request.user,
+        action="Inspection Started",
+        description=f"User has created a new record regarding Seal Inspection for the record {cargaison.idcargaison}",
+    )
+
     context = {
         'id':id
     }
@@ -996,6 +1011,13 @@ def tankerInspection(request):
     try:
         i = Inspection(idcargaison=cargaison,dens=densite,temp=temperature,innagein=innageIn, volumein=volumeIn, tempin=tempIn,weightin=weightIn)
         i.save()
+
+        UserActivityLog.objects.create(
+            user=request.user,
+            action="Tanker Inspection Completed",
+            description=f"User has created a new record regarding Tanker Inspection for the record {cargaison.idcargaison}",
+        )
+
     except:
         data = Inspection.objects.get(idcargaison=cargaison)
         data.dens = densite
@@ -1005,6 +1027,12 @@ def tankerInspection(request):
         data.tempin = tempIn
         data.weightin = weightIn
         data.save(update_fields=['dens', 'temp', 'innagein', 'volumein', 'tempin', 'weightin'])
+
+        UserActivityLog.objects.create(
+            user=request.user,
+            action="Tanker Inspection Completed",
+            description=f"User has created a new record regarding Tanker Inspection for the record {cargaison.idcargaison}",
+        )
 
     context = {
         'id':id
@@ -1045,6 +1073,13 @@ def compartimentInspection(request):
     context = {
         'id':id
     }
+
+    UserActivityLog.objects.create(
+        user=request.user,
+        action="Compartiment Inspection Completed",
+        description=f"User has created a new record regarding Compartiment Inspection for the record {id}",
+    )
+
     return Response(context,status=status.HTTP_200_OK)
 
 
@@ -1058,6 +1093,13 @@ def marquageInspection(request):
     context = {
         'id': id
     }
+
+    UserActivityLog.objects.create(
+        user=request.user,
+        action="Inspection completed",
+        description=f"User has completed the inspection of the record  {c.idcargaison}",
+    )
+
     return Response(context, status=status.HTTP_200_OK)
 
 
@@ -1226,6 +1268,13 @@ def dechargementCargaison(request):
         context = {
             'id':id
         }
+
+        UserActivityLog.objects.create(
+            user=request.user,
+            action="Offload of the Truck",
+            description=f"User has confirmed the offload of the Truck for the record  {cargaison.idcargaison}",
+        )
+
         return Response(context, status=status.HTTP_200_OK)
     except ObjectDoesNotExist:
         context = {

@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="History">
+    <option name="requestHistoryStates">
+      <list>
+        <requestHistoryState>
+          <option name="dateTime" value="1714742194008" />
+          <option name="id" value="9a46745f-20e1-492b-b490-c6ed44d5de89" />
+          <option name="request">
+            <requestState>
+              <option name="body">
+                <bodyState>
+                  <option name="type" value="JSON" />
+                </bodyState>
+              </option>
+              <option name="headers">
+                <list>
+                  <headerState>
+                    <option name="key" value="Content-Type" />
+                    <option name="value" value="application/json" />
+                  </headerState>
+                </list>
+              </option>
+              <option name="id" value="30e6bbaf-f470-4d38-bc7a-94e2633a0e9c" />
+              <option name="method" value="GET" />
+              <option name="name" value="Login" />
+              <option name="queryParams">
+                <list>
+                  <queryParamState>
+                    <option name="key" value="username" />
+                    <option name="value" value="cedric" />
+                  </queryParamState>
+                  <queryParamState>
+                    <option name="key" value="password" />
+                    <option name="value" value="P@55w0rd!" />
+                  </queryParamState>
+                </list>
+              </option>
+              <option name="url" value="https://suivicargo.com/auth/user/login?username=cedric&amp;password=P@55w0rd!" />
+            </requestState>
+          </option>
+          <option name="response">
+            <responseState>
+              <option name="bodyBytesBase64" value="CjwhZG9jdHlwZSBodG1sPgo8aHRtbCBsYW5nPSJlbiI+CjxoZWFkPgogIDx0aXRsZT5Ob3QgRm91bmQ8L3RpdGxlPgo8L2hlYWQ+Cjxib2R5PgogIDxoMT5Ob3QgRm91bmQ8L2gxPjxwPlRoZSByZXF1ZXN0ZWQgcmVzb3VyY2Ugd2FzIG5vdCBmb3VuZCBvbiB0aGlzIHNlcnZlci48L3A+CjwvYm9keT4KPC9odG1sPgo=" />
+              <option name="bodyString" value="&#10;&lt;!doctype html&gt;&#10;&lt;html lang=&quot;en&quot;&gt;&#10;&lt;head&gt;&#10;  &lt;title&gt;Not Found&lt;/title&gt;&#10;&lt;/head&gt;&#10;&lt;body&gt;&#10;  &lt;h1&gt;Not Found&lt;/h1&gt;&lt;p&gt;The requested resource was not found on this server.&lt;/p&gt;&#10;&lt;/body&gt;&#10;&lt;/html&gt;&#10;" />
+              <option name="code" value="404" />
+              <option name="contentType" value="text/html; charset=utf-8" />
+              <option name="headers">
+                <list>
+                  <headerState>
+                    <option name="key" value="Date" />
+                    <option name="value" value="Fri, 03 May 2024 13:16:34 GMT" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Content-Type" />
+                    <option name="value" value="text/html; charset=utf-8" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Content-Length" />
+                    <option name="value" value="179" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Connection" />
+                    <option name="value" value="keep-alive" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="X-Frame-Options" />
+                    <option name="value" value="DENY" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Vary" />
+                    <option name="value" value="origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="X-Content-Type-Options" />
+                    <option name="value" value="nosniff" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Referrer-Policy" />
+                    <option name="value" value="same-origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Cross-Origin-Opener-Policy" />
+                    <option name="value" value="same-origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Strict-Transport-Security" />
+                    <option name="value" value="max-age=15724800; includeSubDomains" />
+                  </headerState>
+                </list>
+              </option>
+              <option name="id" value="9a46745f-20e1-492b-b490-c6ed44d5de89" />
+              <option name="message" value="Not Found" />
+              <option name="prettyResponseType" value="HTML" />
+              <option name="previewType" value="HTML" />
+              <option name="rawBodyString" value="&#10;&lt;!doctype html&gt;&#10;&lt;html lang=&quot;en&quot;&gt;&#10;&lt;head&gt;&#10;  &lt;title&gt;Not Found&lt;/title&gt;&#10;&lt;/head&gt;&#10;&lt;body&gt;&#10;  &lt;h1&gt;Not Found&lt;/h1&gt;&lt;p&gt;The requested resource was not found on this server.&lt;/p&gt;&#10;&lt;/body&gt;&#10;&lt;/html&gt;&#10;" />
+              <option name="size" value="179" />
+              <option name="time" value="401" />
+            </responseState>
+          </option>
+        </requestHistoryState>
+        <requestHistoryState>
+          <option name="dateTime" value="1714742243024" />
+          <option name="id" value="20faaa14-208c-4678-8913-18a60ccb96e7" />
+          <option name="request">
+            <requestState>
+              <option name="body">
+                <bodyState>
+                  <option name="type" value="JSON" />
+                </bodyState>
+              </option>
+              <option name="headers">
+                <list>
+                  <headerState>
+                    <option name="key" value="Content-Type" />
+                    <option name="value" value="application/json" />
+                  </headerState>
+                </list>
+              </option>
+              <option name="id" value="30e6bbaf-f470-4d38-bc7a-94e2633a0e9c" />
+              <option name="method" value="GET" />
+              <option name="name" value="Login" />
+              <option name="queryParams">
+                <list>
+                  <queryParamState>
+                    <option name="key" value="username" />
+                    <option name="value" value="cedric" />
+                  </queryParamState>
+                  <queryParamState>
+                    <option name="key" value="password" />
+                    <option name="value" value="P@55w0rd!" />
+                  </queryParamState>
+                </list>
+              </option>
+              <option name="url" value="https://suivicargo.com/api/auth/user/login?username=cedric&amp;password=P@55w0rd!" />
+            </requestState>
+          </option>
+          <option name="response">
+            <responseState>
+              <option name="bodyBytesBase64" value="eyJkZXRhaWwiOiJNw6l0aG9kZSDCq8KgR0VUwqDCuyBub24gYXV0b3Jpc8OpZS4ifQ==" />
+              <option name="bodyString" value="{&#10;  &quot;detail&quot; : &quot;Méthode « GET » non autorisée.&quot;&#10;}" />
+              <option name="code" value="405" />
+              <option name="contentType" value="application/json" />
+              <option name="headers">
+                <list>
+                  <headerState>
+                    <option name="key" value="Date" />
+                    <option name="value" value="Fri, 03 May 2024 13:17:23 GMT" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Content-Type" />
+                    <option name="value" value="application/json" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Content-Length" />
+                    <option name="value" value="49" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Connection" />
+                    <option name="value" value="keep-alive" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Vary" />
+                    <option name="value" value="Accept, origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Allow" />
+                    <option name="value" value="POST, OPTIONS" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="X-Frame-Options" />
+                    <option name="value" value="DENY" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="X-Content-Type-Options" />
+                    <option name="value" value="nosniff" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Referrer-Policy" />
+                    <option name="value" value="same-origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Cross-Origin-Opener-Policy" />
+                    <option name="value" value="same-origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Strict-Transport-Security" />
+                    <option name="value" value="max-age=15724800; includeSubDomains" />
+                  </headerState>
+                </list>
+              </option>
+              <option name="id" value="20faaa14-208c-4678-8913-18a60ccb96e7" />
+              <option name="message" value="Method Not Allowed" />
+              <option name="prettyResponseType" value="JSON" />
+              <option name="rawBodyString" value="{&quot;detail&quot;:&quot;Méthode « GET » non autorisée.&quot;}" />
+              <option name="size" value="49" />
+              <option name="time" value="391" />
+            </responseState>
+          </option>
+        </requestHistoryState>
+        <requestHistoryState>
+          <option name="dateTime" value="1714742257266" />
+          <option name="id" value="2a04ed53-8ecf-4e5a-aa48-ceaf9d535487" />
+          <option name="request">
+            <requestState>
+              <option name="body">
+                <bodyState>
+                  <option name="type" value="JSON" />
+                </bodyState>
+              </option>
+              <option name="headers">
+                <list>
+                  <headerState>
+                    <option name="key" value="Content-Type" />
+                    <option name="value" value="application/json" />
+                  </headerState>
+                </list>
+              </option>
+              <option name="id" value="30e6bbaf-f470-4d38-bc7a-94e2633a0e9c" />
+              <option name="method" value="POST" />
+              <option name="name" value="Login" />
+              <option name="queryParams">
+                <list>
+                  <queryParamState>
+                    <option name="key" value="username" />
+                    <option name="value" value="cedric" />
+                  </queryParamState>
+                  <queryParamState>
+                    <option name="key" value="password" />
+                    <option name="value" value="P@55w0rd!" />
+                  </queryParamState>
+                </list>
+              </option>
+              <option name="url" value="https://suivicargo.com/api/auth/user/login?username=cedric&amp;password=P@55w0rd!" />
+            </requestState>
+          </option>
+          <option name="response">
+            <responseState>
+              <option name="bodyBytesBase64" value="eyJkZXRhaWwiOiJNw6l0aG9kZSDCq8KgR0VUwqDCuyBub24gYXV0b3Jpc8OpZS4ifQ==" />
+              <option name="bodyString" value="{&#10;  &quot;detail&quot; : &quot;Méthode « GET » non autorisée.&quot;&#10;}" />
+              <option name="code" value="405" />
+              <option name="contentType" value="application/json" />
+              <option name="headers">
+                <list>
+                  <headerState>
+                    <option name="key" value="Date" />
+                    <option name="value" value="Fri, 03 May 2024 13:17:37 GMT" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Content-Type" />
+                    <option name="value" value="application/json" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Content-Length" />
+                    <option name="value" value="49" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Connection" />
+                    <option name="value" value="keep-alive" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Vary" />
+                    <option name="value" value="Accept, origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Allow" />
+                    <option name="value" value="POST, OPTIONS" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="X-Frame-Options" />
+                    <option name="value" value="DENY" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="X-Content-Type-Options" />
+                    <option name="value" value="nosniff" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Referrer-Policy" />
+                    <option name="value" value="same-origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Cross-Origin-Opener-Policy" />
+                    <option name="value" value="same-origin" />
+                  </headerState>
+                  <headerState>
+                    <option name="key" value="Strict-Transport-Security" />
+                    <option name="value" value="max-age=15724800; includeSubDomains" />
+                  </headerState>
+                </list>
+              </option>
+              <option name="id" value="2a04ed53-8ecf-4e5a-aa48-ceaf9d535487" />
+              <option name="message" value="Method Not Allowed" />
+              <option name="prettyResponseType" value="JSON" />
+              <option name="rawBodyString" value="{&quot;detail&quot;:&quot;Méthode « GET » non autorisée.&quot;}" />
+              <option name="size" value="49" />
+              <option name="time" value="385" />
+            </responseState>
+          </option>
+        </requestHistoryState>
+      </list>
+    </option>
+  </component>
+</project>

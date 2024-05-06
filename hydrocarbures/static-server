@@ -1,0 +1,15 @@
+#Static and Media Files Storage
+AWS_ACCESS_KEY_ID = 'DO0093VPJQPFNPVCX4ZV'
+AWS_SECRET_ACCESS_KEY = 'EHZoJEZOXCmojdE/ddarOeoUXp31Rr8c7DujTKbHnQc'
+AWS_STORAGE_BUCKET_NAME = 'otace'
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_ENDPOINT_URL = 'https://otace.sfo3.digitaloceanspaces.com' # Make sure nyc3 is correct
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400'
+}
+
+AWS_STATIC_LOCATION = 'static'
+STATIC_URL = '%s/%s' % (AWS_S3_ENDPOINT_URL, AWS_STATIC_LOCATION)
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+

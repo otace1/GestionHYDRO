@@ -78,7 +78,7 @@ urlpatterns = [
     #Inspection
     path('inspection/<int:pk>', views.inspection, name='inspection'),
     path('affichageInspection/', views.affichageInspection, name='affichageInspection'), #En Attente d'inspection
-    path('marquageInspectionWeb/', views.marquageInspection, name='marquageInspectionWeb'), #Marquer comme Inspecter
+    path('marquageInspectionWeb/', views.marquageInspectionWeb, name='marquageInspectionWeb'), #Marquer comme Inspecter
 
     #View pdf data
     path('view_pdf/', views.view_pdf, name='view_pdf'),

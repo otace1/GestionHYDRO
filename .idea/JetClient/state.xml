@@ -1,6 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JetClientState">
-    <option name="id" value="17b5d3fb-b3ad-4f88-a48b-75c9e4e74ada" />
+    <option name="folders">
+      <list>
+        <folderState>
+          <option name="id" value="00e3b66e-6ddf-4a39-800b-4553915eb9ee" />
+          <option name="name" value="Login/Logout" />
+          <option name="requests">
+            <list>
+              <requestState>
+                <option name="body">
+                  <bodyState>
+                    <option name="type" value="JSON" />
+                  </bodyState>
+                </option>
+                <option name="headers">
+                  <list>
+                    <headerState>
+                      <option name="key" value="Content-Type" />
+                      <option name="value" value="application/json" />
+                    </headerState>
+                  </list>
+                </option>
+                <option name="id" value="30e6bbaf-f470-4d38-bc7a-94e2633a0e9c" />
+                <option name="method" value="POST" />
+                <option name="name" value="Login" />
+                <option name="queryParams">
+                  <list>
+                    <queryParamState>
+                      <option name="key" value="username" />
+                      <option name="value" value="cedric" />
+                    </queryParamState>
+                    <queryParamState>
+                      <option name="key" value="password" />
+                      <option name="value" value="P@55w0rd!" />
+                    </queryParamState>
+                  </list>
+                </option>
+                <option name="url" value="https://suivicargo.com/api/auth/user/login?username=cedric&amp;password=P@55w0rd!" />
+              </requestState>
+            </list>
+          </option>
+          <option name="sortWeight" value="1000000" />
+          <option name="syncProperties">
+            <synchronizationPropertiesState>
+              <option name="folderPath" value="$PROJECT_DIR$/.jetclient" />
+            </synchronizationPropertiesState>
+          </option>
+        </folderState>
+      </list>
+    </option>
+    <option name="id" value="2e83dbcb-bad9-44f2-932d-bba60905847a" />
   </component>
 </project>
