@@ -1,5 +1,3 @@
-/hydrocarbures/firebaseData.json
-/hydrocarbures/settings.py
 /docker-compose.yml
 venv/
 .env
@@ -8,4 +6,10 @@ gestionhydro-k8s-kubeconfig.yaml
 minikube-darwin-arm64
 /data
 .kube/k8s-gestionhydro-kubeconfig.yaml
-
+db
+data
+app
+docs
+/vol/
+/assets/
+/staticfiles/
