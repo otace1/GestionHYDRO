@@ -16,6 +16,17 @@ jobs:
     defaults:
       run:
         working-directory: .
+    env:
+      DEBUG:0
+      DEVELOPMENT_MODE:1
+      DJANGO_SECRET_KEY:this-is-a-test-key-for-this-deployment
+      ALLOWED_HOSTS:localhost
+      CELERY_BROKER:redis://redis:6379/0
+      DATABASE_HOST:localhost
+      DATABASE_NAME:defaultdb
+      DATABASE_USER:admin
+      DATABASE_PASSWORD=default
+      DATABASE_PORT=3306
     strategy:
       max-parallel: 4
       matrix:
