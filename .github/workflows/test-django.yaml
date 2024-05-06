@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
 
   push:
-    branches: [ "master" ]
+    branches: [ "Dockerized" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "Dockerized" ]
 
 jobs:
   build:
