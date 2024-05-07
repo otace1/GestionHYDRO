@@ -307,7 +307,7 @@ sentry_sdk.init(
 )
 
 CORS_ALLOW_ALL_ORIGINS = True
-
+CSRF_TRUSTED_ORIGINS = 'suivicargo.com'
 
 
 # CELERY SETTINGS
