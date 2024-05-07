@@ -21,7 +21,7 @@ if settings.DEBUG:
                       path('accounts/', include('accounts.urls')),
                       path('facturations/', include('facturations.urls')),
                       path('', login_user),
-                      path('__reload__/', include("django_browser_reload.urls")),
+                      # path('__reload__/', include("django_browser_reload.urls")),
 
                       # Api
                       path('api/', include("api.urls")),

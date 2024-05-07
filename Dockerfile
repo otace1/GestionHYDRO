@@ -20,9 +20,9 @@ COPY ./scripts/collectstatic.sh /scripts/collectstatic.sh
 RUN chmod +x /scripts/*
 
 
-## Create directories for static and media files with appropriate permissions
-RUN mkdir -p /app/vol/web/static
-RUN mkdir -p /app/vol/web/media
+### Create directories for static and media files with appropriate permissions
+#RUN mkdir -p /app/vol/web/static
+#RUN mkdir -p /app/vol/web/media
 
 ## Copy contents of assets/img to MEDIA_ROOT
 #COPY ./assets/img /vol/web/media
