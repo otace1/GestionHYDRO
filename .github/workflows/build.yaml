@@ -55,8 +55,8 @@ jobs:
           DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
           DATABASE_PORT=25060
           DB_IGNORE_SSL=True
-          SPACE_SECRET=${{ secrets.SPACE_SECRET }}
-          SPACE_ACCESS_KEY=${{ secrets.SPACE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           EOF
           kubectl delete secret django-deploy-env
           kubectl create secret generic django-deploy-env --from-env-file=prod.env
