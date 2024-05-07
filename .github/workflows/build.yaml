@@ -57,10 +57,6 @@ jobs:
           DB_IGNORE_SSL=True
           SPACE_SECRET=${{ secrets.SPACE_SECRET }}
           SPACE_ACCESS_KEY=${{ secrets.SPACE_ACCESS_KEY }}
-          SPACE_REGION=sfo3
-          SPACE_ENDPOINT=digitaloceanspaces.com
-          SERVICE_NAME=s3
-          SPACE_NAME=gestionhydro
           EOF
           kubectl delete secret django-deploy-env
           kubectl create secret generic django-deploy-env --from-env-file=prod.env
@@ -77,6 +73,7 @@ jobs:
         run: |
           export SINGLE_POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}") 
           kubectl exec -it $SINGLE_POD_NAME -- bash /app/scripts/migration.sh
+          kubectl exec -it $SINGLE_POD_NAME -- bash /app/scripts/collectstatic.sh
     
 
         

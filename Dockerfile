@@ -16,6 +16,7 @@ COPY . /app
 COPY ./scripts/entrypoint.sh /scripts/entrypoint.sh
 COPY ./scripts/worker-entrypoint.sh /scripts/worker-entrypoint.sh
 COPY ./scripts/migration.sh /scripts/migration.sh
+COPY ./scripts/collectstatic.sh /scripts/collectstatic.sh
 RUN chmod +x /scripts/*
 
 

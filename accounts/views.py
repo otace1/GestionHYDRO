@@ -89,16 +89,15 @@ def login_user(request):
 @login_required(login_url='login')
 # Fontion pour logout les utilisateurs
 def logout_user(request):
-    logout(request)
 
     user = MyUser.objects.get(id=request.user)
-
     UserActivityLog.objects.create(
         user=user,
         action="System logout",
         description="User logged out successfully",
     )
 
+    logout(request)
     return redirect('/')
 
 
