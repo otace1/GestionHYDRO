@@ -18,6 +18,7 @@ jobs:
 
     env:
       DJANGO_SECRET_KEY: this-is-a-test-key-for-this-deployment
+      CLUSTER_NAME: k8s-gestionhydro
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,6 +38,22 @@ jobs:
       - name: Push Image to DO
         run: |
           docker push registry.digitalocean.com/otace/gestionhydro-amd64 --all-tags
+      - name: K8s cluster KubeConfig File with short-lived creds
+        run: |
+          doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ env.CLUSTER_NAME }}
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/gestionhydro-deployment \
+            django-server=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+            celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+            redis-server=redis:latest
+      - name: Wait for rollout to finish
+        run: |
+          kubectl rollout status deployment/gestionhydro-deployment
+      - name: Migrate database command
+        run: |
+          export SINGLE_POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}") 
+          kubectl exec -it $SINGLE_POD_NAME -- bash /app/scripts/migration.sh
     
 
         
