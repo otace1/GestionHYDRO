@@ -41,6 +41,29 @@ jobs:
       - name: K8s cluster KubeConfig File with short-lived creds
         run: |
           doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ env.CLUSTER_NAME }}
+      - name: Update deployment secrets
+        run: |
+          cat << EOF >> prod.env
+          DEBUG=0
+          DEVELOPMENT_MODE=0
+          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          ALLOWED_HOSTS=localhost,127.0.0.1,django-server,suivicargo.com,trackflow.plus
+          CELERY_BROKER=redis://redis-service:6379/0
+          DATABASE_HOST=${{ secrets.DATABASE_HOST }}
+          DATABASE_NAME=${{ secrets.DATABASE_NAME }}
+          DATABASE_USER=${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_PORT=25060
+          DB_IGNORE_SSL=True
+          SPACE_SECRET=${{ secrets.SPACE_SECRET }}
+          SPACE_ACCESS_KEY=${{ secrets.SPACE_ACCESS_KEY }}
+          SPACE_REGION=sfo3
+          SPACE_ENDPOINT=digitaloceanspaces.com
+          SERVICE_NAME=s3
+          SPACE_NAME=gestionhydro
+          EOF
+          kubectl delete secret django-deploy-env
+          kubectl create secret generic django-deploy-env --from-env-file=prod.env
       - name: Update deployment image
         run: |
           kubectl set image deployment/gestionhydro-deployment \

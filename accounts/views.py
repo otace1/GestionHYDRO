@@ -91,8 +91,10 @@ def login_user(request):
 def logout_user(request):
     logout(request)
 
+    user = MyUser.objects.get(id=request.user)
+
     UserActivityLog.objects.create(
-        user=request.user,
+        user=user,
         action="System logout",
         description="User logged out successfully",
     )
