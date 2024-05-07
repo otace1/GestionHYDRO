@@ -23,10 +23,24 @@ jobs:
       ALLOWED_HOSTS: localhost
       CELERY_BROKER: redis://redis:6379/0
       DATABASE_HOST: localhost
-      DATABASE_NAME: defaultdb
-      DATABASE_USER: admin
-      DATABASE_PASSWORD: default
+      DATABASE_NAME: hydro
+      DATABASE_USER: root
+      DATABASE_PASSWORD: P@55w0rd!
       DATABASE_PORT: 3306
+      MYSQL_DATABASE: hydro
+      MYSQL_ROOT_PASSWORD: P@55w0rd!
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+      db:
+        image: mysql:8.3.0
+        env:
+          MYSQL_DATABASE: ${{ env.MYSQL_DATABASE }}
+          MYSQL_ROOT_PASSWORD: ${{ env.MYSQL_ROOT_PASSWORD }}
+        ports:
+          - 3306:3306
     strategy:
       max-parallel: 4
       matrix:
