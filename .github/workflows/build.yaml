@@ -1,0 +1,24 @@
+name: Build Docker Container & Push to DO registry
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+  push:
+    branches: [ "Dockerized" ]
+  pull_request:
+    branches: [ "Dockerized" ]
+
+jobs:
+  test_django:
+    uses: otace1/GestionHYDRO/.github/workflows/test-django.yaml@Dockerized
+  docker_build:
+    runs-on: ubuntu-latest
+
+    env:
+      DJANGO_SECRET_KEY: this-is-a-test-key-for-this-deployment
+    steps:
+    - uses: actions/checkout@v4
+
+        
+        
