@@ -24,8 +24,8 @@ RUN chmod +x /scripts/*
 RUN mkdir -p /app/vol/web/static
 RUN mkdir -p /app/vol/web/media
 
-# Copy contents of assets/img to MEDIA_ROOT
-COPY ./assets/img /vol/web/media
+## Copy contents of assets/img to MEDIA_ROOT
+#COPY ./assets/img /vol/web/media
 
 COPY ./requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
