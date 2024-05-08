@@ -319,6 +319,11 @@ sentry_sdk.init(
 )
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ORIGIN_WHITELIST = (
+    'http://127.0.0.1:8000',
+    'https://suivicargo.com',
+    'https://trackflow.plus',
+)
 CSRF_TRUSTED_ORIGINS = ['https://suivicargo.com']
 
 
