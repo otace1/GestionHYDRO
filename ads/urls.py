@@ -57,6 +57,8 @@ urlpatterns = [
     path('rapport/brut/inspection/', views.rapportBrutInspection, name='rapportBrutInspection'),
     path('chartJs/', views.chartJsGraph, name='chartJs'),
 
+    path('rapport/brut/dechargement/', views.rapportBrutDechargement, name='rapportBrutDechargement'),
+
     path('response/brut/journalier/', views.responseBrutJournalier, name='responseBrutJournalier'),
     path('response/brut/journalier/', views.responseBrutJournalier, name='exportBrutJournalier'),
     path('response/brut/echantillonnage/', views.responseRapportBrutEchantillonnage, name='responseRapportBrutEchantillonnage'),
@@ -65,6 +67,8 @@ urlpatterns = [
     path('response/brut/analyse/', views.responseRapportBrutAnalyse, name='exportRapportBrutAnalyse'),
     path('response/brut/inspection/', views.responseRapportBrutInspection, name='responseRapportBrutInspection'),
     path('response/brut/inspection/', views.responseRapportBrutInspection, name='exportRapportBrutInspection'),
+    path('response/brut/dechargement/', views.responseRapportBrutDechargement, name='responseRapportBrutDechargement'),
+    path('response/brut/dechargement/', views.responseRapportBrutDechargement, name='exportRapportBrutDechargement'),
     path('response/brut/attenteReception/', views.rapportAttenteReception, name='rapportAttenteReception'),
     path('response/brut/attenteReception/rsp/', views.responseRapportattenteReception, name='responseRapportattenteReception'),
 

@@ -90,12 +90,12 @@ def login_user(request):
 # Fontion pour logout les utilisateurs
 def logout_user(request):
 
-    user = MyUser.objects.get(id=request.user)
-    UserActivityLog.objects.create(
-        user=user,
-        action="System logout",
-        description="User logged out successfully",
-    )
+    # user = MyUser.objects.get(id=request.user)
+    # UserActivityLog.objects.create(
+    #     user=user,
+    #     action="System logout",
+    #     description="User logged out successfully",
+    # )
 
     logout(request)
     return redirect('/')

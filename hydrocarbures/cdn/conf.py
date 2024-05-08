@@ -11,5 +11,7 @@ AWS_S3_OBJECT_PARAMETERS= {
     "ACL": "public-read"
 }
 AWS_LOCATION="https://gestionhydro.sfo3.digitaloceanspaces.com"
+
 DEFAULT_FILE_STORAGE="hydrocarbures.cdn.backend.MediaRootS3BotoStorage"
+
 STATICFILES_STORAGE="hydrocarbures.cdn.backend.StaticRootS3BotoStorage"

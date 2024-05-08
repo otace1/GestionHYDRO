@@ -50,6 +50,7 @@ class Dashboard():
             l = Cargaison.objects.filter(etat="Analyse Labo en cours").count()
             m = Cargaison.objects.filter(etatInspection=1).count()
             i = Cargaison.objects.filter(etat="Echantillonner").count()
+            d = Cargaison.objects.filter(etat="Conforme aux exigences").count()
 
 
             # Nouveau Produtc list
@@ -80,6 +81,7 @@ class Dashboard():
                 "k": k,
                 "l": l,
                 "m": m,
+                "d": d,
                 'form1': form1,
                 'form2': form2,
                 'gasoilVolume': gasoilVolume,
@@ -20431,6 +20433,12 @@ def rapportBrutInspection(request):
 
 
 @login_required(login_url='login')
+def rapportBrutDechargement(request):
+    template = "rapportBrutesDechargement.html"
+    return render(request, template)
+
+
+@login_required(login_url='login')
 def responseRapportBrutInspection(request):
     template = "rapportBrutes.html"
     qs = Cargaison.objects.filter(etatInspection=1).values(
@@ -20447,12 +20455,6 @@ def responseRapportBrutInspection(request):
         'entrepot_echantillon__laboreception__datereceptionlabo__date',
     ).order_by('-dateheurecargaison', 'frontiere__nomville')
 
-    # table = RapportBrutJournalierInspection(qs)
-    # context = {
-    #     'table': table,
-    # }
-    # return render(request, template, context)
-    # Number of items to show per page
     items_per_page = 16
 
     # Initialize the Paginator with the QuerySet and the number of items per page
@@ -21710,3 +21712,96 @@ def getCq(request):
 @login_required(login_url='login')
 def getRi(request):
     pass
+
+
+@login_required(login_url='login')
+def responseRapportBrutDechargement(request):
+    qs = Cargaison.objects.filter(etat="Conforme aux exigences").values(
+        'dateheurecargaison__date',
+        'frontiere__nomville',
+        'declaration',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'immatriculation',
+        'produit__nomproduit',
+        'volume',
+        'requisitiondackdate',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+    ).order_by('-dateheurecargaison', 'frontiere__nomville')
+
+    items_per_page = 16
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Check if it's an AJAX request and if the export flag is set
+    export = request.GET.get('export', None)
+    if export == 'excel':
+        # Retrieve all data (no lazy pagination) and store it in a list
+        data = list(qs)
+
+        # Create a new Excel workbook
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write headers to the Excel file
+        header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
+                      'Volume', 'Date requisition', 'Date Echantillonnage', 'Date Reception Labo']
+        sheet.append(header_row)
+
+        # Write data rows to the Excel file
+        for row in data:
+            sheet.append([
+                row['dateheurecargaison__date'],
+                row['frontiere__nomville'],
+                row['declaration'],
+                row['importateur__nomimportateur'],
+                row['entrepot__nomentrepot'],
+                row['immatriculation'],
+                row['produit__nomproduit'],
+                row['volume'],
+                row['requisitiondackdate'],
+                row['entrepot_echantillon__dateechantillonage'],
+                row['entrepot_echantillon__laboreception__datereceptionlabo'],
+            ])
+
+        # Create an in-memory stream to hold the Excel file data
+        excel_stream = BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
+
+        # Prepare the response to return the Excel file
+        response = HttpResponse(excel_stream,
+                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return response
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })

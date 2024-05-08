@@ -346,13 +346,13 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>Tableau de bord</b></h1>
+                        <h1 class="m-0 text-blue"><b></b></h1>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
                             <li class="breadcrumb-item active">Département</li>
-                            <li class="breadcrumb-item active">Tableau de bord</li>
+                            <li class="breadcrumb-item active">En attente d'échantillonnage</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -361,123 +361,42 @@
         <!-- /.content-header -->
 
         <section class="content">
+            <!-- Main content -->
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-md-6">
-                        <a class="btn btn-app bg-success" href="{% url 'rapportBrut' %}">
-                            <span class="badge bg-success"></span>
-                            <i class="fas fa-archive"></i> RAPPORTS
-                        </a>
-                    </div>
-                </div><!-- /.row -->
+                    <a class="btn btn-app bg-danger" href="{% url 'dashboard' %}">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-backward"></i> RETOUR
+                    </a>
+
+                </div>
+
                 <div class="row">
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-info">
-                            <span class="info-box-icon"><i class="far fa-file"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de réquisition</span>
-                                <span class="info-box-number">{{ j }}</span>
-                                <a href="{% url 'rapportBrutJournalier' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header" style="background-color: darkgreen">
+                                <h3 class="card-title font-weight-bold" style="color: white">CARGAISONS EN ATTENTE
+                                    D'ÉCHANTILLONNAGE</h3>
                             </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-success">
-                            <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente d'échantillonnage</span>
-                                <span class="info-box-number">{{ k }}</span>
-                                <a href="{% url 'rapportBrutEchantillonnage' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                            <!-- /.card-header -->
+                            <div class="card-body">
+                                {% block content %}
+                                {% endblock %}
                             </div>
-                            <!-- /.info-box-content -->
+                            <!-- /.card-body -->
                         </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-warning">
-                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de réception Labo</span>
-                                <span class="info-box-number">{{ i }}</span>
-                                <a href="{% url 'rapportAttenteReception' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
-                            </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-warning">
-                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de résultat d'analyse</span>
-                                <span class="info-box-number">{{ l }}</span>
-                                <a href="{% url 'rapportBrutAnalyse' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
-                            </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente d'inspection</span>
-                                <span class="info-box-number">{{ m }}</span>
-                                <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
-                            </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de déchargement</span>
-                                <span class="info-box-number">{{ d }}</span>
-                                <a href="{% url 'rapportBrutDechargement' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
-                            </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                </div><!-- /.row -->
-                <div class="row">
-                    <div class="col-md-6">
-                        {% block chart %}
-                        {% endblock %}
-                    </div>
-                    <div class="col-md-6">
-                        {% block latest %}
-                        {% endblock %}
+                        <!-- /.card -->
+
                     </div>
                 </div>
             </div>
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-6">
-                        {% block importateur %}{% endblock %}
-                    </div>
-                    <div class="col-md-6">
-                        {% block products %}{% endblock %}
-                    </div>
-                </div>
-            </div>
+
         </section>
+
         <!-- /.content -->
     </div>
-
     <!-- /.content-wrapper -->
     <!-- /.content-wrapper -->
-
     <footer class="main-footer">
         <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
             SARL</a>.</strong>
@@ -491,6 +410,7 @@
         <!-- Control sidebar content goes here -->
     </aside>
     <!-- /.control-sidebar -->
+
 </div>
 
 
@@ -531,74 +451,78 @@
         crossorigin="anonymous"></script>
 
 <!-- Bootstrap 4 -->
+<!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-<!-- DataTables -->
+<!-- DataTables  & Plugins -->
 <script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
 <script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-buttons/js/dataTables.buttons.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-buttons/js/buttons.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/jszip/jszip.min.js' %}"></script>
+<script src="{% static 'plugins/pdfmake/pdfmake.min.js' %}"></script>
+<script src="{% static 'plugins/pdfmake/vfs_fonts.js' %}"></script>
+<script src="{% static 'plugins/datatables-buttons/js/buttons.html5.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
+
 
 <script>
-
     var Id;
-
+    var rowId;
     $(document).ready(function () {
 
         {% block javascript %}
-
         {% endblock %}
-
     })
+</script>
+<script>
+    function getRowId(button) {
+        var row = button.closest('tr');
+
+        if (row) {
+            rowId = row.id;
+            {#console.log('Row ID:', rowId);#}
+            // Perform further actions with the row ID, such as making an AJAX request
+        }
+    }
 </script>
 
 <script>
-    // Fetch the dataset from the Django view's URL using AJAX
-    fetch("{% url 'chartJs' %}")
-        .then(response => response.json())
-        .then(data => {
-            // Extract product names, controlled volumes, and declared volumes from the data
-            const productNames = data.map(item => item.idinspection__idcargaison__produit__nomproduit);
-            const declaredVolumes = data.map(item => item.totalVolume);
-            const certifiedVolumes = data.map(item => item.totalCertified);
-
-            // Create the Chart.js chart with the fetched data
-            const ctx = document.getElementById('myChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: productNames,
-                    datasets: [
-                        {
-                            label: 'Volume déclaré',
-                            data: declaredVolumes,
-                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Volume certifié',
-                            data: certifiedVolumes,
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 0.2)',
-                            borderWidth: 1
-                        }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+    $(function () {
+        $("#example1").DataTable({
+            dom: 'Bfrtip',
+            "responsive": true, "lengthChange": true, "autoWidth": false, "info": true, "paging": true, pageLength: 5, // Set the pagination to 10 records per page
+            "buttons": [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    exportOptions: {
+                        format: {
+                            body: function (data, row, column, node) {
+                                // Replace "," with "." for decimal numbers during export
+                                if (typeof data === 'string' && data.includes(',')) {
+                                    data = data.replace(',', '.');
+                                }
+                                return data;
+                            }
                         }
                     }
-                }
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching data:', error);
+                },
+                'print'
+            ]
+        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+        $('#example2').DataTable({
+            "paging": true,
+            "lengthChange": false,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
         });
+    });
 </script>
-
-
 </body>
 </html>
