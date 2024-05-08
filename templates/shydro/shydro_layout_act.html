@@ -13,8 +13,9 @@
 <!-- Tell the browser to be responsive to screen width -->
 <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="{% static '/plugins/fontawesome-free/css/all.min.css' %}">
+<link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css"> -->
 <!-- Ionicons -->
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 
@@ -44,8 +45,7 @@
 
 <!-- Date picker -->
 {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-<link href="{% static '/bower_components/datepicker/dist/datepicker.css' %}" rel="stylesheet">
-<script src="{% static '/bower_components/datepicker/dist/datepicker.js' %}"></script>
+
 
 {% block extra_js %}
 
