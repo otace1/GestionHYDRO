@@ -70,14 +70,16 @@ INSTALLED_APPS = [
 
     'formtools',
     # 'tailwind',
-    'django_browser_reload',
+    # 'django_browser_reload',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
     "rest_framework_api_key",
+    "fontawesomefree",
 
     'push_notifications', #Push Notification
+
 
     #Ajax#
     'ajax_datatable',

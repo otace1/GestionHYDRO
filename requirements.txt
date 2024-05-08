@@ -29,7 +29,7 @@ dj-database-url==2.1.0
 Django==4.2.10
 django-ajax-datatable==4.4.5
 django-appconf==1.0.6
-django-bootstrap-datepicker-plus==5.0.5
+django-bootstrap-datepicker-plus>=5.0.5
 django-bootstrap4==24.1
 django-browser-reload==1.12.1
 django-celery-beat==2.5.0
@@ -153,6 +153,7 @@ zipp==3.17.0
 zopfli==0.2.3
 django-storages>=1.14.2
 boto3>=1.34.64
+fontawesomefree>=6
 
 
 
