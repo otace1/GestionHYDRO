@@ -1121,6 +1121,7 @@ def regularisation(request):
     return render(request,template,context)
 
 
+
 @login_required(login_url='login')
 def regularisationDestination(request):
     # template = 'regularisationDestination.html'
