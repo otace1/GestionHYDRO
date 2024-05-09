@@ -946,8 +946,8 @@ def rapportActivite(request):
     user = request.user.id
     template = 'rapportActiviteFirst.html'
     form = Filters(user=user)
-    #
-    qs = Cargaison.objects.annotate(
+
+    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
         mtaTotal=Sum('inspection__compartiment__mta'),
@@ -1103,7 +1103,7 @@ def regularisation(request):
     form6 = ChangementImportateur()
     qs = Cargaison.objects.filter(
             entrepot__ville__affectationville__username_id=user).filter(
-            Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage") | Q(etat="Conforme aux exigences")
+            Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
         ).order_by('-dateheurecargaison')
 
     table = Regularisation(qs)

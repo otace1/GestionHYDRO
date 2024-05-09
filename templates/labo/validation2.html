@@ -14,16 +14,49 @@
     <title>TrackFlow+</title>
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-    <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-    <link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
-      <link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
-      <link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
-    <!-- Theme style -->
 
+    <link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bbootstrap 4 -->
+    <link rel="stylesheet"
+          href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+    <!-- summernote -->
+    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+    <!-- Google Font: Source Sans Pro -->
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Date picker -->
+    {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
+    {#Data PICKER Removed#}
     {% block extra_js %}
     {% endblock %}
+    <style>
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+        }
+
+        .content-wrapper {
+            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+        }
+    </style>
 </head>
 
 <!-- sidebar: style can be found in sidebar.less -->
@@ -191,16 +224,16 @@
                                 </p>
                             </a>
                             {% if user.role_id == 1 or user.role_id == 7 %}
-                            <ul class="nav nav-treeview">
+                                <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
                                         <i class="nav-icon fas fa-tachometer-alt"></i>
                                         <p>TABLEAU DE BORD</p>
                                     </a>
                                 </li>
-                                {% endif %}
+                            {% endif %}
 
-                            {% if user.role_id == 1 or user.role_id == 11%}
+                            {% if user.role_id == 1 or user.role_id == 11 %}
                                 <li class="nav-item">
                                     <a href="{% url 'codification' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -222,7 +255,7 @@
                                         </a>
                                     </li>
                                 {% endif %}
-                            </ul>
+                                </ul>
                             {% endif %}
                         </li>
                     {% endif %}
@@ -277,7 +310,7 @@
                             </ul>
                         </li>
                         <li class="nav-item has-treeview">
-                            <a href="{% url 'activityLog'%}" class="nav-link">
+                            <a href="{% url 'activityLog' %}" class="nav-link">
                                 <i class="nav-icon fas fa-file"></i>
                                 <p>
                                     JOURNAL D'ACTIVITES
