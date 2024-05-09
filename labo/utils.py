@@ -2,29 +2,37 @@ import os
 from io import BytesIO
 
 from django.conf import settings
-from django.core.files.storage import default_storage
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.core.files.storage import default_storage
 
 
 def link_callback(uri, rel):
     """
-    Convert HTML URIs to absolute URLs to access resources from DigitalOcean Spaces
+    Convert HTML URIs to absolute paths using Django's default storage system
     """
-    if rel == 'stylesheet' and uri.startswith(settings.STATIC_URL):
-        # Handle static files
-        return uri
-    elif uri.startswith(settings.MEDIA_URL):
-        # Handle media files
-        file_url = default_storage.url(uri)
-        # Ensure that the file exists
-        if not default_storage.exists(uri):
-            raise Exception(f'File does not exist: {uri}')
-        return file_url
+    # Define the base URLs
+    sUrl = settings.STATIC_URL  # Typically /static/
+    mUrl = settings.MEDIA_URL   # Typically /media/
+
+    # Convert URIs to absolute paths
+    if uri.startswith(mUrl):
+        # If URI starts with MEDIA_URL, replace it with relative path
+        path = uri.replace(mUrl, "")
+    elif uri.startswith(sUrl):
+        # If URI starts with STATIC_URL, replace it with relative path
+        path = uri.replace(sUrl, "")
     else:
-        # Handle other URIs
+        # If URI is absolute, return it as is
         return uri
+
+    # Ensure that the file exists
+    if not default_storage.exists(path):
+        raise Exception(f'File does not exist: {path}')
+
+    # Return the absolute path
+    return default_storage.path(path)
 
 
 def render_to_pdf(template_src, context_dict={}):
