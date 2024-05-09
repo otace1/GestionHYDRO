@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.http import HttpResponse
 from django.template.loader import get_template
+from storages.utils import safe_join
 from xhtml2pdf import pisa
 from django.core.files.storage import default_storage
 
@@ -49,10 +50,10 @@ def link_callback(uri, rel):
     # Convert URIs to absolute URLs
     if uri.startswith(mUrl):
         # If URI starts with MEDIA_URL, return the corresponding URL
-        file_url = default_storage.url(uri)
+        file_url = default_storage.url(safe_join(settings.MEDIA_URL, uri))
     elif uri.startswith(sUrl):
         # If URI starts with STATIC_URL, return the corresponding URL
-        file_url = default_storage.url(uri)
+        file_url = default_storage.url(safe_join(settings.STATIC_URL, uri))
     else:
         # If URI is absolute, return it as is
         return uri
