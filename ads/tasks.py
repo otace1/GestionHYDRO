@@ -34,14 +34,17 @@ def exportLargeDataSet(export_format, queryset_data, request=None):
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file to the default storage
+        # Save the exported file to the default storage (DigitalOcean Spaces)
         file_path = f"xlsx/{file_name}"
         file_content_file = ContentFile(file_content)
         file_url = default_storage.save(file_path, file_content_file)
 
-        # Return the URL of the exported file
+        # Get the full URL of the exported file
+        full_file_url = default_storage.url(file_path)
+
+        # Return the full URL of the exported file along with the file name
         return {
-            'file_url': file_url,
+            'file_url': full_file_url,
             'file_name': file_name,
         }
 
