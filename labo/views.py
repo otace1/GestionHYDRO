@@ -1597,17 +1597,19 @@ class GestionValidation():
         if role == 1 or role == 10:
             c = Cargaison.objects.get(idcargaison=pk)
 
-            #Updated Method
-            i=ImpressionResultat(printDate=datetime.now,isConforme=1,isPrinted=0,idcargaison=c)
-            i.save()
+            # Check if ImpressionResultat exists for the Cargaison
+            if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                # Create and save ImpressionResultat
+                i = ImpressionResultat(printDate=datetime.now(), isConforme=1, isPrinted=0, idcargaison=c)
+                i.save()
 
-            # A supprimer
-            c.etat = "Conforme aux exigences"
-            c.conformite = "Conforme aux exigences"
-            c.impression = "0"
-            c.dateHeureAnalyseLabo = datetime.now()
-            c.save(update_fields=['etat', 'impression', 'conformite','dateHeureAnalyseLabo'])
-
+                # Update Cargaison fields
+                c.etat = "Conforme aux exigences"
+                c.conformite = "Conforme aux exigences"
+                c.impression = "0"
+                c.dateHeureAnalyseLabo = datetime.now()
+                c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+                return redirect('validation2')
             return redirect('validation2')
         else:
             return redirect('logout')
@@ -3903,12 +3905,12 @@ def nonconformeAjx(request):
     if role == "v2" or role == 1 or role == 6:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
-            print(idcargaison)
+            # print(idcargaison)
             try:
                 c = Cargaison.objects.get(idcargaison=idcargaison)
-                print(c.idcargaison)
+                # print(c.idcargaison)
                 c.etat = "Validation en cours 2"
-                print(c.etat)
+                # print(c.etat)
                 c.conformite = "Non conforme aux exigences"
                 c.impression = "0"
                 c.save(update_fields=['etat', 'conformite', 'impression'])
@@ -4093,29 +4095,32 @@ def conformeAjx2(request):
     if role == 1 or role == 10:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
-            print(idcargaison)
+            # print(idcargaison)
             try:
                 c = Cargaison.objects.get(idcargaison=idcargaison)
-                print(c.idcargaison)
+                # print(c.idcargaison)
                 # Updated Method
-                i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
-                i.save()
+                # Check if ImpressionResultat exists for the Cargaison
+                if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                    i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
+                    i.save()
 
-                # A supprimer
-                c.etat = "Conforme aux exigences"
-                c.conformite = "Conforme aux exigences"
-                c.impression = "0"
-                c.dateHeureAnalyseLabo = datetime.now()
-                c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+                    # A supprimer
+                    c.etat = "Conforme aux exigences"
+                    c.conformite = "Conforme aux exigences"
+                    c.impression = "0"
+                    c.dateHeureAnalyseLabo = datetime.now()
+                    c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
 
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Test result second validation CONFORME",
-                    description=f"User has done the second validation for the results for the record {c.idcargaison}",
-                )
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Test result second validation CONFORME",
+                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                    )
 
-                response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
-                return JsonResponse(response_data)
+                    response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
+                    return JsonResponse(response_data)
+                return JsonResponse(status=400)
             except Cargaison.DoesNotExist:
                 response_data = {'status': 'failure', 'message': 'Cargaison not found'}
                 return JsonResponse(response_data, status=404)  # 404 Not Found status code
@@ -4136,27 +4141,29 @@ def nonconformeAjx2(request):
     if role == 1 or role == 10:
         if request.method == 'POST':
             idcargaison = request.POST.get('idcargaison')
-            print(idcargaison)
+            # print(idcargaison)
             try:
                 c = Cargaison.objects.get(idcargaison=idcargaison)
-                print(c.idcargaison)
-                # Updated Method
-                i = ImpressionResultat(printDate=datetime.now, isConforme=0, isPrinted=0, idcargaison=c)
-                i.save()
+                # print(c.idcargaison)
+                if not ImpressionResultat.objects.filter(idcargaison=c).exists():
+                    # Updated Method
+                    i = ImpressionResultat(printDate=datetime.now, isConforme=0, isPrinted=0, idcargaison=c)
+                    i.save()
 
-                c.etat = "Non conforme aux exigences"
-                c.impression = "0"
-                c.dateHeureAnalyseLabo = datetime.now()
-                c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
+                    c.etat = "Non conforme aux exigences"
+                    c.impression = "0"
+                    c.dateHeureAnalyseLabo = datetime.now()
+                    c.save(update_fields=['etat', 'impression', 'dateHeureAnalyseLabo'])
 
-                UserActivityLog.objects.create(
-                    user=user,
-                    action="Test result second validation NON CONFORME",
-                    description=f"User has done the second validation for the results for the record {c.idcargaison}",
-                )
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Test result second validation NON CONFORME",
+                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+                    )
 
-                response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
-                return JsonResponse(response_data)
+                    response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
+                    return JsonResponse(response_data)
+                return JsonResponse(response_data, status=400)
             except Cargaison.DoesNotExist:
                 response_data = {'status': 'failure', 'message': 'Cargaison not found'}
                 return JsonResponse(response_data, status=404)  # 404 Not Found status code
