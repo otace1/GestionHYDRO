@@ -2,6 +2,7 @@ import os
 from io import BytesIO
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
@@ -9,31 +10,21 @@ from xhtml2pdf import pisa
 
 def link_callback(uri, rel):
     """
-    Convert HTML URIs to absolute system paths so xhtml2pdf can access those
-    resources
+    Convert HTML URIs to absolute URLs to access resources from DigitalOcean Spaces
     """
-    # Define the base URLs and roots
-    sUrl = settings.STATIC_URL  # Typically /static/
-    sRoot = settings.STATIC_ROOT  # Typically /home/userX/project_static/
-    mUrl = settings.MEDIA_URL  # Typically /media/
-    mRoot = settings.MEDIA_ROOT  # Typically /home/userX/project_media/
-
-    # Convert URIs to absolute system paths
-    if uri.startswith(mUrl):
-        # If URI starts with MEDIA_URL, replace it with MEDIA_ROOT
-        path = os.path.join(mRoot, uri.replace(mUrl, ""))
-    elif uri.startswith(sUrl):
-        # If URI starts with STATIC_URL, replace it with STATIC_ROOT
-        path = os.path.join(sRoot, uri.replace(sUrl, ""))
-    else:
-        # If URI is absolute, return it as is
+    if rel == 'stylesheet' and uri.startswith(settings.STATIC_URL):
+        # Handle static files
         return uri
-
-    # Ensure that the file exists
-    if not os.path.isfile(path):
-        raise Exception(f'File does not exist: {path}')
-
-    return path
+    elif uri.startswith(settings.MEDIA_URL):
+        # Handle media files
+        file_url = default_storage.url(uri)
+        # Ensure that the file exists
+        if not default_storage.exists(uri):
+            raise Exception(f'File does not exist: {uri}')
+        return file_url
+    else:
+        # Handle other URIs
+        return uri
 
 
 def render_to_pdf(template_src, context_dict={}):
