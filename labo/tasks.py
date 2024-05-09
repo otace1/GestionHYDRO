@@ -74,37 +74,30 @@ def export_report_task_Attente_Res(export_format, queryset_data, request=None):
 
         # If request is provided, configure pagination
         if request:
-            RequestConfig(request, paginate={"per_page": 20}).configure(table)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
         # Export the table
-        exporter = TableExport(export_format, table)
+        exporter = TableExport(export_format, table, exclude_columns=("actions"))
         file_content = exporter.export()
 
         # Generate a unique file name using datetime
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file to the mounted volume
-        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
-        with default_storage.open(file_path, "wb") as destination:
-            destination.write(file_content)
+        # Save the exported file to the default storage (DigitalOcean Spaces)
+        file_path = f"xlsx/{file_name}"
+        file_content_file = ContentFile(file_content)
+        file_url = default_storage.save(file_path, file_content_file)
 
-        # Return the URL of the exported file
-        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
+        # Get the full URL of the exported file
+        full_file_url = default_storage.url(file_path)
+
+        # Return the full URL of the exported file along with the file name
         return {
-            'file_url': file_url,
+            'file_url': full_file_url,
             'file_name': file_name,
         }
 
-        # # Save the exported file
-        # file_path = default_storage.save(file_name, ContentFile(file_content))
-        # file_url = default_storage.url(file_path)
-        #
-        # # Return the URL of the exported file
-        # return {
-        #     'file_url': file_url,
-        #     'file_name': file_name,
-        # }
     except Exception as e:
         return {'error': str(e)}
 
@@ -117,36 +110,30 @@ def export_report_task_Attente_Res(export_format, queryset_data, request=None):
 
         # If request is provided, configure pagination
         if request:
-            RequestConfig(request, paginate={"per_page": 20}).configure(table)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
         # Export the table
-        exporter = TableExport(export_format, table)
+        exporter = TableExport(export_format, table, exclude_columns=("actions"))
         file_content = exporter.export()
 
         # Generate a unique file name using datetime
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file to the mounted volume
-        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
-        with default_storage.open(file_path, "wb") as destination:
-            destination.write(file_content)
+        # Save the exported file to the default storage (DigitalOcean Spaces)
+        file_path = f"xlsx/{file_name}"
+        file_content_file = ContentFile(file_content)
+        file_url = default_storage.save(file_path, file_content_file)
 
-        # Return the URL of the exported file
-        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
+        # Get the full URL of the exported file
+        full_file_url = default_storage.url(file_path)
+
+        # Return the full URL of the exported file along with the file name
         return {
-            'file_url': file_url,
+            'file_url': full_file_url,
             'file_name': file_name,
         }
-        # # Save the exported file
-        # file_path = default_storage.save(file_name, ContentFile(file_content))
-        # file_url = default_storage.url(file_path)
-        #
-        # # Return the URL of the exported file
-        # return {
-        #     'file_url': file_url,
-        #     'file_name': file_name,
-        # }
+
     except Exception as e:
         return {'error': str(e)}
 
@@ -160,37 +147,30 @@ def export_report_task_cert_imprimer(export_format, queryset_data, request=None)
 
         # If request is provided, configure pagination
         if request:
-            RequestConfig(request, paginate={"per_page": 20}).configure(table)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
         # Export the table
-        exporter = TableExport(export_format, table)
+        exporter = TableExport(export_format, table, exclude_columns=("actions"))
         file_content = exporter.export()
 
         # Generate a unique file name using datetime
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file to the mounted volume
-        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
-        with default_storage.open(file_path, "wb") as destination:
-            destination.write(file_content)
+        # Save the exported file to the default storage (DigitalOcean Spaces)
+        file_path = f"xlsx/{file_name}"
+        file_content_file = ContentFile(file_content)
+        file_url = default_storage.save(file_path, file_content_file)
 
-        # Return the URL of the exported file
-        file_url = os.path.join("/media", file_name)  # Assuming MEDIA_URL is /media/
+        # Get the full URL of the exported file
+        full_file_url = default_storage.url(file_path)
+
+        # Return the full URL of the exported file along with the file name
         return {
-            'file_url': file_url,
+            'file_url': full_file_url,
             'file_name': file_name,
         }
 
-    #     # Save the exported file
-    #     file_path = default_storage.save(file_name, ContentFile(file_content))
-    #     file_url = default_storage.url(file_path)
-    #
-    #     # Return the URL of the exported file
-    #     return {
-    #         'file_url': file_url,
-    #         'file_name': file_name,
-    #     }
     except Exception as e:
         return {'error': str(e)}
 
@@ -204,27 +184,33 @@ def export_report_task_rapport_cq(export_format, queryset_data, request=None):
 
         # If request is provided, configure pagination
         if request:
-            RequestConfig(request, paginate={"per_page": 20}).configure(table)
+            RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
         # Export the table
-        exporter = TableExport(export_format, table)
+        exporter = TableExport(export_format, table, exclude_columns=("actions"))
         file_content = exporter.export()
 
         # Generate a unique file name using datetime
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        # Save the exported file
-        file_path = default_storage.save(file_name, ContentFile(file_content))
-        file_url = default_storage.url(file_path)
+        # Save the exported file to the default storage (DigitalOcean Spaces)
+        file_path = f"xlsx/{file_name}"
+        file_content_file = ContentFile(file_content)
+        file_url = default_storage.save(file_path, file_content_file)
 
-        # Return the URL of the exported file
+        # Get the full URL of the exported file
+        full_file_url = default_storage.url(file_path)
+
+        # Return the full URL of the exported file along with the file name
         return {
-            'file_url': file_url,
+            'file_url': full_file_url,
             'file_name': file_name,
         }
+
     except Exception as e:
         return {'error': str(e)}
+
 
 
 @app.task
@@ -935,19 +921,17 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
     current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     file_name = f"merged_pdf_{current_datetime}.pdf"
 
-    # Define the media directory
-    media_dir = os.path.join("/vol/web/media", 'pdf')
-    os.makedirs(media_dir, exist_ok=True)  # Ensure the directory exists
-
-    # Save the exported file to the media directory
-    file_path = os.path.join(media_dir, file_name)
+    # Save the exported file to the default storage (DigitalOcean Spaces)
+    file_path = f"pdf/{file_name}"
     with default_storage.open(file_path, "wb") as merged_pdf_file:
         merged_pdf.write(merged_pdf_file)
 
-    # Return the URL of the exported file
-    file_url = os.path.join("/media", 'pdf', file_name)
+    # Get the full URL of the exported file
+    full_file_url = default_storage.url(file_path)
+
+    # Return the full URL of the exported file along with the file name
     return {
-        'file_url': file_url,
+        'file_url': full_file_url,
         'file_name': file_name,
     }
 

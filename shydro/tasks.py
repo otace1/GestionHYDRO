@@ -30,25 +30,24 @@ def export_report_task(export_format, queryset_data, request=None):
             RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
         # Export the table
-        exporter = TableExport(export_format, table,exclude_columns=("actions"))
+        exporter = TableExport(export_format, table, exclude_columns=("actions"))
         file_content = exporter.export()
 
         # Generate a unique file name using datetime
         current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         file_name = f"table_{current_datetime}.{export_format}"
 
-        media_dir = os.path.join("/vol/web/media", 'xlsx')
-        os.makedirs(media_dir, exist_ok=True)  # Ensure the directory exists
+        # Save the exported file to the default storage (DigitalOcean Spaces)
+        file_path = f"xlsx/{file_name}"
+        file_content_file = ContentFile(file_content)
+        file_url = default_storage.save(file_path, file_content_file)
 
-        # Save the exported file to the mounted volume
-        file_path = os.path.join("/vol/web/media", file_name)  # Path to the mounted volume
-        with default_storage.open(file_path, "wb") as file_content_file:
-            file_content_file.write(file_content)
+        # Get the full URL of the exported file
+        full_file_url = default_storage.url(file_path)
 
-        # Return the URL of the exported file
-        file_url = os.path.join("/media", 'xlsx', file_name)  # Assuming MEDIA_URL is /media/
+        # Return the full URL of the exported file along with the file name
         return {
-            'file_url': file_url,
+            'file_url': full_file_url,
             'file_name': file_name,
         }
 
