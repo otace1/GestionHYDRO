@@ -12461,7 +12461,7 @@ def rapportBrut(request):
     table = RapportBrut(qs)
     print('The Tab created!')
     form = RechercheStat()
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator,"per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
     context = {
         'form': form,

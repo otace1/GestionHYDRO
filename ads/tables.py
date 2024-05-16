@@ -284,7 +284,6 @@ class RapportBrut(tables.Table):
     mtvTotal = tables.Column(verbose_name='MTV')
     gsvT = tables.Column(verbose_name='GSV JAUGE')
     gsvMeter = tables.Column(verbose_name='GSV METER')
-    # fraisOcc_rounded = tables.Column(verbose_name='FRAIS A PAYER')
     actions = tables.TemplateColumn(TEMPLATE4,verbose_name='')
 
     class Meta:
