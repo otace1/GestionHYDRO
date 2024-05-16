@@ -236,6 +236,7 @@ def rapportsResponse(request):
     ).order_by('idcargaison')
 
 
+
     # Get the search value from the request's GET parameters
     search_value = request.GET.get('search[value]', '')
 
