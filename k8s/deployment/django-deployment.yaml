@@ -16,50 +16,73 @@ spec:
     spec:
       imagePullSecrets:
         - name: otace
+#      initContainers:
+#        - name: copy-media-files
+##          image: otace1/gestionhydro-amd64:latest
+#          image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
+#          imagePullPolicy: Always
+#          command: [ "sh", "-c", "cp -r assets/img/* /vol/web/media" ]
+#          volumeMounts:
+#            - name: media-volume
+#              mountPath: /vol/web/media
       containers:
         - name: django-server
+#          image: otace1/gestionhydro-amd64:latest
           image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
           imagePullPolicy: Always
           envFrom:
+#            - configMapRef:
+#                name: django-configmap
             - secretRef:
                 name: django-deploy-env
           ports:
             - containerPort: 8000
-          resources:
-            requests:
-              memory: "2Gi"   # Request 2GB of RAM
-              cpu: "0.5"      # Request 0.5 vCPU
-            limits:
-              memory: "2.5Gi" # Limit to 2.5GB of RAM
-              cpu: "1"        # Limit to 1 vCPU
+#          volumeMounts:
+#            - name: static-volume
+#              mountPath: /vol/web/static
+#            - name: media-volume
+#              mountPath: /vol/web/media
+#            - name: db-data
+#              mountPath: /var/lib/mysql
           command: [ "/bin/sh", "-c", "gunicorn hydrocarbures.wsgi --bind 0.0.0.0:8000 --worker-tmp-dir /dev/shm" ]
         - name: celery-worker
+#          image: otace1/gestionhydro-amd64:latest
           image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
           imagePullPolicy: Always
           envFrom:
+            #            - configMapRef:
+            #                name: django-configmap
             - secretRef:
                 name: django-deploy-env
-          resources:
-            requests:
-              memory: "1Gi"   # Request 1GB of RAM
-              cpu: "0.5"      # Request 0.5 vCPU
-            limits:
-              memory: "1.5Gi" # Limit to 1.5GB of RAM
-              cpu: "1"        # Limit to 1 vCPU
+#          volumeMounts:
+#            - name: static-volume
+#              mountPath: /vol/web/static
+#            - name: media-volume
+#              mountPath: /vol/web/media
+#            - name: db-data
+#              mountPath: /var/lib/mysql
           command: [ "/bin/sh", "-c", "celery -A hydrocarbures worker --loglevel=info" ]
         - name: redis-server
           image: redis
           ports:
             - protocol: TCP
               containerPort: 6379
-          resources:
-            requests:
-              memory: "500Mi" # Request 500MB of RAM
-              cpu: "0.2"      # Request 0.2 vCPU
-            limits:
-              memory: "1Gi"   # Limit to 1GB of RAM
-              cpu: "0.5"      # Limit to 0.5 vCPU
+#        - name: flower-worker
+#          image: mher/flower
+#          ports:
+#            - containerPort: 5555
+#          command: [ "/bin/sh", "-c", "celery --broker=redis://10.244.0.12:6379/0 flower" ]
       volumes:
+#        - name: static-volume
+#          persistentVolumeClaim:
+#            claimName: static-pvc
+#        - name: media-volume
+#          persistentVolumeClaim:
+#            claimName: media-pvc
         - name: nginx-config
           configMap:
             name: nginx-configmap
+
+#        - name: db-data
+#          persistentVolumeClaim:
+#            claimName: database-pvc

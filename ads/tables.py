@@ -295,7 +295,6 @@ class RapportBrut(tables.Table):
 
 
 
-
 class RapportBrutJournalier(tables.Table):
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE D'ENT.")

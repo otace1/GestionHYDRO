@@ -12432,7 +12432,7 @@ def synthese_encaissement(request):
 
 @login_required(login_url='login')
 def rapportBrut(request):
-    user = request.user
+    form = RechercheStat()
     template = "rapportBrutesA.html"
 
     request.session['ville'] = ''
@@ -12456,17 +12456,14 @@ def rapportBrut(request):
              'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
              'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
 
-    paginator = Paginator(qs, 15)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
 
-    table = RapportBrut(page_obj.object_list)
-    form = RechercheStat()
+    table = RapportBrut(qs)
+
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
 
     context = {
         'form': form,
         'table': table,
-        'page_obj': page_obj,
     }
 
     return render(request, template, context)
