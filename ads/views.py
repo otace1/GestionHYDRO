@@ -12456,18 +12456,19 @@ def rapportBrut(request):
              'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
              'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
 
-    print('This has been hitted!')
-    #
-    table = RapportBrut(qs)
-    print('The Tab created!')
+    paginator = Paginator(qs, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    table = RapportBrut(page_obj.object_list)
     form = RechercheStat()
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
 
     context = {
         'form': form,
         'table': table,
+        'page_obj': page_obj,
     }
-    print('The Tab sent in Context!')
+
     return render(request, template, context)
 
 
