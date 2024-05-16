@@ -31,9 +31,9 @@ from .numdossier import numDossier
 from .tables import *
 
 
-#Class de gestion des codifacations des cargaisons
+# Class de gestion des codifacations des cargaisons
 class GestionCodification():
-#Methode d'affichage du tableau pour la codification (Cargaison en attente de requisition)
+    # Methode d'affichage du tableau pour la codification (Cargaison en attente de requisition)
     @login_required(login_url='login')
     def affichageTableau(request):
         user = request.user
@@ -50,27 +50,29 @@ class GestionCodification():
                                                           idcargaison__entrepot__ville__affectationville__username_id=id).count()
                     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                                  entrepot__ville__affectationville__username_id=id).count()
-                    n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                            isConforme=0, control=1).count()
+                    n = ImpressionResultat.objects.filter(
+                        idcargaison__entrepot__ville__affectationville__username_id=id,
+                        isConforme=0, control=1).count()
                     p = Entrepot_echantillon.objects.filter(
                         idcargaison__etat='Echantillonner',
                         idcargaison__entrepot__ville__affectationville__username_id=id
-                        ).count()
+                    ).count()
 
                     c = Cargaison.objects.filter(
                         entrepot__ville__affectationville__username_id=id
-                        ).count()
+                    ).count()
 
-                    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,entrepot__ville__affectationville__username_id=id).count()
+                    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+                                                 entrepot__ville__affectationville__username_id=id).count()
 
                     return render(request, 'shydro.html', {
-                        'e':e,
-                        'd':d,
-                        'l':l,
-                        'n':n,
-                        'p':p,
-                        'c':c,
-                        'i':i
+                        'e': e,
+                        'd': d,
+                        'l': l,
+                        'n': n,
+                        'p': p,
+                        'c': c,
+                        'i': i
 
                     })
                 else:
@@ -82,12 +84,13 @@ class GestionCodification():
                                                           idcargaison__entrepot__ville__affectationville__username_id=id).count()
                     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                                  entrepot__ville__affectationville__username_id=id).count()
-                    n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                            isConforme=0, control=1).count()
+                    n = ImpressionResultat.objects.filter(
+                        idcargaison__entrepot__ville__affectationville__username_id=id,
+                        isConforme=0, control=1).count()
                     p = Entrepot_echantillon.objects.filter(
                         idcargaison__etat='Echantillonner',
                         idcargaison__entrepot__ville__affectationville__username_id=id
-                        ).count()
+                    ).count()
 
                     c = Cargaison.objects.filter(
                         entrepot__ville__affectationville__username_id=id
@@ -257,7 +260,6 @@ class GestionCodification():
         })
 
 
-
 # Fonction numrequisition
 @login_required(login_url='login')
 def numreq(request):
@@ -282,15 +284,15 @@ def numreq(request):
             name = MyUser.objects.get(id=user.id)
             name = name.username
 
-            #Numerotation auto des Dossier
-            numDos = numDossier(ville,int(pk))
+            # Numerotation auto des Dossier
+            numDos = numDossier(ville, int(pk))
 
             c.numdos = numDos
             c.numreq = numreq
             c.requisitiondackdate = td
             c.requisitionack = name
             c.etat = "En attente d'echantillonage"
-            c.save(update_fields=['numreq','requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
+            c.save(update_fields=['numreq', 'requisitiondackdate', 'requisitionack', 'numdos', 'etat'])
 
             UserActivityLog.objects.create(
                 user=user,
@@ -299,7 +301,7 @@ def numreq(request):
             )
 
             context = {
-                'num':c.numdos
+                'num': c.numdos
             }
 
             return JsonResponse(context)
@@ -307,6 +309,7 @@ def numreq(request):
             return JsonResponse({'error': 'Invalid request method'}, status=400)
     else:
         return redirect('logout')
+
 
 # Fonction codecam
 @login_required(login_url='login')
@@ -327,6 +330,7 @@ def codecam(request, pk):
     else:
         return redirect('logout')
 
+
 # Methode pour la codification d'une cargaison
 @login_required(login_url='login')
 def lineupdate(request, pk):
@@ -336,7 +340,7 @@ def lineupdate(request, pk):
     name = MyUser.objects.get(id=id)
     name = name.username
 
-    #Get Town du point de dechargement pour l'attribution automatique des numeros
+    # Get Town du point de dechargement pour l'attribution automatique des numeros
     c = Cargaison.objects.get(idcargaison=pk)
     c = c.entrepot_id
     c = Entrepot.objects.get(identrepot=c)
@@ -358,7 +362,8 @@ def lineupdate(request, pk):
     else:
         return redirect('logout')
 
-#Methode pour l'affichage des details d'un ligne
+
+# Methode pour l'affichage des details d'un ligne
 @login_required(login_url='login')
 def linedetails(request, pk):
     user = request.user
@@ -370,9 +375,10 @@ def linedetails(request, pk):
     else:
         return redirect('logout')
 
-#Gestion des Go apres avoir obtenu le statut de la cargaison
+
+# Gestion des Go apres avoir obtenu le statut de la cargaison
 class GestionResultatLabo():
-#Methode pour l'affichage des resultats venant Labo conforme
+    # Methode pour l'affichage des resultats venant Labo conforme
     @login_required(login_url='login')
     def affichagetableauresultat(request):
         user = request.user
@@ -385,14 +391,14 @@ class GestionResultatLabo():
                                                           AND c.frontiere_id = a.ville_id \
                                                           AND a.username_id = %s \
                                                           AND c.etat = "Conforme aux exigences" \
-                                                          ORDER BY r.dateanalyse DESC', [id,]))
+                                                          ORDER BY r.dateanalyse DESC', [id, ]))
 
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
             return render(request, 'shydro_result.html', {'cargaison': table})
         else:
             return redirect('logout')
 
-#Methode pour l'affichage des resultats venant du Labo Avarie
+    # Methode pour l'affichage des resultats venant du Labo Avarie
     @login_required(login_url='login')
     def affichageNonConforme(request):
         user = request.user
@@ -401,8 +407,8 @@ class GestionResultatLabo():
         if role == 7 or role == 1:
             qs1 = Entrepot_echantillon.objects.filter(idcargaison__etat="Non conforme aux exigences",
                                                       idcargaison__entrepot__ville__affectationville__username=id,
-                                                      idcargaison__impressionresultat__isConforme=0, idcargaison__impressionresultat__control=0)
-
+                                                      idcargaison__impressionresultat__isConforme=0,
+                                                      idcargaison__impressionresultat__control=0)
 
             # table = NonConformeOrganoleptique(qs)
             table1 = NonConformeLaboratoire(qs1)
@@ -417,11 +423,11 @@ class GestionResultatLabo():
             return redirect('logout')
 
 
-#Class pour la gestion des dechargements
+# Class pour la gestion des dechargements
 class GestionDecharger():
-#Methode pour l'envoi du Go de dechargement aux entrepots
+    # Methode pour l'envoi du Go de dechargement aux entrepots
     @login_required(login_url='login')
-    def godechargement(request,pk):
+    def godechargement(request, pk):
         user = request.user
         id = user.id
         role = user.role_id
@@ -433,8 +439,7 @@ class GestionDecharger():
         else:
             return redirect('logout')
 
-
-#Methode pour l'affichage des elements dont les ACT sont prets a etre imprimer
+    # Methode pour l'affichage des elements dont les ACT sont prets a etre imprimer
     @login_required(login_url='login')
     def gestionact(request):
         user = request.user
@@ -448,7 +453,7 @@ class GestionDecharger():
                                                    AND c.frontiere_id = a.ville_id \
                                                    AND a.username_id = %s \
                                                    AND c.numact IS NULL \
-                                                   ORDER BY d.datedechargement DESC', [id,]),prefix="100_")
+                                                   ORDER BY d.datedechargement DESC', [id, ]), prefix="100_")
 
             table1 = Act2(Cargaison.objects.raw('SELECT c.idcargaison, c.printactdate, c.numdossier, c.codecargaison, c.importateur_id , c.entrepot_id, c.immatriculation, l.numcertificatqualite, d.gsv\
                                                    FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_dechargement d, hydro_occ.enreg_laboreception l,hydro_occ.accounts_affectationville a\
@@ -457,29 +462,28 @@ class GestionDecharger():
                                                    AND c.frontiere_id = a.ville_id \
                                                    AND a.username_id = %s \
                                                    AND c.numact IS NOT NULL \
-                                                   ORDER BY c.printactdate DESC',[id,]),prefix="200_")
+                                                   ORDER BY c.printactdate DESC', [id, ]), prefix="200_")
 
             RequestConfig(request, paginate={"per_page": 15}).configure(table)
             RequestConfig(request, paginate={"per_page": 15}).configure(table1)
 
             return render(request, 'shydro_act.html', {
                 'act': table,
-                'act1':table1,
+                'act1': table1,
             })
         else:
             return redirect('logout')
 
-
-#Impression des ACT
+    # Impression des ACT
     @login_required(login_url='login')
-    def printact (request,pk):
+    def printact(request, pk):
         user = request.user
         id = user.id
         role = user.role_id
         if role == 7 or role == 1:
             template = 'report/act.html'
 
-            #Recuperation Cargaison
+            # Recuperation Cargaison
             c = Cargaison.objects.get(idcargaison=pk)
             d = Dechargement.objects.get(idcargaison=pk)
             e = Entrepot.objects.get(cargaison=pk)
@@ -489,7 +493,7 @@ class GestionDecharger():
             en = Entrepot_echantillon.objects.get(idcargaison=pk)
             re = LaboReception.objects.get(idcargaison=pk)
 
-            #Elements de l'ACT
+            # Elements de l'ACT
             t1d = c.t1d
             codecargaison = c.codecargaison
             numdossier = c.numdossier
@@ -509,70 +513,69 @@ class GestionDecharger():
             nature = p.nomproduit
             gov = d.gov
             gsv = d.gsv
-            diffvolume = round(((gov - gsv)/(gov))*100,2)
+            diffvolume = round(((gov - gsv) / (gov)) * 100, 2)
             numerore = re.numcertificatqualite
             datecert = r.dateanalyse
 
-    # Numéro ACT
+            # Numéro ACT
             numact = numeroactcurrent(pk)
             year = c.dateheurecargaison
             year = datetime.datetime.date(year)
             year = year.year
 
-    # Date impression ACT
+            # Date impression ACT
             now = date.today()
             printactdate = now
 
             c.printactdate = printactdate
             c.numact = numact
             c.impression = "1"
-            c.save(update_fields=['impression','printactdate','numact'])
+            c.save(update_fields=['impression', 'printactdate', 'numact'])
 
             data = {
-                'year':year,
-                'numact':numact,
-                't1d':t1d,
-                'codecargaison':codecargaison,
-                'numdossier':numdossier,
-                'importateur':importateur,
-                'addressimport':addressimport,
-                'provenance':provenance,
-                'produit':produit,
-                'immatriculation':immatriculation,
-                'voldecl':voldecl,
-                'voldecl15':voldecl15,
-                'entrepot':entrepot,
-                'chauffeur':chauffeur,
-                'nationalite':nationalite,
-                'numrappech':numrappech,
-                'dateech':dateech,
-                'datedech':datedech,
-                'nature':nature,
-                'gov':gov,
-                'gsv':gsv,
-                'numerore':numerore,
-                'datecert':datecert,
+                'year': year,
+                'numact': numact,
+                't1d': t1d,
+                'codecargaison': codecargaison,
+                'numdossier': numdossier,
+                'importateur': importateur,
+                'addressimport': addressimport,
+                'provenance': provenance,
+                'produit': produit,
+                'immatriculation': immatriculation,
+                'voldecl': voldecl,
+                'voldecl15': voldecl15,
+                'entrepot': entrepot,
+                'chauffeur': chauffeur,
+                'nationalite': nationalite,
+                'numrappech': numrappech,
+                'dateech': dateech,
+                'datedech': datedech,
+                'nature': nature,
+                'gov': gov,
+                'gsv': gsv,
+                'numerore': numerore,
+                'datecert': datecert,
                 # 'diffvolume':diffvolume,
-                'printactdate':printactdate
-                    }
+                'printactdate': printactdate
+            }
 
-            #Render PDF report
-            pdf = render_to_pdf(template,data)
-            return HttpResponse(pdf,content_type='application/pdf')
+            # Render PDF report
+            pdf = render_to_pdf(template, data)
+            return HttpResponse(pdf, content_type='application/pdf')
         else:
             return redirect('logout')
 
-
-#Impression des ACT
+    # Impression des ACT
     @login_required(login_url='login')
-    def reprintact (request,pk):
+    def reprintact(request, pk):
         user = request.user
         id = user.id
         role = user.role_id
         if role == 7 or role == 1:
             template = 'report/act.html'
 
-            #Recuperation Cargaison
+            # Recuperation Cargaison
             c = Cargaison.objects.get(idcargaison=pk)
             d = Dechargement.objects.get(idcargaison=pk)
             e = Entrepot.objects.get(cargaison=pk)
@@ -582,7 +585,7 @@ class GestionDecharger():
             en = Entrepot_echantillon.objects.get(idcargaison=pk)
             re = LaboReception.objects.get(idcargaison=pk)
 
-            #Elements de l'ACT
+            # Elements de l'ACT
             t1d = c.t1d
             codecargaison = c.codecargaison
             numdossier = c.numdossier
@@ -602,59 +605,58 @@ class GestionDecharger():
             nature = p.nomproduit
             gov = d.gov
             gsv = d.gsv
-            diffvolume = round(((gov - gsv)/(gov))*100,2)
+            diffvolume = round(((gov - gsv) / (gov)) * 100, 2)
             numerore = re.numcertificatqualite
             datecert = r.dateanalyse
             numact = c.numact
             printactdate = c.printactdate
 
-            #Year Num
+            # Year Num
             year = c.dateheurecargaison
             year = datetime.datetime.date(year)
             year = year.year
 
             data = {
-                'year':year,
-                'numact':numact,
-                't1d':t1d,
-                'codecargaison':codecargaison,
-                'numdossier':numdossier,
-                'importateur':importateur,
-                'addressimport':addressimport,
-                'provenance':provenance,
-                'produit':produit,
-                'immatriculation':immatriculation,
-                'voldecl':voldecl,
-                'voldecl15':voldecl15,
-                'entrepot':entrepot,
-                'chauffeur':chauffeur,
-                'nationalite':nationalite,
-                'numrappech':numrappech,
-                'dateech':dateech,
-                'datedech':datedech,
-                'nature':nature,
-                'gov':gov,
-                'gsv':gsv,
-                'numerore':numerore,
-                'datecert':datecert,
-                'diffvolume':diffvolume,
-                'printactdate':printactdate
-                    }
+                'year': year,
+                'numact': numact,
+                't1d': t1d,
+                'codecargaison': codecargaison,
+                'numdossier': numdossier,
+                'importateur': importateur,
+                'addressimport': addressimport,
+                'provenance': provenance,
+                'produit': produit,
+                'immatriculation': immatriculation,
+                'voldecl': voldecl,
+                'voldecl15': voldecl15,
+                'entrepot': entrepot,
+                'chauffeur': chauffeur,
+                'nationalite': nationalite,
+                'numrappech': numrappech,
+                'dateech': dateech,
+                'datedech': datedech,
+                'nature': nature,
+                'gov': gov,
+                'gsv': gsv,
+                'numerore': numerore,
+                'datecert': datecert,
+                'diffvolume': diffvolume,
+                'printactdate': printactdate
+            }
 
-            #Render PDF report
-            pdf = render_to_pdf(template,data)
-            return HttpResponse(pdf,content_type='application/pdf')
+            # Render PDF report
+            pdf = render_to_pdf(template, data)
+            return HttpResponse(pdf, content_type='application/pdf')
         else:
             return redirect('logout')
 
-
-# Recherche ACT par numéro dossier, Codecargaison, Numéro ACT
+    # Recherche ACT par numéro dossier, Codecargaison, Numéro ACT
     def rechercheact(request):
         user = request.user
         id = user.id
         role = user.role_id
         if role == 7 or role == 1:
-            if request.method == 'GET' :
+            if request.method == 'GET':
                 q = request.GET.get('valeur')
 
                 if q == '':
@@ -689,7 +691,8 @@ class GestionDecharger():
                                                                        AND c.numact IS NULL \
                                                                        AND frontiere_id = a.ville_id \
                                                                        AND a.username_id = %s \
-                                                                       ORDER BY d.datedechargement ASC',[id,]), prefix="1_")
+                                                                       ORDER BY d.datedechargement ASC', [id, ]),
+                                prefix="1_")
 
                     table1 = Act2(Cargaison.objects.raw('SELECT c.idcargaison, c.printactdate, c.numdossier, c.codecargaison, c.importateur_id , c.entrepot_id, c.immatriculation, l.numcertificatqualite, d.gsv\
                                                                        FROM hydro_occ.enreg_cargaison c, hydro_occ.enreg_dechargement d, hydro_occ.enreg_laboreception l, hydro_occ.accounts_affectationville a\
@@ -701,49 +704,53 @@ class GestionDecharger():
                                                                        AND ((c.numdossier = %s) \
                                                                        OR (c.codecargaison = %s) \
                                                                        OR (c.numact = %s)) \
-                                                                       ORDER BY c.printactdate DESC ',[q,q,q]), prefix="2_")
+                                                                       ORDER BY c.printactdate DESC ', [q, q, q]),
+                                  prefix="2_")
 
                     RequestConfig(request, paginate={"per_page": 10}).configure(table)
                     RequestConfig(request, paginate={"per_page": 10}).configure(table1)
 
                     return render(request, 'shydro_act.html', {
-                            'act': table,
-                            'act1': table1,
-                        })
+                        'act': table,
+                        'act1': table1,
+                    })
             else:
 
                 return redirect('logout')
         else:
             return redirect('logout')
 
+
 @login_required(login_url='login')
 def enAttenteEchantillonnage(request):
     user = request.user.id
     template = 'enAttenteEchantillonnage.html'
-    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
+    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                  entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
     table = EnAttenteEchantillonage(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
 def enAttenteEchantillonnage1(request):
     user = request.user.id
     template = 'enAttenteEchantillonnage1.html'
-    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
+    qs = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                  entrepot__ville__affectationville__username_id=user).order_by('-requisitiondackdate')
     table = EnAttenteEchantillonage(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -760,7 +767,7 @@ def enAttenteDechargement(request):
             AND ec.idcargaison = eee.idcargaison_id \
             AND eee.idcargaison_id = el.idcargaison_id \
             AND ec.etat = 'Conforme aux exigences' \
-            AND aa.username_id = %s",[user,])
+            AND aa.username_id = %s", [user, ])
 
     table = EnAttenteDechargement(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
@@ -768,9 +775,8 @@ def enAttenteDechargement(request):
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
-
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -787,7 +793,7 @@ def enAttenteDechargement1(request):
             AND ec.idcargaison = eee.idcargaison_id \
             AND eee.idcargaison_id = el.idcargaison_id \
             AND ec.etat = 'Conforme aux exigences' \
-            AND aa.username_id = %s",[user,])
+            AND aa.username_id = %s", [user, ])
 
     table = EnAttenteDechargement(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
@@ -795,40 +801,40 @@ def enAttenteDechargement1(request):
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
 def enAttenteResultatLabo(request):
     user = request.user.id
     template = 'enAttenteResultatLabo.html'
-    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                      idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteResultatLabo(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
-
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
 def enAttenteResultatLabo1(request):
     user = request.user.id
     template = 'enAttenteResultatLabo1.html'
-    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours", idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
+    qs = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+                                      idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user)
     table = EnAttenteResultatLabo(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
     export_format = request.GET.get("_export", None)
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
-
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -854,8 +860,8 @@ def enAttenteReceptionLabo(request):
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -881,10 +887,8 @@ def enAttenteReceptionLabo1(request):
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
-
-
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -910,8 +914,8 @@ def enAttenteInspection(request):
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -937,8 +941,8 @@ def enAttenteInspection1(request):
     if TableExport.is_valid_format(export_format):
         exporter = TableExport(export_format, table)
         return exporter.response("table.{}".format(export_format))
-    context = {'table':table}
-    return render(request,template,context)
+    context = {'table': table}
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -951,21 +955,23 @@ def rapportActivite(request):
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
         mtaTotal=Sum('inspection__compartiment__mta'),
-        mtvTotal=Round(Sum('inspection__compartiment__mtv'),3)
+        mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3)
     ).values('idcargaison',
-        'numdos','declaration','frontiere__nomville','inspection__dens','inspection__temp','mtaTotal',
-        'entrepot__nomentrepot','inspection__dateinspection','importateur__nomimportateur','immatriculation','produit__nomproduit','dateheurecargaison',
-        'requisitiondackdate','entrepot_echantillon__dateechantillonage__date','entrepot_echantillon__laboreception__datereceptionlabo__date','impressionresultat__printDate',
-        'inspection__dateinspection','volume','volConst','gsvT','mtvTotal').order_by('-dateheurecargaison')
+             'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
+             'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+             'produit__nomproduit', 'dateheurecargaison',
+             'requisitiondackdate', 'entrepot_echantillon__dateechantillonage__date',
+             'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
+             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
 
     # qs = list(qs)
     table = RapportActivite(qs)
     RequestConfig(request, paginate={"per_page": 15}).configure(table)
     context = {
-        'table':table,
-        'form':form
-        }
-    return render(request,template,context)
+        'table': table,
+        'form': form
+    }
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -1089,11 +1095,10 @@ def responseRapportActivite(request):
     })
 
 
-
 @login_required(login_url='login')
 def regularisation(request):
     user = request.user.id
-    template ='regularisation.html'
+    template = 'regularisation.html'
     form = ChangementDestination()
     form1 = Transbordement()
     form2 = ChangementNatureProduit()
@@ -1102,24 +1107,23 @@ def regularisation(request):
     form5 = RegularisationNouvelleEntree()
     form6 = ChangementImportateur()
     qs = Cargaison.objects.filter(
-            entrepot__ville__affectationville__username_id=user).filter(
-            Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
-        ).order_by('-dateheurecargaison')
+        entrepot__ville__affectationville__username_id=user).filter(
+        Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
+    ).order_by('-dateheurecargaison')
 
     table = Regularisation(qs)
     RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
     context = {
-        'table':table,
-        'form':form,
-        'form1':form1,
-        'form2':form2,
-        'form3':form3,
-        'form4':form4,
-        'form5':form5,
-        'form6':form6,
+        'table': table,
+        'form': form,
+        'form1': form1,
+        'form2': form2,
+        'form3': form3,
+        'form4': form4,
+        'form5': form5,
+        'form6': form6,
     }
-    return render(request,template,context)
-
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -1134,8 +1138,8 @@ def regularisationDestination(request):
     # cargaison = Cargaison.objects.get(idcargaison=pk)
     if request.method == 'POST':
         if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-            pk = request.POST.get('pk',None)
-            nouvelleDestination = request.POST.get('nouvelleDestination',None)
+            pk = request.POST.get('pk', None)
+            nouvelleDestination = request.POST.get('nouvelleDestination', None)
             print(pk)
             print(nouvelleDestination)
             cargaison = Cargaison.objects.get(idcargaison=pk)
@@ -1162,13 +1166,13 @@ def transbordement(request):
     # cargaison = Cargaison.objects.get(idcargaison=pk)
     if request.method == 'POST':
         if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-            pk = request.POST.get('pk',None)
-            nouvelleImmatriculation = request.POST.get('nouvelleImmatriculation',None)
-            nouveauVolume = request.POST.get('nouveauVolume',None)
+            pk = request.POST.get('pk', None)
+            nouvelleImmatriculation = request.POST.get('nouvelleImmatriculation', None)
+            nouveauVolume = request.POST.get('nouveauVolume', None)
             cargaison = Cargaison.objects.get(idcargaison=pk)
             cargaison.immatriculation = nouvelleImmatriculation
             cargaison.volume = nouveauVolume
-            cargaison.save(update_fields=['immatriculation','volume'])
+            cargaison.save(update_fields=['immatriculation', 'volume'])
             # Return a JSON response indicating success
             return JsonResponse({'status': 'success'})
         else:
@@ -1189,8 +1193,8 @@ def changementNature(request):
     # cargaison = Cargaison.objects.get(idcargaison=pk)
     if request.method == 'POST':
         if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-            pk = request.POST.get('pk',None)
-            nouvelleNatureProduit = request.POST.get('nouvelleNatureProduit',None)
+            pk = request.POST.get('pk', None)
+            nouvelleNatureProduit = request.POST.get('nouvelleNatureProduit', None)
             p = Produit.objects.get(idproduit=nouvelleNatureProduit)
             cargaison = Cargaison.objects.get(idcargaison=pk)
             cargaison.produit = p
@@ -1204,15 +1208,14 @@ def changementNature(request):
 
 
 @login_required(login_url='login')
-def pertes(request,pk):
+def pertes(request, pk):
     Cargaison.objects.get(idcargaison=pk).delete()
     return redirect('regularisation')
 
 
-
 def checkExportTaskStatus(request, task_id):
     parameter = int(request.GET.get('parameter', 5))  # Get the parameter value from the request query parameters
-    task = AsyncResult(task_id,app=app)
+    task = AsyncResult(task_id, app=app)
 
     if task.state in ['PENDING', 'SUCCESS', 'FAILURE']:
         # Task is in a known state
@@ -1249,7 +1252,6 @@ def checkExportTaskStatus(request, task_id):
     return JsonResponse(response_data)
 
 
-
 @login_required(login_url='login')
 def rapportActiviteFiltrePost(request):
     user = request.user.id
@@ -1277,13 +1279,12 @@ def rapportActiviteFiltrePost(request):
             'volConst', 'gsvT', 'mtaTotal', 'mtvTotal'
         ).order_by('-inspection__dateinspection')
 
-
         if fournisseur and entrepot and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1302,17 +1303,17 @@ def rapportActiviteFiltrePost(request):
                 return JsonResponse({'task_id': task_id})
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and entrepot and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateDebut
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1331,17 +1332,16 @@ def rapportActiviteFiltrePost(request):
                 return JsonResponse({'task_id': task_id})
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
-
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and entrepot:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1360,16 +1360,16 @@ def rapportActiviteFiltrePost(request):
                 return JsonResponse({'task_id': task_id})
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1388,16 +1388,16 @@ def rapportActiviteFiltrePost(request):
                 return JsonResponse({'task_id': task_id})
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
-        if fournisseur and dateDebut :
+        if fournisseur and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date=dateDebut
-            )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1416,16 +1416,16 @@ def rapportActiviteFiltrePost(request):
                 return JsonResponse({'task_id': task_id})
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date=dateFin
-            )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1444,11 +1444,10 @@ def rapportActiviteFiltrePost(request):
                 return JsonResponse({'task_id': task_id})
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
-
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur:
             qs = qs.filter(
@@ -1461,15 +1460,15 @@ def rapportActiviteFiltrePost(request):
                 mtvTotal=Sum('inspection__compartiment__mtv')
             ).values(
                 'inspection__compartiment__vcf',
-                'idcargaison','numdos','declaration','frontiere__nomville',
+                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville',
                 'inspection__idinspection', 'entrepot__ville__nomville',
                 'inspection__dateinspection', 'importateur__nomimportateur',
                 'entrepot__nomentrepot', 'immatriculation', 'produit__nomproduit',
                 'dateheurecargaison__date', 'requisitiondackdate__date',
                 'entrepot_echantillon__dateechantillonage__date',
-                'inspection__dens','inspection__temp',
+                'inspection__dens', 'inspection__temp',
                 'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'mtaTotal','mtvTotal', 'impressionresultat__printDate',
+                'mtaTotal', 'mtvTotal', 'impressionresultat__printDate',
                 'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
             ).order_by('-inspection__dateinspection')
 
@@ -1497,9 +1496,9 @@ def rapportActiviteFiltrePost(request):
 
         if entrepot and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1525,9 +1524,9 @@ def rapportActiviteFiltrePost(request):
 
         if entrepot and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateDebut
-            )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1553,9 +1552,9 @@ def rapportActiviteFiltrePost(request):
 
         if entrepot and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateFin
-            )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1581,8 +1580,8 @@ def rapportActiviteFiltrePost(request):
 
         if entrepot:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-            )
+                           entrepot_id=entrepot,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1608,8 +1607,8 @@ def rapportActiviteFiltrePost(request):
 
         if dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1635,8 +1634,8 @@ def rapportActiviteFiltrePost(request):
 
         if dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date=dateDebut
-            )
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1662,8 +1661,8 @@ def rapportActiviteFiltrePost(request):
 
         if dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date=dateFin
-            )
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1686,8 +1685,6 @@ def rapportActiviteFiltrePost(request):
                 'form': form
             }
             return render(request, template, context)
-
-
 
 
 @login_required(login_url='login')
@@ -1722,13 +1719,12 @@ def rapportActiviteFiltre(request):
             'volConst', 'gsvT', 'mtaTotal', 'mtvTotal'
         ).order_by('-inspection__dateinspection')
 
-
         if fournisseur and entrepot and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1739,17 +1735,17 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and entrepot and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateDebut
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1760,17 +1756,17 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and entrepot and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateFin
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1780,16 +1776,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and entrepot:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                entrepot_id=entrepot,
-            )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1800,16 +1796,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1819,16 +1815,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
-        if fournisseur and dateDebut :
+        if fournisseur and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date=dateDebut
-            )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1838,16 +1834,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-                dateheurecargaison__date=dateFin
-            )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1857,15 +1853,15 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if fournisseur:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                importateur_id=fournisseur,
-            )
+                           importateur_id=fournisseur,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1875,16 +1871,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if entrepot and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1894,16 +1890,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if entrepot and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateDebut
-            )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1913,16 +1909,16 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if entrepot and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-                dateheurecargaison__date=dateFin
-            )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1932,15 +1928,15 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if entrepot:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                entrepot_id=entrepot,
-            )
+                           entrepot_id=entrepot,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1950,15 +1946,15 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date__range=[dateDebut, dateFin]
-            )
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1968,15 +1964,15 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date=dateDebut
-            )
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -1986,15 +1982,15 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
         if dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                dateheurecargaison__date=dateFin
-            )
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2004,10 +2000,10 @@ def rapportActiviteFiltre(request):
                 return exporter.response("table.{}".format(export_format))
 
             context = {
-                'table':table,
-                'form':form
-                }
-            return render(request,template,context)
+                'table': table,
+                'form': form
+            }
+            return render(request, template, context)
 
     else:
         fournisseur = request.session['fournisseur']
@@ -2032,10 +2028,10 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and entrepot and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          entrepot_id=entrepot,
-                                          dateheurecargaison__date__range=[dateDebut, dateFin]
-                                          ).annotate(
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           ).annotate(
                 volConst=Sum('inspection__compartiment__gov'),
                 gsvT=Sum('inspection__compartiment__gsv'),
                 mtaTotal=Sum('inspection__compartiment__mta'),
@@ -2067,10 +2063,10 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and entrepot and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          entrepot_id=entrepot,
-                                          dateheurecargaison__date=dateDebut
-                                          )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2088,10 +2084,10 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and entrepot and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          entrepot_id=entrepot,
-                                          dateheurecargaison__date=dateFin
-                                          )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2108,9 +2104,9 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and entrepot:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          entrepot_id=entrepot,
-                                          )
+                           importateur_id=fournisseur,
+                           entrepot_id=entrepot,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2128,9 +2124,9 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          dateheurecargaison__date__range=[dateDebut, dateFin]
-                                          )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2147,9 +2143,9 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          dateheurecargaison__date=dateDebut
-                                          )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2166,9 +2162,9 @@ def rapportActiviteFiltre(request):
 
         if fournisseur and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          dateheurecargaison__date=dateFin
-                                          )
+                           importateur_id=fournisseur,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2185,8 +2181,8 @@ def rapportActiviteFiltre(request):
 
         if fournisseur:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          importateur_id=fournisseur,
-                                          )
+                           importateur_id=fournisseur,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2203,9 +2199,9 @@ def rapportActiviteFiltre(request):
 
         if entrepot and dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          entrepot_id=entrepot,
-                                          dateheurecargaison__date__range=[dateDebut, dateFin]
-                                          )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2222,9 +2218,9 @@ def rapportActiviteFiltre(request):
 
         if entrepot and dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          entrepot_id=entrepot,
-                                          dateheurecargaison__date=dateDebut
-                                          )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2241,9 +2237,9 @@ def rapportActiviteFiltre(request):
 
         if entrepot and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          entrepot_id=entrepot,
-                                          dateheurecargaison__date=dateFin
-                                          )
+                           entrepot_id=entrepot,
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2260,8 +2256,8 @@ def rapportActiviteFiltre(request):
 
         if entrepot:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          entrepot_id=entrepot,
-                                          )
+                           entrepot_id=entrepot,
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2278,8 +2274,8 @@ def rapportActiviteFiltre(request):
 
         if dateDebut and dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          dateheurecargaison__date__range=[dateDebut, dateFin]
-                                          )
+                           dateheurecargaison__date__range=[dateDebut, dateFin]
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2296,8 +2292,8 @@ def rapportActiviteFiltre(request):
 
         if dateDebut:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          dateheurecargaison__date=dateDebut
-                                          )
+                           dateheurecargaison__date=dateDebut
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2314,8 +2310,8 @@ def rapportActiviteFiltre(request):
 
         if dateFin:
             qs = qs.filter(entrepot__ville__affectationville__username_id=user,
-                                          dateheurecargaison__date=dateFin
-                                          )
+                           dateheurecargaison__date=dateFin
+                           )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
@@ -2332,7 +2328,7 @@ def rapportActiviteFiltre(request):
 
 
 @login_required(login_url='login')
-def rapportRe(request,pk):
+def rapportRe(request, pk):
     c = Cargaison.objects.get(idcargaison=pk)
     ville = c.entrepot.ville
     # Generer le rapport d'echantillonage
@@ -2392,7 +2388,6 @@ def rapportIs(request, pk):
 
     template = 'rapport.html'
 
-
     # Request to fecth data into database
     cargaison = Cargaison.objects.get(idcargaison=pk)
 
@@ -2408,7 +2403,6 @@ def rapportIs(request, pk):
     # print('DEBUG')
     # print(numact)
 
-
     try:
         inspection = Inspection.objects.get(idcargaison=pk)
         if inspection.meterbefore is None:
@@ -2421,20 +2415,20 @@ def rapportIs(request, pk):
 
         compartiment = Compartiment.objects.filter(
             idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
-        govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)),3))  # gov Total Tanker
-        gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)),3))  # gsv Total Tanker
-        mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)),3))  # mta Total Tanker
-        mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)),3))  # mtv Total Tanker
+        govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)), 3))  # gov Total Tanker
+        gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)), 3))  # gsv Total Tanker
+        mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)), 3))  # mta Total Tanker
+        mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)), 3))  # mtv Total Tanker
 
         densite = densite15(inspection.temp, inspection.dens)  # densite 15c
-        govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
+        govMeter = round((inspection.meterafter - inspection.meterbefore) / 1000, 3)  # govmeter
         vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
         gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
         mtaMeter = mta(gsvMeter, densite)  # mta Meter
 
         govLt = float(cargaison.volume)  # gov LT
         vcfLt = vcf(densite, inspection.temp)  # VCF LT
-        gsvLt = (cargaison.volume15)# GSV LT
+        gsvLt = (cargaison.volume15)  # GSV LT
         if gsvLt is None:
             gsvLt = 0
         # gsvLt = gsv(vcfLt, govLt)  # GSV LT
@@ -2447,40 +2441,40 @@ def rapportIs(request, pk):
             mtaLt = 0
         # mtaLt = mta(gsvLt, densite)  # MTA LT
 
-        govLtTanker = round((govLt - float(govTotal)),3)  # Difference LT/Tanker
-        gsvLtTanker = round((float(gsvLt) - float(gsvTotal)),3)  # Difference GSV LT/Tanker
-        mtvLtTanker = round((float(mtvLt) - float(mtvTotal)),3)  # Difference mtv LT/Tanker
-        mtaLtTanker = round((float(mtaLt) - float(mtaTotal)),3)  # Difference mtv LT/Tanker
-        prLtTanker = round((govLtTanker * 100) / govLt,3)
-        if gsvLt==0:
-            gsvLt=1
-        prGsvLtTanker = round((gsvLtTanker * 100)/ float(gsvLt),3)
-        if mtaLt==0:
-            mtaLt=1
-        prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100),3)
-        if mtvLt==0:
-            mtvLt=1
-        prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
+        govLtTanker = round((govLt - float(govTotal)), 3)  # Difference LT/Tanker
+        gsvLtTanker = round((float(gsvLt) - float(gsvTotal)), 3)  # Difference GSV LT/Tanker
+        mtvLtTanker = round((float(mtvLt) - float(mtvTotal)), 3)  # Difference mtv LT/Tanker
+        mtaLtTanker = round((float(mtaLt) - float(mtaTotal)), 3)  # Difference mtv LT/Tanker
+        prLtTanker = round((govLtTanker * 100) / govLt, 3)
+        if gsvLt == 0:
+            gsvLt = 1
+        prGsvLtTanker = round((gsvLtTanker * 100) / float(gsvLt), 3)
+        if mtaLt == 0:
+            mtaLt = 1
+        prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100), 3)
+        if mtvLt == 0:
+            mtvLt = 1
+        prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100), 3)
 
         govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
         gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
-        mtaTankerMeter = round((float(mtaTotal) - mtaMeter),3)  # Difference MTA Tanker/Meter
-        prTankerMeter = round((govTankerMeter * 100) / float(govTotal),3)
+        mtaTankerMeter = round((float(mtaTotal) - mtaMeter), 3)  # Difference MTA Tanker/Meter
+        prTankerMeter = round((govTankerMeter * 100) / float(govTotal), 3)
 
         govLtMeter = govLt - govMeter  # Diff LT/Meter
-        gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
+        gsvLtMeter = round((float(gsvLt) - gsvMeter), 3)  # Diff GSV LT/Meter
         mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
-        if govLt==0:
-            govLt=1
-        prLtMeter = round((govLtMeter * 100) / govLt,3)
-        if gsvLt==0:
-            gsvLt=1
-        prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt),3)
-        if mtaLt==0:
-            mtaLt=1
-        prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
+        if govLt == 0:
+            govLt = 1
+        prLtMeter = round((govLtMeter * 100) / govLt, 3)
+        if gsvLt == 0:
+            gsvLt = 1
+        prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt), 3)
+        if mtaLt == 0:
+            mtaLt = 1
+        prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt), 3)
 
-        #Certified Quantity
+        # Certified Quantity
         if govMeter > 0:
             govMax = govMeter
             gsvMax = gsvMeter
@@ -2500,7 +2494,7 @@ def rapportIs(request, pk):
         # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
         # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
 
-        fraisOcc = round((11 * float(gsvMax)),3)  # Frais occ a Payer
+        fraisOcc = round((11 * float(gsvMax)), 3)  # Frais occ a Payer
 
         # Getting data from laboratory
         if Resultat.objects.filter(idcargaison_id=pk).exists():
@@ -2522,14 +2516,14 @@ def rapportIs(request, pk):
             'numCertInspection': numCertInspection,
             'inspection': inspection,
             'densite': densite,
-            'prGsvLtTanker':prGsvLtTanker,
-            'prMtaLtTanker':prMtaLtTanker,
-            'prMtvLtTanker':prMtvLtTanker,
-            'prGsvLtMeter':prGsvLtMeter,
-            'prMtaLtMeter':prMtaLtMeter,
-            'prLtTanker':prLtTanker,
-            'prTankerMeter':prTankerMeter,
-            'prLtMeter':prLtMeter,
+            'prGsvLtTanker': prGsvLtTanker,
+            'prMtaLtTanker': prMtaLtTanker,
+            'prMtvLtTanker': prMtvLtTanker,
+            'prGsvLtMeter': prGsvLtMeter,
+            'prMtaLtMeter': prMtaLtMeter,
+            'prLtTanker': prLtTanker,
+            'prTankerMeter': prTankerMeter,
+            'prLtMeter': prLtMeter,
             'govmeter': govMeter,
             'govTotal': govTotal,
             'gsvTotal': gsvTotal,
@@ -2562,7 +2556,7 @@ def rapportIs(request, pk):
             'aspect': aspect,
             'odor': odor,
             'compartiment': compartiment,
-            'province':province,
+            'province': province,
 
         }
         # Render PDF Files
@@ -2573,7 +2567,7 @@ def rapportIs(request, pk):
 
 
 @login_required(login_url='login')
-def consignation(request,pk):
+def consignation(request, pk):
     c = Cargaison.objects.get(idcargaison=pk)
     i = ImpressionResultat.objects.get(idcargaison=c)
     i.control = 1
@@ -2619,7 +2613,6 @@ def regularisationImportateur(request):
         return redirect('logout')
 
 
-
 @login_required(login_url='login')
 def regularisationEntrepot(request):
     user = request.user
@@ -2636,7 +2629,6 @@ def regularisationEntrepot(request):
         return redirect('regularisation')
     else:
         return redirect('logout')
-
 
 
 @login_required(login_url='login')
@@ -2679,7 +2671,8 @@ def regularisationRecherche(request):
         if search_value:
             qs = Cargaison.objects.filter(
                 entrepot__ville__affectationville__username_id=u).filter(
-                Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage") | Q(etat="Conforme aux exigences"),
+                Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage") | Q(
+                    etat="Conforme aux exigences"),
                 Q(frontiere__nomville__icontains=search_value) |
                 Q(importateur__nomimportateur__icontains=search_value) |
                 Q(entrepot__nomentrepot__icontains=search_value) |
@@ -2701,7 +2694,7 @@ def regularisationRecherche(request):
                 'form5': form5,
                 'form6': form6,
             }
-            return render(request,template,context)
+            return render(request, template, context)
         else:
             return redirect('regularisation')
     else:
@@ -2711,7 +2704,7 @@ def regularisationRecherche(request):
 @login_required(login_url='login')
 def rechercheRapportActivite(request):
     user = request.user.id
-    search = request.GET.get('search',None)
+    search = request.GET.get('search', None)
     print("SEARCH")
     print(search)
     template = 'rapportActiviteFirst.html'
@@ -2722,14 +2715,14 @@ def rechercheRapportActivite(request):
         gsvT=Sum('inspection__compartiment__gsv'),
         mtaTotal=Sum('inspection__compartiment__mta'),
         mtvTotal=Sum('inspection__compartiment__mtv'),
-    ).values('idcargaison','mtvTotal',
-        'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
-        'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
-        'produit__nomproduit', 'dateheurecargaison',
-        'requisitiondackdate', 'entrepot_echantillon__dateechantillonage',
-        'entrepot_echantillon__laboreception__datereceptionlabo', 'impressionresultat__printDate',
-        'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-    ).order_by('-dateheurecargaison')
+    ).values('idcargaison', 'mtvTotal',
+             'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
+             'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
+             'produit__nomproduit', 'dateheurecargaison',
+             'requisitiondackdate', 'entrepot_echantillon__dateechantillonage',
+             'entrepot_echantillon__laboreception__datereceptionlabo', 'impressionresultat__printDate',
+             'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
+             ).order_by('-dateheurecargaison')
 
     filter = qs.filter(
         Q(immatriculation__icontains=search) |
@@ -2744,7 +2737,7 @@ def rechercheRapportActivite(request):
         'table': table,
         'form': form
     }
-    return render(request,template,context)
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -2758,10 +2751,10 @@ def reInspecter(request):
         try:
             inspection = Inspection.objects.get(idcargaison=cargaison)
             if Compartiment.objects.filter(idinspection=inspection).exists():
-               Compartiment.objects.filter(idinspection=inspection).delete()
-               cargaison.etatInspection = 1
-               cargaison.save(update_fields=['etatInspection'])
-               return redirect('rapportActivite')
+                Compartiment.objects.filter(idinspection=inspection).delete()
+                cargaison.etatInspection = 1
+                cargaison.save(update_fields=['etatInspection'])
+                return redirect('rapportActivite')
             else:
                 cargaison.etatInspection = 1
                 cargaison.save(update_fields=['etatInspection'])
@@ -2770,7 +2763,6 @@ def reInspecter(request):
             return redirect('rapportActivite')
     else:
         return redirect('rapportActivite')
-
 
 
 @login_required(login_url='login')
@@ -2816,7 +2808,7 @@ def impressionRappEch(request):
             'provenance': provenance,
             'voie': voie,
             'immatriculation': immatriculation,
-            'matricule':matricule,
+            'matricule': matricule,
             'qtelabo': qtelabo,
             'numrappechauto': numrappechauto,
         }
@@ -2829,7 +2821,6 @@ def impressionRappEch(request):
         return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
     except:
         return JsonResponse({'status': 'error'})
-
 
 
 @login_required(login_url='login')
@@ -2872,20 +2863,20 @@ def impressionRappInsp(request):
 
         compartiment = Compartiment.objects.filter(
             idinspection=inspection.idinspection)  # Filter Database for all the save compartiment
-        govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)),3))  # gov Total Tanker
-        gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)),3))  # gsv Total Tanker
-        mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)),3))  # mta Total Tanker
-        mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)),3))  # mtv Total Tanker
+        govTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gov', flat=True)), 3))  # gov Total Tanker
+        gsvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('gsv', flat=True)), 3))  # gsv Total Tanker
+        mtaTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mta', flat=True)), 3))  # mta Total Tanker
+        mtvTotal = '{0:.3f}'.format(round(sum(compartiment.values_list('mtv', flat=True)), 3))  # mtv Total Tanker
 
         densite = densite15(inspection.temp, inspection.dens)  # densite 15c
-        govMeter = round((inspection.meterafter - inspection.meterbefore)/1000,3)  # govmeter
+        govMeter = round((inspection.meterafter - inspection.meterbefore) / 1000, 3)  # govmeter
         vcfMeter = vcf(densite, inspection.temp)  # vcfMeter
         gsvMeter = gsv(vcfMeter, govMeter)  # gsvMeter
         mtaMeter = mta(gsvMeter, densite)  # mta Meter
 
         govLt = float(cargaison.volume)  # gov LT
         vcfLt = vcf(densite, inspection.temp)  # VCF LT
-        gsvLt = (cargaison.volume15)# GSV LT
+        gsvLt = (cargaison.volume15)  # GSV LT
         if gsvLt is None:
             gsvLt = 0
         # gsvLt = gsv(vcfLt, govLt)  # GSV LT
@@ -2898,40 +2889,40 @@ def impressionRappInsp(request):
             mtaLt = 0
         # mtaLt = mta(gsvLt, densite)  # MTA LT
 
-        govLtTanker = round((govLt - float(govTotal)),3)  # Difference LT/Tanker
-        gsvLtTanker = round((float(gsvLt) - float(gsvTotal)),3)  # Difference GSV LT/Tanker
-        mtvLtTanker = round((float(mtvLt) - float(mtvTotal)),3)  # Difference mtv LT/Tanker
-        mtaLtTanker = round((float(mtaLt) - float(mtaTotal)),3)  # Difference mtv LT/Tanker
-        prLtTanker = round((govLtTanker * 100) / govLt,3)
-        if gsvLt==0:
-            gsvLt=1
-        prGsvLtTanker = round((gsvLtTanker * 100)/ float(gsvLt),3)
-        if mtaLt==0:
-            mtaLt=1
-        prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100),3)
-        if mtvLt==0:
-            mtvLt=1
-        prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100),3)
+        govLtTanker = round((govLt - float(govTotal)), 3)  # Difference LT/Tanker
+        gsvLtTanker = round((float(gsvLt) - float(gsvTotal)), 3)  # Difference GSV LT/Tanker
+        mtvLtTanker = round((float(mtvLt) - float(mtvTotal)), 3)  # Difference mtv LT/Tanker
+        mtaLtTanker = round((float(mtaLt) - float(mtaTotal)), 3)  # Difference mtv LT/Tanker
+        prLtTanker = round((govLtTanker * 100) / govLt, 3)
+        if gsvLt == 0:
+            gsvLt = 1
+        prGsvLtTanker = round((gsvLtTanker * 100) / float(gsvLt), 3)
+        if mtaLt == 0:
+            mtaLt = 1
+        prMtaLtTanker = round((mtaLtTanker / (float(mtaLt)) * 100), 3)
+        if mtvLt == 0:
+            mtvLt = 1
+        prMtvLtTanker = round((mtvLtTanker / (float(mtvLt)) * 100), 3)
 
         govTankerMeter = float(govTotal) - float(govMeter)  # Difference Tanker/Meter
         gsvTankerMeter = float(gsvTotal) - float(gsvMeter)  # Difference GSV Tanker/Meter
-        mtaTankerMeter = round((float(mtaTotal) - mtaMeter),3)  # Difference MTA Tanker/Meter
-        prTankerMeter = round((govTankerMeter * 100) / float(govTotal),3)
+        mtaTankerMeter = round((float(mtaTotal) - mtaMeter), 3)  # Difference MTA Tanker/Meter
+        prTankerMeter = round((govTankerMeter * 100) / float(govTotal), 3)
 
         govLtMeter = govLt - govMeter  # Diff LT/Meter
-        gsvLtMeter = round((float(gsvLt) - gsvMeter),3)  # Diff GSV LT/Meter
+        gsvLtMeter = round((float(gsvLt) - gsvMeter), 3)  # Diff GSV LT/Meter
         mtaLtMeter = float(mtaLt) - mtaMeter  # Diff mta LT/Meter
-        if govLt==0:
-            govLt=1
-        prLtMeter = round((govLtMeter * 100) / govLt,3)
-        if gsvLt==0:
-            gsvLt=1
-        prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt),3)
-        if mtaLt==0:
-            mtaLt=1
-        prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt),3)
+        if govLt == 0:
+            govLt = 1
+        prLtMeter = round((govLtMeter * 100) / govLt, 3)
+        if gsvLt == 0:
+            gsvLt = 1
+        prGsvLtMeter = round((gsvLtMeter * 100) / float(gsvLt), 3)
+        if mtaLt == 0:
+            mtaLt = 1
+        prMtaLtMeter = round((mtaLtMeter * 100) / float(mtaLt), 3)
 
-        #Certified Quantity
+        # Certified Quantity
         if govMeter > 0:
             govMax = govMeter
             gsvMax = gsvMeter
@@ -2951,7 +2942,7 @@ def impressionRappInsp(request):
         # gsvMax = round((max(gsvTotal, gsvMeter, gsvLt)),3)  # Max value of GSV
         # mtaMax = round((max(mtaTotal, mtaMeter, mtaLt)),3)  # Max value of MTA
 
-        fraisOcc = round((11 * float(gsvMax)),3)  # Frais occ a Payer
+        fraisOcc = round((11 * float(gsvMax)), 3)  # Frais occ a Payer
 
         # Getting data from laboratory
         if Resultat.objects.filter(idcargaison_id=pk).exists():
@@ -2974,14 +2965,14 @@ def impressionRappInsp(request):
             'numCertInspection': numCertInspection,
             'inspection': inspection,
             'densite': densite,
-            'prGsvLtTanker':prGsvLtTanker,
-            'prMtaLtTanker':prMtaLtTanker,
-            'prMtvLtTanker':prMtvLtTanker,
-            'prGsvLtMeter':prGsvLtMeter,
-            'prMtaLtMeter':prMtaLtMeter,
-            'prLtTanker':prLtTanker,
-            'prTankerMeter':prTankerMeter,
-            'prLtMeter':prLtMeter,
+            'prGsvLtTanker': prGsvLtTanker,
+            'prMtaLtTanker': prMtaLtTanker,
+            'prMtvLtTanker': prMtvLtTanker,
+            'prGsvLtMeter': prGsvLtMeter,
+            'prMtaLtMeter': prMtaLtMeter,
+            'prLtTanker': prLtTanker,
+            'prTankerMeter': prTankerMeter,
+            'prLtMeter': prLtMeter,
             'govmeter': govMeter,
             'govTotal': govTotal,
             'gsvTotal': gsvTotal,
@@ -3025,7 +3016,6 @@ def impressionRappInsp(request):
         return JsonResponse({'status': 'error'})
 
 
-
 def tasks(request):
     qs = Cargaison.objects.annotate(
         volConst=Sum('inspection__compartiment__gov'),
@@ -3050,7 +3040,7 @@ def tasks(request):
     # Rename the columns
     df = df.rename(columns={
         'idcargaison': 'ID CARGAISON',
-        'inspection__idinspection':'ID INSPECTION',
+        'inspection__idinspection': 'ID INSPECTION',
         'numdos': 'NUM.DOSSIER',
         'declaration': 'DECLARATION (T1E OU TR8)',
         'frontiere__nomville': 'FRONTIERE',
@@ -3100,7 +3090,6 @@ def tasks(request):
     # return JsonResponse(context, status=200)
 
 
-
 @csrf_exempt
 def get_status(request, task_id):
     task_result = AsyncResult(task_id)
@@ -3110,8 +3099,6 @@ def get_status(request, task_id):
         "task_result": task_result.result
     }
     return JsonResponse(result, status=200)
-
-
 
 
 @login_required(login_url='login')
@@ -3270,7 +3257,6 @@ def gestionGoResponse(request):
     })
 
 
-
 @login_required(login_url='login')
 def tableaudeBordHydro(request):
     user = request.user
@@ -3323,7 +3309,7 @@ def tableaudeBordHydro(request):
     jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
     petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
 
-    context={
+    context = {
         'e': e,
         'd': d,
         'l': l,
@@ -3342,7 +3328,7 @@ def tableaudeBordHydro(request):
         'petrolePercentage': petrolePercentage,
         'current_year': current_year,
     }
-    return render(request,template,context)
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -3351,10 +3337,10 @@ def lastrecordShydro(request):
     id = user.id
     latest_cargaisons = Cargaison.objects.filter(etat="En attente requisition",
                                                  entrepot__ville__affectationville__username_id=id
-    ).values(
-        'dateheurecargaison','frontiere__nomville','importateur__nomimportateur','entrepot__nomentrepot','produit__nomproduit','volume'
+                                                 ).values(
+        'dateheurecargaison', 'frontiere__nomville', 'importateur__nomimportateur', 'entrepot__nomentrepot',
+        'produit__nomproduit', 'volume'
     ).order_by('-dateheurecargaison')[:5]
-
 
     # Convert the page object to a list of dictionaries
     data = list(latest_cargaisons)
@@ -3365,13 +3351,13 @@ def lastrecordShydro(request):
     })
 
 
-
 @login_required(login_url='login')
 def topImportersShydro(request):
     user = request.user
     id = user.id
     # Get the sum of volume for each product type
-    top_importers = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id).values('importateur__nomimportateur').annotate(
+    top_importers = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id).values(
+        'importateur__nomimportateur').annotate(
         total_volume=Round(Sum('volume'), 2)
     ).order_by('-total_volume')[:10]
 
@@ -3388,23 +3374,22 @@ def topImportersShydro(request):
 def productCountShydro(request):
     user = request.user
     id = user.id
-    gasoilCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=2).count()
-    mogasCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=1).count()
-    jetCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=3).count()
-    petroleCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id,produit=4).count()
+    gasoilCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id, produit=2).count()
+    mogasCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id, produit=1).count()
+    jetCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id, produit=3).count()
+    petroleCount = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=id, produit=4).count()
 
     data = {
-        'gasoilCount':gasoilCount,
-        'mogasCount':mogasCount,
-        'jetCount':jetCount,
-        'petroleCount':petroleCount,
+        'gasoilCount': gasoilCount,
+        'mogasCount': mogasCount,
+        'jetCount': jetCount,
+        'petroleCount': petroleCount,
     }
 
     # Return JSON response with the data
     return JsonResponse({
         'data': data
     })
-
 
 
 @login_required(login_url='login')
@@ -3433,5 +3418,3 @@ def afficherDossImport(request):
             return JsonResponse({'error': "File not found or unable to download."}, status=404)
     else:
         return JsonResponse({'error': "Invalid request method."}, status=400)
-
-
