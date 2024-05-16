@@ -4,104 +4,105 @@
 {% bootstrap_javascript jquery='full' %}
 
 {% block extrahead %}
+    {{ form.media }}
 {% endblock %}
 
 <html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>TrackFlow+</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>TrackFlow+</title>
-<!-- Tell the browser to be responsive to screen width -->
-<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bbootstrap 4 -->
+    <link rel="stylesheet"
+          href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+    <!-- summernote -->
+    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+    <!-- Google Font: Source Sans Pro -->
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Date picker -->
+    {#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
+    {#Data PICKER Removed#}
+    {% block extra_js %}
+    {% endblock %}
+    <style>
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+        }
 
-<link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
-<!-- Ionicons -->
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-
-<!-- Tempusdominus Bbootstrap 4 -->
-<link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
-
-<!-- iCheck -->
-<link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-<!-- JQVMap -->
-<link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-<!-- Theme style -->
-<link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-<!-- overlayScrollbars -->
-<link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-<!-- Daterange picker -->
-<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-<!-- summernote -->
-<link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-<!-- DataTables -->
-<link rel="stylesheet" type="text/css"
-      href="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/af-2.3.5/b-1.6.3/b-colvis-1.6.3/b-html5-1.6.3/cr-1.5.2/fc-3.3.1/fh-3.1.7/kt-2.5.2/r-2.2.5/rg-1.1.2/rr-1.2.7/sc-2.0.2/sp-1.1.1/sl-1.3.1/datatables.min.css"/>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-<script type="text/javascript"
-        src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/af-2.3.5/b-1.6.3/b-colvis-1.6.3/b-html5-1.6.3/cr-1.5.2/fc-3.3.1/fh-3.1.7/kt-2.5.2/r-2.2.5/rg-1.1.2/rr-1.2.7/sc-2.0.2/sp-1.1.1/sl-1.3.1/datatables.min.js"></script>
-<!-- Google Font: Source Sans Pro -->
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-
-<!-- Date picker -->
-{#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
-
-
-{% block extra_js %}
-
-{% endblock %}
-
-
+        .content-wrapper {
+            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+        }
+    </style>
 </head>
-
 <!-- sidebar: style can be found in sidebar.less -->
-<body class="hold-transition sidebar-mini sidebar-collapse">
+<body class="hold-transition sidebar-mini- layout-fixed">
 <div class="wrapper">
 
     <!-- Navbar -->
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
         <!-- Left navbar links -->
         <ul class="navbar-nav">
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
+                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="" class="nav-link"></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="{% url 'logout' %}" class="nav-link"
+                   style="background-color: red; color: white">Déconnexion</a>
+            </li>
         </ul>
 
         <!-- Right navbar links -->
         <ul class="navbar-nav ml-auto">
-            <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b>
-            </a>
-
+            <!-- Navbar Search -->
+            <li class="nav-item">
+                <div class="navbar-search-block">
+                </div>
+            </li>
         </ul>
     </nav>
 
-    <!-- Left side column. contains the logo and sidebar -->
-    <!-- Left side column. contains the logo and sidebar -->
     <aside class="main-sidebar sidebar-dark-secondary elevation-4">
         <!-- Brand Logo -->
         <a href="#" class="brand-link">
-            {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
-            <span class="brand-text font-weight-light"><b>GESTION</b>DES<b>HYDROS</b></span>
+            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-bold"
+                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
         </a>
 
         <!-- Sidebar -->
         <div class="sidebar">
-            <!-- Sidebar user panel (optional) -->
-            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                <div class="image">
-                    <img src="/media/images.png" class="img-circle elevation-2" alt="User Image">
-                </div>
-                <div class="info">
-                    <a href="#" class="d-block">{{ request.user.first_name }} {{ request.user.last_name }}</a>
-                </div>
-            </div>
-            <!-- sidebar: style can be found in sidebar.less -->
+
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                     data-accordion="false">
@@ -119,6 +120,7 @@
                     {% endif %}
 
                     {% if user.role_id == 2 or user.role_id == 1 %}
+                        <li class="header" style="color: red">FRONTIERE</li>
                         <li class="nav-item has-treeview">
                             <a href="{% url 'cargaison' %}" class="nav-link">
                                 <i class="nav-icon fas fa-truck-moving"></i>
@@ -134,7 +136,7 @@
 
 
                     {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
-                        <li class="header">ENTREPOT</li>
+                        <li class="header" style="color: red">ENTREPOT</li>
 
                         <li class="nav-item has-treeview">
                             <a href="{% url 'entrepot' %}" class="nav-link">
@@ -150,7 +152,7 @@
 
                     {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
 
-                        <li class="header">CERTIFICATION</li>
+                        <li class="header" style="color: red">CERTIFICATION</li>
 
                         <li class="nav-item has-treeview">
                             <a href="#" class="nav-link">
@@ -210,7 +212,7 @@
 
 
                     {% if user.role_id == 7 or user.role_id == 1 %}
-                        <li class="header">HYDRO OCC</li>
+                        <li class="header" style="color: red">CELLULE HYDRO</li>
 
                         <li class="nav-item has-treeview">
                             <a href="" class="nav-link">
@@ -221,13 +223,17 @@
                                     <span class="badge badge-info right"></span>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview">
+                            {% if user.role_id == 1 or user.role_id == 7 %}
+                                <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
                                         <i class="nav-icon fas fa-tachometer-alt"></i>
                                         <p>TABLEAU DE BORD</p>
                                     </a>
                                 </li>
+                            {% endif %}
+
+                            {% if user.role_id == 1 or user.role_id == 11 %}
                                 <li class="nav-item">
                                     <a href="{% url 'codification' %}" class="nav-link">
                                         <i class="far fa-circle nav-icon"></i>
@@ -241,13 +247,23 @@
                                         <p>REGULARISATION</p>
                                     </a>
                                 </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'rapportActivite' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>RAPPORT D'ACTIVITE</p>
-                                    </a>
-                                </li>
-                            </ul>
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITE</p>
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a href="{% url 'facturations' %}" class="nav-link">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>PAIEMENTS</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                </ul>
+                            {% endif %}
                         </li>
                     {% endif %}
                     {% if role == 10 %}
@@ -278,7 +294,7 @@
                     {% endif %}
 
                     {% if user.role_id == 1 %}
-                        <li class="nav-item has-treeview">ADMINISTRATION</li>
+                        <li class="nav-item has-treeview" style="color: red">ADMINISTRATION</li>
                         <li class="nav-item has-treeview">
                             <a href="" class="nav-link">
                                 <i class="nav-icon fas fa-user"></i>
@@ -301,7 +317,7 @@
                             </ul>
                         </li>
                         <li class="nav-item has-treeview">
-                            <a href="{% url 'activityLog'%}" class="nav-link">
+                            <a href="{% url 'activityLog' %}" class="nav-link">
                                 <i class="nav-icon fas fa-file"></i>
                                 <p>
                                     JOURNAL D'ACTIVITES
@@ -335,12 +351,12 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>Encaissements</b></h1>
+                        <h1 class="m-0 text-dark"><b>Gestion des appurements</b></h1>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
                             <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Encaissements</li>
+                            <li class="breadcrumb-item active">Appurements des Importations</li>
                         </ol>
                     </div><!-- /.col -->
                 </div><!-- /.row -->
@@ -351,75 +367,52 @@
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
-                <div class="row col-3">
-                    {% block extra %}
-                        <form method="get" action="{% url 'filtret1' %}">
-                            <div class="input-group input-group-sm" style="width: 300px;">
-                                <input type="text" name="q" class="form-control float-right"
-                                       placeholder="Recherche par T1E">
-
-                                <div class="input-group-append">
-                                    <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
-                                </div>
-                            </div>
-                        </form>
-                        {#                        <div>#}
-                        {#                        <button type="button"  href="{% url 'facturations' %}"  class="btn btn-danger">Retour</button>#}
-                        {#                        </div>#}
-
-
-                        <br>
-                    {% endblock %}
-                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <a class="btn btn-app bg-success" data-toggle="modal" data-target="#upload-modal">
+                            <span class="badge bg-success"></span>
+                            <i class="fas fa-upload"></i>UPLOAD DATA
+                        </a>
+                        <a class="btn btn-app bg-warning" href="{% url 'partial' %}">
+                            <span class="badge bg-warning"></span>
+                            <i class="fas fa-list"></i>PARTIELS
+                        </a>
+                        <a class="btn btn-app bg-orange" href="{% url 'rapports' %}">
+                            <span class="badge bg-orange"></span>
+                            <i class="fas fa-file"></i>RAPPORTS FINANCES
+                        </a>
+                    </div>
+                </div><!-- /.row -->
 
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="card bg-gradient-dark">
-                            <div class="card-header"><h4><b>Importations en attente de paiement</b></h4></div>
-                            <div class="card-body table-responsive p-0">
+                        <div class="card">
+                            <div class="card-body">
                                 {% block content %}
                                 {% endblock %}
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header"><h4><b>Importations en attente d'appurement</b></h4></div>
-                            <div class="card-body table-responsive p-0">
-                                {% block content1 %}
-
-                                {% endblock %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- /.col -->
             </div>
-
+        </section>
+        <!-- /.content -->
     </div>
-</div>
-<!-- /.row -->
-</section>
-<!-- /.content -->
-</div>
-<!-- /.content-wrapper -->
-<!-- /.content-wrapper -->
-<footer class="main-footer">
-    <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
-        SARL</a>.</strong>
-    All rights reserved.
-    <div class="float-right d-none d-sm-inline-block">
-        <b>Version</b> 3.0
-    </div>
-</footer>
-<!-- Control Sidebar -->
-<aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-</aside>
-<!-- /.control-sidebar -->
+    <!-- /.content-wrapper -->
+    <!-- /.content-wrapper -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
+            SARL</a>.</strong>
+        All rights reserved.
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 3.0
+        </div>
+    </footer>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
+    <!-- /.control-sidebar -->
 
 </div>
 
@@ -455,7 +448,6 @@
 <!-- AdminLTE App -->
 <script src="{% static 'dist/js/adminlte.js' %}"></script>
 
-
 <!-- /.JS script for modal -->
 <!-- jQuery 3 -->
 <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
@@ -464,51 +456,22 @@
 <!-- Bootstrap 4 -->
 <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <!-- DataTables -->
-<link rel="stylesheet" type="text/css"
-      href="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/af-2.3.5/b-1.6.3/b-colvis-1.6.3/b-html5-1.6.3/cr-1.5.2/fc-3.3.1/fh-3.1.7/kt-2.5.2/r-2.2.5/rg-1.1.2/rr-1.2.7/sc-2.0.2/sp-1.1.1/sl-1.3.1/datatables.min.css"/>
+<script src="{% static 'plugins/datatables/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'plugins/datatables-responsive/js/responsive.bootstrap4.min.js' %}"></script>
 
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-<script type="text/javascript"
-        src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/af-2.3.5/b-1.6.3/b-colvis-1.6.3/b-html5-1.6.3/cr-1.5.2/fc-3.3.1/fh-3.1.7/kt-2.5.2/r-2.2.5/rg-1.1.2/rr-1.2.7/sc-2.0.2/sp-1.1.1/sl-1.3.1/datatables.min.js"></script>
 <script>
 
     var Id;
 
     $(document).ready(function () {
 
-        {#$('#facturations').DataTable({#}
-        {#    "paging":false,#}
-        {#    "ordering":false,#}
-        {#    "info":false,#}
-        {##}
-        {#responsive:{#}
-        {#    details:{#}
-        {#        renderer: function (api, rowIdx, columns){#}
-        {#            var data = $.map(columns, function (col,i){#}
-        {#                return col.hidden?#}
-        {#                    '<tr data-dt-row="'+col.rowIndex+'" data-dt-column="'+col.columnIndex+'">'+#}
-        {#                        '<td>'+col.title+':'+'</td> '+#}
-        {#                        '<td>'+col.data+'</td>'+#}
-        {#                    '</tr>' :#}
-        {#                    '';#}
-        {#            }).join('');#}
-        {#            return data ?#}
-        {#                $('<table/>').append(data):#}
-        {#                false;#}
-        {#        }#}
-        {#    }#}
-        {#}#}
-            {#    })#}
+        {% block javascript %}
 
+        {% endblock %}
 
-
-            {% block javascript %}
-
-            {% endblock %}
-
-        }
-    )
+    })
 </script>
 
 </body>

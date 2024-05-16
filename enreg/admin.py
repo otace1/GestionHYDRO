@@ -28,4 +28,8 @@ admin.site.register(ResultatAnalyse)
 admin.site.register(ListeLaboratoire)
 admin.site.register(AffectationLaboratoire)
 admin.site.register(AffectationVille)
+admin.site.register(Banques)
+admin.site.register(LiquidationModel)
+admin.site.register(Liquidation)
+
 

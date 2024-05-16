@@ -4,7 +4,7 @@ from crispy_forms.helper import FormHelper, Layout
 from crispy_forms.layout import Fieldset
 from django import forms
 
-from enreg.models import BureauDGDA
+from enreg.models import BureauDGDA, LiquidationModel, Banques
 
 paiement = [
     ('total', 'TOTAL'),
@@ -13,11 +13,15 @@ paiement = [
 
 
 class SaisieBL(forms.Form):
-    datebl = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="Date de liquidattion :")
-    numerobl = forms.IntegerField(label="Numéro de BL :")
-    codebureau = forms.ModelChoiceField(queryset=BureauDGDA.objects.all(), label='Code Bureau DGDA')
-    vol_liq = forms.DecimalField(max_digits=32, label='Volume liquidé :')
-    paiement = forms.CharField(widget=forms.Select(choices=paiement),label="type de paiement :", required=False)
+    datebl = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="DATE BL:")
+    datepay = forms.DateField(widget=DatePickerInput(format='%Y-%m-%d'), label="DATE PAIEMENT:")
+    codebureau = forms.ModelChoiceField(queryset=BureauDGDA.objects.all(), label='CODE BUREAU')
+    numerobl = forms.IntegerField(label="NUMERO BL :")
+    quittance = forms.CharField(max_length=64, label='NUM QUITTANCE')
+    bankName = forms.ModelChoiceField(queryset=Banques.objects.all(), label='BANQUE')
+    modele = forms.ModelChoiceField(queryset=LiquidationModel.objects.all(), label='MODELE')
+    vol_liq = forms.DecimalField(max_digits=32, label='VOL.PAYE:')
+    paiement = forms.CharField(widget=forms.Select(choices=paiement),label="APPUREMENT:", required=False)
 
     def __init__(self,*args,**kwargs):
         super(SaisieBL,self).__init__(*args,**kwargs)
@@ -29,9 +33,12 @@ class SaisieBL(forms.Form):
         self.helper.layout= Layout(
             Fieldset("",
                 Field('datebl'),
-                Field('numerobl'),
+                Field('datepay'),
                 Field('codebureau'),
+                Field('numerobl'),
+                Field('modele'),
                 Field('vol_liq'),
+                Field('bankName'),
                 Field('paiement'),
                     ),
 

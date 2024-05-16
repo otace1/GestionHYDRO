@@ -1,4 +1,4 @@
-{% extends 'base_facturations_layout.html' %}
+{% extends 'base_facturations_partial.html' %}
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
 {% block extrahead %}
@@ -9,13 +9,14 @@
 {% block content %}
     {#    {% render_table facturations %}#}
 
-    <div class="modal fade" id="appurement-modal">
-        <div class="modal-dialog">
+    <div class="modal fade" id="partiel-modal">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title">Informations du BL</h4>
                 </div>
                 <div class="modal-body">
+                    <div id="liquidationData"></div>
                     <form method="post" action="" id="post-form">
                         {% csrf_token %}
                         {% crispy form %}
@@ -33,35 +34,6 @@
         <!-- /.modal -->
     </div>
 
-
-    <div class="modal fade" id="upload-modal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Chargement du fichier des paiements</h4>
-                </div>
-                <div class="modal-body">
-                    <form method="post" action="" id="post-form" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="id_excel_file">Sélectionner le fichier</label>
-                            <input type="file" class="form-control-file" id="id_excel_file" name="excel_file">
-                        </div>
-                        <div class="text-center mb-3">
-                            <a href="" class="btn btn-primary" role="button">Télécharger un modèle</a>
-                        </div>
-                        <div class="modal-footer justify-content-between">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>
-                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                        </div>
-                    </form>
-                </div>
-                <!-- /.modal-content -->
-            </div>
-            <!-- /.modal-dialog -->
-        </div>
-        <!-- /.modal -->
-    </div>
 
 
     <div class="card-body p-0">
@@ -96,7 +68,7 @@
                             caption: false,
                             info: false,
                             ajax: {
-                                url: "{% url 'facturationsResponse' %}",
+                                url: "{% url 'partialResponse' %}",
                                 type: 'GET',
                                 beforeSend: function () {
                                     $('#data-table-wrapper .loading-spinner').show();
@@ -118,8 +90,8 @@
                                 { // New column configuration
                                     data: 'idcargaison',
                                     render: function (data, type, row) {
-                                        const appurerImportation = '<button class="btn btn-info appurement-btn" data-row-id="' + data + '">APPURER</button> ';
-                                        return appurerImportation;
+                                        const affichagedetails = '<button class="btn btn-info affichagedetails-btn" data-row-id="' + data + '">APPURER</button> ';
+                                        return affichagedetails;
                                     }
                                 }
 
@@ -142,12 +114,28 @@
         const csrfToken = '{{ csrf_token }}';
 
         // Event listener for opening the modal
-        $('#data-table').on('click', '.appurement-btn', function () {
-            var rowId = $(this).data('row-id');
-            dataRow = rowId;
-            // Show the modal
-            $('#appurement-modal').modal('show');
+        $('#data-table').on('click', '.affichagedetails-btn', function() {
+          var rowId = $(this).data('row-id');
+          dataRow = rowId;
+          var linkURL = "{% url 'partialResponseData' %}?pk=" + rowId;
+
+          $.ajax({
+                url: linkURL,
+                type: 'GET',
+                success: function(response) {
+                    // Replace the content of div with id liquidationData with the response
+                    $('#liquidationData').html(response);
+                    // Show the modal
+                    $('#partiel-modal').modal('show');
+                },
+                error: function(xhr, status, error) {
+                    // Handle errors if any
+                    console.error(xhr.responseText);
+                }
+            });
+
         });
+
 
 
         $('.btn.btn-primary').click((function (e) {
@@ -173,7 +161,7 @@
                         text: 'Your operation was successful!',
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            $('#appurement-modal').modal('hide');
+                            $('#partiel-modal').modal('hide');
                             $('#data-table').DataTable().ajax.reload(); // Reload the table
                         }
                     });
@@ -186,7 +174,7 @@
                         text: 'An error occurred while processing your request!',
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            $('#appurement-modal').modal('hide');
+                            $('#partiel-modal').modal('hide');
                             $('#data-table').DataTable().ajax.reload(); // Reload the table
                         }
                     });
@@ -195,6 +183,8 @@
                 }
             });
         }))
+
+
 
     </script>
 

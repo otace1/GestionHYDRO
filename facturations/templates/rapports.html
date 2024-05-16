@@ -1,0 +1,142 @@
+{% extends 'base_facturations_rapports.html' %}
+{% load crispy_forms_tags %}
+{% load django_tables2 %}
+{% block extrahead %}
+    {{ form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="modal fade" id="details-paiement-modal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Details</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="details-paiement"></div>
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        <!-- /.modal -->
+    </div>
+
+
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>DATE D'ENTREE</th>
+                    <th>FRONTIERE</th>
+                    <th>#DECL.T1E</th>
+                    <th>IMPORTATEUR</th>
+                    <th>ENTREPOT</th>
+                    <th>PRODUIT</th>
+{#                    <th>DATE BL</th>#}
+{#                    <th>NUM BL</th>#}
+{#                    <th>DATE PA</th>#}
+{#                    <th>BANQUE</th>#}
+{#                    <th>BUREAU</th>#}
+                    <th>VOL.DECL</th>
+                    <th>VOL.A 15 (GSV)</th>
+                    <th>VOL.LIQ</th>
+                    <th></th>
+                </tr>
+                </thead>
+
+                <script>
+                    $(document).ready(function () {
+                        // Reinitialize the DataTable with updated data
+                        $('#data-table').DataTable({
+                            lengthChange: false,
+                            searching: true,
+                            ordering: false,
+                            processing: true,
+                            serverSide: true,
+                            responsive: true,
+                            paging: true,
+                            caption: false,
+                            info: false,
+                            ajax: {
+                                url: "{% url 'rapportsResponse' %}",
+                                type: 'GET',
+                                beforeSend: function () {
+                                    $('#data-table-wrapper .loading-spinner').show();
+                                },
+                                complete: function () {
+                                    $('#data-table-wrapper .loading-spinner').hide();
+                                }
+                            },
+                            columns: [
+                                {data: 'idcargaison'},
+                                {data: 'dateheurecargaison__date'},
+                                {data: 'nomville'},
+                                {data: 'declaration'},
+                                {data: 'nomimportateur'},
+                                {data: 'nomentrepot'},
+                                {data: 'nomproduit'},
+                                {data: 'volume'},
+                                {data: 'gsvT'},
+                                {data: 'volLiqTotal'},
+                                { // New column configuration
+                                    data: 'idcargaison',
+                                    render: function (data, type, row) {
+                                        const detailsPaiement = '<button class="btn btn-info details-btn" data-row-id="' + data + '">DETAILS</button> ';
+                                        return detailsPaiement;
+                                    }
+                                }
+
+                            ],
+                        });
+                    })
+
+                </script>
+            </table>
+
+        </div>
+        <!-- /.table-responsive -->
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+    <script>
+        var dataRow;
+        const csrfToken = '{{ csrf_token }}';
+
+        // Event listener for opening the modal
+        $('#data-table').on('click', '.details-btn', function () {
+            var rowId = $(this).data('row-id');
+            dataRow = rowId;
+            console.log(dataRow);
+
+            {#var linkURL = "{% url 'partialResponseData' %}" + rowId;#}
+            var linkURL = "{% url 'partialResponseData' %}?pk=" + rowId;
+
+          $.ajax({
+               url: linkURL,
+               type: 'GET',
+               success: function(response) {
+                   // Replace the content of div with id details-paiement with the response
+                   $('#details-paiement').html(response);
+                   // Show the modal
+                   $('#details-paiement-modal').modal('show');
+               },
+               error: function(xhr, status, error) {
+                   // Handle errors if any
+                   console.error(xhr.responseText);
+               }
+           });
+
+        });
+
+    </script>
+
+
+{% endblock %}

@@ -2,8 +2,8 @@ import django_tables2 as tables
 from enreg.models import Cargaison, Paiement, Liquidation
 
 TEMPLATE = """
- <button type="button" class="btn btn-warning"  data-id={{record.pk}} data-toggle="modal" data-target="#modal-default">
-                  Paiement
+ <button type="button" class="btn btn-warning"  data-toggle="modal" data-target="#modal-default">
+                  APPUREMENT
                   </button>
 """
 
@@ -16,12 +16,16 @@ TEMPLATE2 = """
 """
 
 class Facturations(tables.Table):
-    actions = tables.TemplateColumn(TEMPLATE,verbose_name='')
-    volume = tables.Column(verbose_name='Vol. Déclaré')
-    gsv = tables.Column(verbose_name='GSV')
-    datedechargement = tables.Column(verbose_name='Date Déchargement')
-    dateheurecargaison = tables.Column(verbose_name="Date d'Entrée")
-    frontiere = tables.Column(verbose_name='Frontière')
+    idcargaison = tables.Column(verbose_name='ID')
+    dateheurecargaison = tables.Column(verbose_name="DATE D'ENTREE")
+    declaration = tables.Column(verbose_name='#DECL/T1E')
+    importateur__nomimportateur = tables.Column(verbose_name='IMPORTATEUR')
+    entrepot__nomentrepot = tables.Column(verbose_name='ENTREPOT')
+    produit__nomproduit = tables.Column(verbose_name='PRODUIT')
+    volume = tables.Column(verbose_name='VOL.DECL.')
+    dateDechargement = tables.Column(verbose_name='DATE DECH.')
+    gsvTotal = tables.Column(verbose_name='GSV')
+    actions = tables.TemplateColumn(TEMPLATE, verbose_name='')
 
     class Meta:
         attrs = {
@@ -29,9 +33,6 @@ class Facturations(tables.Table):
             "id":"facturations"
         }
         template_name = "django_tables2/bootstrap4.html"
-        model = Cargaison
-        sequence = ['actions','dateheurecargaison','frontiere','importateur','entrepot','declarant','immatriculation','t1e','t1d','produit','fournisseur','volume','datedechargement','gsv']
-        exclude = ['idcargaison','numbtfh','manifestdgda','l_control','tempcargaison','voie','densitecargaison','provenance','numdeclaration','idchauffeur','valeurfacture','poids','nationalite', 'nomchauffeur','etat','volume_decl15','numdossier','user','codecargaison','transporteur','qrcode','impression','numact','conformite','tampon','printactdate']
 
 
 class Facturations1(tables.Table):
@@ -85,4 +86,18 @@ class Liquidat(tables.Table):
         attrs = {"class": "table table-hover text-nowrap table-striped"}
         template_name = "django_tables2/bootstrap4.html"
         model = Liquidation
+
+
+class AffichageDetailLiquidation(tables.Table):
+    datebl = tables.Column(verbose_name='DATE BL')
+    numerobl = tables.Column(verbose_name='NUM. BL')
+    datepay = tables.Column(verbose_name='DATE. PA')
+    bankName = tables.Column(verbose_name='BANQUE')
+    codebureau = tables.Column(verbose_name='BUREAU')
+    modele = tables.Column(verbose_name='MODELE')
+    vol_liq = tables.Column(verbose_name='VOL.LIQ')
+
+    class Meta:
+        attrs = {"class": "table table-hover text-nowrap table-striped"}
+        template_name = "django_tables2/bootstrap5-responsive.html"
 
