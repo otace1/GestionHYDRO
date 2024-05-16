@@ -1,4 +1,5 @@
 import csv
+import datetime
 import io
 from datetime import date
 from io import BytesIO
@@ -12434,6 +12435,8 @@ def synthese_encaissement(request):
 def rapportBrut(request):
     form = RechercheStat()
     template = "rapportBrutesA.html"
+    date = datetime.date
+    date = date.today()
 
     request.session['ville'] = ''
     request.session['produit'] = ''
@@ -12442,7 +12445,7 @@ def rapportBrut(request):
     request.session['date_d'] = ''
     request.session['date_f'] = ''
 
-    qs = Cargaison.objects.annotate(
+    qs = Cargaison.objects.filter(dateheurecargaison__date=date).annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
         mtaTotal=Sum('inspection__compartiment__mta'),
