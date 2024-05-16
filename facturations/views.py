@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Sum, F, Q, Max
+from django.db.models import Sum, F, Q, Max, OuterRef, Subquery
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django_tables2 import RequestConfig
@@ -214,6 +214,12 @@ def rapports(request):
 @login_required(login_url='login')
 def rapportsResponse(request):
     user = request.user
+
+    # Subquery to calculate the sum of volume from compartiment table
+    volume_subquery = Compartiment.objects.all().values('idinspection__idcargaison').annotate(
+        volume_sum=Sum('gsv')
+    ).values('volume_sum')[:1]
+
     qs = Liquidation.objects.filter(
         idcargaison__entrepot__ville__affectationville__username_id=user
     ).values('idcargaison').annotate(
@@ -224,7 +230,8 @@ def rapportsResponse(request):
         nomentrepot=Max('idcargaison__entrepot__nomentrepot'),
         nomproduit=Max('idcargaison__produit__nomproduit'),
         volume=Max('idcargaison__volume'),
-        gsvT=Sum('idcargaison__inspection__compartiment__gsv'),
+        # gsvT=Sum('idcargaison__inspection__compartiment__gsv'),
+        gsvT=Subquery(volume_subquery),
         volLiqTotal=Sum('vol_liq')
     ).order_by('idcargaison')
 
