@@ -12432,6 +12432,7 @@ def synthese_encaissement(request):
 
 @login_required(login_url='login')
 def rapportBrut(request):
+    user = request.user
     template = "rapportBrutesA.html"
 
     request.session['ville'] = ''
@@ -12448,21 +12449,25 @@ def rapportBrut(request):
         mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3)
     ).values('idcargaison',
              'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
-             'entrepot__nomentrepot', 'inspection__dateinspection__date', 'importateur__nomimportateur', 'immatriculation',
-             'produit__nomproduit', 'dateheurecargaison','entrepot__cargaison__dateDechargement',
+             'entrepot__nomentrepot', 'inspection__dateinspection__date', 'importateur__nomimportateur',
+             'immatriculation',
+             'produit__nomproduit', 'dateheurecargaison', 'entrepot__cargaison__dateDechargement',
              'requisitiondackdate', 'entrepot_echantillon__dateechantillonage__date',
              'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
              'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
 
+    print('This has been hitted!')
+    #
     table = RapportBrut(qs)
+    print('The Tab created!')
     form = RechercheStat()
-    RequestConfig(request, paginate={"paginator_class": LazyPaginator,
-                                     "per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator,"per_page": 15}).configure(table)
 
     context = {
         'form': form,
         'table': table,
     }
+    print('The Tab sent in Context!')
     return render(request, template, context)
 
 

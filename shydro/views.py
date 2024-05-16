@@ -974,6 +974,7 @@ def rapportActivite(request):
     return render(request, template, context)
 
 
+
 @login_required(login_url='login')
 def responseRapportActivite(request):
     user = request.user.id
