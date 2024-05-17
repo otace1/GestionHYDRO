@@ -12457,12 +12457,13 @@ def rapportBrut(request):
              'produit__nomproduit', 'dateheurecargaison', 'entrepot__cargaison__dateDechargement',
              'requisitiondackdate', 'entrepot_echantillon__dateechantillonage__date',
              'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
-             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
+             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')[500]
 
 
     table = RapportBrut(qs)
 
-    RequestConfig(request, paginate={"per_page": 15}).configure(table)
+    RequestConfig(request, paginate={"paginator_class": LazyPaginator,
+                                     "per_page": 15}).configure(table)
 
     context = {
         'form': form,
