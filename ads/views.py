@@ -12457,7 +12457,7 @@ def rapportBrut(request):
              'produit__nomproduit', 'dateheurecargaison', 'entrepot__cargaison__dateDechargement',
              'requisitiondackdate', 'entrepot_echantillon__dateechantillonage__date',
              'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
-             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')[500]
+             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
 
 
     table = RapportBrut(qs)
