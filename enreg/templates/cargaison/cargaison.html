@@ -112,7 +112,7 @@ $('.btn.btn-success').click(function(e) {
         formData.append(kv.name, kv.value);
     });
 
-    // Get the selected file
+{% comment %}    // Get the selected file
     var file = $('#id_files')[0].files[0];
     if (!file) {
         alert('Please select a file.');
@@ -136,7 +136,7 @@ $('.btn.btn-success').click(function(e) {
         var fileContent = event.target.result;
 
         // Append the file content to the FormData
-        formData.append('file_content', fileContent);
+        formData.append('file_content', fileContent);{% endcomment %}
 
         // Send AJAX request
         $.ajax({
@@ -170,10 +170,10 @@ $('.btn.btn-success').click(function(e) {
                 $('.btn.btn-success').attr("disabled", false);
             }
         });
-    };
-
+{% comment %}    };{% endcomment %}
+{% comment %}
     // Read the file as text
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file);{% endcomment %}
 });
 
 

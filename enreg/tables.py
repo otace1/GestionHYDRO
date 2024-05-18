@@ -34,7 +34,7 @@ class CargaisonTable(tables.Table):
         exclude = ['files_path','dateHeureAnalyseLabo','idcargaison','etatInspection' ,'valeurfacture', 'frontiere', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport', 'controlOrganoleptique','dateDechargement','volume15',
                     'volume20', 'tonnagevide','toBeRefouler','toBeConsignated','isConsignated','isRefouler',
-                    'tonnageair','transitaire',
+                    'tonnageair','transitaire','controlLiquidation','partialLiquidattion',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'before', 'after', 'declaration','numCertInspection']

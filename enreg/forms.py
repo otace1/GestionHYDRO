@@ -71,7 +71,7 @@ class Ajoutcargaison(forms.Form):
     volume20 = forms.FloatField(label="VOLUME A 20°C", required=False)
     tonnagevide = forms.FloatField(label="TONNAGE VIDE", required=False)
     tonnageair = forms.FloatField(label="TONNAGE AIR", required=False)
-    files = forms.FileField(label='FILES', widget=forms.ClearableFileInput(attrs={'allow_multiple_selected': True}), required=False)
+    # files = forms.FileField(label='FILES', widget=forms.ClearableFileInput(attrs={'allow_multiple_selected': True}), required=False)
 
     def __init__(self, *args, **kwargs):
         super(Ajoutcargaison, self).__init__(*args, **kwargs)
@@ -109,10 +109,10 @@ class Ajoutcargaison(forms.Form):
                 css_class='form-row'
 
             ),
-            Row(
-                Column('files', css_class='form-group col-md-12 mb-0'),
-                css_class='form-row'
-            ),
+            # Row(
+            #     Column('files', css_class='form-group col-md-12 mb-0'),
+            #     css_class='form-row'
+            # ),
         )
 
 

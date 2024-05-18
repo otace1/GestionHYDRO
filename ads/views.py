@@ -42,8 +42,7 @@ class Dashboard():
             current_year = date.today().year
             template = 'admin.html'
 
-            form1 = RechercheStat()
-            form2 = RechercheStat()
+            form = RechercheStat()
 
             # Nouveau Rapport Global
             j = Cargaison.objects.filter(etat="En attente requisition").count()
@@ -52,7 +51,6 @@ class Dashboard():
             m = Cargaison.objects.filter(etatInspection=1).count()
             i = Cargaison.objects.filter(etat="Echantillonner").count()
             d = Cargaison.objects.filter(etat="Conforme aux exigences").count()
-
 
             # Nouveau Produtc list
             totalVolume = Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']
@@ -83,8 +81,7 @@ class Dashboard():
                 "l": l,
                 "m": m,
                 "d": d,
-                'form1': form1,
-                'form2': form2,
+                'form': form,
                 'gasoilVolume': gasoilVolume,
                 'mogasVolume': mogasVolume,
                 'jetVolume': jetVolume,
@@ -12459,7 +12456,6 @@ def rapportBrut(request):
              'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
              'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
 
-
     table = RapportBrut(qs)
 
     RequestConfig(request, paginate={"paginator_class": LazyPaginator,
@@ -12471,7 +12467,6 @@ def rapportBrut(request):
     }
 
     return render(request, template, context)
-
 
 
 @login_required(login_url='login')
@@ -14753,7 +14748,7 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
+
         if ville and produit and importateur and entrepot and date_d:
             qs = qs.filter(
                 entrepot__ville__idville=ville,
@@ -15249,7 +15244,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and importateur and date_f:
             qs = qs.filter(
@@ -15273,7 +15267,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and importateur:
             qs = qs.filter(
@@ -15296,7 +15289,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and entrepot and date_d and date_f:
             qs = qs.filter(
@@ -15320,7 +15312,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and entrepot and date_d:
             qs = qs.filter(
@@ -15344,7 +15335,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and entrepot and date_f:
             qs = qs.filter(
@@ -15368,7 +15358,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and entrepot:
             qs = qs.filter(
@@ -15391,7 +15380,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and date_d and date_f:
             qs = qs.filter(
@@ -15414,7 +15402,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and date_d:
             qs = qs.filter(
@@ -15437,7 +15424,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville and date_f:
             qs = qs.filter(
@@ -15460,7 +15446,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if ville:
             qs = qs.filter(
@@ -15482,7 +15467,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and entrepot and date_d and date_f:
             qs = qs.filter(
@@ -15507,7 +15491,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and entrepot and date_d:
             qs = qs.filter(
@@ -15532,7 +15515,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and entrepot and date_f:
             qs = qs.filter(
@@ -15557,7 +15539,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and entrepot:
             qs = qs.filter(
@@ -15581,7 +15562,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and date_d and date_f:
             qs = qs.filter(
@@ -15605,7 +15585,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and date_d:
             qs = qs.filter(
@@ -15629,7 +15608,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur and date_f:
             qs = qs.filter(
@@ -15653,7 +15631,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and importateur:
             qs = qs.filter(
@@ -15676,7 +15653,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and entrepot and date_d and date_f:
             qs = qs.filter(
@@ -15700,7 +15676,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and entrepot and date_d:
             qs = qs.filter(
@@ -15724,7 +15699,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and date_d and date_f:
             qs = qs.filter(
@@ -15747,7 +15721,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and date_d:
             qs = qs.filter(
@@ -15770,7 +15743,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit and date_f:
             qs = qs.filter(
@@ -15793,7 +15765,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if produit:
             qs = qs.filter(
@@ -15815,7 +15786,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and entrepot and date_d and date_f:
             qs = qs.filter(
@@ -15839,7 +15809,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and entrepot and date_d:
             qs = qs.filter(
@@ -15863,7 +15832,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and entrepot and date_f:
             qs = qs.filter(
@@ -15887,7 +15855,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and entrepot:
             qs = qs.filter(
@@ -15910,7 +15877,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and date_d and date_f:
             qs = qs.filter(
@@ -15933,7 +15899,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and date_d:
             qs = qs.filter(
@@ -15956,7 +15921,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur and date_f:
             qs = qs.filter(
@@ -15979,7 +15943,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if importateur:
             qs = qs.filter(
@@ -16001,7 +15964,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if entrepot and date_d and date_f:
             qs = qs.filter(
@@ -16024,7 +15986,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if entrepot and date_d:
             qs = qs.filter(
@@ -16047,7 +16008,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if entrepot and date_f:
             qs = qs.filter(
@@ -16070,7 +16030,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if entrepot:
             qs = qs.filter(
@@ -16092,7 +16051,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if date_d and date_f:
             qs = qs.filter(
@@ -16114,7 +16072,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if date_d:
             qs = qs.filter(
@@ -16136,7 +16093,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if date_f:
             qs = qs.filter(
@@ -16158,7 +16114,6 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
 
         if not (ville and produit and importateur and entrepot and date_d and date_f):
             qs = Cargaison.objects.annotate(
@@ -16215,7 +16170,7 @@ def rapportBrutExport(request):
 
                 message = "Export task started. Task ID: {}".format(task_id)
                 return JsonResponse({'task_id': task_id})
-            
+
 
 @login_required(login_url='login')
 # Fonction Recherche Statistique Detaillé
@@ -16256,7 +16211,6 @@ def rapportBrutResponse(request):
                                'gsvMeter',
                                'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
                                )
-
 
     ville = request.session['ville']
     produit = request.session['produit']
@@ -16341,8 +16295,6 @@ def rapportBrutResponse(request):
         # Convert the page object to a list of dictionaries
         data = list(page)
 
-
-
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
@@ -16386,8 +16338,6 @@ def rapportBrutResponse(request):
         # Convert the page object to a list of dictionaries
         data = list(page)
 
-
-
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
@@ -16430,8 +16380,6 @@ def rapportBrutResponse(request):
         # Convert the page object to a list of dictionaries
         data = list(page)
 
-
-
         # Return JSON response with the data
         return JsonResponse({
             'data': data,
@@ -16473,9 +16421,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16518,9 +16463,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16563,9 +16505,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16607,9 +16546,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16652,9 +16588,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16697,9 +16630,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16742,9 +16672,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16786,9 +16713,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16830,9 +16754,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16874,9 +16795,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16918,9 +16836,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -16961,9 +16876,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17006,9 +16918,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17051,9 +16960,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17096,9 +17002,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17114,7 +17017,7 @@ def rapportBrutResponse(request):
             importateur_id=importateur,
             entrepot_id=entrepot,
         )
-                # Number of items to show per page
+        # Number of items to show per page
         items_per_page = 13
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -17140,9 +17043,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17184,9 +17084,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17228,9 +17125,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17272,9 +17166,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17315,9 +17206,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17359,9 +17247,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17403,9 +17288,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17447,9 +17329,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17490,9 +17369,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17533,9 +17409,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17576,9 +17449,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17619,9 +17489,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17661,9 +17528,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17706,9 +17570,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17751,9 +17612,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17796,9 +17654,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17840,9 +17695,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17884,9 +17736,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17928,9 +17777,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -17972,9 +17818,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18015,9 +17858,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18033,7 +17873,7 @@ def rapportBrutResponse(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-                # Number of items to show per page
+        # Number of items to show per page
         items_per_page = 13
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -18059,9 +17899,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18103,9 +17940,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18146,9 +17980,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18163,7 +17994,7 @@ def rapportBrutResponse(request):
             produit_id=produit,
             dateheurecargaison__date=date_d,
         )
-                # Number of items to show per page
+        # Number of items to show per page
         items_per_page = 13
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -18189,9 +18020,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18232,9 +18060,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18274,9 +18099,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18318,9 +18140,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18362,9 +18181,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18380,7 +18196,7 @@ def rapportBrutResponse(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-                # Number of items to show per page
+        # Number of items to show per page
         items_per_page = 13
 
         # Initialize the Paginator with the QuerySet and the number of items per page
@@ -18406,9 +18222,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18449,9 +18262,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18492,9 +18302,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18535,9 +18342,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18578,9 +18382,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18620,9 +18421,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18663,9 +18461,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18706,9 +18501,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18749,9 +18541,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18791,9 +18580,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18833,9 +18619,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18875,9 +18658,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -18917,9 +18697,6 @@ def rapportBrutResponse(request):
 
         # Convert the page object to a list of dictionaries
         data = list(page)
-        
-
-
 
         # Return JSON response with the data
         return JsonResponse({
@@ -19057,7 +18834,7 @@ def rapportBrutResponseExport(request):
                        importateur_id=importateur,
                        entrepot_id=entrepot,
                        dateheurecargaison__range=[date_d, date_f])
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19068,7 +18845,6 @@ def rapportBrutResponseExport(request):
         message = "Export task started. Task ID: {}".format(task_id)
         return JsonResponse({'task_id': task_id})
 
-
     if ville and produit and importateur and entrepot and date_d:
         qs = qs.filter(
             entrepot__ville__idville=ville,
@@ -19077,7 +18853,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19096,7 +18872,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19114,7 +18890,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19132,7 +18908,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19150,7 +18926,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19168,7 +18944,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19185,7 +18961,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             importateur_id=importateur,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19203,7 +18979,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19221,7 +18997,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19239,7 +19015,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19256,7 +19032,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19273,7 +19049,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19290,7 +19066,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19307,7 +19083,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19323,7 +19099,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             produit_id=produit,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19341,7 +19117,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19359,7 +19135,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19377,7 +19153,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19394,7 +19170,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19411,7 +19187,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19428,7 +19204,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19445,7 +19221,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19461,7 +19237,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             importateur_id=importateur,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19478,7 +19254,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19495,7 +19271,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19512,7 +19288,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19528,7 +19304,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19544,7 +19320,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19560,7 +19336,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19576,7 +19352,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19591,7 +19367,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             entrepot__ville__idville=ville,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19609,7 +19385,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19627,7 +19403,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19645,7 +19421,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19662,7 +19438,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19679,7 +19455,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19696,7 +19472,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19713,7 +19489,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19729,7 +19505,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             importateur_id=importateur,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19746,7 +19522,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19763,7 +19539,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19779,7 +19555,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19795,7 +19571,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19811,7 +19587,7 @@ def rapportBrutResponseExport(request):
             produit_id=produit,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19826,7 +19602,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             produit_id=produit,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19843,7 +19619,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19860,7 +19636,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19877,7 +19653,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19893,7 +19669,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19909,7 +19685,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19925,7 +19701,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19941,7 +19717,7 @@ def rapportBrutResponseExport(request):
             importateur_id=importateur,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19956,7 +19732,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             importateur_id=importateur,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19972,7 +19748,7 @@ def rapportBrutResponseExport(request):
             entrepot__ville__idville=ville,
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -19988,7 +19764,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -20004,7 +19780,7 @@ def rapportBrutResponseExport(request):
             entrepot_id=entrepot,
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -20019,7 +19795,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             entrepot_id=entrepot,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -20034,7 +19810,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             dateheurecargaison__range=[date_d, date_f],
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -20049,7 +19825,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             dateheurecargaison__date=date_d,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -20064,7 +19840,7 @@ def rapportBrutResponseExport(request):
         qs = qs.filter(
             dateheurecargaison__date=date_f,
         )
-        data=list(qs)
+        data = list(qs)
 
         # Start Celery task to export report asynchronously
         result = app.send_task('ads.tasks.exportLargeDataSet', args=[data])
@@ -20555,12 +20331,13 @@ def chartJsGraph(request):
     # Return the data as JSON response
     return JsonResponse(data_list, safe=False)
 
+
 @login_required(login_url='login')
 def lastRecords(request):
     latest_cargaisons = Cargaison.objects.filter(etat="En attente requisition").values(
-        'dateheurecargaison','frontiere__nomville','importateur__nomimportateur','entrepot__nomentrepot','produit__nomproduit','volume'
+        'dateheurecargaison', 'frontiere__nomville', 'importateur__nomimportateur', 'entrepot__nomentrepot',
+        'produit__nomproduit', 'volume'
     ).order_by('-dateheurecargaison')[:5]
-
 
     # Convert the page object to a list of dictionaries
     data = list(latest_cargaisons)
@@ -20571,7 +20348,6 @@ def lastRecords(request):
     })
 
 
-
 @login_required(login_url='login')
 def productCount(request):
     gasoilCount = Cargaison.objects.filter(produit=2).count()
@@ -20580,17 +20356,16 @@ def productCount(request):
     petroleCount = Cargaison.objects.filter(produit=4).count()
 
     data = {
-        'gasoilCount':gasoilCount,
-        'mogasCount':mogasCount,
-        'jetCount':jetCount,
-        'petroleCount':petroleCount,
+        'gasoilCount': gasoilCount,
+        'mogasCount': mogasCount,
+        'jetCount': jetCount,
+        'petroleCount': petroleCount,
     }
 
     # Return JSON response with the data
     return JsonResponse({
         'data': data
     })
-
 
 
 @login_required(login_url='login')
@@ -20609,7 +20384,6 @@ def topImporters(request):
     })
 
 
-
 @login_required(login_url='login')
 def topImportersDiffVol(request):
     # Get the sum of volume for each product type
@@ -20626,12 +20400,10 @@ def topImportersDiffVol(request):
     })
 
 
-
 @login_required(login_url='login')
 def rapportAttenteReception(request):
     template = "rapportBrutesAttenteReception.html"
     return render(request, template)
-
 
 
 @login_required(login_url='login')
@@ -20732,14 +20504,13 @@ def responseRapportattenteReception(request):
     })
 
 
-
 @login_required(login_url='login')
 def getDocuments(request):
     idcargaison = request.POST.get('idcargaison')  # Retrieve idcargaison from POST data
 
     # Query all relevant models to check if records exist for the given idcargaison
     entrepot_echantillons_exist = Entrepot_echantillon.objects.filter(idcargaison=idcargaison).exists()
-    cargaisons_exist = Cargaison.objects.filter(idcargaison=idcargaison,etatInspection=0).exists()
+    cargaisons_exist = Cargaison.objects.filter(idcargaison=idcargaison, etatInspection=0).exists()
     impression_resultats_exist = ImpressionResultat.objects.filter(idcargaison=idcargaison).exists()
 
     # Check if any of the queryset has records
@@ -21013,7 +20784,6 @@ def getDocuments(request):
         for entry in d:
             mois = entry['mois']
             annee = entry['annee']
-
 
         # Recuperation du produit de la cargaison
         p = Produit.objects.get(cargaison=pk)
@@ -21705,7 +21475,7 @@ def getDocuments(request):
         pdf_cq = {}
 
     return JsonResponse(
-        {'status': 'success', 
+        {'status': 'success',
          'pdf_re': pdf_re,
          'pdf_ri': pdf_ri,
          'pdf_cq': pdf_cq
@@ -21715,6 +21485,7 @@ def getDocuments(request):
 @login_required(login_url='login')
 def getCq(request):
     pass
+
 
 @login_required(login_url='login')
 def getRi(request):

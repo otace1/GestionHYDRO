@@ -131,60 +131,44 @@ class GestionCargaison():
                     volume20 = form.cleaned_data['volume20']
                     tonnagevide = form.cleaned_data['tonnagevide']
                     tonnageair = form.cleaned_data['tonnageair']
-                    files = request.FILES.get('files')
+                    # files = request.FILES.get('files')
 
-                    # Process the uploaded file
-                    if files:
-                        print('FILE EXIST')
-                        # Generate a unique filename using QR code value and timestamp
-                        qrcode = str(uuid.uuid4())
-                        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                        directory = f'/files/{qrcode}'  # Directory name based on QR code value
-                        os.makedirs(directory, exist_ok=True)  # Create directory if not exists
-                        filename = f'{timestamp}.pdf'  # Filename including QR code value and timestamp
 
-                        uploaded_filepath = upload_to_space(files.read(), directory, filename)
+                    qrcode = str(uuid.uuid4())
+                    # Save the filepath into the database
+                    instance = Cargaison(
+                        voie=voie,
+                        frontiere=frontiere,
+                        typeunitetransport=typeunitetransport,
+                        provenance=provenance,
+                        importateur=importateur,
+                        produit=produit,
+                        entrepot=entrepot,
+                        immatriculation=immatriculation,
+                        transitaire=transitaire,
+                        declaration=declaration,
+                        volume=volume,
+                        volume15=volume15,
+                        volume20=volume20,
+                        tonnagevide=tonnagevide,
+                        tonnageair=tonnageair,
+                        # files_path=uploaded_filepath  # Save the file path
+                    )
+                    instance.save()
 
-                        if uploaded_filepath:
-                            # Save the filepath into the database
-                            instance = Cargaison(
-                                voie=voie,
-                                frontiere=frontiere,
-                                typeunitetransport=typeunitetransport,
-                                provenance=provenance,
-                                importateur=importateur,
-                                produit=produit,
-                                entrepot=entrepot,
-                                immatriculation=immatriculation,
-                                transitaire=transitaire,
-                                declaration=declaration,
-                                volume=volume,
-                                volume15=volume15,
-                                volume20=volume20,
-                                tonnagevide=tonnagevide,
-                                tonnageair=tonnageair,
-                                files_path=uploaded_filepath  # Save the file path
-                            )
-                            instance.save()
+                    # Save QR code and other details
+                    instance.qrcode = qrcode
+                    instance.user = u
+                    instance.etat = "En attente requisition"
+                    instance.save()
 
-                            # Save QR code and other details
-                            instance.qrcode = qrcode
-                            instance.user = u
-                            instance.etat = "En attente requisition"
-                            instance.save()
-
-                            # Activity Log
-                            UserActivityLog.objects.create(
-                                user=user,
-                                action="Data creation",
-                                description="User has created new import record successfully",
-                            )
-
-                            return JsonResponse({'qrcode': qrcode}, status=200)
-                        else:
-                            return JsonResponse({'error': 'Failed to upload file'}, status=500)
-                    else:
-                        return JsonResponse({'error': 'No file uploaded'}, status=400)
+                    # Activity Log
+                    UserActivityLog.objects.create(
+                        user=user,
+                        action="Data creation",
+                        description="User has created new import record successfully",
+                    )
+                    return JsonResponse({'qrcode': qrcode}, status=200)
                 else:
                     return JsonResponse({'error': 'Invalid form data'}, status=400)
             else:
@@ -192,6 +176,60 @@ class GestionCargaison():
         else:
             form = Ajoutcargaison()
             return render(request, 'cargaison/form.html', {'form': form})
+
+
+
+    # Process the uploaded file
+    # if files:
+    #     print('FILE EXIST')
+    #     # Generate a unique filename using QR code value and timestamp
+    #     qrcode = str(uuid.uuid4())
+    #     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    #     directory = f'/files/{qrcode}'  # Directory name based on QR code value
+    #     os.makedirs(directory, exist_ok=True)  # Create directory if not exists
+    #     filename = f'{timestamp}.pdf'  # Filename including QR code value and timestamp
+    #
+    #     uploaded_filepath = upload_to_space(files.read(), directory, filename)
+    #
+    #     if uploaded_filepath:
+    #         # Save the filepath into the database
+    #         instance = Cargaison(
+    #             voie=voie,
+    #             frontiere=frontiere,
+    #             typeunitetransport=typeunitetransport,
+    #             provenance=provenance,
+    #             importateur=importateur,
+    #             produit=produit,
+    #             entrepot=entrepot,
+    #             immatriculation=immatriculation,
+    #             transitaire=transitaire,
+    #             declaration=declaration,
+    #             volume=volume,
+    #             volume15=volume15,
+    #             volume20=volume20,
+    #             tonnagevide=tonnagevide,
+    #             tonnageair=tonnageair,
+    #             files_path=uploaded_filepath  # Save the file path
+    #         )
+    #         instance.save()
+    #
+    #         # Save QR code and other details
+    #         instance.qrcode = qrcode
+    #         instance.user = u
+    #         instance.etat = "En attente requisition"
+    #         instance.save()
+    #
+    #         # Activity Log
+    #         UserActivityLog.objects.create(
+    #             user=user,
+    #             action="Data creation",
+    #             description="User has created new import record successfully",
+    #         )
+    #
+    #         return JsonResponse({'qrcode': qrcode}, status=200)
+    #     else:
+    #         return JsonResponse({'error': 'Failed to upload file'}, status=500)
+    # else:
 
 
     @login_required(login_url='login')
