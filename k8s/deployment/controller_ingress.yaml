@@ -9,10 +9,12 @@ metadata:
 spec:
   tls:
     - hosts:
-        - suivicargo.com
+        - trackflow.plus
+#        - suivicargo.com
       secretName: gestionhydro-tls
   rules:
-  - host: suivicargo.com
+#  - host: suivicargo.com
+  - host: trackflow.plus
     http:
         paths:
         - pathType: Prefix

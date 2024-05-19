@@ -372,13 +372,13 @@
                         {#const submitDetails = '<button class="btn btn-info afficher-btn" data-row-id="' + data + '">DETAIL</button> ';#}
                         const submitAffectationEntr = '<button class="btn btn-outline-info affectation-btn" data-row-id="' + data + '">ENTR</button> ';
                         const submitAffectationLabo = '<button class="btn btn-outline-info affectation-labo-btn" data-row-id="' + data + '">LABO</button> ';
-                        {#const submitAffectation = '<button class="btn btn-outline-info affectation-btn" data-row-id="' + data + '"></button> ';#}
+                        const submitAffectationVille = '<button class="btn btn-outline-info affectation-ville-btn" data-row-id="' + data + '">VILLE</button> ';
                         const submitSignature = '<button class="btn btn-success signature-btn" data-row-id="' + data + '">SIGNATURE</button> ';
                         const submitToken = '<button class="btn btn-warning token-btn" data-row-id="' + data + '">APP TOKEN</button> ';
                         const submitReset = '<button class="btn btn-warning reset-btn" data-row-id="' + data + '">RESET PWD</button> ';
                         const submitEffacer = '<button class="btn btn-danger delete-btn" data-row-id="' + data + '">EFFACER</button> ';
 
-                        return submitAffectationEntr+submitAffectationLabo+submitSignature+submitToken+submitReset+submitEffacer;
+                        return submitAffectationEntr+submitAffectationLabo+submitAffectationVille+submitSignature+submitToken+submitReset+submitEffacer;
                     }
                 }// Use array index to access 'immatriculation'
             ],

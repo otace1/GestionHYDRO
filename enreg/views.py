@@ -72,38 +72,19 @@ class GestionCargaison():
     @login_required(login_url='login')
     def affichageTableau(request):
         user = request.user
-        role = user.role_id
-        id = user.id
         u = user.username
+        template='cargaison/cargaison.html'
         form = Ajoutcargaison()
         today = date.today()
-        if role == 2:
-            if request.method == 'GET':
-                qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u,
-                                                                              dateheurecargaison__year=today.year)
-                table = CargaisonTable(qs)
-                data = list(qs.values())
-                RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-                return render(request, 'cargaison/cargaison.html', {
-                    'cargaison': table,
-                    'form': form,
-                    'data': data,
-                })
-        else:
-            if role == 1:
-                if request.method == 'GET':
-                    form = Ajoutcargaison()
-                    qs = Cargaison.objects.filter(dateheurecargaison__year=today.year).order_by('-dateheurecargaison')
-                    table = CargaisonTable(qs)
-                    data = list(qs.values())
-                    RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 10}).configure(table)
-                    return render(request, 'cargaison/cargaison.html', {
-                        'cargaison': table,
-                        'form': form,
-                        'data': data,
-                    })
-            else:
-                return redirect('logout')
+        qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u, dateheurecargaison__year=today.year)
+        table = CargaisonTable(qs)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        context={
+            'cargaison': table,
+            'form': form,
+        }
+        return render(request, template, context)
+
 
     @login_required(login_url='login')
     def enregCargaison(request):
