@@ -319,7 +319,7 @@ sentry_sdk.init(
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-CSRF_TRUSTED_ORIGINS = ['https://trackflow.plus/']
+CSRF_TRUSTED_ORIGINS = ['https://trackflow.plus']
 # CSRF_TRUSTED_ORIGINS = ['https://suivicargo.com']
 
 
