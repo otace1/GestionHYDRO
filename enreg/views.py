@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, HttpResponse, redirect
 from django_tables2 import RequestConfig, LazyPaginator
 
-from accounts.models import UserActivityLog
+from accounts.models import UserActivityLog, MyUser
 from .forms import Ajoutcargaison
 from .models import *
 from .tables import CargaisonTable
@@ -73,10 +73,11 @@ class GestionCargaison():
     def affichageTableau(request):
         user = request.user
         u = user.username
+        user = MyUser.objects.get(pk=u)
         template='cargaison/cargaison.html'
         form = Ajoutcargaison()
         today = date.today()
-        qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u, dateheurecargaison__year=today.year)
+        qs = Cargaison.objects.order_by('-dateheurecargaison').filter(user=u, dateheurecargaison__year=today.year).select_related('user')
         table = CargaisonTable(qs)
         RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
         context={

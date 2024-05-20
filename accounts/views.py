@@ -55,7 +55,7 @@ def login_user(request):
                     else:
                         # rôle HYDROCARBURES
                         if role == 7:
-                            return redirect('codification')
+                            return redirect('tableaudeBordHydro')
                         else:
                             # rôle Encodeur entrepot
                             if role == 3:
@@ -77,9 +77,17 @@ def login_user(request):
                                             if role == 10:
                                                 return redirect('validation2')
                                             else:
-                                                # rôle particulier
+                                                # rôle particulier Sans Labo
                                                 if role == 9:
                                                     return redirect('entrepot')
+                                                else:
+                                                    if role == 11:
+                                                        return redirect('codification')
+                                                    else:
+                                                        if role == 13:
+                                                            return redirect('rapportActivite')
+                                                        else:
+                                                            redirect('logout')
     context = {
         'form': form
     }

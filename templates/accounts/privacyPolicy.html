@@ -241,7 +241,8 @@
             <p>RAPPORT D'ACTIVITE</p>
         </a>
     </li>
-
+{% endif %}
+{% if user.role_id == 1 or user.role_id == 13 or user.role_id == 7 %}
     <li class="nav-item">
         <a href="{% url 'facturations' %}" class="nav-link">
             <i class="far fa-circle nav-icon"></i>
