@@ -24,29 +24,53 @@ def codeLabo(v):
 
     return codelabo
 
+#
+# def generate_labo_code(ville_id):
+#     current_date = dt.now()
+#     current_month = current_date.month
+#
+#     query = f'''
+#             SELECT l.idcargaison_id, c.idcargaison, MAX(l.codelabo) as last_code
+#             FROM enreg_laboreception l
+#             JOIN enreg_cargaison c ON l.idcargaison_id = c.idcargaison
+#             JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot
+#             JOIN enreg_ville v ON e.ville_id = v.idville
+#             WHERE MONTH(l.datereceptionlabo) = {current_month}
+#             AND v.idville = {ville_id}
+#             GROUP BY l.idcargaison_id, c.idcargaison
+#         '''
+#
+#     last_code_result = Cargaison.objects.raw(query)
+#     last_code = None
+#
+#     for result in last_code_result:
+#         last_code = result.last_code
+#
+#     print('LAST CODE:')
+#     print(last_code)
+#
+#     return last_code
 
 def generate_labo_code(ville_id):
     current_date = dt.now()
     current_month = current_date.month
 
-    query = f'''
-            SELECT l.idcargaison_id, c.idcargaison, MAX(l.codelabo) as last_code
-            FROM enreg_laboreception l
-            JOIN enreg_cargaison c ON l.idcargaison_id = c.idcargaison
-            JOIN enreg_entrepot e ON c.entrepot_id = e.identrepot
-            JOIN enreg_ville v ON e.ville_id = v.idville
-            WHERE MONTH(l.datereceptionlabo) = {current_month}
-            AND v.idville = {ville_id}
-            GROUP BY l.idcargaison_id, c.idcargaison
-        '''
+    # Get the maximum code for the specified city and current month
+    max_code_dict = LaboReception.objects.filter(
+        datereceptionlabo__month=current_month,
+        datereceptionlabo__year=current_date.year,
+        idcargaison__idcargaison__entrepot__ville=ville_id
+    ).aggregate(max_code=Max('codelabo'))
 
-    last_code_result = Cargaison.objects.raw(query)
-    last_code = None
+    last_code = max_code_dict['max_code']
 
-    for result in last_code_result:
-        last_code = result.last_code
+    # print('LAST CODE:')
+    # print(last_code)
 
-    print('LAST CODE:')
-    print(last_code)
+    # Generate the new code
+    if last_code:
+        new_code = last_code + 1
+    else:
+        new_code = 1
 
-    return last_code
+    return new_code

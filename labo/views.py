@@ -150,12 +150,16 @@ class GestionLaboratoire():
 
                 # Sauvegarde de l'instruction dans la Table LaboReception
                 codelabo = generate_labo_code(v)
-                if codelabo is None:
-                    codelabo = 0
-                codeToUse = codelabo + 1
+
+                # print('TEST CODE')
+                # print(codelabo)
+                #
+                # if codelabo is None:
+                #     codelabo = 0
+                # codeToUse = codelabo + 1
 
 
-                p = LaboReception(idcargaison_id=pk, codelabo=codeToUse,
+                p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
                                   numcertificatqualite=numcertificatqualite, datereceptionlabo=now)
                 p.save()
 
@@ -168,7 +172,7 @@ class GestionLaboratoire():
                 # Prepare the JSON response
                 response_data = {
                     'success': True,
-                    'codeLabo': codeToUse,
+                    'codeLabo': codelabo,
                 }
                 return JsonResponse(response_data)
             else:
