@@ -86,8 +86,8 @@ def login_user(request):
                                                     else:
                                                         if role == 13:
                                                             return redirect('rapportActivite')
-                                                        else:
-                                                            redirect('logout')
+
+    # print('TEST LOGOUT')
     context = {
         'form': form
     }

@@ -40,7 +40,7 @@ class GestionCodification():
         id = user.id
         role = user.role_id
 
-        if role == 7 or role == 1:
+        if role == 7 or role == 1 or role == 11:
             if 'search' in request.GET:
                 qs = request.GET['search']
                 if qs == "":
