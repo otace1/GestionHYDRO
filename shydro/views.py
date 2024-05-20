@@ -266,7 +266,7 @@ def numreq(request):
     # url = request.session['url']
     user = request.user
     role = user.role_id
-    if role == 7 or role == 1:
+    if role == 7 or role == 1 or role == 11:
         if request.method == 'POST':
             data = json.loads(request.body)
             numreq = data.get('jsonData')
