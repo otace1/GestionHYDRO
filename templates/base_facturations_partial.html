@@ -215,56 +215,57 @@
                         <li class="header" style="color: red">CELLULE HYDRO</li>
 
                         <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-building"></i>
-                                <p>
-                                    HYDRO
-                                    <i class="fas fa-trailer right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
+                        <a href="" class="nav-link">
+                            <i class="nav-icon fas fa-building"></i>
+                            <p>
+                                HYDRO
+                                <i class="fas fa-trailer right"></i>
+                                <span class="badge badge-info right"></span>
+                            </p>
+                        </a>
+                        {% if user.role_id == 1 or user.role_id == 7 %}
+                            <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                    <i class="nav-icon fas fa-tachometer-alt"></i>
+                                    <p>TABLEAU DE BORD</p>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    {% if user.role_id == 1 or user.role_id == 11 %}
+                        <li class="nav-item">
+                            <a href="{% url 'codification' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>GESTION REQUISITION</p>
                             </a>
-                            {% if user.role_id == 1 or user.role_id == 7 %}
-                                <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-                                        <i class="nav-icon fas fa-tachometer-alt"></i>
-                                        <p>TABLEAU DE BORD</p>
-                                    </a>
-                                </li>
-                            {% endif %}
-
-                            {% if user.role_id == 1 or user.role_id == 11 %}
-                                <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>GESTION REQUISITION</p>
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
-                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'rapportActivite' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>RAPPORT D'ACTIVITE</p>
-                                        </a>
-                                    </li>
-
-                                    <li class="nav-item">
-                                        <a href="{% url 'facturations' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>PAIEMENTS</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                </ul>
-                            {% endif %}
                         </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'regularisation' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>REGULARISATION</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                        <li class="nav-item">
+                            <a href="{% url 'rapportActivite' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>RAPPORT D'ACTIVITE</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'facturations' %}" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>PAIEMENTS</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                    </ul>
+                    {% endif %}
+                    </li>
                     {% endif %}
                     {% if role == 10 %}
                         <li class="nav-item has-treeview">
@@ -369,10 +370,10 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-md-6">
-{#                        <a class="btn btn-app bg-success" data-toggle="modal" data-target="#upload-modal">#}
-{#                            <span class="badge bg-success"></span>#}
-{#                            <i class="fas fa-upload"></i>UPLOAD DATA#}
-{#                        </a>#}
+                        {#                        <a class="btn btn-app bg-success" data-toggle="modal" data-target="#upload-modal">#}
+                        {#                            <span class="badge bg-success"></span>#}
+                        {#                            <i class="fas fa-upload"></i>UPLOAD DATA#}
+                        {#                        </a>#}
                         <a class="btn btn-app bg-warning" href="{% url 'facturations' %}">
                             <span class="badge bg-warning"></span>
                             <i class="fas fa-backward"></i>RETOUR
