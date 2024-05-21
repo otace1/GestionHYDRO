@@ -4124,7 +4124,8 @@ def conformeAjx2(request):
 
                     response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
                     return JsonResponse(response_data)
-                return JsonResponse(status=400)
+                response_data = {}
+                return JsonResponse(response_data,status=400)
             except Cargaison.DoesNotExist:
                 response_data = {'status': 'failure', 'message': 'Cargaison not found'}
                 return JsonResponse(response_data, status=404)  # 404 Not Found status code
@@ -4167,6 +4168,7 @@ def nonconformeAjx2(request):
 
                     response_data = {'status': 'success', 'message': 'Cargaison marked as NON CONFORME'}
                     return JsonResponse(response_data)
+                response_data = {}
                 return JsonResponse(response_data, status=400)
             except Cargaison.DoesNotExist:
                 response_data = {'status': 'failure', 'message': 'Cargaison not found'}
