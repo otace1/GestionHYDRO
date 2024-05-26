@@ -1,34 +1,33 @@
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: celery-server
+  name: gestionhydro-celery
+  labels:
+    app: gestionhydro-celery
 spec:
-  containers:
-  - name: celery-server
-    image: otace1/gestionhydro:latest
-    envFrom:
-      - configMapRef:
-          name: django-configmap
-    ports: []
-#    - containerPort: 8000
-    volumeMounts:
-      - name: static-volume
-        mountPath: /vol/web/static
-      - name: media-volume
-        mountPath: /vol/web/media
-      - name: db-data
-        mountPath: /var/lib/mysql
-    command: ["/bin/sh", "-c", "/scripts/entrypoint.sh"]
-  volumes:
-    - name: static-volume
-      persistentVolumeClaim:
-        claimName: static-pvc
-    - name: media-volume
-      persistentVolumeClaim:
-        claimName: media-pvc
-    - name: db-data
-      persistentVolumeClaim:
-        claimName: database-pvc
-
-
-
+  replicas: 3
+  selector:
+    matchLabels:
+      app: gestionhydro-celery
+  template:
+    metadata:
+      labels:
+        app: gestionhydro-celery
+    spec:
+      imagePullSecrets:
+        - name: otace
+      containers:
+        - name: celery-worker
+          image: registry.digitalocean.com/otace/gestionhydro-amd64:latest
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: django-deploy-env
+          command: [ "/bin/sh", "-c", "celery -A hydrocarbures worker --loglevel=info" ]
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
