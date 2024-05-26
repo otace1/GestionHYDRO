@@ -27,7 +27,6 @@ from labo.numCq import numCq
 from .infiniteScroll import CustomPagination
 from .serializers import *
 
-
 # This for firebase Login system view Custom JWT
 @api_view(['POST'])
 @permission_classes([AllowAny])
