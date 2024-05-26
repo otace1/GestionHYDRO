@@ -74,10 +74,8 @@ jobs:
         run: |
           kubectl set image deployment/gestionhydro-deployment \
             django-server=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
-#            celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
-#            redis-server=redis:latest
           kubectl set image deployment/gestionhydro-celery \
-            celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+            celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7}
       - name: Wait for rollout to finish
         run: |
           kubectl rollout status deployment/gestionhydro-deployment
