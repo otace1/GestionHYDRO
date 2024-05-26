@@ -58,7 +58,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           EOF
-          kubectl delete secret django-deploy-env
           kubectl create secret generic django-deploy-env --from-env-file=prod.env
       - name: Update deployment image
         run: |
