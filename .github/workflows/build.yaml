@@ -59,10 +59,12 @@ jobs:
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           EOF
           kubectl create secret generic django-deploy-env --from-env-file=prod.env
-      - name: Update deployment image
+      - name: Update deployment image for django-server
         run: |
           kubectl set image deployment/gestionhydro-deployment \
             django-server=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+      - name: Update deployment image for celery-worker
+        run: |
           kubectl set image deployment/gestionhydro-celery \
             celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7}
       - name: Wait for rollout to finish
