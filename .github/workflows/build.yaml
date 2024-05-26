@@ -57,6 +57,16 @@ jobs:
           DB_IGNORE_SSL=True
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          FIREBASE_TYPE=${{secrets.FIREBASE_TYPE}}
+          FIREBASE_PROJECT_ID=${{secrets.FIREBASE_PROJECT_ID}}
+          FIREBASE_PRIVATE_KEY_ID=${{secrets.FIREBASE_PRIVATE_KEY_ID}}
+          FIREBASE_PRIVATE_KEY=${{secrets.FIREBASE_PRIVATE_KEY}}
+          FIREBASE_CLIENT_EMAIL=${{secrets.FIREBASE_CLIENT_EMAIL}}
+          FIREBASE_CLIENT_ID=${{secrets.FIREBASE_CLIENT_ID}}
+          FIREBASE_AUTH_URI=${{secrets.FIREBASE_AUTH_URI}}
+          FIREBASE_TOKEN_URI=${{secrets.FIREBASE_TOKEN_URI}}
+          FIREBASE_AUTH_PROVIDER=${{secrets.FIREBASE_AUTH_PROVIDER}}
+          FIREBASE_CLIENT_X509=${{secrets.FIREBASE_CLIENT_X509}}
           EOF
           kubectl delete secret django-deploy-env
           kubectl create secret generic django-deploy-env --from-env-file=prod.env
@@ -64,11 +74,14 @@ jobs:
         run: |
           kubectl set image deployment/gestionhydro-deployment \
             django-server=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+#            celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+#            redis-server=redis:latest
+          kubectl set image deployment/gestionhydro-celery \
             celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
-            redis-server=redis:latest
       - name: Wait for rollout to finish
         run: |
           kubectl rollout status deployment/gestionhydro-deployment
+          kubectl rollout status deployment/gestionhydro-celery
       - name: Migrate database command
         run: |
           export SINGLE_POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}") 
