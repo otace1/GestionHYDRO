@@ -102,7 +102,6 @@ function confirmAction() {
                 // Request failed
                 console.error('Failed to send Row ID to the server.');
                 alert('Une erreur s\'est produite lors de la réinspection.');
-                window.location.reload();
             }
         })
         .catch(error => {
@@ -156,13 +155,10 @@ function printRappEchantillonnage() {
 
                 // Open the PDF in a new browser window
                 window.open(pdfURL);
-
-                location.reload();
             } else {
                 // Request failed
                 console.error('Failed to generate PDF.');
                 alert("Un ou plusieurs éléments du rapport d'echantillannage sont manquants.");
-                window.location.reload();
             }
         })
         .catch(error => {
@@ -216,13 +212,11 @@ function printRappInspection() {
 
                 // Open the PDF in a new browser window
                 window.open(pdfURL);
-
-                location.reload();
             } else {
                 // Request failed
                 console.error('Failed to generate PDF.');
                 alert("Un ou plusieurs éléments du rapport d'inspection sont manquants.");
-                window.location.reload();
+
             }
         })
         .catch(error => {

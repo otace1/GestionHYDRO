@@ -2771,8 +2771,8 @@ def impressionRappEch(request):
     # Generer le rapport d'echantillonage
     data = json.loads(request.body)
     pk = data.get('rowId')
-    print('TEST IMPRESSION')
-    print(pk)
+    # print('TEST IMPRESSION')
+    # print(pk)
 
     try:
         # Generer le rapport d'echantillonage
@@ -2838,13 +2838,16 @@ def impressionRappInsp(request):
     data = json.loads(request.body)
     pk = data.get('rowId')
 
+    print('DATA ROW')
+    print(pk)
+
     # Request to fecth data into database
     try:
         cargaison = Cargaison.objects.get(idcargaison=pk)
 
         if cargaison.numCertInspection is None:
             numCertInspection = num_cert_inspection(ville)
-
+            #
             # print("DEBUG")
             # print(numCertInspection)
 
@@ -2852,6 +2855,9 @@ def impressionRappInsp(request):
             cargaison.save(update_fields=['numCertInspection'])
         else:
             numCertInspection = cargaison.numCertInspection
+            print("DEBUG")
+            print("TEST ERROR")
+            print(numCertInspection)
 
         inspection = Inspection.objects.get(idcargaison=pk)
         if inspection.meterbefore is None:
