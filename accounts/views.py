@@ -332,9 +332,27 @@ def effacerutilisateurs(request, pk):
     user = request.user
     role = user.role_id
     if role == 1:
-        object = MyUser.objects.get(id=pk)
-        object.delete()
-        return JsonResponse(status=200)
+        try:
+            # Check if the user exists
+            user_to_delete = get_object_or_404(MyUser, id=pk)
+
+            # Check for related records and delete if they exist
+            if AffectationLaboratoire.objects.filter(userId=pk).exists():
+                AffectationLaboratoire.objects.filter(userId=pk).delete()
+
+            if AffectationVille.objects.filter(username_id=pk).exists():
+                AffectationVille.objects.filter(username_id=pk).delete()
+
+            if AffectationEntrepot.objects.filter(username_id=pk).exists():
+                AffectationEntrepot.objects.filter(username_id=pk).delete()
+
+            # Delete the user
+            user_to_delete.delete()
+            return JsonResponse({'status': 'User and related records deleted successfully'}, status=200)
+        except MyUser.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse(status=400)
 
