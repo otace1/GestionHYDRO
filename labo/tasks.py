@@ -707,7 +707,7 @@ def generate_bulk_pdf(selectedRow,province,signGauche,signDroite,laboratoireData
             except:
                 couleursaybolt = ''
             try:
-                aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=5)[
+                aciditetotal = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=1)[
                     0].valeurResultat
             except:
                 aciditetotal = ''

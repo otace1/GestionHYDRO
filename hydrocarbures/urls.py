@@ -6,6 +6,12 @@ from rest_framework.routers import DefaultRouter
 from api.views import UserViewSerializer
 from django.contrib import admin
 
+# Customizing the Django admin site
+admin.site.site_header = 'TrackFlow +'
+admin.site.index_title = 'TrackFlow Backend Administration'
+admin.site.site_title = 'TrackFlow +'
+
+
 if settings.DEBUG:
     import debug_toolbar
 
