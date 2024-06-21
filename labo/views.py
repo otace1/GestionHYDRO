@@ -139,9 +139,6 @@ class GestionLaboratoire():
                 now = datetime.now()
 
                 numcertificatqualite = numCq(v)
-                if numcertificatqualite is None:
-                    numcertificatqualite = 0
-                numcertificatqualite = numcertificatqualite + 1
 
                 # Changement de l'etat de la cargaison
                 d = Cargaison.objects.get(idcargaison=pk)
@@ -150,13 +147,6 @@ class GestionLaboratoire():
 
                 # Sauvegarde de l'instruction dans la Table LaboReception
                 codelabo = generate_labo_code(v)
-
-                # print('TEST CODE')
-                # print(codelabo)
-                #
-                # if codelabo is None:
-                #     codelabo = 0
-                # codeToUse = codelabo + 1
 
 
                 p = LaboReception(idcargaison_id=pk, codelabo=codelabo,
