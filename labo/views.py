@@ -5018,6 +5018,7 @@ def impressioncertificat(request):
 
 
 
+
 #Ajax response
 @login_required(login_url='login')
 def responseAffichageanalyse(request):
