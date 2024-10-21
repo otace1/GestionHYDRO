@@ -153,6 +153,8 @@
         $('#data-table').on('click', '.afficher-btn', function() {
           var rowId = $(this).data('row-id');
           dataRow = rowId;
+          console.log('ROW ID:');
+          console.log(dataRow);
           var linkURL = '/labo/affichageDetailsResultatsDroite/' + rowId;
           // Load content into the modal body via AJAX
           $('#modal-lg .modal-body').load(linkURL);
