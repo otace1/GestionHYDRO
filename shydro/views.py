@@ -1454,24 +1454,7 @@ def rapportActiviteFiltrePost(request):
             qs = qs.filter(
                 entrepot__ville__affectationville__username_id=user,
                 importateur_id=fournisseur,
-            ).annotate(
-                volConst=Sum('inspection__compartiment__gov'),
-                gsvT=Sum('inspection__compartiment__gsv'),
-                mtaTotal=Sum('inspection__compartiment__mta'),
-                mtvTotal=Sum('inspection__compartiment__mtv')
-            ).values(
-                'inspection__compartiment__vcf',
-                'idcargaison', 'numdos', 'declaration', 'frontiere__nomville',
-                'inspection__idinspection', 'entrepot__ville__nomville',
-                'inspection__dateinspection', 'importateur__nomimportateur',
-                'entrepot__nomentrepot', 'immatriculation', 'produit__nomproduit',
-                'dateheurecargaison__date', 'requisitiondackdate__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'inspection__dens', 'inspection__temp',
-                'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                'mtaTotal', 'mtvTotal', 'impressionresultat__printDate',
-                'inspection__dateinspection', 'volume', 'volConst', 'gsvT'
-            ).order_by('-inspection__dateinspection')
+            )
 
             table = RapportActivite(qs)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
