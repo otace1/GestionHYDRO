@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'qr_code',
     'django_tables2',
     'bootstrap4',
+    'django_bootstrap5',
     'bootstrap_datepicker_plus',
     'django_htmx',
     #Celery
@@ -273,11 +274,7 @@ LANGUAGE_CODE = 'fr-FR'
 
 TIME_ZONE = 'Africa/Lubumbashi'
 USE_L10N = True
-#
-# USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = "/static/"
 
@@ -290,14 +287,6 @@ STATICFILES_DIRS = [
 
 from .cdn.conf import * #noqa
 
-
-# STATIC_ROOT = "/vol/web/static"
-# MEDIA_ROOT = "/vol/web/media"
-#
-# STATICFILES_DIRS = [
-#     Path(BASE_DIR).joinpath("assets"),
-#     # Add other directories if needed
-# ]
 
 
 # DB Primary key
