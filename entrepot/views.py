@@ -1900,7 +1900,7 @@ def inspection(request,pk):
 @login_required(login_url='login')
 def affichageInspection(request):
     user = request.user.id
-    template = 'enAttenteInspection.html'
+    template = 'entrepot_enAttenteInspection.html'
     qs = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
     table = EnAttenteInspection(qs,prefix='1_')
     RequestConfig(request, paginate={"per_page": 10}).configure(table)
