@@ -5527,11 +5527,11 @@ def enchAttenteResultat(request):
         return exporter.response("table.{}".format(export_format))
 
     context = {'table': table}
-    return (render(request, template, context)
+    return render(request, template, context)
 
 
 
-@login_required(login_url='login'))
+@login_required(login_url='login')
 def enchAttenteResultat2(request):
     user = request.user.id
     template = 'laboRapportEnAttenteAnalyse2.html'
