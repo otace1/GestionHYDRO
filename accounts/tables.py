@@ -9,6 +9,7 @@ TEMPLATE = """
 <a href="{%url 'delete_user' record.pk%}" class="btn btn-danger" aria-hidden="true">Effacer</a>
             """
 
+
 # FILEUPLOAD = """
 #     <form id="upload-form" method="post" enctype="multipart/form-data">
 #         {% csrf_token %}
