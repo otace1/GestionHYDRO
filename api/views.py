@@ -6,7 +6,7 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Value, CharField, When, Case
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_str
@@ -19,7 +19,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.models import MyUser, UserActivityLog
+from accounts.models import MyUser, UserActivityLog, AffectationVille
 from entrepot.calculs import *
 from entrepot.numrappech import numRappEch
 from labo.codeLabo import codeLabo
@@ -893,7 +893,36 @@ def cargaisonListeDechargement(request):
 @permission_classes([IsAuthenticated])
 def cargaisonInspectionList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+
+    try:
+        # Fetch the user's ville
+        affectation_ville = AffectationVille.objects.get(username_id=user)
+        ville = affectation_ville.ville.nomville  # Access the related ville's name
+    except AffectationVille.DoesNotExist:
+        ville = None  # Handle cases where no Ville is assigned to the user
+
+        # Determine the status condition outside the query
+    if ville == "KALEMIE":
+        status_appurement = Value("Appurement")
+        status_other = Value("Pending")  # Default for non-KALEMIE
+    elif ville is None:
+        status_appurement = Value("No Ville")
+        status_other = Value("Pending")
+    else:
+        status_appurement = Value("Pending")
+        status_other = Value("Pending")
+
+    data = (Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user)
+            .annotate(
+                status=Case(
+                    When(entrepot__ville__nomville="KALEMIE", then=status_appurement),  # Ville is KALEMIE
+                    When(~Q(entrepot__ville__nomville="KALEMIE") & Q(entrepot__ville__isnull=False), then=status_other),
+                    # Ville is not KALEMIE
+                    When(entrepot__ville__isnull=True, then=Value("No Ville")),  # Ville is None
+                    default=Value("Unknown"),
+                    output_field=CharField()
+                )
+            ).order_by('-dateheurecargaison'))
 
     # Configure pagination
     page_size = int(request.GET.get('pagination', 5))  # You can adjust this value according to your preference
@@ -918,6 +947,7 @@ def cargaisonInspectionList(request):
             "immatriculation": values.immatriculation,
             "produit": values.produit.nomproduit,
             "volume": values.volume,
+            "status": values.status,
         }
         result_list.append(context)
 
