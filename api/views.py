@@ -24,6 +24,7 @@ from entrepot.calculs import *
 from entrepot.numrappech import numRappEch
 from labo.codeLabo import codeLabo
 from labo.numCq import numCq
+from shydro.numact import num_cert_inspection
 from .infiniteScroll import CustomPagination
 from .serializers import *
 
@@ -1347,4 +1348,80 @@ def receptionEchantillonLabo(request):
         return Response({'error': 'Entrepot not found for the given qrCode'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+#Fonction pour les appurement des volumes a Kalemie seulement
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def appurement_vol_api(request):
+    user = request.user.id
+    ville = AffectationVille.objects.get(username_id=user)
+
+    recordId = request.data['id']
+    dens = request.data['dens']
+    index_deb = request.data['index_deb']
+    index_fin = request.data['index_fin']
+    temp = request.data['temp']
+
+    if index_deb:
+        if index_fin:
+            gov = index_fin - index_deb
+        else:
+            gov = request.data['gov']
+    else:
+        gov = request.data['gov']
+
+    #Calcul des valeurs GSV, MTV, MTA
+    densite = dens
+    temperature = temp
+    d = densite15(temperature, densite)  # Calcul Dens a 15
+
+    v = vcf(d, temperature)  # VCF
+    g = gsv(v, gov)  # GSV
+    m = mtv(g, d)  # MTV
+    a = mta(g, d)  # MTA
+
+    insp = Inspection(
+                dens=densite,
+                temp=temperature,
+                innagein="cm",
+                volumein="Cu.Mtrs",
+                tempin="C°",
+                weightin="m/t",
+                idcargaison_id=recordId
+            )
+    insp.save()
+
+    insp = Inspection.objects.get(idcargaison_id=recordId)
+
+    seals = SealState.objects.get(idsealstate=1)
+
+    # Process the valid form data (e.g., save it to the database)
+    c = Compartiment(
+                compart='TANKER',
+                sealNumber='N/A',
+                gov=g,
+                tempcomp=temperature,
+                vcf=v,
+                mta=a,
+                mtv=m,
+                gsv=g,
+                idinspection=insp,
+                sealstate=seals
+            )
+    c.save()
+
+    #Mise a jour des informations afin de conclure l'inspection
+    c = Cargaison.objects.get(idcargaison=recordId)
+    c.etatInspection = 0
+    c.numact = num_cert_inspection(ville.ville_id)
+    c.save(update_fields=['etatInspection', 'numact'])
+
+    # Example: form.save() or any other data processing logic
+    print("Form is valid. Data saved USING API.")
+
+    # Return a JSON response indicating success
+    return JsonResponse({"status": "success", "message": "Données enregistrées"})
 
