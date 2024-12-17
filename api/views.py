@@ -707,7 +707,6 @@ def attenteRequisitionListe(request):
     return paginator.get_paginated_response(serializer.data)
 
 
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def scanEchantillonnage(request):
@@ -731,10 +730,14 @@ def scanInspection(request):
     qrCode = request.data['qrCode']
     try:
         c=Cargaison.objects.get(qrcode=qrCode)
+        stat = "Pending"
         # qs = Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user).order_by(
         #     '-dateheurecargaison')
         if c.etatInspection is True:
-            context = {'id':c.idcargaison}
+            context = {
+                'id':c.idcargaison,
+                'status': stat
+            }
             return Response(context,status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
@@ -1356,9 +1359,8 @@ def receptionEchantillonLabo(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def appurement_vol_api(request):
-    user = request.user.id
-    ville = AffectationVille.objects.get(username_id=user)
-
+    # user = request.user.id
+    # ville = AffectationVille.objects.get(username_id=user)
     recordId = request.data['id']
     dens = request.data['dens']
     index_deb = request.data['index_deb']
@@ -1414,10 +1416,10 @@ def appurement_vol_api(request):
     c.save()
 
     #Mise a jour des informations afin de conclure l'inspection
-    c = Cargaison.objects.get(idcargaison=recordId)
-    c.etatInspection = 0
-    c.numact = num_cert_inspection(ville.ville_id)
-    c.save(update_fields=['etatInspection', 'numact'])
+    # c = Cargaison.objects.get(idcargaison=recordId)
+    # c.etatInspection = 0
+    # c.numact = num_cert_inspection(ville.ville_id)
+    # c.save(update_fields=['etatInspection', 'numact'])
 
     # Example: form.save() or any other data processing logic
     print("Form is valid. Data saved USING API.")
