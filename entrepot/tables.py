@@ -2,16 +2,6 @@ import django_tables2 as tables
 
 from enreg.models import Cargaison, Dechargement
 
-# TEMPLATE = """
-#             <a href="{%url 'echantillonage' record.pk%}" target="_blank" class="btn btn-primary">ECHANTILLONNAGE</a>
-#            """
-
-
-# < a
-# href = "{%url 'meterafter' record.pk%}"
-#
-#
-# class ="btn btn-primary" > DECHARGEMENT < / a >
 
 
 TEMPLATE6 = """
@@ -27,8 +17,23 @@ TEMPLATE = """
            """
 
 TEMPLATE1 = """
-            <a href="{%url 'choiceoftype' record.pk%}" class="btn btn-primary">INSPECTION</a>
-           """
+            {% if record.status == "Pending" %}
+                <a href="{% url 'choiceoftype' record.pk %}" class="btn btn-primary">INSPECTION</a>
+            {% elif record.status == "Appurement" %}
+                <button 
+                    class="btn btn-warning open-modal" 
+                    data-id="{{ record.pk }}" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#appurement_volume">
+                    APPUREMENT
+                </button>
+            {% else %}
+                <span>No Actions Available</span>
+            {% endif %}
+            """
+
+#
+# <a href="{% url 'appurement_vol' record.pk %}" class="btn btn-warning">APPUREMENT</a>
 
 TEMPLATE4 = """
             <a href="{%url 'choiceoftype' record.pk%}" class="btn btn-primary">INSPECTION AFTER</a>

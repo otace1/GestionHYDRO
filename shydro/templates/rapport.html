@@ -56,24 +56,7 @@
 <br/>
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
-{#    <tr>#}
-{#        <td align="center"#}
-{#            style="width: 100%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
-{#            <b>LAST THREE CARGO</b>#}
-{#        </td>#}
-{##}
-{#    </tr>#}
-{#</table>#}
-{#<table cellspacing="1" cellpadding="3px" border="0"#}
-{#       style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">#}
-{#    <tr>#}
-{#        {% for lastthreecargo in lastthreecargo %}#}
-{#            <td align="left"#}
-{#                style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">#}
-{#                <b>{{ lastthreecargo.produit }}</b></td>#}
-{#        {% endfor %}#}
-{##}
-{#</table>#}
+
 
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
@@ -88,11 +71,19 @@
 <table cellspacing="1" cellpadding="3px" border="0"
        style="border-collapse: collapse;width: 100%;color: black;border: hidden;solid black;">
     <tr>
-        {% for seal in seal %}
+        {% if voie == 'MARITIME' %}
             <td align="center"
-                style="width: 33.33%;font-size: 8px;font-family: 'Times New Roman';border-left: 0.1px solid black;border-top: 0.10px solid black;border-bottom: 0.10px solid black; border-right:0.10px solid black;">
-                <b>{{ seal.manifoldnumber }} | {{ seal.sealstate }}</b></td>
-        {% endfor %}
+                style="width: 33.33%; font-size: 8px; font-family: 'Times New Roman'; border: 0.1px solid black;">
+                <b></b>
+            </td>
+        {% else %}
+            {% for seal in seal %}
+                <td align="center"
+                    style="width: 33.33%; font-size: 8px; font-family: 'Times New Roman'; border: 0.1px solid black;">
+                    <b>{{ seal.manifoldnumber }} | {{ seal.sealstate }}</b>
+                </td>
+            {% endfor %}
+        {% endif %}
 
 </table>
 

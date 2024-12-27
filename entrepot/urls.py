@@ -39,9 +39,10 @@ urlpatterns = [
     path('compartiment/delete/<int:pk>', views.compartimentdelete, name='compartimentdelete'),
     path('compartiment/update/<int:pk>', views.updatecompartiment, name='compartimentupdate'),
     path('meterafter/', views.meterafter, name='meterafter'),
-    # path('compartiment/', views.compartiment, name='compartiment'),
-    # path('compartiment/details/<int:pk>', views.detailcompartiment, name='compartiment-details'),
-    #
+
+    #Fonction for Kalemie particularity
+    path('appurement_vol/', views.appurement_vol, name='appurement_vol'),
+
 
     # Shore
     path('shore/<int:pk>', views.shoreinspection, name='shore'),

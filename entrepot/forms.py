@@ -352,6 +352,43 @@ class ShoreInspectionAfter(forms.ModelForm):
             ),
         )
 
+
+#Kalemie case integration
+class Special_inspection_form(forms.Form):
+    dens = forms.FloatField(required=True, label="DENSITE (Ex. 820.907)")
+    index_deb = forms.IntegerField(required=False, label="INDEX DEB (Ex. 820)")
+    index_fin = forms.IntegerField(required=False, label="INDEX FIN (Ex. 820)")
+    temp = forms.FloatField(required=True, label="TEMPERATURE")
+    gov = forms.FloatField(required=True, label="GOV")
+
+    def __init__(self, *args, **kwargs):
+        super(Special_inspection_form, self).__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_id = 'special-inspection-form'
+        self.helper.layout = Layout(
+
+     Row(
+         Column('dens', css_class='form-group col-md-6 mb-0'),
+                Column('temp', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+         Column('index_deb', css_class='form-group col-md-6 mb-0'),
+                Column('index_fin', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            Row(
+         Column('gov', css_class='form-group col-md-6 mb-0'),
+                css_class='form-row'
+            ),
+            FormActions(
+                Submit('suivant', 'Enregistrer', css_class='btn btn-outline-primary'),
+                Reset('annuler', 'Annuler', css_class='btn btn-outline-danger'),
+            ),
+        )
+
+
+
 # class ShoreInspectionBefore(forms.ModelForm):
 #     class Meta:
 #         model = Shore
@@ -392,3 +429,4 @@ class ShoreInspectionAfter(forms.ModelForm):
 #             'tempbefore',
 #             'fwvolbefore',
 #         )
+

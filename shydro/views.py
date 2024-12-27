@@ -1989,6 +1989,21 @@ def rapportActiviteFiltre(request):
             }
             return render(request, template, context)
 
+        qs = qs.filter(entrepot__ville__affectationville__username_id=user)
+        table = RapportActivite(qs)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        export_format = request.GET.get("_export", None)
+        if TableExport.is_valid_format(export_format):
+            exporter = TableExport(export_format, table)
+            return exporter.response("table.{}".format(export_format))
+
+        context = {
+            'table': table,
+            'form': form
+        }
+        return render(request, template, context)
+
+
     else:
         fournisseur = request.session['fournisseur']
         entrepot = request.session['entrepot']
@@ -2309,6 +2324,20 @@ def rapportActiviteFiltre(request):
                 'form': form
             }
             return render(request, template, context)
+
+        qs = qs.filter(entrepot__ville__affectationville__username_id=user)
+        table = RapportActivite(qs)
+        RequestConfig(request, paginate={"paginator_class": LazyPaginator, "per_page": 15}).configure(table)
+        export_format = request.GET.get("_export", None)
+        if TableExport.is_valid_format(export_format):
+            exporter = TableExport(export_format, table)
+            return exporter.response("table.{}".format(export_format))
+
+        context = {
+            'table': table,
+            'form': form
+        }
+        return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -2821,26 +2850,18 @@ def impressionRappInsp(request):
     data = json.loads(request.body)
     pk = data.get('rowId')
 
-    print('DATA ROW')
-    print(pk)
 
     # Request to fecth data into database
     try:
         cargaison = Cargaison.objects.get(idcargaison=pk)
+        voie_entree=cargaison.voie.nomvoie
 
         if cargaison.numCertInspection is None:
             numCertInspection = num_cert_inspection(ville)
-            #
-            # print("DEBUG")
-            # print(numCertInspection)
-
             cargaison.numCertInspection = numCertInspection
             cargaison.save(update_fields=['numCertInspection'])
         else:
             numCertInspection = cargaison.numCertInspection
-            print("DEBUG")
-            print("TEST ERROR")
-            print(numCertInspection)
 
         inspection = Inspection.objects.get(idcargaison=pk)
         if inspection.meterbefore is None:
@@ -2950,6 +2971,7 @@ def impressionRappInsp(request):
             '-dateheurecargaison')[:3]
 
         data = {
+            'voie':voie_entree,
             'cargaison': cargaison,
             'province': province,
             'numCertInspection': numCertInspection,

@@ -53,4 +53,8 @@ urlpatterns = [
     # Module reception laboratoire
     path('receptionEchantillonLabo/', receptionEchantillonLabo, name='receptionEchantillonLabo'),  # Reception Echantillon
 
+    #Appurement pour Kalemie seulement
+    path('appurementVolApi/', appurement_vol_api, name='appurementVolApi'),
+
+
 ]

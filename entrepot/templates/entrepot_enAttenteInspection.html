@@ -5,5 +5,70 @@
 
 
 {% block content %}
+    <div class="modal fade" id="appurement_volume" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg"> <!-- Added modal-md class here -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="myModalLabel">Inspection Quantitative</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="record-id-display"></p>
+                {% crispy form %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
     {% render_table table %}
+
+<script>
+    const csrfToken = '{{ csrf_token }}'; // CSRF Token for Django
+    let recordId; // Variable to hold the ID of the selected row
+
+
+    // Add an event listener for all buttons with the "open-modal" class
+    document.querySelectorAll('.open-modal').forEach(button => {
+        button.addEventListener('click', function () {
+            // Get the value of the data-id attribute
+            recordId = this.getAttribute('data-id');
+            console.log('Record ID:', recordId); // Debug: logs the ID to the console
+        });
+    });
+
+
+    // Function to submit form data via AJAX
+    $(document).on('click','.btn-outline-primary', function () {
+        event.preventDefault();
+        var formData = $("#special-inspection-form").serialize();
+        formData += "&recordId=" + recordId;
+        console.log(formData);
+
+        //Perform Ajax
+        $.ajax({
+            type:"POST",
+            url:"{% url 'appurement_vol' %}",
+            data: formData,
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            success: function (response) {
+                alert('Données enregistrées');
+                $("#appurement_volume").modal("hide");
+                location.reload();
+            },
+            error: function (error) {
+               alert('Erreur pendant la sauvergarde');
+               $("#appurement_volume").modal("hide");
+               location.reload();
+            }
+        })
+    })
+
+</script>
+
+
 {% endblock %}
+
+

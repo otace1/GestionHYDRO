@@ -1,8 +1,8 @@
 {% load static %}
 {% load django_bootstrap5 %}
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
+{#{% load bootstrap4 %}#}
+{#{% bootstrap_css %}#}
+{#{% bootstrap_javascript jquery='full' %}#}
 
 
 <html>
@@ -376,8 +376,6 @@
                 <div class="row mb-2">
                     <div class="col-sm-6">
                         <h1 class="m-0 text-dark"><b></b></h1>
-                        <br/>
-                        <a href="{% url 'entrepot' %}" class="btn btn-danger">RETOUR</a>
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
@@ -394,11 +392,18 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
+                    <div class="col-md-6">
+                        <a href="{% url 'entrepot' %}" class="btn btn-app bg-success">
+                                <span class="badge bg-success"></span>
+                                <i class="fas fa-file"></i> RETOUR
+                        </a>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="col-md-12">
                         <div class="card bg-gradient-white">
                             <div class="card-header" style="background-color: darkgreen">
-                                <h1 class="card-title" style="color: white"><b>Relevé des cargaisons en attente
-                                    d'inspection</b></h1>
+                                <h1 class="card-title" style="color: white"><b>CARGAISONS EN ATTENTE D'INSPECTION</b></h1>
                                 <div class="card-tools">
                                 </div>
                             </div>
