@@ -369,13 +369,11 @@
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
         <!-- Content Header (Page header) -->
-        <div class="content-header">
+    <div class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b></b></h1>
-                        <br/>
-                        <a href="{% url 'entrepot' %}" class="btn btn-danger">RETOUR</a>
+{#                        <h1 class="m-0 text-dark"><b>Tableau de bord</b></h1>#}
                     </div><!-- /.col -->
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
@@ -386,11 +384,18 @@
                 </div><!-- /.row -->
             </div><!-- /.container-fluid -->
         </div>
-        <!-- /.content-header -->
 
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                        <a class="btn btn-app bg-danger" href="{% url 'entrepot' %}">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-backward"></i> RETOUR
+                    </a>
+                </div><!-- /.col -->
+            </div>
                 <div class="row">
                     <div class="col-md-12">
                         <div class="card bg-gradient-white">

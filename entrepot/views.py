@@ -1869,7 +1869,7 @@ def affichageEnAttenteRequisition(request):
     qs = Cargaison.objects.filter(etat="En attente requisition",
                                   entrepot__affectationentrepot__username_id=id).order_by('-dateheurecargaison')
     table = CargaisonEnAttenteRequisition(qs)
-    RequestConfig(request, paginate={"per_page": 5}).configure(table)
+    RequestConfig(request, paginate={"per_page": 15}).configure(table)
     context = {'table': table}
     return render(request, template, context)
 

@@ -4,94 +4,92 @@
 
 
 {% block content %}
-<div id="data-table-wrapper" style="position: relative;">
+
+<div id="data-table-wrapper" style="position: relative; overflow-x: auto;">
   <div class="loading-spinner"></div>
-<table id="data-table" class="table table-bordered display responsive" style="width:100%">
+  <table id="data-table" class="table table-bordered display responsive" style="width: 100%; border-collapse: collapse;">
     <thead>
-        <tr>
-            <th>DATE ENTREE</th>
-            <th>FOURNISSEUR</th>
-            <th>ENTREPOT</th>
-            <th>IMMATRICULATION</th>
-            <th>PRODUIT</th>
-            <th>#.T1D</th>
-            <th>#.DOSSIER</th>
-            <th>DATE ECH.</th>
-            <th>DATE REC.LABO</th>
-            <th>DATE RESULT.</th>
-            <th>DATE INSPECTION</th>
-            <th>VOL.DECL</th>
-            <th>GOV JAUGE</th>
-            <th>GSV</th>
-        </tr>
+      <tr>
+        <th>DATE ENTREE</th>
+        <th>FOURNISSEUR</th>
+        <th>ENTREPOT</th>
+        <th>IMMATRICULATION</th>
+        <th>PRODUIT</th>
+        <th>#.T1D</th>
+        <th>#.DOSSIER</th>
+        <th>DATE ECH.</th>
+        <th>DATE REC.LABO</th>
+        <th>DATE RESULT.</th>
+        <th>DATE INSPECTION</th>
+        <th>VOL.DECL</th>
+        <th>GOV JAUGE</th>
+        <th>GSV</th>
+      </tr>
     </thead>
-</table>
+    <tbody>
+      <!-- Add your table rows here -->
+    </tbody>
+  </table>
 </div>
 
 <!-- Include FileSaver.js library for saving the Excel file -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
-    const csrfToken = '{{ csrf_token }}';
+const csrfToken = '{{ csrf_token }}';
 
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'responseTableauRapports' %}',
-                type: 'GET',
-                // Show the loading spinner during DataTable processing
-                // Show the loading spinner during DataTable processing
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
+$(document).ready(function () {
+    var dataTable = $('#data-table').DataTable({
+        lengthChange: false, // Disable the length change dropdown
+        processing: true,    // Show the processing indicator
+        serverSide: true,    // Enable server-side processing
+        responsive: true,    // Enable responsive features
+        ajax: {
+            url: '{% url 'responseTableauRapports' %}', // Backend URL for data
+            type: 'GET',
+            beforeSend: function() {
+                $('#data-table-wrapper .loading-spinner').show(); // Show spinner before processing
+            },
+            complete: function() {
+                $('#data-table-wrapper .loading-spinner').hide(); // Hide spinner after processing
+            }
         },
-            columns: [
-                { data: 'dateheurecargaison__date' },
-                { data: 'importateur__nomimportateur' },
-                { data: 'entrepot__nomentrepot' },
-                { data: 'immatriculation' },
-                { data: 'produit__nomproduit' },
-                { data: 'declaration' },
-                { data: 'numdos' },
-                { data: 'entrepot_echantillon__dateechantillonage' },
-                { data: 'entrepot_echantillon__laboreception__datereceptionlabo' },
-                { data: 'impressionresultat__printDate' },
-                { data: 'inspection__dateinspection' },
-                { data: 'volume' },
-                { data: 'volConst' },
-                { data: 'gsvT' },
-
-            ],
-            // Optional: Add buttons for exporting to Excel
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'excelHtml5',
-                    text: 'Export to Excel',
-                    filename: 'rapport_brut',
-                    exportOptions: {
-                        modifier: {
-                            search: 'none'
-                        }
-                    },
-                    action: function (e, dt, node, config) {
-                        // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
+        columns: [
+            { data: 'dateheurecargaison__date' },
+            { data: 'importateur__nomimportateur' },
+            { data: 'entrepot__nomentrepot' },
+            { data: 'immatriculation' },
+            { data: 'produit__nomproduit' },
+            { data: 'declaration' },
+            { data: 'numdos' },
+            { data: 'entrepot_echantillon__dateechantillonage' },
+            { data: 'entrepot_echantillon__laboreception__datereceptionlabo' },
+            { data: 'impressionresultat__printDate' },
+            { data: 'inspection__dateinspection' },
+            { data: 'volume' },
+            { data: 'volConst' },
+            { data: 'gsvT' },
+        ],
+        dom: 'Bfrtip', // Add export buttons (including the Excel button)
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Export to Excel',        // Button text
+                filename: 'rapport_brut',       // Excel file name
+                exportOptions: {
+                    columns: ':visible',       // Export visible columns only
+                    modifier: {
+                        search: 'none'         // Export all rows, ignoring filters
                     }
+                },
+                action: function (e, dt, node, config) {
+                    // Redirect to the export URL with the proper parameters
+                    window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
                 }
-            ],
-        });
-
-
+            }
+        ],
     });
+});
 </script>
 
 {% endblock %}

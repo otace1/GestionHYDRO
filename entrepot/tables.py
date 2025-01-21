@@ -103,20 +103,20 @@ class CargaisonEnAttenteRequisition(tables.Table):
     volume = tables.Column(verbose_name='VOL.DECL.(Cu.MTrs)')
 
     class Meta:
-        attrs = {
-            "class": "table table-bordered table-striped",
-            "id": "example1"
-        }
-        # template_name = "django_tables2/bootstrap4.html"
+        # attrs = {
+        #     "class": "table table-bordered table-striped",
+        #     "id": "example1"
+        # }
+        template_name = "django_tables2/bootstrap4.html"
         model = Cargaison
-        sequence = ['idcargaison', 'declaration', 'dateheurecargaison', 'frontiere', 'importateur', 'produit', 'volume',
-                    'immatriculation']
+        sequence = ['idcargaison', 'declaration', 'dateheurecargaison', 'frontiere', 'importateur','immatriculation', 'produit', 'volume'
+                    ]
         exclude = ['etatInspection','dateHeureAnalyseLabo','dateDechargement','valeurfacture', 'origine', 'rapechctrl', 'requisitionack',
                    'typeunitetransport','transitaire','toBeRefouler','toBeConsignated','isConsignated','isRefouler',
                    'requisitiondackdate', 'numdos', 'numreq', 'voie', 'provenance', 'poids',
                    'etat', 'numdossier', 'user', 'codecargaison', 'qrcode', 'impression', 'numact', 'conformite',
                    'tampon', 'printactdate', 'l_control', 'volume15', 'volume20', 'tonnagevide', 'tonnageair'
-            , 'before', 'after', 'entrepot', 'controlOrganoleptique']
+            , 'before', 'after', 'entrepot', 'controlOrganoleptique','numCertInspection','controlLiquidation','partialLiquidattion','files_path']
 
 
 class RapportEchantillonage(tables.Table):
