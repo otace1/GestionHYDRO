@@ -156,6 +156,7 @@ django-storages>=1.14.2
 boto3>=1.34.64
 fontawesomefree>=6.6.0
 django-weasyprint>=2.3.0
+django_bootstrap5>=24.3
 
 
 
