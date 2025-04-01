@@ -50,6 +50,7 @@ urlpatterns = [
 
 
     path('regularisation/', views.regularisation, name='regularisation'),
+    path('regularisation_response/', views.regularisation_response, name='regularisation_response'),
     path('regularisationDestination/', views.regularisationDestination, name='regularisationDestination'),
     path('changementNature/', views.changementNature, name='changementNature'),
     path('changementImportateur/', views.changementImportateur, name='changementImportateur'),

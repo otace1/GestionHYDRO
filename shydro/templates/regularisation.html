@@ -2,167 +2,174 @@
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
 
-{% block search %}
-    <form action="{% url 'regularisationRecherche' %}" method="get" title="Filter">
-        <input type="text" placeholder="Search.." name="search_query">
-        <button type="submit">SEARCH</button>
-    </form>
-{% endblock %}
-
 
 {% block modal %}
 
-    <div class="modal fade" id="modal-dest">
+    <div class="modal fade" id="modal-dest" style="display: none;">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">RE-ORIENTATION</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">RE-ORIENTATION</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% crispy form %}
+                </div>
             </div>
-            <div class="modal-body">
-                {% crispy form %}
-            </div>
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
+    </div>
 
 
     <div class="modal fade" id="modal-trans">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">TRANSBORDEMENT</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">TRANSBORDEMENT</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% crispy form1 %}
+                </div>
             </div>
-            <div class="modal-body">
-                {% crispy form1 %}
-            </div>
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
+    </div>
 
 
     <div class="modal fade" id="modal-nat">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">CORRECTION NATURE PRODUIT</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">CORRECTION NATURE PRODUIT</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% crispy form2 %}
+                </div>
             </div>
-            <div class="modal-body">
-                {% crispy form2 %}
-            </div>
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
+    </div>
+
+    <div class="modal fade" id="modal-delete">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">CODE DE CONFIRMATION</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% crispy form2 %}
+                </div>
+            </div>
+            <!-- /.modal-content -->
+        </div>
+        <!-- /.modal-dialog -->
+    </div>
 
 
     <div class="modal fade" id="modal-imp">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">AJOUT IMPORTATEUR</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">AJOUT IMPORTATEUR</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{% url 'regularisationImportateur' %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        {% crispy form3 %}
+                    </div>
+                </form>
             </div>
-           <form action="{% url 'regularisationImportateur' %}" method="post">
-           {% csrf_token %}
-            <div class="modal-body">
-                {% crispy form3 %}
-            </div>
-           </form>
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
+    </div>
 
 
 
     <div class="modal fade" id="modal-entrepot">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">AJOUT ENTREPOT</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">AJOUT ENTREPOT</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{% url 'regularisationEntrepot' %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        {% crispy form4 %}
+                    </div>
+                </form>
             </div>
-              <form action="{% url 'regularisationEntrepot' %}" method="post">
-                  {% csrf_token %}
-            <div class="modal-body">
-                {% crispy form4 %}
-            </div>
-              </form>
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
+    </div>
 
 
     <div class="modal fade" id="modal-enreg">
         <div class="modal-dialog modal-xl">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">AJOUT CARGAISON</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">AJOUT CARGAISON</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{% url 'regularisationCargaison' %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        {% crispy form5 %}
+                    </div>
+                </form>
             </div>
-              <form action="{% url 'regularisationCargaison' %}" method="post">
-                  {% csrf_token %}
-            <div class="modal-body">
-                {% crispy form5 %}
-            </div>
-{#            <div class="modal-footer justify-content-between">#}
-{#              <button type="cancel" class="btn btn-outline-info" data-dismiss="modal">Close</button>#}
-{#              <button type="submit" class="btn btn-outline-success">Submit</button>#}
-{#            </div>#}
-                  </form>
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
+    </div>
+    <!-- /.modal -->
 
 
 
     <div class="modal fade" id="modal-fourn">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">CORRECTION FOURNISSEUR</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">CORRECTION FOURNISSEUR</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {#              <form action="{% url 'changementImportateur' %}" method="post">#}
+                {% csrf_token %}
+                <div class="modal-body">
+                    {% crispy form6 %}
+                </div>
+                {#                  </form>#}
             </div>
-{#              <form action="{% url 'changementImportateur' %}" method="post">#}
-                  {% csrf_token %}
-            <div class="modal-body">
-                {% crispy form6 %}
-            </div>
-{#                  </form>#}
-          </div>
-          <!-- /.modal-content -->
+            <!-- /.modal-content -->
         </div>
         <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
+    </div>
+    <!-- /.modal -->
 
 
 
@@ -170,195 +177,329 @@
 {% endblock %}
 
 {% block content %}
-    {% render_table table %}
+    {#    {% render_table table %}#}
+    <div id="data-table-wrapper" style="position: relative;">
+        <div class="loading-spinner"></div>
+        <table id="data-table" class="table table-bordered display responsive" style="width:100%">
+            <thead>
+            <tr>
+                <th>DATE ENTREE</th>
+                <th>FOURNISSEUR</th>
+                <th>ENTREPOT</th>
+                <th>PRODUIT</th>
+                <th>VOL.DECL.</th>
+                <th>IMMATRICULATION</th>
+                <th>#.T1E/DECL.</th>
+                <th>ACTIONS</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+
 {% endblock %}
+
+
 
 
 <script>
     {% block javascript %}
-        function getRowId(button) {
-          var row = button.closest('tr');
-
-          if (row) {
-            rowId = row.id;
-            {#console.log('Row ID:', rowId);#}
-            // Perform further actions with the row ID, such as making an AJAX request
-          }
-        }
-
-
-        // using jQuery
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+        // Get CSRF token from the cookie
+        function getCSRFToken() {
+            var csrfToken = null;
+            document.cookie.split(';').forEach(function (cookie) {
+                if (cookie.trim().startsWith('csrftoken=')) {
+                    csrfToken = cookie.trim().substring('csrftoken='.length);
                 }
-            }
-            return cookieValue;
+            });
+            return csrfToken;
         }
 
-        var csrftoken = getCookie('csrftoken');
+        var idCargaison;
+        var dataTable;
 
-        function csrfSafeMethod(method) {
-            // these HTTP methods do not require CSRF protection
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        // Function to reload the DataTable
+        function reloadDataTable() {
+            dataTable.ajax.reload(null, false);  // Reloads the DataTable with new data without resetting the page
         }
-        $.ajaxSetup({
-            beforeSend: function (xhr, settings) {
-        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
-    }
-});
 
-        //script for submitting data in ajax
-        $('.btn.btn-default').click(function () {
-            Id = rowId; //getting the id of the row which equal to the pk into the database
-            console.log('Test:',Id); // debug
+
+        $(document).ready(function () {
+            dataTable = $('#data-table').DataTable({
+                lengthChange: false, // Display the length change dropdown
+                processing: false,
+                serverSide: true,
+                responsive: true,
+                ajax: {
+                    url: '{% url 'regularisation_response' %}',
+                    type: 'GET',
+                    // Show the loading spinner during DataTable processing
+                    // Show the loading spinner during DataTable processing
+                    beforeSend: function () {
+                        $('#data-table-wrapper .loading-spinner').show();
+                    },
+                    // Hide the loading spinner after DataTable processing
+                    complete: function () {
+                        $('#data-table-wrapper .loading-spinner').hide();
+                    },
+                },
+                columns: [
+                    {data: 'dateheurecargaison__date'},
+                    {data: 'importateur__nomimportateur'},
+                    {data: 'entrepot__nomentrepot'},
+                    {data: 'produit__nomproduit'},
+                    {data: 'volume'},
+                    {data: 'immatriculation'},
+                    {data: 'declaration'},
+                    { // New column configuration
+                        data: 'idcargaison',
+                        render: function (data, type, row) {
+                            {#console.log("Rendering ID Cargaison:", data);#}
+                            return `
+                                <button class="btn btn-success action-btn" data-row-id="${data}" style="margin-right: 5px;">
+                                    <i class="fas fa-map-marker-alt"></i> <!-- Destination Icon -->
+                                </button>
+                                <button class="btn btn-outline-success action-btn" data-row-id="${data}" style="margin-right: 5px;">
+                                    <i class="fas fa-exchange-alt"></i> <!-- Transbordement Icon -->
+                                </button>
+                                <button class="btn btn-outline-danger action-btn" data-row-id="${data}" style="margin-right: 5px;">
+                                    <i class="fas fa-user"></i> <!-- Importateur Icon -->
+                                </button>
+                                <button class="btn btn-outline-primary action-btn" data-row-id="${data}" style="margin-right: 5px;">
+                                    <i class="fas fa-tag"></i> <!-- Nature Icon -->
+                                </button>
+                                {#<button class="btn btn-danger action-btn" data-row-id="${data}">#}
+                                {#    <i class="fas fa-trash-alt"></i> <!-- Delete Icon -->#}
+                                {#</button>#}
+                            `;
+                        }
+                    }
+                ],
+            })
+
+            // Handle button clicks using event delegation
+            $('#data-table tbody').on('click', '.action-btn', function () {
+                idCargaison = $(this).data('row-id'); // Get the ID of the clicked row
+                {#console.log('Clicked ID Cargaison:', idCargaison);#}
+
+                // If the clicked button is the 'DESTINATION' button
+                if ($(this).hasClass('btn-success')) {
+                    // Open the modal
+                    $('#modal-dest').modal('show');
+                    $('#modal-dest').removeAttr('inert');
+                    {#submitData(idCargaison);#}
+                }
+                if ($(this).hasClass('btn-outline-success')) {
+                    {#console.log('Transbordement')#}
+                    // Open the modal
+                    $('#modal-trans').modal('show');
+                }
+                if ($(this).hasClass('btn-outline-danger')) {
+                    {#console.log('Importateur')#}
+                    $('#modal-fourn').modal('show');
+                }
+                if ($(this).hasClass('btn-outline-primary')) {
+                    {#console.log('Nature')#}
+                    $('#modal-nat').modal('show');
+                }
+                if ($(this).hasClass('btn-danger')) {
+                    {#console.log('DELETE')#}
+                    $('#modal-delete').modal('show');
+
+                }
+
+            });
         });
 
-        $('.btn.btn-success').click(function (e) {
-            e.preventDefault()
-
-            //Disable Submit button
-            $('.btn.btn-success').attr("disabled", true);
-            var pk = Id;
+        //Regularisation Destination Cargaison
+        $('#submit-id-valider').click(function (e) {
+            e.preventDefault();
+            {#console.log('Submitting Data for ID:', idCargaison);#}
             var APIurl = '/shydro/regularisationDestination/';
-         $input = $('<input type="hidden" name="pk">').val(pk);
-         $('#destination-form').append($input);
-         var SerializedData = $("#destination-form").serialize();
-         console.log(SerializedData);
-         $.ajax({
-             url: APIurl,
-             type: "POST",
-             data: SerializedData,
-             dataType: 'json',
-
-             success: function () {
-                 alert("Données sauvegardées");
-                 location.reload();
-             },
-
-             error: function () {
-                 console.log('Erreur');
-                 alert("An error occured");
-                 $('.btn.btn-success').attr("disabled", false);
-                 location.reload();
-             }
-         });
-        })
-
-
-        $('.btn.btn-outline-success').click(function (e) {
-            e.preventDefault()
-
-            //Disable Submit button
-            $('.btn.btn-success').attr("disabled", true);
-            var pk = Id;
-            var APIurl = '/shydro/transbordement/';
-         $input = $('<input type="hidden" name="pk">').val(pk);
-         $('#transbordement-form').append($input);
-         var SerializedData = $("#transbordement-form").serialize();
-         console.log(SerializedData);
-         $.ajax({
-             url: APIurl,
-             type: "POST",
-             data: SerializedData,
-             dataType: 'json',
-
-             success: function () {
-                 alert("Données sauvegardées");
-                 location.reload();
-             },
-
-             error: function () {
-                 console.log('Erreur');
-                 alert("An error occured");
-                 $('.btn-outline-success').attr("disabled", false);
-                 location.reload();
-             }
-         });
-        })
-
-
-        $('.btn.btn-outline-primary').click(function (e) {
-            e.preventDefault()
-
-            //Disable Submit button
-            $('.btn.btn-outline-primary').attr("disabled", true);
-            var pk = Id;
-            var APIurl = '/shydro/changementNature/';
-         $input = $('<input type="hidden" name="pk">').val(pk);
-         $('#nature-form').append($input);
-         var SerializedData = $("#nature-form").serialize();
-         console.log(SerializedData);
-         $.ajax({
-             url: APIurl,
-             type: "POST",
-             data: SerializedData,
-             dataType: 'json',
-
-             success: function () {
-                 alert("Données sauvegardées");
-                 location.reload();
-             },
-
-             error: function () {
-                 console.log('Erreur');
-                 alert("An error occured");
-                 $('.btn.btn-outline-primary').attr("disabled", false);
-                 location.reload();
-             }
-         });
-        })
-
-
-        $('.btn.btn-outline-danger').click(function (e) {
-    e.preventDefault();
-
-    // Disable Submit button
-    $('.btn.btn-outline-danger').attr("disabled", true);
-
-    // Get the value of pk
-    var pk = Id; // Make sure Id contains the value you want to send
-
-    var APIurl = '/shydro/changementImportateur/';
-
-    // Create a hidden input field with the name "pk" and the value of pk
-    $input = $('<input type="hidden" name="pk">').val(pk);
-    $('#importateur-form').append($input);
-
-    // Serialize the form data including the added "pk" input
-    var SerializedData = $("#importateur-form").serialize();
-    console.log(SerializedData);
-
-    $.ajax({
-        url: APIurl,
-        type: "POST",
-        data: SerializedData,
-        dataType: 'json',
-
-        success: function () {
-            alert("Données sauvegardées");
-            location.reload();
+            var $input = $('<input type="hidden" name="pk">').val(idCargaison);
+            var confirmInput = $('<input type="hidden" name="confirm">');
+            $('#destination-form').append($input);
+            var SerializedData = $("#destination-form").serialize();
+            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
+            {#console.log(SerializedData);#}
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                dataType: 'json',
+                headers: {
+            'X-CSRFToken': csrfToken // Include CSRF token in the header
         },
 
-        error: function () {
-            console.log('Erreur');
-            alert("An error occurred");
-            $('.btn.btn-outline-primary').attr("disabled", false);
-            location.reload();
-        }
-    });
-});
+                success: function (response) {
+                    if (response.status === 'warning') {
+                        // Show warning alert if regions don't match
+                        var confirmation = confirm(response.message);
+                        if (confirmation) {
+                            // If user confirms, set confirm to true
+                            confirmInput.val('true');
+                            $('#destination-form').append(confirmInput); // Append the confirmation to form
+                            // Now submit the form with the confirm value
+                            $.ajax({
+                                url: APIurl,
+                                type: "POST",
+                                data: $("#destination-form").serialize(),
+                                dataType: 'json',
+                                headers: {
+            'X-CSRFToken': csrfToken // Include CSRF token in the header
+        },
+                                success: function () {
+                                    alert("Données sauvegardées");
+                                    $('#modal-dest').modal('hide');
+                                    $('#destination-form')[0].reset();
+                                    $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
+                                    reloadDataTable();
+                                },
+                                error: function () {
+                                    {#console.log('Erreur');#}
+                                    alert("An error occurred");
+                                    $('#modal-dest').modal('hide');
+                                    $('#destination-form')[0].reset();
+                                    $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
+                                    reloadDataTable();
+                                }
+                            });
+                        } else {
+                            alert("Operation canceled");
+                            $('#modal-dest').modal('hide');
+                            $('#destination-form')[0].reset();
+                        }
+                    } else {
+                        // Normal success case
+                        alert("Données sauvegardées");
+                        $('#modal-dest').modal('hide');
+                        $('#destination-form')[0].reset();
+                        $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
+                        reloadDataTable();
+                    }
+                },
 
+                error: function (response) {
+                    {#console.log('Erreur');#}
+                    alert("An error occured");
+                    $('#modal-dest').modal('hide');
+                    $('#destination-form')[0].reset();
+                    reloadDataTable();
+                }
+            });
+
+        })
+
+        //Regularisation Immatriculation & Volume
+        $('.btn.btn-outline-success').click(function (e) {
+            e.preventDefault()
+            {#console.log('Submitting Data for ID:', idCargaison);#}
+            var APIurl = '/shydro/transbordement/';
+            $input = $('<input type="hidden" name="pk">').val(idCargaison);
+            $('#transbordement-form').append($input);
+            var SerializedData = $("#transbordement-form").serialize();
+            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
+            {#console.log(SerializedData);#}
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                dataType: 'json',
+                 headers: {
+            'X-CSRFToken': csrfToken // Include CSRF token in the header
+        },
+
+                success: function () {
+                    alert("Données sauvegardées");
+                    $('#modal-trans').modal('hide');
+                    $('#transbordement-form')[0].reset();
+                    reloadDataTable();
+                },
+
+                error: function () {
+                    {#console.log('Erreur');#}
+                    alert("An error occured");
+                    $('#modal-trans').modal('hide');
+                    $('#transbordement-form')[0].reset();
+                    reloadDataTable();
+                }
+            });
+        })
+
+        // Correction product nature
+        $('.btn.btn-outline-primary').click(function (e) {
+            e.preventDefault()
+            {#console.log('Submitting Data for ID:', idCargaison);#}
+            var APIurl = '/shydro/changementNature/';
+            $input = $('<input type="hidden" name="pk">').val(idCargaison);
+            $('#nature-form').append($input);
+            var SerializedData = $("#nature-form").serialize();
+            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
+            {#console.log(SerializedData);#}
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                dataType: 'json',
+                 headers: {
+            'X-CSRFToken': csrfToken // Include CSRF token in the header
+        },
+
+                success: function () {
+                    alert("Données sauvegardées");
+                    $('#modal-nat').modal('hide');
+                    $('#nature-form')[0].reset();
+                    reloadDataTable();
+                },
+
+                error: function () {
+                    {#console.log('Erreur');#}
+                    alert("An error occured");
+                    $('#modal-nat').modal('hide');
+                    $('#nature-form')[0].reset();
+                    reloadDataTable();
+                }
+            });
+        })
+
+        // Change Importateur
+        $('.btn.btn-outline-danger').click(function (e) {
+            e.preventDefault();
+            {#console.log('Submitting Data for ID:', idCargaison);#}
+            var APIurl = '/shydro/changementImportateur/';
+
+            // Create a hidden input field with the name "pk" and the value of pk
+            $input = $('<input type="hidden" name="pk">').val(idCargaison);
+            $('#importateur-form').append($input);
+
+            // Serialize the form data including the added "pk" input
+            var SerializedData = $("#importateur-form").serialize();
+            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
+            {#console.log(SerializedData);#}
+            $.ajax({
+                url: APIurl,
+                type: "POST",
+                data: SerializedData,
+                dataType: 'json',
+                 headers: {
+            'X-CSRFToken': csrfToken // Include CSRF token in the header
+        },
+
+                success: function () {
+                    alert("Données sauvegardées");
+                    $('#modal-fourn').modal('hide');
+                    {#$('#importateur-form')[0].reset();#}
+                    reloadDataTable();
+                },
+
+                error: function () {
+                    {#console.log('Erreur');#}
+                    alert("An error occurred");
+                    $('#modal-fourn').modal('hide');
+                    {#$('#importateur-form')[0].reset();#}
+                    reloadDataTable();
+                }
+            });
+        });
 
 
     {% endblock %}

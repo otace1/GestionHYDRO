@@ -83,6 +83,32 @@ class ChangementDestination(forms.Form):
         )
 
 
+
+# class Code_confirmation(forms.Form):
+#     code_delete_otp = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'), label='Selectionner la nouvelle destination')
+#     def __init__(self, *args, **kwargs):
+#         super(ChangementDestination, self).__init__(*args, **kwargs)
+#         self.helper = FormHelper()
+#         self.helper.form_method = 'POST'
+#         self.helper.form_id = 'destination-form'
+#         self.helper.form_show_labels = True
+#         self.helper.form_class = 'form-horizontal'
+#         self.helper.form_show_errors = True
+#         self.helper.label_class = 'col-md-12'
+#         self.helper.field_class = 'col-md-12'
+#
+#         self.helper.layout = Layout(
+#             Field(),
+#             Row(
+#                 Column('nouvelleDestination', css_class='form-group col-md-12 mb-0'),
+#             ),
+#             FormActions(
+#                 Submit('VALIDER', 'VALIDER', css_class='btn btn-success'),
+#                 Reset('CLEAR', 'CLEAR', css_class='btn btn-danger'),
+#             ),
+#         )
+
+
 class Transbordement(forms.Form):
     nouvelleImmatriculation = forms.CharField(label='Immatriculation')
     nouveauVolume = forms.FloatField(label='Volume')

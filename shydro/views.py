@@ -41,108 +41,149 @@ class GestionCodification():
         role = user.role_id
 
         if role == 7 or role == 1 or role == 11:
-            if 'search' in request.GET:
-                qs = request.GET['search']
-                if qs == "":
-                    e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                                 entrepot__ville__affectationville__username_id=id).count()
-                    d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-                                                          idcargaison__entrepot__ville__affectationville__username_id=id).count()
-                    l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-                                                 entrepot__ville__affectationville__username_id=id).count()
-                    n = ImpressionResultat.objects.filter(
-                        idcargaison__entrepot__ville__affectationville__username_id=id,
-                        isConforme=0, control=1).count()
-                    p = Entrepot_echantillon.objects.filter(
-                        idcargaison__etat='Echantillonner',
-                        idcargaison__entrepot__ville__affectationville__username_id=id
-                    ).count()
 
-                    c = Cargaison.objects.filter(
-                        entrepot__ville__affectationville__username_id=id
-                    ).count()
+            current_year = date.today().year
 
-                    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
-                                                 entrepot__ville__affectationville__username_id=id).count()
+            template = 'shydro.html'
 
-                    return render(request, 'shydro.html', {
-                        'e': e,
-                        'd': d,
-                        'l': l,
-                        'n': n,
-                        'p': p,
-                        'c': c,
-                        'i': i
+            e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+                                         entrepot__ville__affectationville__username_id=id).count()
+            # d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+            #                                       idcargaison__entrepot__ville__affectationville__username_id=id).count()
+            d = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",
+                                                  idcargaison__entrepot__ville__affectationville__username_id=id).count()
 
-                    })
-                else:
-                    request.session['url'] = request.get_full_path()
+            l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+                                         entrepot__ville__affectationville__username_id=id).count()
+            n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+                                                  isConforme=0, control=0).count()
+            p = Entrepot_echantillon.objects.filter(
+                idcargaison__etat='Echantillonner',
+                idcargaison__entrepot__ville__affectationville__username_id=id
+            ).count()
 
-                    e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                                 entrepot__ville__affectationville__username_id=id).count()
-                    d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-                                                          idcargaison__entrepot__ville__affectationville__username_id=id).count()
-                    l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-                                                 entrepot__ville__affectationville__username_id=id).count()
-                    n = ImpressionResultat.objects.filter(
-                        idcargaison__entrepot__ville__affectationville__username_id=id,
-                        isConforme=0, control=1).count()
-                    p = Entrepot_echantillon.objects.filter(
-                        idcargaison__etat='Echantillonner',
-                        idcargaison__entrepot__ville__affectationville__username_id=id
-                    ).count()
+            c = Cargaison.objects.filter(
+                entrepot__ville__affectationville__username_id=id
+            ).count()
 
-                    c = Cargaison.objects.filter(
-                        entrepot__ville__affectationville__username_id=id
-                    ).count()
+            i = Cargaison.objects.filter(etatInspection=1,
+                                         entrepot__ville__affectationville__username_id=id).count()
 
-                    i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
-                                                 entrepot__ville__affectationville__username_id=id).count()
+        context = {
+            'e': e,
+            'd': d,
+            'l': l,
+            'n': n,
+            'p': p,
+            'c': c,
+            'i': i,
+        }
+        return render(request, template, context)
 
-                    return render(request, 'shydro.html', {
-                        'e': e,
-                        'd': d,
-                        'l': l,
-                        'n': n,
-                        'p': p,
-                        'c': c,
-                        'i': i
-
-                    })
-            else:
-                e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                             entrepot__ville__affectationville__username_id=id).count()
-                d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-                                                      idcargaison__entrepot__ville__affectationville__username_id=id).count()
-                l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-                                             entrepot__ville__affectationville__username_id=id).count()
-                n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                      isConforme=0, control=0).count()
-                p = Entrepot_echantillon.objects.filter(
-                    idcargaison__etat='Echantillonner',
-                    idcargaison__entrepot__ville__affectationville__username_id=id
-                ).count()
-
-                c = Cargaison.objects.filter(
-                    entrepot__ville__affectationville__username_id=id
-                ).count()
-
-                i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
-                                             entrepot__ville__affectationville__username_id=id).count()
-
-                return render(request, 'shydro.html', {
-                    'e': e,
-                    'd': d,
-                    'l': l,
-                    'n': n,
-                    'p': p,
-                    'c': c,
-                    'i': i
-
-                })
-                return render(request, 'shydro.html', context)
-        else:
-            return redirect('logout')
+        #     if 'search' in request.GET:
+        #         qs = request.GET['search']
+        #         if qs == "":
+        #             e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+        #                                          entrepot__ville__affectationville__username_id=id).count()
+        #             d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+        #                                                   idcargaison__entrepot__ville__affectationville__username_id=id).count()
+        #             # l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+        #             #                              entrepot__ville__affectationville__username_id=id).count()
+        #             l = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
+        #                                               idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user).count()
+        #             n = ImpressionResultat.objects.filter(
+        #                 idcargaison__entrepot__ville__affectationville__username_id=id,
+        #                 isConforme=0, control=1).count()
+        #             p = Entrepot_echantillon.objects.filter(
+        #                 idcargaison__etat='Echantillonner',
+        #                 idcargaison__entrepot__ville__affectationville__username_id=id
+        #             ).count()
+        #
+        #             c = Cargaison.objects.filter(
+        #                 entrepot__ville__affectationville__username_id=id
+        #             ).count()
+        #
+        #             i = Cargaison.objects.filter(etatInspection=1,
+        #                                          entrepot__ville__affectationville__username_id=id).count()
+        #
+        #             return render(request, 'shydro.html', {
+        #                 'e': e,
+        #                 'd': d,
+        #                 'l': l,
+        #                 'n': n,
+        #                 'p': p,
+        #                 'c': c,
+        #                 'i': i
+        #
+        #             })
+        #         else:
+        #             request.session['url'] = request.get_full_path()
+        #
+        #             e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+        #                                          entrepot__ville__affectationville__username_id=id).count()
+        #             d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+        #                                                   idcargaison__entrepot__ville__affectationville__username_id=id).count()
+        #             l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+        #                                          entrepot__ville__affectationville__username_id=id).count()
+        #             n = ImpressionResultat.objects.filter(
+        #                 idcargaison__entrepot__ville__affectationville__username_id=id,
+        #                 isConforme=0, control=1).count()
+        #             p = Entrepot_echantillon.objects.filter(
+        #                 idcargaison__etat='Echantillonner',
+        #                 idcargaison__entrepot__ville__affectationville__username_id=id
+        #             ).count()
+        #
+        #             c = Cargaison.objects.filter(
+        #                 entrepot__ville__affectationville__username_id=id
+        #             ).count()
+        #
+        #             i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+        #                                          entrepot__ville__affectationville__username_id=id).count()
+        #
+        #             return render(request, 'shydro.html', {
+        #                 'e': e,
+        #                 'd': d,
+        #                 'l': l,
+        #                 'n': n,
+        #                 'p': p,
+        #                 'c': c,
+        #                 'i': i
+        #
+        #             })
+        #     else:
+        #         e = Cargaison.objects.filter(etat="En attente d'echantillonage",
+        #                                      entrepot__ville__affectationville__username_id=id).count()
+        #         d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+        #                                               idcargaison__entrepot__ville__affectationville__username_id=id).count()
+        #         l = Cargaison.objects.filter(etat="Analyse Labo en cours",
+        #                                      entrepot__ville__affectationville__username_id=id).count()
+        #         n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
+        #                                               isConforme=0, control=0).count()
+        #         p = Entrepot_echantillon.objects.filter(
+        #             idcargaison__etat='Echantillonner',
+        #             idcargaison__entrepot__ville__affectationville__username_id=id
+        #         ).count()
+        #
+        #         c = Cargaison.objects.filter(
+        #             entrepot__ville__affectationville__username_id=id
+        #         ).count()
+        #
+        #         i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
+        #                                      entrepot__ville__affectationville__username_id=id).count()
+        #
+        #         return render(request, 'shydro.html', {
+        #             'e': e,
+        #             'd': d,
+        #             'l': l,
+        #             'n': n,
+        #             'p': p,
+        #             'c': c,
+        #             'i': i
+        #
+        #         })
+        #         return render(request, 'shydro.html', context)
+        # else:
+        #     return redirect('logout')
 
     @login_required(login_url='login')
     def responseAffichageTableau(request):
@@ -896,7 +937,8 @@ def enAttenteInspection(request):
     user = request.user.id
     template = 'enAttenteInspection.html'
     qs = Entrepot_echantillon.objects.filter(
-        idcargaison__inspection__dateinspection__isnull=True,
+        idcargaison__etatInspection=True,
+        # idcargaison__inspection__dateinspection__isnull=True,
         idcargaison__entrepot__ville__affectationville__username_id=user,
     ).values(
         'idcargaison__numdos',
@@ -923,7 +965,8 @@ def enAttenteInspection1(request):
     user = request.user.id
     template = 'enAttenteInspection1.html'
     qs = Entrepot_echantillon.objects.filter(
-        idcargaison__inspection__dateinspection__isnull=True,
+        idcargaison__etatInspection=True,
+        # idcargaison__inspection__dateinspection__isnull=True,
         idcargaison__entrepot__ville__affectationville__username_id=user,
     ).values(
         'idcargaison__numdos',
@@ -972,7 +1015,6 @@ def rapportActivite(request):
         'form': form
     }
     return render(request, template, context)
-
 
 
 @login_required(login_url='login')
@@ -1128,31 +1170,108 @@ def regularisation(request):
 
 
 @login_required(login_url='login')
+def regularisation_response(request):
+    user = request.user.id
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user).filter(
+        Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
+    ).order_by('-dateheurecargaison').values(
+        'dateheurecargaison__date',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'produit__nomproduit',
+        'volume',
+        'immatriculation',
+        'declaration',
+        'idcargaison'
+    )
+
+    # Get the search value from the request's GET parameters
+    search_value = request.GET.get('search[value]', '')
+
+    # Apply search filter to the QuerySet
+    if search_value:
+        qs = qs.filter(Q(immatriculation__icontains=search_value) |
+                       Q(declaration__icontains=search_value) |
+                       Q(importateur__nomimportateur__icontains=search_value) |
+                       Q(entrepot__nomentrepot__icontains=search_value))
+
+    # Number of items to show per page
+    items_per_page = 15
+
+    # Initialize the Paginator with the QuerySet and the number of items per page
+    paginator = Paginator(qs, items_per_page)
+
+    # Get the current page number from the request's GET parameters
+    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
+    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
+    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+
+    # Calculate the current page number based on start and length
+    current_page = (start // length) + 1
+
+    try:
+        # Get the current page from the Paginator
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver the first page.
+        page = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), return an empty JSON response.
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+
+    # Convert the page object to a list of dictionaries
+    data = list(page)
+
+    # Return JSON response with the data
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
+
+
+@login_required(login_url='login')
 def regularisationDestination(request):
-    # template = 'regularisationDestination.html'
-    # form = ChangementDestination(request.POST or None)
-    # Getting Logged in user detail for filtering
     user = request.user
     id = user.id
-    role = user.role_id
 
-    # cargaison = Cargaison.objects.get(idcargaison=pk)
     if request.method == 'POST':
         if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
             pk = request.POST.get('pk', None)
             nouvelleDestination = request.POST.get('nouvelleDestination', None)
-            print(pk)
-            print(nouvelleDestination)
+            confirm = request.POST.get('confirm', None)  # Get the confirmation status
+            ville = AffectationVille.objects.get(username_id=user.id)
             cargaison = Cargaison.objects.get(idcargaison=pk)
             entrepot = Entrepot.objects.get(identrepot=nouvelleDestination)
+            print('VOIR LES DONNEES')
+            print(ville.ville_id)
+            print(entrepot.ville_id)
+
+            if ville.ville_id != entrepot.ville_id:
+                # If the cities don't match and the user didn't confirm, return warning
+                if not confirm:
+                    return JsonResponse({
+                        'status': 'warning',
+                        'message': "La ville de la nouvelle destination ne correspond pas à votre ville assignée. Confirmez-vous ?"
+                    })
+                else:
+                    # If user confirms, proceed with the update even though the cities don't match
+                    print("User confirmed the city mismatch.")
+
+            print('WE ARE HERE !!!!')
             cargaison.entrepot = entrepot
             cargaison.save(update_fields=['entrepot'])
             # Return a JSON response indicating success
             return JsonResponse({'status': 'success'})
+
         else:
             return redirect('regularisation')
     else:
         return redirect('regularisation')
+
+
 
 
 @login_required(login_url='login')
@@ -2850,11 +2969,10 @@ def impressionRappInsp(request):
     data = json.loads(request.body)
     pk = data.get('rowId')
 
-
     # Request to fecth data into database
     try:
         cargaison = Cargaison.objects.get(idcargaison=pk)
-        voie_entree=cargaison.voie.nomvoie
+        voie_entree = cargaison.voie.nomvoie
 
         if cargaison.numCertInspection is None:
             numCertInspection = num_cert_inspection(ville)
@@ -2971,7 +3089,7 @@ def impressionRappInsp(request):
             '-dateheurecargaison')[:3]
 
         data = {
-            'voie':voie_entree,
+            'voie': voie_entree,
             'cargaison': cargaison,
             'province': province,
             'numCertInspection': numCertInspection,
@@ -3281,8 +3399,11 @@ def tableaudeBordHydro(request):
 
     e = Cargaison.objects.filter(etat="En attente d'echantillonage",
                                  entrepot__ville__affectationville__username_id=id).count()
-    d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+    # d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
+    #                                       idcargaison__entrepot__ville__affectationville__username_id=id).count()
+    d = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",
                                           idcargaison__entrepot__ville__affectationville__username_id=id).count()
+
     l = Cargaison.objects.filter(etat="Analyse Labo en cours",
                                  entrepot__ville__affectationville__username_id=id).count()
     n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,

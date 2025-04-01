@@ -14,7 +14,8 @@
     <!-- Tell the browser to be responsive to screen width -->
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet"
+          type="text/css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
     <!-- Bootstrap 4 -->
@@ -44,10 +45,8 @@
     <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
 
 
-
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-
 
 
     <!-- ChartJS -->
@@ -246,16 +245,16 @@
                                 <span class="badge badge-info right"></span>
                             </p>
                         </a>
-                        {% endif %}
-                        {% if user.role_id == 1 or user.role_id == 7 %}
-                            <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>TABLEAU DE BORD</p>
-                                </a>
-                            </li>
-                        {% endif %}
+                    {% endif %}
+                    {% if user.role_id == 1 or user.role_id == 7 %}
+                        <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>TABLEAU DE BORD</p>
+                            </a>
+                        </li>
+                    {% endif %}
 
                     {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 7 %}
                         <li class="nav-item">
@@ -394,11 +393,8 @@
         <!-- Content Wrapper. Contains page content -->
         <section class="content">
             <div class="container-fluid">
+                
                 <div class="row">
-                    {#                <a class="btn btn-app bg-danger" href="{% url 'codification' %}">#}
-                    {#                  <span class="badge bg-purple"></span>#}
-                    {#                  <i class="fas fa-backward"></i> Retour#}
-                    {#                </a>#}
                     <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-enreg">
                         <span class="badge bg-purple"></span>
                         <i class="fas fa-trailer"></i> N.Enreg.
@@ -466,7 +462,6 @@
 </div>
 
 
-
 <script>
     var Id;
     var rowId;
@@ -494,7 +489,6 @@
 
 
 </script>
-
 
 
 </body>
