@@ -71,6 +71,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <p>Please input your secret code for deleting this record ... </p>
                     {% crispy form2 %}
                 </div>
             </div>
@@ -267,9 +268,9 @@
                                 <button class="btn btn-outline-primary action-btn" data-row-id="${data}" style="margin-right: 5px;">
                                     <i class="fas fa-tag"></i> <!-- Nature Icon -->
                                 </button>
-                                {#<button class="btn btn-danger action-btn" data-row-id="${data}">#}
-                                {#    <i class="fas fa-trash-alt"></i> <!-- Delete Icon -->#}
-                                {#</button>#}
+                                <button class="btn btn-danger action-btn" data-row-id="${data}">
+                                    <i class="fas fa-trash-alt"></i> <!-- Delete Icon -->
+                                </button>
                             `;
                         }
                     }
@@ -302,13 +303,38 @@
                     $('#modal-nat').modal('show');
                 }
                 if ($(this).hasClass('btn-danger')) {
-                    {#console.log('DELETE')#}
-                    $('#modal-delete').modal('show');
+                    console.log('DELETE');
+                    console.log(idCargaison);
+                    var APIurl = '/shydro/del_record/';
+                    var $input = $('<input type="hidden" name="pk">').val(idCargaison);
+                    var SerializedData = $input.serialize();
+                    console.log(SerializedData);
+                    var csrfToken = getCSRFToken();
+                    $.ajax({
+                        url: APIurl,
+                        type: "POST",
+                        data: SerializedData,
+                        dataType: 'json',
+                        headers: {
+                            'X-CSRFToken': csrfToken // Include CSRF token in the header
+                        },
+                        success: function () {
+                            alert("Donnée supprimée");
+                            reloadDataTable();
+                        },
+
+                        error: function () {
+                            {#console.log('Erreur');#}
+                            alert("Erreur lors de la suppression");
+                            reloadDataTable();
+                        }
+                    })
 
                 }
 
             });
         });
+
 
         //Regularisation Destination Cargaison
         $('#submit-id-valider').click(function (e) {

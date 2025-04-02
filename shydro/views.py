@@ -1328,9 +1328,28 @@ def changementNature(request):
 
 
 @login_required(login_url='login')
-def pertes(request, pk):
-    Cargaison.objects.get(idcargaison=pk).delete()
-    return redirect('regularisation')
+def del_record(request):
+    user = request.user
+    if request.method == 'POST':
+        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+            pk = request.POST.get('pk', None)
+            print("DELETED")
+            print(pk)
+            Cargaison.objects.get(idcargaison=pk).delete()
+            return JsonResponse({'status': 'success'})
+        else:
+            return redirect('regularisation')
+    else:
+        return redirect('regularisation')
+
+
+    # log = UserActivityLog(
+    #     user=user,
+    #     action= "Delete",
+    #     description= "User has delete a record"
+    # )
+    # log.save()
+
 
 
 def checkExportTaskStatus(request, task_id):

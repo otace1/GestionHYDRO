@@ -55,7 +55,7 @@ urlpatterns = [
     path('changementNature/', views.changementNature, name='changementNature'),
     path('changementImportateur/', views.changementImportateur, name='changementImportateur'),
     path('transbordement/', views.transbordement, name='transbordement'),
-    path('pertes/<int:pk>', views.pertes, name='pertes'),
+    path('del_record/', views.del_record, name='del_record'), #Delete one record by confirming an leaving logs
 
     path('regularisation/cargaison/', views.regularisationCargaison, name='regularisationCargaison'),
     path('regularisation/importateur/', views.regularisationImportateur, name='regularisationImportateur'),
