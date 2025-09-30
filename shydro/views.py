@@ -9,8 +9,10 @@ import pandas as pd
 from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q, Sum, Prefetch
-from django.db.models.functions import Round
+from django.db.models import Q, Sum, Prefetch, Value, Max, OuterRef, Subquery, Count
+from django.db.models.fields import CharField
+from django.db.models.functions import Round, Coalesce, Cast
+from django.forms import FloatField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -1015,6 +1017,8 @@ def rapportActivite(request):
         'form': form
     }
     return render(request, template, context)
+
+
 
 
 @login_required(login_url='login')
@@ -3408,99 +3412,109 @@ def gestionGoResponse(request):
 
 @login_required(login_url='login')
 def tableaudeBordHydro(request):
-    user = request.user
-    id = user.id
-    role = user.role_id
-
+    user_id = request.user.id
     current_year = date.today().year
 
-    template = 'dashboardHydro.html'
+    base = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user_id
+    )
+    year_qs = base.filter(dateheurecargaison__year=current_year)
 
-    e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                 entrepot__ville__affectationville__username_id=id).count()
-    # d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-    #                                       idcargaison__entrepot__ville__affectationville__username_id=id).count()
-    d = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",
-                                          idcargaison__entrepot__ville__affectationville__username_id=id).count()
+    agg = year_qs.aggregate(
+        e=Count('idcargaison', filter=Q(etat="En attente d'echantillonage")),
+        l=Count('idcargaison', filter=Q(etat="Analyse Labo en cours")),
+        p=Count('idcargaison', filter=Q(etat="Echantillonner")),
+        i=Count('idcargaison', filter=Q(etatInspection=True)),
+        c=Count('idcargaison'),
 
-    l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-                                 entrepot__ville__affectationville__username_id=id).count()
-    n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                          isConforme=0, control=0).count()
-    p = Entrepot_echantillon.objects.filter(
-        idcargaison__etat='Echantillonner',
-        idcargaison__entrepot__ville__affectationville__username_id=id
-    ).count()
+        gasoilVolume=Cast(
+            Coalesce(Sum('volume', filter=Q(produit_id=2)), Value(0.0)),
+            CharField()
+        ),
+        mogasVolume=Cast(
+            Coalesce(Sum('volume', filter=Q(produit_id=1)), Value(0.0)),
+            CharField()
+        ),
+        jetVolume=Cast(
+            Coalesce(Sum('volume', filter=Q(produit_id=3)), Value(0.0)),
+            CharField()
+        ),
+        petroleVolume=Cast(
+            Coalesce(Sum('volume', filter=Q(produit_id=4)), Value(0.0)),
+            CharField()
+        ),
+        totalVolume=Cast(
+            Coalesce(Sum('volume'), Value(0.0)),
+            CharField()
+        ),
+    )
 
-    c = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=id
-    ).count()
+    imp_agg = ImpressionResultat.objects.filter(
+        idcargaison__in=year_qs.values('idcargaison')
+    ).aggregate(
+        d=Count('idImpression', filter=Q(idcargaison__etat="Conforme aux exigences")),
+        n=Count('idImpression', filter=Q(isConforme=False, control=False)),
+    )
 
-    i = Cargaison.objects.filter(etatInspection=1,
-                                 entrepot__ville__affectationville__username_id=id).count()
-
-    # Nouveau Produtc list
-    totalVolume = Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']
-    totalVolume = round(totalVolume) if totalVolume is not None else 0
-
-    gasoilVolume = Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']
-    gasoilVolume = round(gasoilVolume) if gasoilVolume is not None else 0
-
-    mogasVolume = Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']
-    mogasVolume = round(mogasVolume) if mogasVolume is not None else 0
-
-    jetVolume = Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']
-    jetVolume = round(jetVolume) if jetVolume is not None else 0
-
-    petroleVolume = Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']
-    petroleVolume = round(petroleVolume) if petroleVolume is not None else 0
-
-    # Pourcentage
-    gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
-    mogasPercentage = round(((mogasVolume / totalVolume) * 100 if totalVolume else 0))
-    jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
-    petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
+    # Percentages must still use numeric values, so recalc from floats
+    tv = float(year_qs.aggregate(total=Coalesce(Sum('volume'), Value(0.0)))['total'] or 0.0)
+    def pct(x):
+        x = float(x or 0.0)
+        return round((x/tv)*100) if tv else 0
 
     context = {
-        'e': e,
-        'd': d,
-        'l': l,
-        'n': n,
-        'p': p,
-        'c': c,
-        'i': i,
-        'gasoilVolume': gasoilVolume,
-        'mogasVolume': mogasVolume,
-        'jetVolume': jetVolume,
-        'petroleVolume': petroleVolume,
-        'totalVolume': totalVolume,
-        'gasoilPercentage': gasoilPercentage,
-        'mogasPercentage': mogasPercentage,
-        'jetPercentage': jetPercentage,
-        'petrolePercentage': petrolePercentage,
+        'e': agg['e'], 'l': agg['l'], 'p': agg['p'], 'i': agg['i'], 'c': agg['c'],
+        'd': imp_agg['d'], 'n': imp_agg['n'],
+        'gasoilVolume': agg['gasoilVolume'],
+        'mogasVolume':  agg['mogasVolume'],
+        'jetVolume':    agg['jetVolume'],
+        'petroleVolume':agg['petroleVolume'],
+        'totalVolume':  agg['totalVolume'],
+        'gasoilPercentage':  pct(agg['gasoilVolume']),
+        'mogasPercentage':   pct(agg['mogasVolume']),
+        'jetPercentage':     pct(agg['jetVolume']),
+        'petrolePercentage': pct(agg['petroleVolume']),
         'current_year': current_year,
     }
-    return render(request, template, context)
+    return render(request, 'dashboardHydro.html', context)
+
 
 
 @login_required(login_url='login')
 def lastrecordShydro(request):
     user = request.user
-    id = user.id
-    latest_cargaisons = Cargaison.objects.filter(etat="En attente requisition",
-                                                 entrepot__ville__affectationville__username_id=id
-                                                 ).values(
-        'dateheurecargaison', 'frontiere__nomville', 'importateur__nomimportateur', 'entrepot__nomentrepot',
-        'produit__nomproduit', 'volume'
-    ).order_by('-dateheurecargaison')[:5]
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        # Not authenticated or no id — return empty dataset
+        return JsonResponse({"data": []})
 
-    # Convert the page object to a list of dictionaries
-    data = list(latest_cargaisons)
+    qs = (
+        Cargaison.objects
+        .select_related("frontiere", "importateur", "entrepot", "produit")
+        .filter(
+            etat="En attente requisition",
+            entrepot__ville__affectationville__username_id=user_id,
+        )
+        .order_by("-dateheurecargaison")[:5]   # limit first, then serialize
+    )
 
-    # Return JSON response with the data
-    return JsonResponse({
-        'data': data
-    })
+    data = [
+        {
+            "dateheurecargaison": (
+                c.dateheurecargaison.isoformat() if c.dateheurecargaison else None
+            ),
+            "frontiere__nomville": c.frontiere.nomville if c.frontiere_id else "",
+            "importateur__nomimportateur": (
+                c.importateur.nomimportateur if c.importateur_id else ""
+            ),
+            "entrepot__nomentrepot": c.entrepot.nomentrepot if c.entrepot_id else "",
+            "produit__nomproduit": c.produit.nomproduit if c.produit_id else "",
+            "volume": float(c.volume) if c.volume is not None else None,
+        }
+        for c in qs
+    ]
+
+    return JsonResponse({"data": data})
 
 
 @login_required(login_url='login')
@@ -3570,3 +3584,187 @@ def afficherDossImport(request):
             return JsonResponse({'error': "File not found or unable to download."}, status=404)
     else:
         return JsonResponse({'error': "Invalid request method."}, status=400)
+
+
+@login_required(login_url='login')
+def dataSanitizing(request):
+    template='data_sanitizing.html'
+    context = {}
+    return render( request, template, context)
+
+
+@login_required(login_url='login')
+@csrf_exempt
+def data_duplicate(request):
+    # template='data_sanitizing.html'
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        excel_file = request.FILES['excel_file']
+
+        # Load Excel into pandas
+        df = pd.read_excel(excel_file)
+        df.columns = df.columns.str.strip()  # Clean column names
+
+        try:
+            entry_date_col = df.columns[1]   # Column 2
+            decl_col = df.columns[3]         # Column 4
+            immatriculation_col = df.columns[6]  # Column 7
+            date_req_col = df.columns[8]     # Column 9
+        except IndexError:
+            return HttpResponse("The Excel file does not contain the required number of columns.", status=400)
+
+        # Identify duplicates
+        df['Duplicate'] = df.duplicated(
+            subset=[entry_date_col, decl_col, immatriculation_col],
+            keep=False
+        )
+
+        # Get only duplicates with missing DATE REQ.
+        duplicates_missing_req = df[
+            (df['Duplicate']) & (df[date_req_col].isna())
+        ]
+
+        # Remove from main dataframe
+        cleaned_df = df.drop(duplicates_missing_req.index)
+
+        # Save to Excel in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            cleaned_df.drop(columns='Duplicate').to_excel(writer, index=False, sheet_name='Cleaned Data')
+            duplicates_missing_req.drop(columns='Duplicate').to_excel(writer, index=False, sheet_name='Removed Duplicates')
+
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=cleaned_duplicates_report.xlsx'
+        return response
+
+    # context = {}
+    # return render( request, template, context)
+
+
+@login_required(login_url='login')
+def data_merge(request):
+    template='data_sanitizing.html'
+    context = {}
+    return render( request, template, context)
+
+
+def _rapport_base_qs(request):
+    """
+    Build the base queryset with safe float aggregates and explicit subquery types.
+    """
+
+    # Aggregate Compartiment per Cargaison through Inspection (O2O):
+    #   Compartiment.idinspection -> Inspection
+    #   Inspection.idcargaison_id == Cargaison.idcargaison
+    comp_agg = (
+        Compartiment.objects
+        .filter(idinspection__idcargaison_id=OuterRef('idcargaison'))
+        .values('idinspection__idcargaison_id')  # group by cargaison
+        .annotate(
+            # Important: put output_field=FloatField on Coalesce to avoid MySQL issues
+            total_gov=Coalesce(Sum('gov'), Value(0.0), output_field=FloatField()),
+            total_gsv=Coalesce(Sum('gsv'), Value(0.0), output_field=FloatField()),
+            total_mta=Coalesce(Sum('mta'), Value(0.0), output_field=FloatField()),
+            total_mtv=Coalesce(Sum('mtv'), Value(0.0), output_field=FloatField()),
+        )
+    )
+
+    qs = (
+        Cargaison.objects
+        .select_related(
+            # single-valued FKs/O2O:
+            'entrepot', 'entrepot__ville',
+            'frontiere', 'importateur', 'produit',
+            'inspection',  # OneToOne from Inspection to Cargaison
+        )
+        .prefetch_related(
+            # reverse O2O + its O2O:
+            'entrepot_echantillon',
+            'entrepot_echantillon__laboreception',
+        )
+        .annotate(
+            # pull subquery aggregates (force FloatField result)
+            volConst = Subquery(comp_agg.values('total_gov')[:1], output_field=FloatField()),
+            gsvT     = Subquery(comp_agg.values('total_gsv')[:1], output_field=FloatField()),
+            mtaTotal = Subquery(comp_agg.values('total_mta')[:1], output_field=FloatField()),
+            mtvTotal = Subquery(comp_agg.values('total_mtv')[:1], output_field=FloatField()),
+
+            # dates along O2O chains
+            echantillon_date = Max('entrepot_echantillon__dateechantillonage'),
+            labo_recep_date  = Max('entrepot_echantillon__laboreception__datereceptionlabo'),
+            print_date       = Max('impressionresultat__printDate'),
+        )
+        .order_by('-dateheurecargaison')
+    )
+
+    # Optional per-user filter (leave wrapped in try in case that relation doesn't exist in your DB)
+    user_id = request.user.id if request.user.is_authenticated else None
+    if user_id:
+        try:
+            qs = qs.filter(entrepot__ville__affectationville__username_id=user_id)
+        except Exception:
+            # If no AffectationVille relation is present, just skip filtering
+            pass
+
+    # Optional search (?search=…)
+    search = (request.GET.get('search') or '').strip()
+    if search:
+        qs = qs.filter(
+            Q(immatriculation__icontains=search) |
+            Q(numdos__icontains=search) |
+            Q(declaration__icontains=search)
+        )
+
+    return qs
+
+
+@login_required
+def rapportActiviteData(request):
+    """
+    JSON endpoint for the JS table.
+    Accepts: page, page_size, search (handled in _rapport_base_qs)
+    """
+    page = int(request.GET.get('page', 1) or 1)
+    page_size = int(request.GET.get('page_size', 15) or 15)
+
+    # Only pick the fields your table needs
+    qs = _rapport_base_qs(request).values(
+        'idcargaison',
+        'numdos',
+        'declaration',
+        'frontiere__nomville',
+        'inspection__dens',
+        'inspection__temp',
+        'mtaTotal',
+        'mtvTotal',
+        'entrepot__nomentrepot',
+        'inspection__dateinspection',
+        'importateur__nomimportateur',
+        'immatriculation',
+        'produit__nomproduit',
+        'dateheurecargaison',
+        'requisitiondackdate',
+        'echantillon_date',
+        'labo_recep_date',
+        'print_date',
+        'volume',
+        'volConst',
+        'gsvT',
+    )
+
+    paginator = Paginator(qs, page_size)
+    page_obj = paginator.get_page(page)
+
+    # DjangoJSONEncoder handles date/datetime → string for JsonResponse
+    return JsonResponse({
+        "results": list(page_obj.object_list),
+        "page": page_obj.number,
+        "num_pages": paginator.num_pages,
+        "has_next": page_obj.has_next(),
+        "has_previous": page_obj.has_previous(),
+        "next_page_number": page_obj.next_page_number() if page_obj.has_next() else None,
+        "previous_page_number": page_obj.previous_page_number() if page_obj.has_previous() else None,
+    })
