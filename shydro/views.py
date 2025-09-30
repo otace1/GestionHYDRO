@@ -992,31 +992,60 @@ def enAttenteInspection1(request):
 
 @login_required(login_url='login')
 def rapportActivite(request):
-    user = request.user.id
+    user_id = request.user.id
     template = 'rapportActiviteFirst.html'
-    form = Filters(user=user)
+    form = Filters(user=user_id)
 
-    qs = Cargaison.objects.filter(entrepot__ville__affectationville__username_id=user).annotate(
-        volConst=Sum('inspection__compartiment__gov'),
-        gsvT=Sum('inspection__compartiment__gsv'),
-        mtaTotal=Sum('inspection__compartiment__mta'),
-        mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3)
-    ).values('idcargaison',
-             'numdos', 'declaration', 'frontiere__nomville', 'inspection__dens', 'inspection__temp', 'mtaTotal',
-             'entrepot__nomentrepot', 'inspection__dateinspection', 'importateur__nomimportateur', 'immatriculation',
-             'produit__nomproduit', 'dateheurecargaison',
-             'requisitiondackdate', 'entrepot_echantillon__dateechantillonage__date',
-             'entrepot_echantillon__laboreception__datereceptionlabo__date', 'impressionresultat__printDate',
-             'inspection__dateinspection', 'volume', 'volConst', 'gsvT', 'mtvTotal').order_by('-dateheurecargaison')
+    qs = (
+        Cargaison.objects
+        .filter(entrepot__ville__affectationville__username_id=user_id)
+        .annotate(
+            volConst=Sum('inspection__compartiment__gov'),
+            gsvT=Sum('inspection__compartiment__gsv'),
+            mtaTotal=Sum('inspection__compartiment__mta'),
+            mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3),
+        )
+        .values(
+            'idcargaison',
+            'numdos',
+            'declaration',
+            'frontiere__nomville',
+            'inspection__dens',
+            'inspection__temp',
+            'mtaTotal',
+            'entrepot__nomentrepot',
+            'inspection__dateinspection',
+            'importateur__nomimportateur',
+            'immatriculation',
+            'produit__nomproduit',
+            'dateheurecargaison',
+            'requisitiondackdate',
+            'entrepot_echantillon__dateechantillonage__date',
+            'entrepot_echantillon__laboreception__datereceptionlabo__date',
+            'impressionresultat__printDate',
+            'inspection__dateinspection',
+            'volume',
+            'volConst',
+            'gsvT',
+            'mtvTotal',
+        )
+        .order_by('-dateheurecargaison')
+    )
 
-    # qs = list(qs)
+    # django-tables2 with LazyPaginator (no COUNT(*)), 10 per page
     table = RapportActivite(qs)
-    RequestConfig(request, paginate={"per_page": 15}).configure(table)
-    context = {
+    RequestConfig(
+        request,
+        paginate={
+            "per_page": 10,
+            "paginator_class": LazyPaginator,   # <- key part
+        },
+    ).configure(table)
+
+    return render(request, template, {
         'table': table,
-        'form': form
-    }
-    return render(request, template, context)
+        'form': form,
+    })
 
 
 
