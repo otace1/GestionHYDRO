@@ -285,7 +285,19 @@ STATICFILES_DIRS = [
     # Add other directories if needed
 ]
 
-from .cdn.conf import * #noqa
+# Toggle storage backend based on environment variable
+
+if DEVELOPMENT_MODE:
+    # Local filesystem storage for media
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
+    # Static files are already configured above via STATIC_URL/STATIC_ROOT/STATICFILES_DIRS
+    # Configure media for local storage
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = Path(BASE_DIR) / "media"
+
+else:
+    from .cdn.conf import *  # noqa: F401,F403
 
 
 
