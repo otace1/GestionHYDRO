@@ -5,6 +5,10 @@ metadata:
     service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: 'true'
 #    service.beta.kubernetes.io/do-loadbalancer-hostname: "ackme.suivicargo.com"
     service.beta.kubernetes.io/do-loadbalancer-hostname: "ackme.trackflow.plus"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
   labels:
     helm.sh/chart: ingress-nginx-4.0.6
     app.kubernetes.io/name: ingress-nginx
@@ -16,7 +20,8 @@ metadata:
   namespace: ingress-nginx
 spec:
   type: LoadBalancer
-  externalTrafficPolicy: Local
+  externalTrafficPolicy: Cluster
+#  externalTrafficPolicy: Local
   ports:
     - name: http
       port: 80

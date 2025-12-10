@@ -1,19 +1,24 @@
 import base64
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import datetime as dt
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q, F, Case, When, Value, CharField
+from django.db.models import Q, F, Case, When, Value, CharField, OuterRef, Subquery, Count
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from django.views.decorators.http import require_POST
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
+from django.utils.dateparse import parse_date
+from django.utils.timezone import now
 
 from accounts.models import AffectationVille, AffectationLaboratoire, ListeLaboratoire, MyUser, UserActivityLog
 from enreg.models import *
@@ -29,6 +34,24 @@ from .tables import *
 
 # from django.core.mail import send_mail #Sending Email
 #
+def _i(request, name, default=None):
+    """Get trimmed GET param."""
+    val = request.GET.get(name, default)
+    if isinstance(val, str):
+        val = val.strip()
+    return val
+
+def _parse_date(yyyy_mm_dd):
+    """Parse 'YYYY-MM-DD' into date (safe)."""
+    if not yyyy_mm_dd:
+        return None
+    try:
+        # Accept 'YYYY-MM-DD' only
+        return datetime.strptime(yyyy_mm_dd, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
 
 # Class de gestion pouir le laboratoire
 class GestionLaboratoire():
@@ -39,74 +62,111 @@ class GestionLaboratoire():
         context={}
         return render(request,template,context)
 
-
     @login_required(login_url='login')
     def affichageenchantillonResponse(request):
         user = request.user
-        id = user.id
-        role = user.role_id
-        if role == 4 or role == 1:
-            qs = Cargaison.objects.filter(
-                etat="Echantillonner",
-                entrepot__ville__affectationville__username_id=id
-                ).values(
-                'idcargaison',
-                'dateheurecargaison__date',
-                'entrepot_echantillon__dateechantillonage__date',
-                'entrepot__nomentrepot',
-                'produit__nomproduit',
-                'immatriculation',
-                'numdos',
-                'entrepot_echantillon__numrappechauto',
-                ).order_by('-entrepot_echantillon__dateechantillonage__date')
+        uid = user.id
+        role = getattr(user, "role_id", None)
 
-            # Get the search value from the request's GET parameters
-            search_value = request.GET.get('search[value]', '')
+        if role not in (1, 4):
+            return JsonResponse({"data": [], "draw": 0, "meta": {"error": "forbidden"}}, status=403)
 
-            # Apply search filter to the QuerySet
-            if search_value:
-                qs = qs.filter(
-                    Q(entrepot__nomentrepot__icontains=search_value) |
-                    Q(immatriculation__icontains=search_value) |
-                    Q(numdos__icontains=search_value) |
-                    Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
-                    Q(qrcode__icontains=search_value)
-                )
-
-            # Number of items to show per page
-            items_per_page = 10
-
-            # Initialize the Paginator with the QuerySet and the number of items per page
-            paginator = Paginator(qs, items_per_page)
-
-            # Get the current page number from the request's GET parameters
-            draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-            start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-            length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-            # Calculate the current page number based on start and length
-            current_page = (start // length) + 1
-
+        # -------- DataTables-style paging params (offset/limit) --------
+        def _as_int(name, default):
             try:
-                # Get the current page from the Paginator
-                page = paginator.page(current_page)
-            except PageNotAnInteger:
-                # If page is not an integer, deliver the first page.
-                page = paginator.page(1)
-            except EmptyPage:
-                # If page is out of range (e.g. 9999), return an empty JSON response.
-                return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+                return int(request.GET.get(name, default))
+            except (TypeError, ValueError):
+                return default
 
-            # Convert the page object to a list of dictionaries
-            data = list(page)
+        draw = _as_int('draw', 1)
+        start = max(_as_int('start', 0), 0)
+        length = _as_int('length', 10)
+        if length is None or length <= 0:
+            length = 10
+        if length > 200:
+            length = 200
 
-            # Return JSON response with the data
-            return JsonResponse({
-                'data': data,
-                'draw': draw,
-                'recordsTotal': paginator.count,
-                'recordsFiltered': paginator.count,
-            })
+        # -------- Filters (server-side) --------
+        # existing search box (free text)
+        search_value = _i(request, 'search[value]', '')
+
+        # new filters
+        date_from = _parse_date(_i(request, 'date_from', ''))
+        date_to = _parse_date(_i(request, 'date_to', ''))
+        entrepot = _i(request, 'entrepot', '')
+        produit = _i(request, 'produit', '')
+
+        # -------- Base queryset --------
+        qs = (Cargaison.objects
+              .filter(
+            etat="Echantillonner",
+            entrepot__ville__affectationville__username_id=uid
+        )
+              .values(
+            'idcargaison',
+            'dateheurecargaison__date',
+            'entrepot_echantillon__dateechantillonage__date',
+            'entrepot__nomentrepot',
+            'produit__nomproduit',
+            'immatriculation',
+            'numdos',
+            'entrepot_echantillon__numrappechauto',
+        )
+              .order_by('-entrepot_echantillon__dateechantillonage__date'))
+
+        # Free-text search across multiple fields
+        if search_value:
+            qs = qs.filter(
+                Q(entrepot__nomentrepot__icontains=search_value) |
+                Q(immatriculation__icontains=search_value) |
+                Q(numdos__icontains=search_value) |
+                Q(entrepot_echantillon__numrappechauto__icontains=search_value) |
+                Q(qrcode__icontains=search_value)
+            )
+
+        # Nom d’entrepôt (icontains)
+        if entrepot:
+            qs = qs.filter(entrepot__nomentrepot__icontains=entrepot)
+
+        # Produit (icontains)
+        if produit:
+            qs = qs.filter(produit__nomproduit__icontains=produit)
+
+        # Date range on date d’entrée (dateheurecargaison__date)
+        # If you prefer filtering on the échantillonnage date, change the field below accordingly.
+        if date_from:
+            qs = qs.filter(dateheurecargaison__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(dateheurecargaison__date__lte=date_to)
+
+        # -------- Lazy pagination (look-ahead) --------
+        slice_end = start + length + 1
+        rows = list(qs[start:slice_end])
+
+        has_next = len(rows) > length
+        if has_next:
+            rows = rows[:length]
+
+        # Return no recordsTotal/recordsFiltered -> keeps client in lazy mode
+        return JsonResponse({
+            "data": rows,
+            "draw": draw,
+            "meta": {
+                "start": start,
+                "length": length,
+                "returned": len(rows),
+                "has_next": has_next,
+                "page": (start // length) + 1,
+                # echo filters back (useful for debugging)
+                "filters": {
+                    "date_from": date_from.isoformat() if date_from else None,
+                    "date_to": date_to.isoformat() if date_to else None,
+                    "entrepot": entrepot or None,
+                    "produit": produit or None,
+                    "search": search_value or None,
+                }
+            }
+        })
 
 
 
@@ -1105,12 +1165,22 @@ class GestionValidation():
                                                      idcargaison__idcargaison__etat='Validation en cours 2').count()
             certImprimer = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,isPrinted=1).count()
 
+            # Entrepôts ayant au moins un échantillon reçu au labo (pour le filtre)
+            entrepots_labo = (Entrepot.objects
+                               .filter(
+                                   cargaison__entrepot_echantillon__laboreception__isnull=False,
+                                   ville__affectationville__username_id=id
+                               )
+                               .distinct()
+                               .order_by('nomentrepot'))
+
             return render(request, 'labo_validation1.html', {
                                                              'form': form,
                                                              'laboreception': laboreception,
                                                              'enanalyse': enanalyse,
                                                              'enattente': enattente,
                                                             'certImprimer':certImprimer,
+                                                            'entrepots_labo': entrepots_labo,
                                                              })
         else:
             return redirect('logout')
@@ -3241,6 +3311,7 @@ class EnvoiGoHydro():
             return redirect('logout')
 
 
+
 @login_required(login_url='login')
 def labdashboard(request):
     user = request.user
@@ -3259,6 +3330,7 @@ def labdashboard(request):
     return render(request, template, data)
 
 
+
 @login_required(login_url='login')
 def labdashboardrapport(request):
     user = request.user
@@ -3269,39 +3341,223 @@ def labdashboardrapport(request):
     ville = AffectationVille.objects.get(username=id)
     ville = ville.ville_id
     template = 'labodashboardrapport.html'
+    # Helper: parse and normalize date range (returns date objects + iso strings)
+    def _get_date_range_from_request(req):
+        # Defaults: last 30 days up to today
+        today = now().date()
+        default_start = today - timedelta(days=30)
+
+        # Read raw strings from POST first, then session, else defaults
+        raw_start = req.POST.get('datedebut') or req.session.get('datedebut') or ''
+        raw_end = req.POST.get('datefin') or req.session.get('datefin') or ''
+
+        start = parse_date(raw_start) if raw_start else None
+        end = parse_date(raw_end) if raw_end else None
+
+        # Fallbacks for invalid/missing inputs
+        if start is None:
+            start = default_start
+        if end is None:
+            end = today
+
+        # Ensure start <= end
+        if start > end:
+            start, end = end, start
+
+        # Store normalized ISO format for UX consistency in subsequent GET
+        req.session['datedebut'] = start.isoformat()
+        req.session['datefin'] = end.isoformat()
+
+        return start, end
+
     if request.method == 'POST':
-        datedebut = request.POST['datedebut']
-        datefin = request.POST['datefin']
-        request.session['datedebut'] = datedebut
-        request.session['datefin'] = datefin
-        table1 = RapportLaboTable(LaboReception.objects.raw('SELECT DISTINCT(l.idcargaison_id), e.dateechantillonage, l.datereceptionlabo, i.nomimportateur , ee.nomentrepot , c.immatriculation, c.numdossier, c.codecargaison, e.numrappech, l.codelabo, r.dateanalyse, r.dateimpression, l.numcertificatqualite \
-                                                                        FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.enreg_resultat r, hydro_occ.enreg_importateur i, hydro_occ.enreg_entrepot ee \
-                                                                        WHERE l.idcargaison_id = e.idcargaison_id \
-                                                                        AND e.idcargaison_id = c.idcargaison \
-                                                                        AND l.idcargaison_id = r.idcargaison_id \
-                                                                        AND i.idimportateur = c.importateur_id \
-                                                                        AND ee.identrepot = c.entrepot_id \
-                                                                        AND c.frontiere_id = %s \
-                                                                        AND l.datereceptionlabo BETWEEN %s AND %s \
-                                                                        ORDER BY DATE(l.datereceptionlabo) DESC',
-                                                            [ville, datedebut, datefin, ]), prefix='1_')
+        # Normalize dates from POST (or fallback) and persist in session
+        start_date, end_date = _get_date_range_from_request(request)
+
+        # Read optional filters from the form
+        entrepot_id = request.POST.get('entrepot') or ''
+        status_key = request.POST.get('status') or ''
+        export_format = request.POST.get('format') or ''
+
+        # Persist optional filters for UX continuity
+        request.session['rapport_entrepot'] = entrepot_id
+        request.session['rapport_status'] = status_key
+
+        # Build base queryset (only what has been received by the lab)
+        qs_base = (
+            LaboReception.objects
+            .select_related(
+                'idcargaison',
+                'idcargaison__idcargaison',
+                'idcargaison__idcargaison__importateur',
+                'idcargaison__idcargaison__entrepot',
+                'resultat',
+            )
+            .filter(
+                idcargaison__idcargaison__entrepot__ville=ville,
+                datereceptionlabo__date__range=[start_date, end_date]
+            )
+        )
+
+        # Apply optional Entrepôt filter
+        if entrepot_id:
+            qs_base = qs_base.filter(idcargaison__idcargaison__entrepot_id=entrepot_id)
+
+        # Apply optional Status filter (map UI status to DB state/fields)
+        if status_key == 'conforme':
+            qs_base = qs_base.filter(idcargaison__idcargaison__conformite="Conforme aux exigences")
+        elif status_key == 'non_conforme':
+            qs_base = qs_base.filter(idcargaison__idcargaison__conformite="Non conforme aux exigences")
+        elif status_key == 'refaire':
+            qs_base = qs_base.filter(idcargaison__idcargaison__etat="Refaire")
+
+        # Final projection and ordering (flatten fields for table/export)
+        # Subquery to fetch the latest printDate from ImpressionResultat (if any)
+        latest_print_subq = Subquery(
+            ImpressionResultat.objects
+            .filter(idcargaison=OuterRef('idcargaison__idcargaison'))
+            .order_by('-printDate')
+            .values('printDate')[:1]
+        )
+
+        qs = (
+            qs_base
+            .order_by('-datereceptionlabo')
+            .annotate(
+                dateechantillonage=F('idcargaison__dateechantillonage'),
+                nomimportateur=F('idcargaison__idcargaison__importateur__nomimportateur'),
+                nomentrepot=F('idcargaison__idcargaison__entrepot__nomentrepot'),
+                immatriculation=F('idcargaison__idcargaison__immatriculation'),
+                numdossier=F('idcargaison__idcargaison__numdos'),
+                numrappech=F('idcargaison__numrappechauto'),
+                dateanalyse=F('resultat__dateanalyse'),
+                # Use latest ImpressionResultat.printDate as the impression date for reports/exports
+                dateimpression=latest_print_subq,
+            )
+            .values(
+                'dateechantillonage',
+                'datereceptionlabo',
+                'nomimportateur',
+                'nomentrepot',
+                'immatriculation',
+                'numdossier',
+                'numrappech',
+                'codelabo',
+                'dateanalyse',
+                'dateimpression',
+                'numcertificatqualite'
+            )
+        )
+
+        # If Excel export requested, generate and stream .xlsx
+        if export_format == 'xlsx':
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Rapport labo'
+
+            headers = [
+                'Date Echantillonage',
+                'Date Reception Labo',
+                'Importateur',
+                'Entrepot',
+                'Immatriculation',
+                'Num. Dossier',
+                'Rapport d\'Ech.',
+                'Code Labo',
+                'Date Enc.',
+                'Date Impr.',
+                'Num. CQ',
+            ]
+            ws.append(headers)
+
+            for row in qs.iterator():
+                ws.append([
+                    row.get('dateechantillonage'),
+                    row.get('datereceptionlabo'),
+                    row.get('nomimportateur'),
+                    row.get('nomentrepot'),
+                    row.get('immatriculation'),
+                    row.get('numdossier'),
+                    row.get('numrappech'),
+                    row.get('codelabo'),
+                    row.get('dateanalyse'),
+                    row.get('dateimpression'),
+                    row.get('numcertificatqualite'),
+                ])
+
+            # Auto width (simple heuristic based on header length)
+            for col_idx, title in enumerate(headers, start=1):
+                ws.column_dimensions[chr(64 + col_idx)].width = max(14, len(title) + 2)
+
+            # Build response
+            filename = f"rapport_labo_{start_date.isoformat()}_{end_date.isoformat()}.xlsx"
+            buf = io.BytesIO()
+            wb.save(buf)
+            buf.seek(0)
+            resp = HttpResponse(
+                buf.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return resp
+
+        # Default: render HTML table
+        table1 = RapportLaboTable(qs, prefix='1_')
         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                          "per_page": 20}).configure(table1)
         return render(request, template, {'table': table1})
     else:
-        datedebut = request.session['datedebut']
-        datefin = request.session['datefin']
-        table1 = RapportLaboTable(LaboReception.objects.raw('SELECT DISTINCT(l.idcargaison_id), e.dateechantillonage, l.datereceptionlabo, i.nomimportateur , ee.nomentrepot , c.immatriculation, c.numdossier, c.codecargaison, e.numrappech, l.codelabo, r.dateanalyse, r.dateimpression, l.numcertificatqualite \
-                                                                                FROM hydro_occ.enreg_laboreception l, hydro_occ.enreg_entrepot_echantillon e, hydro_occ.enreg_cargaison c, hydro_occ.enreg_resultat r, hydro_occ.enreg_importateur i, hydro_occ.enreg_entrepot ee \
-                                                                                WHERE l.idcargaison_id = e.idcargaison_id \
-                                                                                AND e.idcargaison_id = c.idcargaison \
-                                                                                AND l.idcargaison_id = r.idcargaison_id \
-                                                                                AND i.idimportateur = c.importateur_id \
-                                                                                AND ee.identrepot = c.entrepot_id \
-                                                                                AND c.frontiere_id = %s \
-                                                                                AND l.datereceptionlabo BETWEEN %s AND %s \
-                                                                                ORDER BY DATE(l.datereceptionlabo) DESC',
-                                                            [ville, datedebut, datefin, ]), prefix='1_')
+        # Read dates safely from session with robust defaults
+        start_date, end_date = _get_date_range_from_request(request)
+
+        latest_print_subq = Subquery(
+            ImpressionResultat.objects
+            .filter(idcargaison=OuterRef('idcargaison__idcargaison'))
+            .order_by('-printDate')
+            .values('printDate')[:1]
+        )
+
+        qs = (
+            LaboReception.objects
+            .select_related(
+                'idcargaison',
+                'idcargaison__idcargaison',
+                'idcargaison__idcargaison__importateur',
+                'idcargaison__idcargaison__entrepot',
+                'resultat'
+            )
+            .filter(
+                idcargaison__idcargaison__entrepot__ville=ville,
+                datereceptionlabo__date__range=[start_date, end_date]
+            )
+            .order_by('-datereceptionlabo')
+            .annotate(
+                dateechantillonage=F('idcargaison__dateechantillonage'),
+                nomimportateur=F('idcargaison__idcargaison__importateur__nomimportateur'),
+                nomentrepot=F('idcargaison__idcargaison__entrepot__nomentrepot'),
+                immatriculation=F('idcargaison__idcargaison__immatriculation'),
+                numdossier=F('idcargaison__idcargaison__numdos'),
+                numrappech=F('idcargaison__numrappech'),
+                dateanalyse=F('resultat__dateanalyse'),
+                # Use latest ImpressionResultat.printDate as the impression date in table view too
+                dateimpression=latest_print_subq,
+            )
+            .values(
+                'dateechantillonage',
+                'datereceptionlabo',
+                'nomimportateur',
+                'nomentrepot',
+                'immatriculation',
+                'numdossier',
+                'numrappech',
+                'codelabo',
+                'dateanalyse',
+                'dateimpression',
+                'numcertificatqualite'
+            )
+        )
+
+        table1 = RapportLaboTable(qs, prefix='1_')
         RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                          "per_page": 20}).configure(table1)
         export_format = request.GET.get('_export', None)
@@ -3309,6 +3565,169 @@ def labdashboardrapport(request):
             exporter = TableExport(export_format, table1)
             return exporter.response('table.{}'.format(export_format))
         return render(request, template, {'table': table1})
+
+
+@login_required(login_url='login')
+def labdashboardrapport_synthese(request):
+    """
+    Generates an Excel synthesis based on the Rapports & statistiques laboratoire filters.
+    Aggregation by Entrepôt with counts per status and printed certificates.
+    Triggered by the "Voir synthèse" button.
+    """
+    user = request.user
+    id = user.id
+    ville = AffectationVille.objects.get(username=id).ville_id
+
+    # Helper to normalize dates (reuse logic similar to labdashboardrapport)
+    def _get_date_range_from_request(req):
+        today = now().date()
+        default_start = today - timedelta(days=30)
+
+        raw_start = req.POST.get('datedebut') or req.GET.get('datedebut') or req.session.get('datedebut') or ''
+        raw_end = req.POST.get('datefin') or req.GET.get('datefin') or req.session.get('datefin') or ''
+
+        start = parse_date(raw_start) if raw_start else None
+        end = parse_date(raw_end) if raw_end else None
+
+        if start is None:
+            start = default_start
+        if end is None:
+            end = today
+
+        if start > end:
+            start, end = end, start
+
+        # Persist for UX continuity
+        req.session['datedebut'] = start.isoformat()
+        req.session['datefin'] = end.isoformat()
+        return start, end
+
+    # Read filters
+    start_date, end_date = _get_date_range_from_request(request)
+    entrepot_id = request.POST.get('entrepot') or request.GET.get('entrepot') or ''
+    status_key = request.POST.get('status') or request.GET.get('status') or ''
+
+    # Base queryset restricted to receptions in user city and date range
+    qs_base = (
+        LaboReception.objects
+        .select_related(
+            'idcargaison',
+            'idcargaison__idcargaison',
+            'idcargaison__idcargaison__entrepot',
+            'idcargaison__idcargaison__importateur',
+        )
+        .filter(
+            idcargaison__idcargaison__entrepot__ville=ville,
+            datereceptionlabo__date__range=[start_date, end_date]
+        )
+    )
+
+    if entrepot_id:
+        qs_base = qs_base.filter(idcargaison__idcargaison__entrepot_id=entrepot_id)
+
+    if status_key == 'conforme':
+        qs_base = qs_base.filter(idcargaison__idcargaison__conformite="Conforme aux exigences")
+    elif status_key == 'non_conforme':
+        qs_base = qs_base.filter(idcargaison__idcargaison__conformite="Non conforme aux exigences")
+    elif status_key == 'refaire':
+        qs_base = qs_base.filter(idcargaison__idcargaison__etat="Refaire")
+
+    # Aggregation per Entrepôt
+    agg_qs = (
+        qs_base
+        .values(
+            'idcargaison__idcargaison__entrepot__identrepot',
+            'idcargaison__idcargaison__entrepot__nomentrepot'
+        )
+        .annotate(
+            total=Count('idcargaison'),
+            conformes=Count(
+                'idcargaison',
+                filter=Q(idcargaison__idcargaison__conformite="Conforme aux exigences")
+            ),
+            non_conformes=Count(
+                'idcargaison',
+                filter=Q(idcargaison__idcargaison__conformite="Non conforme aux exigences")
+            ),
+            a_refaire=Count(
+                'idcargaison',
+                filter=Q(idcargaison__idcargaison__etat="Refaire")
+            ),
+            imprimes=Count(
+                'idcargaison',
+                filter=Q(idcargaison__idcargaison__impressionresultat__isPrinted=True)
+            ),
+        )
+        .order_by('idcargaison__idcargaison__entrepot__nomentrepot')
+    )
+
+    # Build Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Synthèse labo'
+
+    # Header info (filters)
+    header_lines = [
+        f"Période: {start_date.isoformat()} → {end_date.isoformat()}",
+        f"Entrepôt: {'Tous' if not entrepot_id else 'Sélectionné'}",
+        f"Statut: {status_key or 'Tous'}",
+    ]
+    for line in header_lines:
+        ws.append([line])
+    ws.append([" "])  # blank line
+
+    # Table headers
+    headers = [
+        'Entrepôt',
+        'Total reçus',
+        'Conformes',
+        'Non conformes',
+        'À refaire',
+        'Certificats imprimés',
+    ]
+    ws.append(headers)
+
+    total_total = total_conf = total_nconf = total_refaire = total_impr = 0
+    for row in agg_qs.iterator():
+        entrepot_name = row.get('idcargaison__idcargaison__entrepot__nomentrepot')
+        tot = int(row.get('total') or 0)
+        conf = int(row.get('conformes') or 0)
+        nconf = int(row.get('non_conformes') or 0)
+        refa = int(row.get('a_refaire') or 0)
+        impr = int(row.get('imprimes') or 0)
+
+        ws.append([entrepot_name, tot, conf, nconf, refa, impr])
+
+        total_total += tot
+        total_conf += conf
+        total_nconf += nconf
+        total_refaire += refa
+        total_impr += impr
+
+    # Totals row
+    ws.append(["TOTAL", total_total, total_conf, total_nconf, total_refaire, total_impr])
+
+    # Autosize columns (A to F)
+    col_letters = ['A', 'B', 'C', 'D', 'E', 'F']
+    for idx, col in enumerate(col_letters, start=0):
+        # crude sizing based on header length
+        if idx == 0:
+            ws.column_dimensions[col].width = 28
+        else:
+            ws.column_dimensions[col].width = 18
+
+    filename = f"synthese_labo_{start_date.isoformat()}_{end_date.isoformat()}.xlsx"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return resp
+
+
 
 
 @login_required(login_url='login')
@@ -3952,8 +4371,11 @@ def affichagetableauvalidation1Response(request):
             '-entrepot_echantillon__laboreception__datereceptionlabo'
         )
 
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+        # Read params from POST first (frontend sends FormData), fallback to GET
+        params = request.POST if request.method == 'POST' else request.GET
+
+        # Get the search value
+        search_value = params.get('search[value]', '')
 
         # Apply search filter to the QuerySet
         if search_value:
@@ -3966,34 +4388,40 @@ def affichagetableauvalidation1Response(request):
                 Q(produit__nomproduit__icontains=search_value)
             )
 
-        # Number of items to show per page
-        items_per_page = 10
+        # draw/start/length parameters (DataTables-like)
+        try:
+            draw = int(params.get('draw', 1))
+        except ValueError:
+            draw = 1
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+        try:
+            start = int(params.get('start', 0))
+        except ValueError:
+            start = 0
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+        try:
+            length = int(params.get('length', 10))
+        except ValueError:
+            length = 10
+
+        if length <= 0:
+            length = 10
+
+        # Initialize the Paginator with the requested page size
+        paginator = Paginator(qs, length)
 
         # Calculate the current page number based on start and length
         current_page = (start // length) + 1
 
         try:
-            # Get the current page from the Paginator
             page = paginator.page(current_page)
         except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
             page = paginator.page(1)
         except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': paginator.count, 'recordsFiltered': paginator.count})
 
-        # Convert the page object to a list of dictionaries
         data = list(page)
 
-        # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
@@ -4003,6 +4431,117 @@ def affichagetableauvalidation1Response(request):
 
     else:
         return redirect('logout')
+
+
+
+@login_required(login_url='login')
+def affichagetableauvalidation1Filtres(request):
+    """
+    Filterable, paginated endpoint for Validation 1 table.
+    Accepts POST or GET parameters:
+    - start, length, draw (DataTables-like pagination)
+    - search[value] (free text search across key fields)
+    - date_from (YYYY-MM-DD), date_to (YYYY-MM-DD) to filter by reception date
+    - entrepot (id or name substring)
+    - status in {conforme, non_conforme, refaire, val1} mapping to etat values
+    """
+    user = request.user
+    id = user.id
+    role = user.role_id
+    if not (role == 5 or role == 1 or role == 6):
+        return redirect('logout')
+
+    params = request.POST if request.method == 'POST' else request.GET
+
+    # Base queryset scoped to user's city affectation
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=id,
+    ).values(
+        'idcargaison',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'entrepot_echantillon__laboreception__codelabo',
+        'entrepot_echantillon__laboreception__numcertificatqualite',
+        'produit__nomproduit'
+    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+
+    # Optional status mapping
+    status = (params.get('status') or '').strip().lower()
+    if status:
+        status_map = {
+            'conforme': 'Conforme',
+            'non_conforme': 'Non conforme',
+            'refaire': 'Refaire',
+            'val1': 'Validation en cours 1',
+        }
+        mapped = status_map.get(status)
+        if mapped:
+            qs = qs.filter(etat=mapped)
+    else:
+        # Default to validation stage 1 if no status provided
+        qs = qs.filter(etat='Validation en cours 1')
+
+    # Date range filter (by reception date)
+    date_from = params.get('date_from') or params.get('date_debut') or params.get('datedebut')
+    date_to = params.get('date_to') or params.get('date_fin') or params.get('datefin')
+    if date_from:
+        qs = qs.filter(entrepot_echantillon__laboreception__datereceptionlabo__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(entrepot_echantillon__laboreception__datereceptionlabo__date__lte=date_to)
+
+    # Entrepôt filter (id or name contains)
+    entrepot = (params.get('entrepot') or '').strip()
+    if entrepot:
+        if entrepot.isdigit():
+            qs = qs.filter(entrepot__identrepot=int(entrepot))
+        else:
+            qs = qs.filter(entrepot__nomentrepot__icontains=entrepot)
+
+    # Free text search
+    search_value = params.get('search[value]', '')
+    if search_value:
+        qs = qs.filter(
+            Q(entrepot_echantillon__laboreception__datereceptionlabo__icontains=search_value) |
+            Q(importateur__nomimportateur__icontains=search_value) |
+            Q(entrepot__nomentrepot__icontains=search_value) |
+            Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value) |
+            Q(entrepot_echantillon__laboreception__numcertificatqualite__icontains=search_value) |
+            Q(produit__nomproduit__icontains=search_value)
+        )
+
+    # Pagination
+    try:
+        draw = int(params.get('draw', 1))
+    except ValueError:
+        draw = 1
+    try:
+        start = int(params.get('start', 0))
+    except ValueError:
+        start = 0
+    try:
+        length = int(params.get('length', 10))
+    except ValueError:
+        length = 10
+    if length <= 0:
+        length = 10
+
+    paginator = Paginator(qs, length)
+    current_page = (start // length) + 1
+    try:
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        page = paginator.page(1)
+    except EmptyPage:
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': paginator.count, 'recordsFiltered': paginator.count})
+
+    data = list(page)
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': paginator.count,
+        'recordsFiltered': paginator.count,
+    })
 
 
 
@@ -4082,51 +4621,71 @@ def affichagetableauvalidation2Response(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def conformeAjx2(request):
     user = request.user
-    role = user.role_id
 
-    if role == 1 or role == 10:
-        if request.method == 'POST':
-            idcargaison = request.POST.get('idcargaison')
-            # print(idcargaison)
-            try:
-                c = Cargaison.objects.get(idcargaison=idcargaison)
-                # print(c.idcargaison)
-                # Updated Method
-                # Check if ImpressionResultat exists for the Cargaison
-                if not ImpressionResultat.objects.filter(idcargaison=c).exists():
-                    i = ImpressionResultat(printDate=datetime.now, isConforme=1, isPrinted=0, idcargaison=c)
-                    i.save()
+    # ---- Permissions ----
+    if user.role_id not in (1, 10):
+        return JsonResponse(
+            {'status': 'failure', 'message': 'Unauthorized'},
+            status=403
+        )
 
-                    # A supprimer
-                    c.etat = "Conforme aux exigences"
-                    c.conformite = "Conforme aux exigences"
-                    c.impression = "0"
-                    c.dateHeureAnalyseLabo = datetime.now()
-                    c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+    # ---- Input validation ----
+    idcargaison = request.POST.get('idcargaison')
+    if not idcargaison:
+        return JsonResponse(
+            {'status': 'failure', 'message': 'Missing idcargaison'},
+            status=400
+        )
 
-                    UserActivityLog.objects.create(
-                        user=user,
-                        action="Test result second validation CONFORME",
-                        description=f"User has done the second validation for the results for the record {c.idcargaison}",
-                    )
+    # ---- Fetch cargaison ----
+    try:
+        c = Cargaison.objects.get(pk=idcargaison)
+    except Cargaison.DoesNotExist:
+        return JsonResponse(
+            {'status': 'failure', 'message': 'Cargaison not found'},
+            status=404
+        )
 
-                    response_data = {'status': 'success', 'message': 'Cargaison marked as CONFORME'}
-                    return JsonResponse(response_data)
-                response_data = {}
-                return JsonResponse(response_data,status=400)
-            except Cargaison.DoesNotExist:
-                response_data = {'status': 'failure', 'message': 'Cargaison not found'}
-                return JsonResponse(response_data, status=404)  # 404 Not Found status code
-        else:
-            # Return a JSON response indicating unauthorized access
-            response_data = {'status': 'failure', 'message': 'Unauthorized'}
-            return JsonResponse(response_data, status=401)  # 401 Unauthorized status code
-    else:
-        # Return a JSON response indicating bad request method (not POST)
-        response_data = {'status': 'failure', 'message': 'Invalid request method'}
-        return JsonResponse(response_data, status=400)  # 400 Bad Request status code
+    # ---- Prevent duplicate ImpressionResultat ----
+    if ImpressionResultat.objects.filter(idcargaison=c).exists():
+        return JsonResponse(
+            {
+                'status': 'failure',
+                'message': 'Result already validated for this cargaison'
+            },
+            status=400
+        )
+
+    # ---- Create ImpressionResultat ----
+    ImpressionResultat.objects.create(
+        printDate=now(),
+        isConforme=1,
+        isPrinted=0,
+        idcargaison=c,
+    )
+
+    # ---- Update cargaison (legacy fields) ----
+    c.etat = "Conforme aux exigences"
+    c.conformite = "Conforme aux exigences"
+    c.impression = "0"
+    c.dateHeureAnalyseLabo = now()
+    c.save(update_fields=['etat', 'impression', 'conformite', 'dateHeureAnalyseLabo'])
+
+    # ---- Log user activity ----
+    UserActivityLog.objects.create(
+        user=user,
+        action="Test result second validation CONFORME",
+        description=f"User has done the second validation for the results for the record {c.idcargaison}",
+    )
+
+    return JsonResponse(
+        {'status': 'success', 'message': 'Cargaison marked as CONFORME'},
+    )
+
+
 
 
 @login_required(login_url='login')
@@ -4178,169 +4737,205 @@ def nonconformeAjx2(request):
 @login_required(login_url='login')
 def responseAffichagetableauimpression(request):
     user = request.user
-    role = user.role_id
-    ville = AffectationVille.objects.get(username_id=user.id)
-    ville = ville.ville_id
-    if role == 5 or role == 1:
 
-        qs = Cargaison.objects.filter(
+    # --- Permissions ---
+    if user.role_id not in (1, 5):
+        # For an API endpoint, it's better to return 403 than redirect
+        return JsonResponse(
+            {'data': [], 'draw': 0, 'recordsTotal': 0, 'recordsFiltered': 0},
+            status=403
+        )
+
+    # --- Ville / affectation ---
+    try:
+        affectation = AffectationVille.objects.get(username_id=user.id)
+    except ObjectDoesNotExist:
+        # No ville assigned → no data
+        return JsonResponse(
+            {'data': [], 'draw': 0, 'recordsTotal': 0, 'recordsFiltered': 0},
+            status=200
+        )
+
+    ville_id = affectation.ville_id
+
+    # --- Base queryset (non-printed, ville filter) ---
+    base_qs = (
+        Cargaison.objects
+        .filter(
             impressionresultat__isPrinted=0,
-            entrepot__ville__idville=ville
-        ).annotate(
+            entrepot__ville__idville=ville_id,
+        )
+        .annotate(
             dateReceptionLabo=F('entrepot_echantillon__laboreception__datereceptionlabo__date'),
             idImpression=F('impressionresultat__idImpression'),
             numcertificatqualite=F('entrepot_echantillon__laboreception__numcertificatqualite'),
             codelabo=F('entrepot_echantillon__laboreception__codelabo'),
             nomproduit=F('produit__nomproduit'),
             nomimportateur=F('importateur__nomimportateur'),
-            nomentrepot=F('entrepot__nomentrepot')
-        ).values(
-            'idcargaison',
-            'dateReceptionLabo',
-            'impressionresultat__printDate',
-            'idImpression',
-            'numcertificatqualite',
-            'codelabo',
-            'nomproduit',
-            'nomimportateur',
-            'nomentrepot'
+            nomentrepot=F('entrepot__nomentrepot'),
+        )
+    )
+
+    # Total before search (for DataTables "recordsTotal")
+    total_count = base_qs.count()
+
+    # --- Search (DataTables style: search[value]) ---
+    search_value = request.GET.get('search[value]', '').strip()
+    if search_value:
+        # Use icontains for more user-friendly search
+        base_qs = base_qs.filter(
+            Q(codelabo__icontains=search_value) |
+            Q(nomimportateur__icontains=search_value) |
+            Q(nomentrepot__icontains=search_value)
         )
 
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+    # After search (for DataTables "recordsFiltered")
+    filtered_count = base_qs.count()
 
-        # Apply search filter to the QuerySet
-        if search_value:
-            qs_search = Cargaison.objects.filter(
-            entrepot__ville__idville=ville,
-            ).annotate(
-                dateReceptionLabo=F('entrepot_echantillon__laboreception__datereceptionlabo__date'),
-                idImpression=F('impressionresultat__idImpression'),
-                numcertificatqualite=F('entrepot_echantillon__laboreception__numcertificatqualite'),
-                codelabo=F('entrepot_echantillon__laboreception__codelabo'),
-                nomproduit=F('produit__nomproduit'),
-                nomimportateur=F('importateur__nomimportateur'),
-                nomentrepot=F('entrepot__nomentrepot')
-            ).values(
-                'idcargaison',
-                'dateReceptionLabo',
-                'idImpression',
-                'impressionresultat__printDate',
-                'numcertificatqualite',
-                'codelabo',
-                'nomproduit',
-                'nomimportateur',
-                'nomentrepot'
-            )
-            qs = qs_search.filter(
-                Q(codelabo=search_value) |
-                Q(nomimportateur=search_value) |
-                Q(nomentrepot=search_value)
-            )
+    # --- Values projection (only once, after filters) ---
+    qs = base_qs.values(
+        'idcargaison',
+        'dateReceptionLabo',
+        'impressionresultat__printDate',
+        'idImpression',
+        'numcertificatqualite',
+        'codelabo',
+        'nomproduit',
+        'nomimportateur',
+        'nomentrepot',
+    )
 
-        # Number of items to show per page
-        items_per_page = 10
+    # --- DataTables pagination parameters ---
+    try:
+        draw = int(request.GET.get('draw', 1))
+    except ValueError:
+        draw = 1
 
-        print(items_per_page)
+    try:
+        start = int(request.GET.get('start', 0))
+    except ValueError:
+        start = 0
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+    try:
+        length = int(request.GET.get('length', 20))
+    except ValueError:
+        length = 20
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+    if length <= 0:
+        length = 20  # sane default
 
-        # Calculate the current page number based on start and length
-        current_page = (start // length) + 1
+    # Slice queryset for current "page"
+    end = start + length
+    page_qs = qs[start:end]
 
-        try:
-            # Get the current page from the Paginator
-            page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
-            page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+    data = list(page_qs)
 
-        # Convert the page object to a list of dictionaries
-        data = list(page)
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': total_count,
+        'recordsFiltered': filtered_count,
+    })
 
-        # Return JSON response with the data
-        return JsonResponse({
-            'data': data,
-            'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
-        })
-    else:
-        return redirect('logout')
 
 
 # Fonction pour impression Certificat
 @login_required(login_url='login')
 def impressioncertificat(request):
+    """
+    Endpoint used by the Impression page to generate a single certificate PDF.
+    Accepts POST with JSON body {"idcargaison": <int>} and returns
+    { status: "success", pdf_base64: "..." }.
+
+    Hardened against bad methods, missing JSON, and missing DB rows to avoid 500s.
+    """
+    if request.method != 'POST':
+        # Avoid running any DB lookups for non-POST requests
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
     user = request.user
-    id = user.id
-    name = user.last_name + ' ' + user.first_name
-    poste = user.poste
-    ville = AffectationVille.objects.get(username_id=id)
-    ville = ville.ville_id
-    province = Ville.objects.get(idville=ville)
-    province = province.province
-    province = province.upper()
-    role = user.role_id
+    role = getattr(user, 'role_id', None)
 
-    #Recuperation des donnees liees aux signataires
-    affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
-    affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
-    signDroite = MyUser.objects.get(username=affect1.userId)
-    signGauche = MyUser.objects.get(username=affect2.userId)
+    # Parse JSON payload safely
+    try:
+        dataJson = json.loads(request.body or '{}')
 
-    #Recuperation du Laboratoire asssocie a la ville
-    laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON body'}, status=400)
 
-    #Recuperation des donnees liees a l'Impression
-    if request.method == 'POST':
-        dataJson = json.loads(request.body)
-        pk = dataJson.get('idcargaison')
-        print(pk)
-        impressionData = ImpressionResultat.objects.get(idcargaison_id=pk)
+    pk = dataJson.get('idcargaison')
 
-        print(signGauche)
-        print(signDroite)
+    if not pk:
+        return JsonResponse({'status': 'error', 'message': 'idcargaison is required'}, status=400)
 
-        d = LaboReception.objects.filter(idcargaison_id=pk).annotate(
+    # Resolve user contextual data and signatories inside POST branch, with guards
+    try:
+        ville_obj = AffectationVille.objects.get(username_id=user.id)
+        ville = ville_obj.ville_id
+        province = Ville.objects.get(idville=ville).province.upper()
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'User location configuration missing'}, status=400)
+
+    try:
+        affect1 = AffectationLaboratoire.objects.get(ville=ville, signGauche=False)
+        affect2 = AffectationLaboratoire.objects.get(ville=ville, signGauche=True)
+        signDroite = MyUser.objects.get(username=affect1.userId)
+        signGauche = MyUser.objects.get(username=affect2.userId)
+        laboratoireData = ListeLaboratoire.objects.get(denominationLaboratoire=affect1.idLaboratoire)
+
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Signatory configuration missing'}, status=400)
+
+    # Ensure an ImpressionResultat row exists for this cargo (create if missing)
+    try:
+        # Create with safe defaults if it doesn't exist yet
+        impressionData, _created = ImpressionResultat.objects.get_or_create(
+            idcargaison_id=pk,
+            defaults={
+                'isPrinted': False,
+                # leave isConforme as None (unknown) unless set elsewhere
+                # printDate is auto_now_add on the model and will be set automatically
+            }
+        )
+
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Unable to prepare print record'}, status=400)
+
+    # From here, the original logic continues (no extra existence checks required)
+    d = (
+        LaboReception.objects
+        .filter(idcargaison_id=pk)
+        .annotate(
             mois=ExtractMonth('datereceptionlabo'),
             annee=ExtractYear('datereceptionlabo')
-        ).values('idcargaison_id', 'mois', 'annee')
+        )
+        .values('idcargaison_id', 'mois', 'annee')
+    )
 
+    for entry in d:
+        mois = entry['mois']
+        annee = entry['annee']
 
-        for entry in d:
-            mois = entry['mois']
-            annee = entry['annee']
-
-        if role == 5 or role == 1 :
-            td = datetime.today()
-            # Recuperation du produit de la cargaison
-            p = Produit.objects.get(cargaison=pk)
-            produit = p.nomproduit
+    if role == 5 or role == 1:
+        td = datetime.today()
+        # Recuperation du produit de la cargaison
+        p = Produit.objects.get(cargaison=pk)
+        produit = p.nomproduit
 
             # Fecthing object with pk corresponding into database
-            cargaison = Cargaison.objects.get(idcargaison=pk)
-            echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
-            laboratoire = LaboReception.objects.get(idcargaison=pk)
+        cargaison = Cargaison.objects.get(idcargaison=pk)
+        echantillon = Entrepot_echantillon.objects.get(idcargaison=pk)
+        laboratoire = LaboReception.objects.get(idcargaison=pk)
 
-            printed = ImpressionResultat.objects.get(idcargaison=pk)
-            printed.isPrinted = 1
-            printed.save(update_fields=['isPrinted'])
+        # Mark as printed on the ensured record
+        impressionData.isPrinted = True
+        impressionData.save(update_fields=['isPrinted'])
 
-            # Test pour afficher les differents rapports
-
-            if produit == 'GASOIL':
-                template = 'report/Report1/gasoilreport.html'
-
+        # Test pour afficher les differents rapports
+        if produit == 'GASOIL':
+            template = 'report/Report1/gasoilreport.html'
+            # Wrapper to normalize indentation for the existing block
+            if True:
                 # Resultat Gasoil Fetching data into Database
                 try:
                     couleurastm = ResultatAnalyse.objects.filter(idcargaison=pk, idParametre=8)[0].valeurResultatChar
@@ -4467,9 +5062,24 @@ def impressioncertificat(request):
                     'laboratoireData':laboratoireData,
                 }
 
-                # Rendered PDF report
+                # Rendered PDF report (robustly extract bytes for download)
                 pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                if pdf is None:
+                    return JsonResponse({'status': 'error', 'message': 'PDF generation failed'}, status=500)
+                try:
+                    if isinstance(pdf, HttpResponse):
+                        raw_bytes = pdf.content
+                    elif hasattr(pdf, 'getvalue'):
+                        raw_bytes = pdf.getvalue()
+                    elif isinstance(pdf, (bytes, bytearray)):
+                        raw_bytes = bytes(pdf)
+                    else:
+                        # Fallback: try bytes() coercion
+                        raw_bytes = bytes(pdf)
+                except Exception:
+                    return JsonResponse({'status': 'error', 'message': 'PDF extraction error'}, status=500)
+
+                pdf_base64 = base64.b64encode(raw_bytes).decode('utf-8')
                 return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
                 # return HttpResponse(pdf, content_type='application/pdf')
 
@@ -4581,9 +5191,23 @@ def impressioncertificat(request):
                     'laboratoireData':laboratoireData,
                 }
 
-                # Rendered PDF report
+                # Rendered PDF report (robustly extract bytes for download)
                 pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                if pdf is None:
+                    return JsonResponse({'status': 'error', 'message': 'PDF generation failed'}, status=500)
+                try:
+                    if isinstance(pdf, HttpResponse):
+                        raw_bytes = pdf.content
+                    elif hasattr(pdf, 'getvalue'):
+                        raw_bytes = pdf.getvalue()
+                    elif isinstance(pdf, (bytes, bytearray)):
+                        raw_bytes = bytes(pdf)
+                    else:
+                        raw_bytes = bytes(pdf)
+                except Exception:
+                    return JsonResponse({'status': 'error', 'message': 'PDF extraction error'}, status=500)
+
+                pdf_base64 = base64.b64encode(raw_bytes).decode('utf-8')
                 return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
                 # return HttpResponse(pdf, content_type='application/pdf')
 
@@ -4792,9 +5416,23 @@ def impressioncertificat(request):
                     'impressionData': impressionData,
                     'laboratoireData':laboratoireData,
                 }
-                # Rendered PDF report
+                # Rendered PDF report (robustly extract bytes for download)
                 pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                if pdf is None:
+                    return JsonResponse({'status': 'error', 'message': 'PDF generation failed'}, status=500)
+                try:
+                    if isinstance(pdf, HttpResponse):
+                        raw_bytes = pdf.content
+                    elif hasattr(pdf, 'getvalue'):
+                        raw_bytes = pdf.getvalue()
+                    elif isinstance(pdf, (bytes, bytearray)):
+                        raw_bytes = bytes(pdf)
+                    else:
+                        raw_bytes = bytes(pdf)
+                except Exception:
+                    return JsonResponse({'status': 'error', 'message': 'PDF extraction error'}, status=500)
+
+                pdf_base64 = base64.b64encode(raw_bytes).decode('utf-8')
                 return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
                 # return HttpResponse(pdf, content_type='application/pdf')
 
@@ -5005,95 +5643,168 @@ def impressioncertificat(request):
                     'laboratoireData':laboratoireData,
                 }
 
-                # Rendered PDF report
+                # Rendered PDF report (robustly extract bytes for download)
                 pdf = render_to_pdf(template, data)
-                pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
+                if pdf is None:
+                    return JsonResponse({'status': 'error', 'message': 'PDF generation failed'}, status=500)
+                try:
+                    if isinstance(pdf, HttpResponse):
+                        raw_bytes = pdf.content
+                    elif hasattr(pdf, 'getvalue'):
+                        raw_bytes = pdf.getvalue()
+                    elif isinstance(pdf, (bytes, bytearray)):
+                        raw_bytes = bytes(pdf)
+                    else:
+                        raw_bytes = bytes(pdf)
+                except Exception:
+                    return JsonResponse({'status': 'error', 'message': 'PDF extraction error'}, status=500)
+
+                pdf_base64 = base64.b64encode(raw_bytes).decode('utf-8')
                 return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
                 # return HttpResponse(pdf, content_type='application/pdf')
 
-        else:
-            return ('logout')
     else:
-        return redirect('logout')
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized role'}, status=403)
 
 
+
+def _b64url_decode(s: str) -> bytes:
+    # add padding if missing
+    s += "=" * (-len(s) % 4)
+    return base64.urlsafe_b64decode(s.encode("utf-8"))
+
+
+def _parse_cursor(raw: str):
+    """
+    Expecting base64url(JSON) like {"d":"YYYY-MM-DD","id":123456}
+    Returns (date_obj, id_int) or (None, None) on failure.
+    """
+    if not raw:
+        return None, None
+    try:
+        payload = json.loads(_b64url_decode(raw).decode("utf-8"))
+        d_str = payload.get("d")
+        tail_id = payload.get("id")
+        # Parse date safely
+        tail_date = None
+        if isinstance(d_str, str):
+            try:
+                tail_date = dt.date.fromisoformat(d_str)
+            except ValueError:
+                tail_date = None
+        # Ensure id is int
+        if tail_id is not None:
+            tail_id = int(tail_id)
+        return tail_date, tail_id
+    except Exception:
+        return None, None
+
+
+def _make_cursor(date_obj: dt.date, id_val: int) -> str:
+    payload = {"d": date_obj.isoformat(), "id": int(id_val)}
+    raw = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
 
 
 #Ajax response
-@login_required(login_url='login')
+@login_required(login_url="login")
 def responseAffichageanalyse(request):
     user = request.user
-    id = user.id
-    role = user.role_id
-    if role == 5 or role == 1:
-        qs = Cargaison.objects.filter(etat='Analyse Labo en cours',
-                                      entrepot__ville__affectationville__username_id=id,
-                                     ).values(
-                                    'idcargaison',
-                                    'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                                    'entrepot_echantillon__laboreception__codelabo',
-                                    'entrepot_echantillon__numrappechauto',
-                                    'numdos',
-                                    'immatriculation',
-                                    'produit__nomproduit'
-                                    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+    uid = user.id
+    role = getattr(user, "role_id", None)
 
-        qs2 = Cargaison.objects.filter(etat='Refaire',
-                                      entrepot__ville__affectationville__username_id=id,
-                                      ).values(
-                                    'idcargaison',
-                                    'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                                    'entrepot_echantillon__laboreception__codelabo',
-                                    'entrepot_echantillon__numrappechauto',
-                                    'produit__nomproduit'
-                                    ).order_by('-entrepot_echantillon__laboreception__datereceptionlabo')
+    if role not in (1, 5):
+        # Keep your existing behavior
+        from django.shortcuts import redirect
+        return redirect("logout")
 
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+    # ---- base queryset (latest first) ----
+    base_qs = (
+        Cargaison.objects.filter(
+            etat="Analyse Labo en cours",
+            entrepot__ville__affectationville__username_id=uid,
+        )
+        .values(
+            "idcargaison",
+            "entrepot_echantillon__laboreception__datereceptionlabo__date",
+            "entrepot_echantillon__laboreception__codelabo",
+            "entrepot_echantillon__numrappechauto",
+            "numdos",
+            "immatriculation",
+            "produit__nomproduit",
+        )
+        .order_by(
+            "-entrepot_echantillon__laboreception__datereceptionlabo",
+            "-idcargaison",
+        )
+    )
 
-        # Apply search filter to the QuerySet
-        if search_value:
-            qs = qs.filter(
-                Q(entrepot_echantillon__laboreception__codelabo=search_value)
+    # Optional search (exact on codelabo like before)
+    search_value = request.GET.get("search[value]", "").strip()
+    if search_value:
+        base_qs = base_qs.filter(
+            Q(entrepot_echantillon__laboreception__codelabo=search_value)
+        )
+
+    # Lazy params
+    try:
+        length = int(request.GET.get("length", 10))
+    except ValueError:
+        length = 10
+    length = max(1, min(length, 200))  # sane bounds
+
+    cursor_str = request.GET.get("cursor", "")
+    tail_date, tail_id = _parse_cursor(cursor_str)
+
+    # If no cursor given, we can start from “top”; client may send a “synthetic max” anyway.
+    # Apply tuple "less-than" for DESC ordering: (date, id) < (tail_date, tail_id)
+    if tail_date is not None and tail_id is not None:
+        # (date < tail_date) OR (date == tail_date AND id < tail_id)
+        base_qs = base_qs.filter(
+            Q(entrepot_echantillon__laboreception__datereceptionlabo__date__lt=tail_date)
+            | Q(
+                entrepot_echantillon__laboreception__datereceptionlabo__date=tail_date,
+                idcargaison__lt=tail_id,
             )
+        )
 
-        # Number of items to show per page
-        items_per_page = 13
+    # Fetch N+1 to know if there's more
+    rows = list(base_qs[: length + 1])
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+    has_more = len(rows) > length
+    if has_more:
+        rows = rows[:length]
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+    # Build next_cursor from the last row (still ordered DESC)
+    next_cursor = None
+    if has_more and rows:
+        last = rows[-1]
+        last_date = last.get("entrepot_echantillon__laboreception__datereceptionlabo__date")
+        last_id = last.get("idcargaison")
+        # Ensure last_date is a date
+        if isinstance(last_date, dt.date):
+            next_cursor = _make_cursor(last_date, int(last_id))
+        else:
+            # If datastore gives a datetime/date-like or a string, handle gracefully
+            if isinstance(last_date, dt.datetime):
+                next_cursor = _make_cursor(last_date.date(), int(last_id))
+            elif isinstance(last_date, str):
+                try:
+                    d = dt.date.fromisoformat(last_date)
+                except ValueError:
+                    d = dt.date(1900, 1, 1)
+                next_cursor = _make_cursor(d, int(last_id))
+            else:
+                next_cursor = _make_cursor(dt.date(1900, 1, 1), int(last_id))
 
-        # Calculate the current page number based on start and length
-        current_page = (start // length) + 1
-
-        try:
-            # Get the current page from the Paginator
-            page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
-            page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
-
-        # Convert the page object to a list of dictionaries
-        data = list(page)
-
-        # Return JSON response with the data
-        return JsonResponse({
-            'data': data,
-            'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
-        })
-
-    else:
-        return redirect('logout')
+    # Shape the payload as your frontend expects for lazy mode
+    return JsonResponse(
+        {
+            "items": rows,
+            "has_more": has_more,
+            "next_cursor": next_cursor,
+        }
+    )
 
 
 
@@ -5238,22 +5949,42 @@ def affichageAnalyseRefaireResponse(request):
         # Get the search value from the request's GET parameters
         search_value = request.GET.get('search[value]', '')
 
+        # Totals before/after filtering
+        total_all = qs.count()
+
         # Apply search filter to the QuerySet
         if search_value:
             qs = qs.filter(
                 Q(entrepot_echantillon__laboreception__codelabo__icontains=search_value)
             )
 
-        # Number of items to show per page
-        items_per_page = 10
+        total_filtered = qs.count()
+
+        # Handle special request to return all rows without pagination
+        draw = int(request.GET.get('draw', 1))
+        length_param = request.GET.get('length', '')
+        if isinstance(length_param, str) and length_param.lower() == 'all':
+            data = list(qs)
+            return JsonResponse({
+                'data': data,
+                'draw': draw,
+                'recordsTotal': total_all,
+                'recordsFiltered': total_filtered,
+            })
+
+        # Number of items to show per page (honour client request within sane bounds)
+        try:
+            items_per_page = int(request.GET.get('length', 10))
+        except ValueError:
+            items_per_page = 10
+        items_per_page = max(1, min(items_per_page, 200))
 
         # Initialize the Paginator with the QuerySet and the number of items per page
         paginator = Paginator(qs, items_per_page)
 
         # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
         start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+        length = items_per_page
 
         # Calculate the current page number based on start and length
         current_page = (start // length) + 1
@@ -5275,8 +6006,8 @@ def affichageAnalyseRefaireResponse(request):
         return JsonResponse({
             'data': data,
             'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
+            'recordsTotal': total_all,
+            'recordsFiltered': total_filtered,
         })
 
 

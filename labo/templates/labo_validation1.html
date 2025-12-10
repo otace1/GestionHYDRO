@@ -1,555 +1,1369 @@
-{% extends 'labo/labo_base_validation1.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
-{% load crispy_forms_tags %}
+{% extends 'base/base_template.html' %}
+{% load static %}
 
+{% block main_content %}
 
-{% block modal1 %}
-    {% csrf_token %}
-    {% crispy form %}
-    <script>
-        $(function () {
-            $("#id_date").datepicker({
-                format: 'dd/mm/yyyy',
-            });
-        });
-    </script>
-{% endblock %}
+<style>
+/* ========= LAB RESULTS TABLE: RESPONSIVE ========= */
 
+.lab-data-grid-wrapper{
+  position: relative;
+  max-height: 360px;
+  overflow: auto;
+}
 
-{% block content %}
+/* Desktop / default keeps existing data-grid look */
+.lab-data-grid{
+  width:100%;
+}
 
-    <div class="row">
-        <a href="{% url 'rapportCq' %}" class="btn btn-app bg-blue" id="bulkConforme">
-            <span class="badge bg-info"></span>
-            <i class="fas fa-adjust"></i> CONFORME
-        </a>
-        <a href="{% url 'rapportCq' %}" class="btn btn-app bg-red" id="bulkNonConforme">
-            <span class="badge bg-info"></span>
-            <i class="fas fa-file-archive"></i> NON CONFORME
-        </a>
-        <a href="{% url 'rapportCq' %}" class="btn btn-app bg-orange" id="bulkRefaire">
-            <span class="badge bg-info"></span>
-            <i class="fas fa-file-archive"></i> A REFAIRE
-        </a>
+/* Mobile stacking (≤ 640px) */
+@media (max-width: 640px){
+  .lab-data-grid thead{
+    display:none;
+  }
+  .lab-data-grid,
+  .lab-data-grid tbody,
+  .lab-data-grid tr,
+  .lab-data-grid td{
+    display:block;
+    width:100%;
+  }
+
+  .lab-data-grid .tbody tr{
+    margin-bottom:0.75rem;
+    border-radius:12px;
+  }
+
+  .lab-data-grid .tbody td{
+    border-top:none;
+    border-left:none !important;
+    padding:0.4rem 0.75rem;
+  }
+
+  .lab-data-grid .tbody tr td:first-child{
+    border-top-left-radius:12px;
+    border-top-right-radius:12px;
+  }
+  .lab-data-grid .tbody tr td:last-child{
+    border-bottom-left-radius:12px;
+    border-bottom-right-radius:12px;
+  }
+
+  /* Inline label before each value */
+  .lab-data-grid .tbody td::before{
+    content: attr(data-label);
+    display:block;
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:rgba(148,163,184,.9);
+    margin-bottom:0.1rem;
+  }
+  /* On small screens, let the first cell expand normally (no clamp) */
+  .lab-data-grid .tbody td:first-child{
+    width:100% !important;
+    max-width:none !important;
+    white-space:normal !important;
+    text-overflow:clip !important;
+  }
+}
+
+/* ===== Glass + general ===== */
+.glass {
+  background: rgba(15,23,42,.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.shadow-glass {
+  /* align with Cargaisons look */
+  box-shadow:
+    0 10px 30px rgba(3, 8, 20, .35),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============== DATA GRID (MATCH CARGAISONS) ============== */
+.data-grid {
+  width:100%;
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
+  table-layout: fixed;
+}
+
+/* Header */
+.data-grid thead tr {
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.data-grid thead th {
+  padding:.7rem .9rem;
+  font-weight:700;
+  letter-spacing:.03em;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  user-select:none;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Body rows */
+.data-grid .tbody tr {
+  background: rgba(255,255,255,.04);
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,.06) inset,
+    0 6px 18px rgba(3,8,20,.25);
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease,
+    filter .18s ease;
+}
+.data-grid .tbody tr:hover {
+  background: rgba(255,255,255,.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,.08) inset,
+    0 10px 24px rgba(3,8,20,.32);
+  filter:saturate(1.05);
+}
+.data-grid .tbody td {
+  padding:.7rem .9rem;
+  vertical-align:middle;
+  border-top:1px solid rgba(255,255,255,.06);
+  color:rgba(249,250,251,.95);
+  font-size:.8rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.data-grid .tbody tr td + td {
+  border-left: 1px solid rgba(255,255,255,.03);
+}
+.data-grid .tbody tr td:first-child {
+  border-top-left-radius:12px;
+  border-bottom-left-radius:12px;
+}
+.data-grid .tbody tr td:last-child {
+  border-top-right-radius:12px;
+  border-bottom-right-radius:12px;
+}
+
+/* ===== Column widths for main table ===== */
+.col-thickbox{
+  width:44px;
+  text-align:center;
+  white-space:nowrap;
+}
+.col-thickbox input[type="checkbox"]{
+  height:18px; width:18px;
+}
+.col-date{
+  width:140px;
+  white-space:nowrap;
+  text-align:center;
+  font-variant-numeric: tabular-nums;
+}
+.col-entrepot{
+  width:16%;
+  white-space:nowrap;
+}
+.col-fournisseur{
+  width:18%;
+  white-space:nowrap;
+}
+.col-code-labo{
+  width:12%;
+  white-space:nowrap;
+  text-align:left;
+  font-variant-numeric: tabular-nums;
+}
+.col-certificat{
+  width:14%;
+  white-space:nowrap;
+}
+.col-produit{
+  width:18%;
+  white-space:nowrap;
+}
+.col-actions{
+  width:120px;
+  white-space:nowrap;
+}
+
+/* ===== Lab detail column helpers ===== */
+.lab-col-param      { width:18%; }
+.lab-col-result     { width:12%; text-align:right; font-variant-numeric:tabular-nums; }
+.lab-col-unit       { width:8%;  text-align:center; }
+.lab-col-spec       { width:22%; font-size:.78rem; }
+.lab-col-method     { width:15%; font-size:.78rem; }
+.lab-col-status     { width:10%; text-align:center; }
+.lab-col-observation{ width:15%; }
+
+/* ===== Truncate "Nom paramètre" column to 20 characters (ellipsis) ===== */
+/* Applies to the first column of any lab-data-grid (header + body). */
+.lab-data-grid thead th:first-child,
+.lab-data-grid .tbody td:first-child{
+  width:20ch;            /* lock to ~20 characters */
+  max-width:20ch;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* If the header uses the helper class, ensure it also respects 20ch. */
+.lab-data-grid thead th.lab-col-param{ width:20ch; max-width:20ch; }
+
+/* ===== Lab badges ===== */
+.lab-badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:.15rem .5rem;
+  border-radius:999px;
+  font-size:.7rem;
+  font-weight:600;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.lab-badge-ok {
+  background:rgba(34,197,94,.15);
+  color:rgb(187,247,208);
+  border:1px solid rgba(34,197,94,.55);
+}
+.lab-badge-nok {
+  background:rgba(239,68,68,.12);
+  color:rgb(254,202,202);
+  border:1px solid rgba(239,68,68,.6);
+}
+.lab-badge-check {
+  background:rgba(234,179,8,.14);
+  color:rgb(254,240,138);
+  border:1px solid rgba(234,179,8,.6);
+}
+
+/* ===== Buttons (keep your pill style) ===== */
+.btn-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:.4rem;
+  padding:.45rem .9rem;
+  border-radius:999px;
+  font-size:.82rem;
+  font-weight:500;
+  border-width:1px;
+  border-style:solid;
+  transition: all .15s ease;
+  white-space:nowrap;
+}
+.btn-pill-primary{
+  background-image:linear-gradient(to right, #22d3ee, #0ea5e9);
+  border-color:transparent;
+  color:#0f172a;
+}
+.btn-pill-primary:hover{
+  filter:brightness(1.05);
+  transform: translateY(-1px);
+}
+.btn-pill-soft{
+  background:rgba(15,23,42,.96);
+  border-color:rgba(148,163,184,.6);
+  color:#e5e7eb;
+}
+.btn-pill-soft:hover{
+  background:rgba(30,64,175,.9);
+  border-color:rgba(129,140,248,.85);
+}
+
+/* ===== Loading overlay ===== */
+.loading-overlay{
+  position:absolute;
+  inset:0;
+  display:none;
+  place-items:center;
+  background:rgba(15,23,42,.65);
+  backdrop-filter:blur(6px);
+  z-index:20;
+}
+
+/* ===== Pagination buttons (match Cargaisons tone) ===== */
+.pg-btn{
+  padding:.3rem .55rem;
+  border-radius:.5rem;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.16);
+  color:#e5e7eb;
+  font-size:.75rem;
+}
+.pg-btn:hover{
+  background:rgba(255,255,255,.12);
+}
+.pg-btn.is-disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+/* ===== Modal control ===== */
+#modal-lg { display:none; }
+#modal-lg.custom-open{
+  position:fixed;
+  inset:0;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  z-index:1001;
+}
+.modal-dialog.modal-md{
+  width:100%;
+  max-width:min(96vw, 960px);
+}
+@media (min-width: 1280px){
+  .modal-dialog.modal-md{ max-width: 1024px; }
+}
+#modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,.65);
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+  z-index:1000;
+}
+
+/* ========== SweetAlert2: glass / dark LIMS theme ========== */
+.swal2-container {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: rgba(2, 6, 23, 0.75) !important;
+}
+
+.swal2-popup.swal2-lims {
+  border-radius: 1rem !important;
+  padding: 1.5rem 1.75rem !important;
+  background:
+    radial-gradient(140% 160% at 0% 0%, #0f172a 0, #020617 40%, #020617 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.55) !important;
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  color: #e5e7eb !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+.swal2-lims .swal2-title {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em;
+  color: #f9fafb !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.swal2-lims .swal2-html-container {
+  font-size: 0.82rem !important;
+  color: #cbd5f5 !important;
+  margin-top: 0 !important;
+}
+
+.swal2-lims .swal2-actions {
+  margin-top: 1.2rem !important;
+}
+
+.swal2-lims .swal2-confirm {
+  border-radius: 999px !important;
+  padding: 0.45rem 1.1rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  background-image: linear-gradient(to right, #22d3ee, #0ea5e9) !important;
+  color: #0f172a !important;
+  border: none !important;
+  box-shadow: 0 8px 20px rgba(8, 47, 73, 0.7) !important;
+}
+
+.swal2-lims .swal2-confirm:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.swal2-lims .swal2-icon {
+  margin: 0 0 0.75rem 0 !important;
+}
+
+.swal2-lims .swal2-icon.swal2-success {
+  border-color: rgba(34, 197, 94, 0.7) !important;
+  color: #bbf7d0 !important;
+}
+
+.swal2-lims .swal2-icon.swal2-error {
+  border-color: rgba(248, 113, 113, 0.85) !important;
+  color: #fecaca !important;
+}
+</style>
+
+<!-- ========== Header & bulk actions ========== -->
+<section
+  class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-950/90 via-slate-900/90 to-slate-950/90 backdrop-blur shadow-glass mb-6 px-4 sm:px-5 py-4"
+>
+  <!-- Soft gradient glows -->
+  <div class="pointer-events-none absolute -top-16 -right-10 h-44 w-44 rounded-full bg-cyan-500/20 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full bg-indigo-500/25 blur-3xl"></div>
+
+  <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <!-- Title + context -->
+    <div class="flex items-start gap-3">
+      <span
+        class="mt-0.5 grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 ring-1 ring-sky-400/40 text-sky-300"
+      >
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="9" stroke-width="1.6" />
+          <path d="M9 12l2 2 4-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
+      <div>
+        <h2 class="text-lg sm:text-xl font-semibold tracking-tight text-white">
+          Validation des résultats laboratoire
+        </h2>
+        <p class="mt-0.5 text-xs sm:text-sm text-slate-200/75">
+          Ouvrez le détail d’un échantillon, analysez les paramètres, puis appliquez le statut approprié.
+        </p>
+      </div>
     </div>
 
-<div class="modal fade" id="modal-lg">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Détails résultats</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              <p>One fine body&hellip;</p>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
-                <button type="button" class="btn btn-outline-info refaire-btn" id="btn-refaire">Refaire</button>
-                <button type="button" class="btn btn-success conform-btn" id="btn-conforme">Conforme</button>
-                <button type="button" class="btn btn-danger nonconform-btn" id="btn-non-conforme">Non conforme</button>
-            </div>
-          </div>
-          <!-- /.modal-content -->
+    <!-- Status actions -->
+    <div class="flex flex-wrap gap-2 sm:justify-end">
+      <button
+        type="button"
+        id="bulkConforme"
+        class="btn-pill btn-pill-primary bg-gradient-to-r from-emerald-400 to-cyan-400 border-transparent text-slate-900 shadow-md hover:from-emerald-300 hover:to-cyan-300"
+      >
+        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-700 mr-1.5"></span>
+        Conforme
+      </button>
+
+      <button
+        type="button"
+        id="bulkNonConforme"
+        class="btn-pill btn-pill-soft bg-rose-900/40 border-rose-500/70 text-rose-100 hover:bg-rose-800/80"
+      >
+        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-rose-400 mr-1.5"></span>
+        Non conforme
+      </button>
+
+      <button
+        type="button"
+        id="bulkRefaire"
+        class="btn-pill btn-pill-soft bg-amber-900/40 border-amber-500/70 text-amber-100 hover:bg-amber-800/80"
+      >
+        <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400 mr-1.5"></span>
+        À refaire
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== Rapports laboratoire (export) ========== -->
+<section class="mb-6">
+  <div class="rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-md px-4 sm:px-6 py-4 sm:py-5 shadow-xl">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <div>
+        <h3 class="text-base sm:text-lg font-semibold text-white tracking-tight">
+          Rapports & statistiques laboratoire
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-300/80">
+          Extraire un rapport global des activités labo par période, entrepôt et statut de validation.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400">
+        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 border border-slate-600/70">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 4h16v4H4zM4 12h10v4H4zM4 20h7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span>Choisissez les filtres puis le format d’export souhaité.</span>
+      </div>
+    </div>
+
+    <form method="post" id="labReportForm" action="{% url 'labodashboardrapport' %}" class="space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Date début -->
+        <div class="flex flex-col gap-1">
+          <label for="report_date_from" class="text-xs font-medium text-slate-200 uppercase tracking-wide">
+            Date début
+          </label>
+          <input
+            type="date"
+            id="report_date_from"
+            name="datedebut"
+            class="w-full rounded-lg border border-slate-600/70 bg-slate-900/90 px-3 py-2 text-sm text-slate-100
+                   focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-cyan-400/60">
         </div>
-        <!-- /.modal-dialog -->
+
+        <!-- Date fin -->
+        <div class="flex flex-col gap-1">
+          <label for="report_date_to" class="text-xs font-medium text-slate-200 uppercase tracking-wide">
+            Date fin
+          </label>
+          <input
+            type="date"
+            id="report_date_to"
+            name="datefin"
+            class="w-full rounded-lg border border-slate-600/70 bg-slate-900/90 px-3 py-2 text-sm text-slate-100
+                   focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-cyan-400/60">
+        </div>
+
+        <!-- Entrepôt -->
+        <div class="flex flex-col gap-1">
+          <label for="report_entrepot" class="text-xs font-medium text-slate-200 uppercase tracking-wide">
+            Entrepôt
+          </label>
+          <select
+            id="report_entrepot"
+            name="entrepot"
+            class="w-full rounded-lg border border-slate-600/70 bg-slate-900/90 px-3 py-2 text-sm text-slate-100
+                   focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-cyan-400/60">
+            <option value="">Tous les entrepôts</option>
+            {% if entrepots_labo %}
+              {% for e in entrepots_labo %}
+                <option value="{{ e.identrepot }}">{{ e.nomentrepot }}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+
+        <!-- Statut -->
+        <div class="flex flex-col gap-1">
+          <label for="report_status" class="text-xs font-medium text-slate-200 uppercase tracking-wide">
+            Statut
+          </label>
+          <select
+            id="report_status"
+            name="status"
+            class="w-full rounded-lg border border-slate-600/70 bg-slate-900/90 px-3 py-2 text-sm text-slate-100
+                   focus:outline-none focus:ring-2 focus:ring-cyan-400/60 focus:border-cyan-400/60">
+            <option value="">Tous les statuts</option>
+            <option value="conforme">Conforme</option>
+            <option value="non_conforme">Non conforme</option>
+            <option value="refaire">À refaire</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p class="text-[11px] sm:text-xs text-slate-400">
+          Astuce : utilisez la période + entrepôt + statut pour générer des KPI précis (volumes contrôlés, taux de conformité, etc.).
+        </p>
+
+        <div class="flex flex-wrap gap-2 justify-end">
+          <button type="submit"
+                  name="format"
+                  value="xlsx"
+                  class="inline-flex items-center justify-center rounded-lg border border-emerald-400/70 bg-emerald-900/40
+                         px-3 py-2 text-xs sm:text-sm font-medium text-emerald-100 hover:bg-emerald-800/80">
+            <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 4h10l6 6v10H4z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 17l3-4 3 4M9 13h6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Export Excel
+          </button>
+
+          <button type="submit"
+                  name="format"
+                  value="html"
+                  formaction="{% url 'labodashboardrapport_synthese' %}"
+                  class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-cyan-400 to-sky-400
+                         px-4 py-2 text-xs sm:text-sm font-semibold text-slate-900 shadow-md hover:from-cyan-300 hover:to-sky-300">
+            <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 4h16v4H4zM4 12h10v4H4zM4 20h7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Voir synthèse
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+
+
+<!-- ========== Modal: détails résultats ========== -->
+<div id="modal-backdrop"
+     class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[1000]"
+     aria-hidden="true"></div>
+
+<div class="modal fade" id="modal-lg" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-dialog modal-md max-w-4xl w-full px-4 sm:px-0" role="document">
+    <div class="modal-content glass shadow-glass border border-white/10 text-white rounded-2xl overflow-hidden">
+
+      <!-- Header -->
+      <div class="modal-header px-4 sm:px-5 py-3 border-b border-white/10 flex items-center justify-between bg-slate-900/90">
+        <div class="flex items-start gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/20 ring-1 ring-emerald-400/40 text-emerald-300">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 12.5l4.5 4.5L20 5.5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h4 class="modal-title text-sm sm:text-base font-semibold tracking-tight text-white">
+              Détails des résultats
+            </h4>
+            <p class="mt-0.5 text-xs sm:text-sm text-slate-200/75">
+              Vue détaillée des paramètres analytiques pour l’échantillon sélectionné.
+            </p>
+          </div>
+        </div>
+
+        <button type="button"
+                class="close ml-3 w-9 h-9 inline-flex items-center justify-center rounded-full bg-slate-900/70 border border-slate-600/70 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400/70"
+                data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true" class="text-xl leading-none">&times;</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body p-0 bg-slate-950/95">
+
+        <!-- Top info strip -->
+        <div class="px-4 sm:px-5 py-3 border-b border-white/10 flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-200/80 bg-slate-950">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-medium text-slate-100">Échantillon actif</span>
+          </div>
+          <div class="hidden sm:inline-block h-3 w-px bg-slate-700/70"></div>
+          <div class="flex flex-wrap gap-2 text-[11px] sm:text-xs">
+            <span class="px-2 py-1 rounded-full bg-slate-900/80 border border-slate-700/80">
+              Code: <span class="font-semibold" id="sample-code-badge">—</span>
+            </span>
+            <span class="px-2 py-1 rounded-full bg-slate-900/80 border border-slate-700/80">
+              Produit: <span class="font-semibold" id="sample-product-badge">—</span>
+            </span>
+            <span class="px-2 py-1 rounded-full bg-slate-900/80 border border-slate-700/80">
+              Date: <span class="font-semibold" id="sample-date-badge">—</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="px-4 sm:px-5 py-4 sm:py-5">
+
+          <!-- Loading state -->
+          <div id="results-loading" class="flex items-center gap-3 text-sm text-slate-200/80">
+            <svg class="h-5 w-5 spin text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="9" stroke-opacity=".2"></circle>
+              <path d="M21 12a9 9 0 0 0-9-9" stroke-width="2"></path>
+            </svg>
+            <span>Chargement des résultats…</span>
+          </div>
+
+          <!-- Results layout -->
+          <div id="results-container" class="hidden mt-2 sm:mt-3 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+
+            <!-- Left: summary -->
+            <div class="lg:col-span-4 space-y-3">
+              <div class="rounded-2xl border border-white/10 bg-slate-900/90 p-3 sm:p-4">
+                <h5 class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 mb-2">
+                  Synthèse
+                </h5>
+                <div class="flex flex-col gap-3 text-sm text-slate-100/90">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-slate-300/90">Statut global</span>
+                    <span id="status-badge"
+                          class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium bg-slate-800 text-slate-100 border border-slate-600">
+                      <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                      En attente
+                    </span>
+                  </div>
+
+                  <div class="h-px w-full bg-gradient-to-r from-transparent via-slate-700/70 to-transparent"></div>
+
+                  <dl class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:text-[13px]">
+                    <div>
+                      <dt class="text-slate-400">Laboratoire</dt>
+                      <dd id="summary-lab" class="font-medium text-slate-100">—</dd>
+                    </div>
+                    <div>
+                      <dt class="text-slate-400">Référence</dt>
+                      <dd id="summary-ref" class="font-medium text-slate-100">—</dd>
+                    </div>
+                    <div>
+                      <dt class="text-slate-400">Produit</dt>
+                      <dd id="summary-product" class="font-medium text-slate-100">—</dd>
+                    </div>
+                    <div>
+                      <dt class="text-slate-400">Importateur</dt>
+                      <dd id="summary-importer" class="font-medium text-slate-100">—</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-white/10 bg-slate-900/90 p-3 sm:p-4">
+                <h5 class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 mb-2">
+                  Observations
+                </h5>
+                <p id="summary-notes" class="text-xs sm:text-sm text-slate-200/85 leading-relaxed">
+                  Aucune observation pour l’instant.
+                </p>
+              </div>
+            </div>
+
+            <!-- Right: lab-friendly detail table -->
+            <div class="lg:col-span-8 rounded-2xl border border-white/10 bg-slate-900/90 overflow-hidden">
+              <header class="px-3 sm:px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h5 class="text-xs font-semibold text-white">
+                    Paramètres analysés
+                  </h5>
+                  <p class="text-[10px] sm:text-xs text-slate-300/80">
+                    Chaque ligne reprend le résultat, la spécification et la conformité.
+                  </p>
+                </div>
+              </header>
+
+              <div class="lab-data-grid-wrapper">
+                <table class="data-grid lab-data-grid min-w-full text-xs sm:text-sm text-left text-slate-100">
+                  <thead class="sticky top-0 z-10 text-[10px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+                    <tr>
+                      <th class="px-3 py-2 lab-col-param">Nom paramètre</th>
+                      <th class="px-3 py-2 lab-col-result">Résultat mesuré</th>
+                      <th class="px-3 py-2 lab-col-unit">Unité</th>
+                      <th class="px-3 py-2 lab-col-spec">Spécification / norme</th>
+                      <th class="px-3 py-2 lab-col-method">Méthode</th>
+                      <th class="px-3 py-2 lab-col-status">Conformité</th>
+                      <th class="px-3 py-2 lab-col-observation">Observation</th>
+                    </tr>
+                  </thead>
+                  <tbody id="results-tbody" class="tbody">
+                    {# lignes injectées en AJAX #}
+                  </tbody>
+                </table>
+
+                <div id="results-empty-state"
+                     class="hidden py-6 text-center text-[11px] sm:text-xs text-slate-300/80">
+                  Aucun paramètre à afficher pour cet échantillon.
+                </div>
+              </div>
+            </div>
+
+          </div> <!-- /#results-container -->
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer px-4 sm:px-5 py-3 border-t border-white/10 bg-slate-900/95 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <button type="button"
+                class="btn-pill btn-pill-soft bg-slate-900 border-slate-600 text-slate-100 hover:bg-slate-800 hover:border-slate-500 text-sm px-4 py-2"
+                data-dismiss="modal">
+          Fermer
+        </button>
+
+        <div class="flex flex-wrap gap-2 sm:justify-end">
+          <button type="button"
+                  class="btn-pill btn-pill-soft bg-amber-900/40 border-amber-400/70 text-amber-100 hover:bg-amber-900/70 text-sm px-4 py-2 refaire-btn"
+                  id="btn-refaire">
+            À refaire
+          </button>
+          <button type="button"
+                  class="btn-pill btn-pill-primary bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-900 font-semibold hover:from-emerald-300 hover:to-cyan-300 text-sm px-4 py-2 conform-btn"
+                  id="btn-conforme">
+            Conforme
+          </button>
+          <button type="button"
+                  class="btn-pill btn-pill-soft bg-rose-900/40 border-rose-400/70 text-rose-100 hover:bg-rose-900/70 text-sm px-4 py-2 nonconform-btn"
+                  id="btn-non-conforme">
+            Non conforme
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
-      <!-- /.modal -->
 
 
+<!-- ========== Table principale ========== -->
+<section class="glass rounded-2xl shadow-glass border border-white/10 overflow-hidden">
+  <header class="px-4 sm:px-5 py-3 border-b border-white/10 flex items-center justify-between">
+    <div>
+      <h3 class="text-sm sm:text-base font-semibold text-white">
+        Échantillons en attente de validation
+      </h3>
+      <p class="text-xs text-slate-200/75">
+        Cochez les lignes pour des actions groupées ou utilisez “Afficher” pour le détail.
+      </p>
+    </div>
 
-    <div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-      <tr>
-        <th></th>
-        <th>DATE RECEP.</th>
-        <th>ENTREPOT</th>
-        <th>FOURNISSEUR</th>
-        <th>CODE LABO</th>
-        <th>NUM.CERTIFICAT</th>
-        <th>PRODUIT</th>
-        <th>ACTION(s)</th>
-      </tr>
+    <div class="flex items-center gap-3">
+      <label class="text-xs text-slate-300">
+        Lignes/page
+        <select id="perPage"
+                class="ml-1 rounded-lg bg-slate-900/80 border border-slate-600 px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+        </select>
+      </label>
+      <button id="btnRefresh"
+              class="btn-pill btn-pill-soft bg-slate-900 border-slate-600 text-slate-100 hover:bg-slate-800">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 4v6h6M20 20v-6h-6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 8A8 8 0 104.5 5.5" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span class="hidden sm:inline">Actualiser</span>
+      </button>
+    </div>
+  </header>
 
-    </thead>
-  </table>
-</div>
+  <div id="data-table-wrapper" class="relative overflow-x-auto">
+    <div class="loading-overlay grid" id="mainSpinner">
+      <svg class="h-8 w-8 spin text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="9" stroke-opacity=".2"></circle>
+        <path d="M21 12a9 9 0 0 0-9-9" stroke-width="2"></path>
+      </svg>
+    </div>
 
-<!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <table class="data-grid min-w-full text-sm text-left text-slate-100">
+      <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+        <tr>
+          <th class="px-3 py-2 text-center col-thickbox">…</th>
+          <th class="px-3 py-2 col-date">Date recep.</th>
+          <th class="px-3 py-2 col-entrepot">Entrepôt</th>
+          <th class="px-3 py-2 col-fournisseur">Fournisseur</th>
+          <th class="px-3 py-2 col-code-labo">Code Labo</th>
+          <th class="px-3 py-2 col-certificat">N° certificat</th>
+          <th class="px-3 py-2 col-produit">Produit</th>
+          <th class="px-3 py-2 text-right col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody" class="tbody"></tbody>
+    </table>
+
+    <div id="emptyState" class="hidden py-8 text-center text-slate-300/80 text-sm">
+      Aucun échantillon à afficher.
+    </div>
+  </div>
+
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 flex items-center justify-between">
+    <div id="pgInfo" class="text-xs text-slate-300/80">
+      —
+    </div>
+    <div class="flex items-center gap-1">
+      <button class="pg-btn" data-dir="first">«</button>
+      <button class="pg-btn" data-dir="prev">‹</button>
+      <span id="pgPage" class="text-xs text-slate-100 px-2">Page 1</span>
+      <button class="pg-btn" data-dir="next">›</button>
+    </div>
+  </footer>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-
-
 <script>
-    var dataRow;
-    var selectedRowIds = [];
-    const csrfToken = '{{ csrf_token }}';
+  // ===== Runtime guards (no jQuery, no bootstrap-datepicker) =====
+  window.dbdpInitialized = true;
+  if (!window.jQuery) {
+    const jqStub = function(selector){
+      const nodeList = (typeof selector === 'string')
+        ? document.querySelectorAll(selector)
+        : (selector ? [selector] : []);
+      const api = {
+        length: nodeList.length,
+        0: nodeList[0],
+        on: function(){ return api; },
+        data: function(){ return {}; },
+        modal: function(){ return api; }
+      };
+      return api;
+    };
+    jqStub.fn = { datetimepicker: function(){ return this; } };
+    window.jQuery = window.$ = jqStub;
+  }
 
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            ordering: false,
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'affichagetableauvalidation1Response' %}',
-                type: 'GET',
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
+  // ===== Globals & helpers =====
+  const csrfToken = '{{ csrf_token }}';
+  let dataRow = null;
+  let selectedRowIds = [];
+
+  const STATE = {
+    page: 1,
+    perPage: 20,
+    total: 0,
+    items: []
+  };
+
+  function esc(v){
+    return String(v ?? '').replace(/[&<>"']/g, m => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m]));
+  }
+
+  function setLoading(on){
+    const sp = document.getElementById('mainSpinner');
+    if(!sp) return;
+    sp.style.display = on ? 'grid' : 'none';
+  }
+
+  // ===== Render rows =====
+  function renderRows(){
+    const tbody = document.getElementById('tbody');
+    const empty = document.getElementById('emptyState');
+    if (!tbody) return;
+
+    if (!STATE.items.length){
+      tbody.innerHTML = '';
+      empty.classList.remove('hidden');
+    } else {
+      empty.classList.add('hidden');
+      tbody.innerHTML = STATE.items.map(r => `
+        <tr>
+          <!-- 1. Checkbox -->
+
+          <td class="px-3 py-2 text-center col-thickbox">
+            <input type="checkbox"
+                   class="tick-box h-4 w-4 rounded border-slate-500/70 bg-slate-800 text-cyan-400 focus:ring-cyan-400"
+                   data-row-id="${esc(r.idcargaison)}">
+          </td>
+
+          <!-- 2. Date réception -->
+          <td class="px-3 py-2 col-date">
+            ${esc(r.entrepot_echantillon__laboreception__datereceptionlabo__date)}
+          </td>
+
+          <!-- 3. Entrepôt -->
+          <td class="px-3 py-2 col-entrepot">
+            ${esc(r.entrepot__nomentrepot)}
+          </td>
+
+          <!-- 4. Fournisseur -->
+          <td class="px-3 py-2 col-fournisseur">
+            ${esc(r.importateur__nomimportateur)}
+          </td>
+
+          <!-- 5. Code labo -->
+          <td class="px-3 py-2 col-code-labo">
+            ${esc(r.entrepot_echantillon__laboreception__codelabo)}
+          </td>
+
+          <!-- 6. N° certificat -->
+          <td class="px-3 py-2 col-certificat">
+            ${esc(r.entrepot_echantillon__laboreception__numcertificatqualite)}
+          </td>
+
+          <!-- 7. Produit -->
+          <td class="px-3 py-2 col-produit">
+            ${esc(r.produit__nomproduit)}
+          </td>
+
+          <!-- 8. Actions -->
+          <td class="px-3 py-2 text-right col-actions">
+            <button class="btn-pill btn-pill-soft bg-slate-800 border-slate-500/70 text-slate-100 hover:bg-slate-700 afficher-btn"
+                    data-row-id="${esc(r.idcargaison)}">
+              Afficher
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    const pgInfo = document.getElementById('pgInfo');
+    const pgPage = document.getElementById('pgPage');
+    if (pgInfo){
+      const start = (STATE.page - 1) * STATE.perPage + 1;
+      const end   = Math.min(STATE.total, STATE.page * STATE.perPage);
+      pgInfo.textContent = STATE.total
+        ? `Affichage ${start}–${end} sur ${STATE.total}`
+        : '—';
+    }
+    if (pgPage){
+      pgPage.textContent = `Page ${STATE.page}`;
+    }
+
+    const tickAll = document.getElementById('tick-all');
+    if (tickAll){ tickAll.checked = false; }
+  }
+
+  // ===== Fetch page from backend (POST style) =====
+  async function loadPage(page){
+    STATE.page = page || 1;
+    setLoading(true);
+    try{
+      const start = (STATE.page - 1) * STATE.perPage;
+      const len   = STATE.perPage;
+
+      const fd = new FormData();
+      fd.set('start', String(start));
+      fd.set('length', String(len));
+      fd.set('draw', '1');
+
+      const res = await fetch("{% url 'affichagetableauvalidation1' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: fd,
+        credentials: 'same-origin'
+      });
+
+      if(!res.ok){
+        console.warn('HTTP error', res.status);
+        STATE.items = [];
+        STATE.total = 0;
+        renderRows();
+        return;
+      }
+
+      const data = await res.json();
+      console.log('page response', data);
+
+      STATE.items = Array.isArray(data.data) ? data.data : [];
+
+      const total =
+        (typeof data.recordsTotal !== 'undefined' ? data.recordsTotal : null) ??
+        (typeof data.recordsFiltered !== 'undefined' ? data.recordsFiltered : null) ??
+        STATE.items.length;
+
+      STATE.total = Number(total || 0);
+      renderRows();
+    }catch(e){
+      console.error('loadPage error', e);
+      STATE.items = [];
+      STATE.total = 0;
+      renderRows();
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  // ===== Pagination =====
+  function handlePaginationClick(dir){
+    const totalPages = Math.max(1, Math.ceil(STATE.total / STATE.perPage));
+    if(dir === 'first'){
+      if(STATE.page === 1) return;
+      loadPage(1);
+    } else if(dir === 'prev'){
+      if(STATE.page <= 1) return;
+      loadPage(STATE.page - 1);
+    } else if(dir === 'next'){
+      if(STATE.page >= totalPages) return;
+      loadPage(STATE.page + 1);
+    }
+  }
+
+  // ===== Single-row actions =====
+  async function ajaxStatusChange(urlName, idcargaison){
+    try{
+      const fd = new FormData();
+      fd.set('idcargaison', String(idcargaison));
+      const res = await fetch(urlName, {
+        method:'POST',
+        headers:{ 'X-CSRFToken': csrfToken },
+        body: fd,
+        credentials:'same-origin'
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Succès',
+        text: 'Opération effectuée avec succès.',
+        iconColor: '#22c55e',
+        background: 'transparent',
+        color: '#e5e7eb',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-lims'
+        }
+      });
+
+      closeDetailsModal();
+      loadPage(STATE.page);
+    }catch(err){
+      await Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: "Une erreur est survenue lors de la requête.",
+        iconColor: '#f97373',
+        background: 'transparent',
+        color: '#e5e7eb',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-lims'
+        }
+      });
+
+      closeDetailsModal();
+      loadPage(STATE.page);
+    }
+  }
+
+  // ===== Bulk actions =====
+  async function ajaxBulk(urlName){
+    if(!selectedRowIds.length){
+      await Swal.fire({
+        icon: 'error',
+        title: 'Aucune sélection',
+        text: 'Veuillez sélectionner au moins une ligne.',
+        iconColor: '#f97373',
+        background: 'transparent',
+        color: '#e5e7eb',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-lims'
+        }
+      });
+      return;
+    }
+    try{
+      const fd = new FormData();
+      selectedRowIds.forEach(id => fd.append('selectedRowIds', id));
+      const res = await fetch(urlName, {
+        method:'POST',
+        headers:{ 'X-CSRFToken': csrfToken },
+        body: fd,
+        credentials:'same-origin'
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Succès',
+        text: 'Opération effectuée avec succès.',
+        iconColor: '#22c55e',
+        background: 'transparent',
+        color: '#e5e7eb',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-lims'
+        }
+      });
+
+      selectedRowIds = [];
+      loadPage(STATE.page);
+    }catch(err){
+      await Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: "Erreur lors du traitement de votre requête.",
+        iconColor: '#f97373',
+        background: 'transparent',
+        color: '#e5e7eb',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'swal2-lims'
+        }
+      });
+
+      selectedRowIds = [];
+      loadPage(STATE.page);
+    }
+  }
+
+  // ===== Modal controller =====
+  const detailsModal = {
+    el: null,
+    body: null,
+    init(){
+      this.el = document.getElementById('modal-lg');
+      if(!this.el) return;
+      this.body = this.el.querySelector('.modal-body');
+      this.el.querySelectorAll('[data-dismiss="modal"]').forEach(btn=>{
+        btn.addEventListener('click', ()=> closeDetailsModal());
+      });
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape' && isModalOpen()) closeDetailsModal();
+      });
+    },
+    async openWithUrl(url){
+      if(!this.el) return;
+      try{
+        this.body.innerHTML =
+          '<div class="px-4 sm:px-5 py-4">' +
+            '<div class="flex items-center gap-3 text-sm text-slate-200/80">' +
+              '<svg class="h-5 w-5 animate-spin text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">' +
+                '<circle cx="12" cy="12" r="9" stroke-opacity=".2"></circle>' +
+                '<path d="M21 12a9 9 0 0 0-9-9" stroke-width="2"></path>' +
+              '</svg>' +
+              '<span>Chargement des résultats…</span>' +
+            '</div>' +
+          '</div>';
+        showModal();
+        const res = await fetch(url, { credentials:'same-origin' });
+        const html = await res.text();
+        // Wrap remote content so it displays clearly in our modal theme
+        this.body.innerHTML =
+          '<div class="px-4 sm:px-5 py-4 space-y-3 text-slate-100">' +
+            '<div class="text-xs sm:text-sm text-slate-300/80">Détails des résultats</div>' +
+            '<div id="remote-results-shell" class="rounded-2xl border border-white/10 bg-slate-900/90 p-3 sm:p-4 overflow-auto max-h-[70vh]">' +
+              html +
+            '</div>' +
+          '</div>';
+
+        // Enhance any plain tables coming from the server with our lab styles
+        try{
+          const shell = this.body.querySelector('#remote-results-shell');
+          if(shell){
+            const tables = Array.from(shell.querySelectorAll('table'));
+            tables.forEach(tbl => {
+              tbl.classList.add('data-grid','lab-data-grid','min-w-full','text-xs','sm:text-sm','text-left','text-slate-100');
+              const thead = tbl.querySelector('thead');
+              if(thead){
+                thead.classList.add('sticky','top-0','z-10','text-[10px]','sm:text-xs','uppercase','tracking-wide','text-white/80','backdrop-blur','bg-white/5');
+                thead.querySelectorAll('th').forEach(th => th.classList.add('px-3','py-2'));
+              }
+              const tbody = tbl.querySelector('tbody');
+              if(tbody){
+                tbody.classList.add('tbody');
+                let headers = [];
+                if(thead){
+                  headers = Array.from(thead.querySelectorAll('th')).map(h => (h.innerText||'').trim());
                 }
-            },
-            columns: [
-                { // New column configuration for tick box
-                    data: null,
-                    render: function (data, type, row) {
-                        // Render a tick box in each cell of this column
-                        return '<input type="checkbox" class="tick-box" data-row-id="' + row.idcargaison + '">';
-                    },
-                    className: 'text-center', // Center align content in this column
-                    title: '<input type="checkbox" id="tick-all">' // Add checkbox in the header
-                },
-                { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
-                { data: 'entrepot__nomentrepot' }, // Use array index to access 'frontiere__nomville'
-                { data: 'importateur__nomimportateur' }, // Use array index to access 'importateur__nomimportateur'
-                { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'entrepot__nomentrepot'
-                { data: 'entrepot_echantillon__laboreception__numcertificatqualite' }, // Use array index to access 'produit__nomproduit'
-                { data: 'produit__nomproduit' },
-                { // New column configuration
-                    data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
-                        {##}
-                        {#const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +#}
-                        {#    '<input type="text" class="json-input" id="input-' + data + '">';#}
-
-                         // Include a link to be triggered with the parameter 'data'
-                        const linkURL = '/labo/affichageDetailsResultatsGauche/' + data;
-                        const linkText = 'AFFICHER';
-
-                        // Include a button to submit the JSON data for the row
-                        const submitAfficher = '<button class="btn btn-info afficher-btn" data-row-id="' + data + '">AFFICHER</button> ';
-                        {#const submitConforme = '<button class="btn btn-success" data-row-id="' + data + '">CONFORME</button> ';#}
-                        {#const submitNonConforme = '<button class="btn btn-danger" data-row-id="' + data + '">NON CONFORME</button> ';#}
-                        {#const submitARefaire = '<button class="btn btn-outline-danger" data-row-id="' + data + '">A REFAIRE</button> ';#}
-{##}
-{#                        return submitAfficher + submitConforme + submitNonConforme + submitARefaire;#}
-                        return submitAfficher;
+                Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+                  tr.classList.add('bg-transparent');
+                  Array.from(tr.querySelectorAll('td')).forEach((td, idx) => {
+                    td.classList.add('px-3','py-2');
+                    if(headers[idx]){
+                      td.setAttribute('data-label', headers[idx]);
                     }
-                }// Use array index to access 'immatriculation'
-            ],
+                  });
+                });
+              }
+            });
+          }
+        }catch(_){}
+      }catch(err){
+        this.body.innerHTML = '<div class="px-4 sm:px-5 py-4"><p class="text-sm text-rose-200/80">Erreur de chargement.</p></div>';
+      }
+    }
+  };
 
-        });
+  function showModal(){
+    const m = document.getElementById('modal-lg');
+    const backdrop = document.getElementById('modal-backdrop');
+    if (!m) return;
 
-        // Event listener for opening the modal
-        $('#data-table').on('click', '.afficher-btn', function() {
-          var rowId = $(this).data('row-id');
+    m.classList.add('custom-open');
+    m.style.display = 'block';
+    m.removeAttribute('aria-hidden');
+
+    if (backdrop) {
+      backdrop.classList.remove('hidden');
+      backdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    m.setAttribute('tabindex', '-1');
+    m.focus({ preventScroll: true });
+  }
+
+  function closeDetailsModal(){
+    const m = document.getElementById('modal-lg');
+    const backdrop = document.getElementById('modal-backdrop');
+    if (!m) return;
+
+    m.classList.remove('custom-open');
+    m.style.display = 'none';
+    m.setAttribute('aria-hidden', 'true');
+
+    if (backdrop) {
+      backdrop.classList.add('hidden');
+      backdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  }
+
+  function isModalOpen(){
+    const m = document.getElementById('modal-lg');
+    return m && m.style.display === 'block';
+  }
+
+  document.getElementById('modal-backdrop')?.addEventListener('click', () => {
+    if (isModalOpen()) closeDetailsModal();
+  });
+
+  // ===== DOM wiring =====
+  document.addEventListener('DOMContentLoaded', function(){
+    const perPageSelect = document.getElementById('perPage');
+    if(perPageSelect){
+      perPageSelect.value = String(STATE.perPage);
+      perPageSelect.addEventListener('change', () => {
+        const v = parseInt(perPageSelect.value || '20', 10);
+        STATE.perPage = isNaN(v) ? 20 : v;
+        loadPage(1);
+      });
+    }
+
+    const btnRefresh = document.getElementById('btnRefresh');
+    if(btnRefresh){
+      btnRefresh.addEventListener('click', () => loadPage(STATE.page));
+    }
+
+    document.querySelectorAll('.pg-btn[data-dir]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handlePaginationClick(btn.getAttribute('data-dir'));
+      });
+    });
+
+    const tableWrapper = document.getElementById('data-table-wrapper');
+    if(tableWrapper){
+      tableWrapper.addEventListener('click', function(e){
+        const afficherBtn = e.target.closest('.afficher-btn');
+        if(afficherBtn){
+          const rowId = afficherBtn.dataset.rowId;
           dataRow = rowId;
-          var linkURL = '/labo/affichageDetailsResultatsGauche/' + rowId;
-          // Load content into the modal body via AJAX
-          $('#modal-lg .modal-body').load(linkURL);
-          // Show the modal
-          $('#modal-lg').modal('show');
-        });
+          const linkURL = '/labo/affichageDetailsResultatsGauche/' + rowId;
+          detailsModal.openWithUrl(linkURL);
+          return;
+        }
+      });
 
-
-        // Event listener for individual tick boxes
-        $(document).on('change', '.tick-box', function() {
-            var rowId = $(this).data('row-id');
-            if ($(this).prop('checked')) {
-                selectedRowIds.push(rowId); // Store the row ID when the tick box is checked
-                console.log(selectedRowIds);
-            } else {
-                var index = selectedRowIds.indexOf(rowId);
-                if (index !== -1) {
-                    selectedRowIds.splice(index, 1); // Remove the row ID if the tick box is unchecked
-                    console.log(selectedRowIds);
-                }
+      tableWrapper.addEventListener('change', function(e){
+        const tick = e.target.closest('.tick-box');
+        if(tick){
+          const rowId = tick.dataset.rowId;
+          if(tick.checked){
+            if(!selectedRowIds.includes(rowId)){
+              selectedRowIds.push(rowId);
             }
+          }else{
+            selectedRowIds = selectedRowIds.filter(id => id !== rowId);
+          }
+        }
+      });
+    }
+
+    const tickAll = document.getElementById('tick-all');
+    if(tickAll){
+      tickAll.addEventListener('change', () => {
+        const checkboxes = document.querySelectorAll('.tick-box');
+        selectedRowIds = [];
+        checkboxes.forEach(chk => {
+          chk.checked = tickAll.checked;
+          if(tickAll.checked){
+            const rowId = chk.dataset.rowId;
+            selectedRowIds.push(rowId);
+          }
         });
+      });
+    }
+
+    const modalRoot = document.getElementById('modal-lg');
+    if(modalRoot){
+      modalRoot.addEventListener('click', (e)=>{
+        const conform = e.target.closest('.conform-btn');
+        const nonconf = e.target.closest('.nonconform-btn');
+        const refaire = e.target.closest('.refaire-btn');
+        if(conform){ if(dataRow) ajaxStatusChange("{% url 'conformeAjx' %}", dataRow); }
+        if(nonconf){ if(dataRow) ajaxStatusChange("{% url 'nonconformeAjx' %}", dataRow); }
+        if(refaire){ if(dataRow) ajaxStatusChange("{% url 'refaireAjx' %}", dataRow); }
+      });
+    }
+
+    // Hook bulk buttons
 
 
-        // Event listener for the "Select All" checkbox
-        $('#tick-all').on('change', function() {
-            var checkboxes = $('.tick-box');
-            checkboxes.prop('checked', $(this).prop('checked'));
-            if ($(this).prop('checked')) {
-                selectedRowIds = []; // Clear the selectedRowIds array
-                checkboxes.each(function() {
-                    var rowId = $(this).data('row-id');
-                    selectedRowIds.push(rowId); // Store all row IDs when "Select All" is checked
-                    console.log(selectedRowIds);
-                });
-            } else {
-                selectedRowIds = []; // Clear the selectedRowIds array if "Select All" is unchecked
-                console.log(selectedRowIds);
-            }
-        });
-
-
-    });
-
-    // Add a click event listener for the 'CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.conform-btn', function() {
-        const idcargaison = dataRow;
-        console.log('TEST');
-        // Make an AJAX request to a particular URL with the 'idcargaison' data
-        $.ajax({
-            type: 'POST', // or 'GET' depending on your server-side implementation
-            url: '{% url "conformeAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-            data: { idcargaison: idcargaison },
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Display success SweetAlert
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your operation was successful!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle the AJAX response here if needed
-                {#console.log('AJAX request successful');#}
-                {#$('#modal-lg').modal('hide');#}
-                {#sweetAlert#}
-                {#// Reload the table#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            },
-            error: function(error) {
-                // Display error SweetAlert
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while processing your request!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle errors if any
-                console.error('AJAX request failed:', error);
-                {#$('#modal-lg').modal('hide');#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            }
-        });
-    });
-
-
-    // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.nonconform-btn', function() {
-        {#const idcargaison = $(this).data('row-id');#}
-        const idcargaison = dataRow;
-
-        // Make an AJAX request to a particular URL with the 'idcargaison' data
-        $.ajax({
-            type: 'POST', // or 'GET' depending on your server-side implementation
-            url: '{% url "nonconformeAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-            data: { idcargaison: idcargaison },
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Display success SweetAlert
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your operation was successful!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle the AJAX response here if needed
-                console.log('AJAX request successful');
-                {#$('#modal-lg').modal('hide');#}
-                {#// Reload the table#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            },
-            error: function(error) {
-                // Display error SweetAlert
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while processing your request!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle errors if any
-                console.error('AJAX request failed:', error);
-                {#$('#modal-lg').modal('hide');#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            }
-        });
-    });
-
-
-    // Add a click event listener for the 'NON CONFORME' buttons with class 'conform-btn'
-    $(document).on('click', '.refaire-btn', function() {
-        {#const idcargaison = $(this).data('row-id');#}
-        const idcargaison = dataRow;
-
-        // Make an AJAX request to a particular URL with the 'idcargaison' data
-        $.ajax({
-            type: 'POST', // or 'GET' depending on your server-side implementation
-            url: '{% url "refaireAjx" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-            data: { idcargaison: idcargaison },
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Display success SweetAlert
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Your operation was successful!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle the AJAX response here if needed
-                console.log('AJAX request successful');
-                {#$('#modal-lg').modal('hide');#}
-                {#// Reload the table#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            },
-            error: function(error) {
-                // Display error SweetAlert
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while processing your request!',
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#modal-lg').modal('hide');
-                        $('#data-table').DataTable().ajax.reload(); // Reload the table
-                    }
-                });
-                // Handle errors if any
-                console.error('AJAX request failed:', error);
-                {#$('#modal-lg').modal('show');#}
-                {#$('#data-table').DataTable().ajax.reload(); // Replace 'your-table-id' with the actual ID of your table#}
-            }
-        });
-    });
-
-
-
-    $(document).ready(function() {
-        $('#bulkConforme').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-
-            // Check if there are selected rows
-            if (selectedRowIds.length > 0) {
-                // Send the selectedRowIds array to the desired address
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "bulkConforme1" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: function(response) {
-                        // Handle the success response here if needed
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Your operation was successful!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        console.log('Selected rows sent successfully');
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-                // Inform the user that no rows are selected
-                {#console.log('No rows selected');#}
-            }
-
-
-        });
-    });
-
-
-    $(document).ready(function() {
-        $('#bulkNonConforme').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-        // Check if there are selected rows
-            if (selectedRowIds.length > 0) {
-                // Send the selectedRowIds array to the desired address
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "bulkNonConforme1" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: function(response) {
-                        // Handle the success response here if needed
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Your operation was successful!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        console.log('Selected rows sent successfully');
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-                // Inform the user that no rows are selected
-                {#console.log('No rows selected');#}
-            }
-
-        });
-    });
-
-
-    $(document).ready(function() {
-        $('#bulkRefaire').click(function(event) {
-            // Prevent the default action of the link
-            event.preventDefault();
-
-            if (selectedRowIds.length > 0) {
-                // Send the selectedRowIds array to the desired address
-                $.ajax({
-                    type: 'POST', // or 'GET' depending on your server-side implementation
-                    url: '{% url "bulkRefaire1" %}', // Replace 'your_desired_address_here' with your actual address
-                    data: { selectedRowIds: selectedRowIds },
-                    headers: {
-                        'X-CSRFToken': csrfToken // Set the CSRF token as a request header
-                    },
-                    success: function(response) {
-                        // Handle the success response here if needed
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Your operation was successful!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        console.log('Selected rows sent successfully');
-                    },
-                    error: function(error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Erreur lors du traitement de votre requête!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                        });
-                        {#// Handle errors if any#}
-                        {#console.error('Error sending selected rows:', error);#}
-                    }
-                });
-            } else {
-                Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Aucune case sélectionnée!',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                $('#data-table').DataTable().ajax.reload(); // Reload the table
-                                selectedRowIds = [];
-                            }
-                });
-                // Inform the user that no rows are selected
-                {#console.log('No rows selected');#}
-            }
-
-            // Your custom logic here
-            // For example, you can perform an AJAX request, display a message, etc.
-            console.log('Button clicked!');
-
-        });
-    });
-
-
-
+    detailsModal.init();
+    loadPage(1);
+  });
 </script>
 
 {% endblock %}
-

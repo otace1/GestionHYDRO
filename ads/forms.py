@@ -100,47 +100,40 @@ class ProduitEditForm(forms.ModelForm):
 
 # Formulaire de recherche statistique
 class RechercheStat(forms.Form):
-    ville = forms.ModelChoiceField(queryset=Ville.objects.all(), label="ENTITE:",
-                                       required=False)
+    ville = forms.ModelChoiceField(queryset=Ville.objects.all(), label="ENTITE:", required=False)
     produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="PRODUIT:", required=False)
-    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="IMPORTATEUR:",
-                                         required=False)
-    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all(), label="ENTREPOT:",
-                                      required=False)
-    date_d = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE DEBUT',required=False)
-    date_f = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE FIN',required=False)
+    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all(), label="IMPORTATEUR:", required=False)
+    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all(), label="ENTREPOT:", required=False)
+    date_d = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE DEBUT', required=False)
+    date_f = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE FIN', required=False)
 
     def __init__(self, *args, **kwargs):
+        # Optionally accept a user to filter available choices
+        user = kwargs.pop('user', None)
         super(RechercheStat, self).__init__(*args, **kwargs)
+
+        # Restrict Ville choices to those where the user is affected, if a user is provided
+        try:
+            if user is not None and getattr(user, 'id', None):
+                self.fields['ville'].queryset = Ville.objects.filter(
+                    affectationville__username_id=user.id
+                ).distinct()
+        except Exception:
+            # Fail-safe: keep default queryset if anything goes wrong
+            pass
         self.helper = FormHelper()
         self.helper.form_class = 'form-horizontal'
         self.helper.form_id = 'registration-form'
         self.helper.label_class = 'col-md-6'
         self.helper.field_class = 'col-md-6'
+        self.helper.form_show_buttons = False  # 👈 Hide default form buttons
         self.helper.layout = Layout(
-            Row(
-                Column('ville',css_class='form-group col-md-12 mb-0'),
-            ),
-            Row(
-                Column('produit',css_class='form-group col-md-12 mb-0'),
-            ),
-            Row(
-                Column('importateur',css_class='form-group col-md-12 mb-0'),
-            ),
-            Row(
-                Column('entrepot',css_class='form-group col-md-12 mb-0'),
-            ),
-            Row(
-                Column('date_d',css_class='form-group col-md-12 mb-0'),
-            ),
-            Row(
-                Column('date_f',css_class='form-group col-md-12 mb-0'),
-            ),
-
-            FormActions(
-                Reset('ANNULER', 'ANNULER', css_class='btn btn-danger'),
-                Submit('VALIDER', 'VALIDER', css_class='btn btn-primary'),
-            ),
+            Row(Column('ville', css_class='form-group col-md-12 mb-0')),
+            Row(Column('produit', css_class='form-group col-md-12 mb-0')),
+            Row(Column('importateur', css_class='form-group col-md-12 mb-0')),
+            Row(Column('entrepot', css_class='form-group col-md-12 mb-0')),
+            Row(Column('date_d', css_class='form-group col-md-12 mb-0')),
+            Row(Column('date_f', css_class='form-group col-md-12 mb-0')),
         )
 
 

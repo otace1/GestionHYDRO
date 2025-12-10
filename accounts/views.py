@@ -4,20 +4,24 @@ import io
 from django.contrib.auth import (
     authenticate,
     login,
-    logout,
+    logout, update_session_auth_hash,
 )
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
 from django.db.models import Q, F
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from jsignature.utils import draw_signature
 from xlsxwriter import Workbook
 
 from accounts.models import *
 from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm, \
-    Affectation_Role, Affectation_Labo
+    Affectation_Role, Affectation_Labo, CustomPasswordChangeForm
 from .tables import ListeUtilisateurs, DetailsAffectation, DetailsVille, SignatureTable
 
 
@@ -869,4 +873,17 @@ def activityLogResponse(request):
     })
 
 
-
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = CustomPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Keeps the user logged in after password change
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('change_password')
+        else:
+            messages.error(request, 'Please correct the error below.')
+    else:
+        form = CustomPasswordChangeForm(request.user)
+    return render(request, 'change_password.html', {'form': form})

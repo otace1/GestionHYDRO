@@ -1,6 +1,22 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
 from .views import *
+
+
+router = DefaultRouter()
+router.register(r'voies', VoieViewSet, basename='voies')
+router.register(r'villes', VilleViewSet, basename='villes')
+router.register(r'type-unites', TypeUniteTransportViewSet, basename='type-unites')
+router.register(r'importateurs', ImportateurViewSet, basename='importateurs')
+router.register(r'entrepots', EntrepotViewSet, basename='entrepots')
+router.register(r'produits', ProduitViewSet, basename='produits')
+
+options_list = OptionsViewSet.as_view({
+    'get': 'list'  # not used directly
+})
+
+
 
 urlpatterns = [
 
@@ -14,10 +30,7 @@ urlpatterns = [
     path('entrepot/', NomEntrepot.as_view(), name='entrepot_api'),
     path('produit/', TypeProduit.as_view(), name='produit_api'),
     path('qrcode/<int:pk>/cargo/qrcode/', GetQrcode.as_view(), name='getqrcode_api'), #Get QRCode
-    # Listing
-    # path('list/cargo/', GetCargoList.as_view(), name='getcargolist_api'),
-    # Compteur
-    # path('compteur/cargo/', GetCargoCount.as_view(), name='getcargocount_api'),
+
     path('auth/user/', AuthUserApiView.as_view(), name='auth'),     # Auth
     path('auth/user/login/', loginApiView, name='apiLoginToken'),       # Auth
     path('verificationQrCode/', verificationQrCode, name='verificationQrCode'),     #Verification API
@@ -32,8 +45,6 @@ urlpatterns = [
     path('scanEchantillonnage/', scanEchantillonnage, name='scanEchantillonnage'),  # ShowPer user saved Data
     path('scanInspection/', scanInspection, name='scanInspection'),  # ShowPer user saved Data
     path('scanDechargement/', scanDechargement, name='scanDechargement'),  # ShowPer user saved Data
-
-
 
     path('enregistrementEchantillonnage/', enregistrementEchantillonnage, name='enregistrementEchantillonnage'),  # ShowPer user saved Data
 
@@ -55,6 +66,18 @@ urlpatterns = [
 
     #Appurement pour Kalemie seulement
     path('appurementVolApi/', appurement_vol_api, name='appurementVolApi'),
+
+
+
+    path('', include(router.urls)),
+
+    path('opts/voies/', OptionsViewSet.as_view({'get': 'voies'}), name='api_voies'),
+    path('opts/villes/', OptionsViewSet.as_view({'get': 'villes'}), name='api_villes'),
+    path('opts/type-unites/', OptionsViewSet.as_view({'get': 'type_unites'}), name='api_type_unites'),
+    path('opts/importateurs/', OptionsViewSet.as_view({'get': 'importateurs'}), name='api_importateurs'),
+    path('opts/entrepots/', OptionsViewSet.as_view({'get': 'entrepots'}), name='api_entrepots'),
+    path('opts/produits/', OptionsViewSet.as_view({'get': 'produits'}), name='api_produits'),
+    path('opts/pays/', OptionsViewSet.as_view({'get': 'pays'}), name='api_pays'),
 
 
 ]

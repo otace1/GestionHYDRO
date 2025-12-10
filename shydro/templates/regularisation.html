@@ -1,532 +1,1216 @@
-{% extends 'shydro/regularisation.html' %}
-{% load crispy_forms_tags %}
-{% load django_tables2 %}
+{% extends 'base/base_template.html' %}
+{# Crispy is no longer used on this page; we render Tailwind-native forms #}
 
+{% block main_content %}
 
-{% block modal %}
+<style>
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 
-    <div class="modal fade" id="modal-dest" style="display: none;">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">RE-ORIENTATION</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% crispy form %}
-                </div>
-            </div>
-            <!-- /.modal-content -->
+  #data-table-wrapper {
+    position: relative;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: none; /* toggled by JS */
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.75); /* slate-900/75 */
+    backdrop-filter: blur(6px);
+    z-index: 40;
+  }
+
+  .loading-overlay::before {
+    content: "";
+    border-radius: 9999px;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(148, 163, 184, 0.6); /* slate-400/60 */
+    border-top-color: #4f46e5;              /* primary-ish */
+    width: 32px;
+    height: 32px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* ===== Generic Status/Confirm Modal (glass look) ===== */
+  .app-modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(2px);
+  }
+  .app-modal {
+    width: min(92vw, 540px);
+    border-radius: 16px;
+    background: rgba(2, 6, 23, 0.96);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e5e7eb;
+    box-shadow: 0 20px 60px rgba(3,8,20,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    overflow: hidden;
+  }
+  .app-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    background: rgba(2,6,23,.85);
+  }
+  .app-modal-title{
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:.2px
+  }
+  .app-modal-body{
+    padding:16px 18px;
+    font-size:13px;
+    color:rgba(255,255,255,.88)
+  }
+  .app-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:12px 18px;
+    border-top:1px solid rgba(255,255,255,.08);
+    background: rgba(2,6,23,.85)
+  }
+  .btn-modal{
+    padding:8px 12px;
+    border-radius:10px;
+    font-weight:600;
+    font-size:12px
+  }
+  .btn-modal-primary{
+    background:#34d399;
+    color:#0b1223
+  }
+  .btn-modal-secondary{
+    background:rgba(255,255,255,0.08);
+    color:#e5e7eb
+  }
+  .btn-modal-danger{
+    background:#f43f5e;
+    color:#0b1223
+  }
+</style>
+
+{# ======================= MODALS (TAILWIND ONLY) ======================= #}
+
+{# DESTINATION #}
+<div id="modal-dest"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-3xl mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+            <i class="fas fa-map-marker-alt text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            RE-ORIENTATION
+          </h4>
         </div>
-        <!-- /.modal-dialog -->
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-dest"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <div class="px-4 sm:px-5 py-4">
+        <form id="destination-form" action="{% url 'regularisationDestination' %}" method="post" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Nouvelle destination (entrepôt)</label>
+            <select name="nouvelleDestination" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40">
+              {% for val, label in form.fields.nouvelleDestination.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-dest">Annuler</button>
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">Enregistrer</button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
+</div>
 
-
-    <div class="modal fade" id="modal-trans">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">TRANSBORDEMENT</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% crispy form1 %}
-                </div>
-            </div>
-            <!-- /.modal-content -->
+{# TRANSBORDEMENT #}
+<div id="modal-trans"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-3xl mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300">
+            <i class="fas fa-exchange-alt text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            TRANSBORDEMENT
+          </h4>
         </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal-nat">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">CORRECTION NATURE PRODUIT</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% crispy form2 %}
-                </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-trans"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <div class="px-4 sm:px-5 py-4">
+        <form id="transbordement-form" action="{% url 'transbordement' %}" method="post" class="space-y-3">
+          {% csrf_token %}
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-white/80 mb-1">Nouvelle immatriculation</label>
+              <input type="text" name="nouvelleImmatriculation" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Ex: ABC-1234" />
             </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-    <div class="modal fade" id="modal-delete">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">CODE DE CONFIRMATION</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Please input your secret code for deleting this record ... </p>
-                    {% crispy form2 %}
-                </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/80 mb-1">Nouveau volume (m³)</label>
+              <input type="number" step="0.001" name="nouveauVolume" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Ex: 35.000" />
             </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-trans">Annuler</button>
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">Enregistrer</button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
+</div>
 
+{# NATURE PRODUIT #}
+<div id="modal-nat"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-3xl mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/20 text-cyan-200">
+            <i class="fas fa-tag text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            CORRECTION NATURE PRODUIT
+          </h4>
+        </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-nat"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <div class="px-4 sm:px-5 py-4">
+        <form id="nature-form" action="{% url 'changementNature' %}" method="post" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Nouvelle nature de produit</label>
+            <select name="nouvelleNatureProduit" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40">
+              {% for val, label in form2.fields.nouvelleNatureProduit.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-nat">Annuler</button>
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <div class="modal fade" id="modal-imp">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">AJOUT IMPORTATEUR</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{% url 'regularisationImportateur' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        {% crispy form3 %}
-                    </div>
-                </form>
+{# DELETE (CODE) #}
+<div id="modal-delete"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-md mx-3">
+    <div class="glass bg-slate-900/90 border border-rose-400/30 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-rose-500/15">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/30 text-rose-100">
+            <i class="fas fa-exclamation-triangle text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            CODE DE CONFIRMATION
+          </h4>
+        </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-delete"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+
+      <div class="px-4 sm:px-5 py-4 text-sm text-white/80">
+        <p class="mb-3">
+          Veuillez saisir votre code secret pour supprimer cet enregistrement…
+        </p>
+        <form id="delete-form" class="space-y-3" onsubmit="return false;">
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Code</label>
+            <input type="password" name="code" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-rose-400/40" placeholder="Votre code" />
+          </div>
+        </form>
+      </div>
+
+      <div class="px-4 sm:px-5 pb-4 pt-2 border-t border-white/10 flex justify-end gap-2">
+        <button type="button"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                       bg-white/10 hover:bg-white/15 text-white transition"
+                data-modal-close="modal-delete">
+          Annuler
+        </button>
+        <button type="button"
+                id="btn-confirm-delete"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                       bg-rose-600 hover:bg-rose-500 text-white transition">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# AJOUT IMPORTATEUR #}
+<div id="modal-imp"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-md mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-400/20 text-amber-200">
+            <i class="fas fa-user-plus text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            AJOUT IMPORTATEUR
+          </h4>
+        </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-imp"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <form action="{% url 'regularisationImportateur' %}" method="post" id="importateur-form" class="space-y-3">
+        {% csrf_token %}
+        <div class="px-4 sm:px-5 py-4 space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Nom importateur</label>
+            <input type="text" name="nomimportateur" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Nom de l'importateur" />
+          </div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-white/80 mb-1">NIF</label>
+              <input type="text" name="nifimportateur" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="NIF" />
             </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-
-    <div class="modal fade" id="modal-entrepot">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">AJOUT ENTREPOT</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{% url 'regularisationEntrepot' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        {% crispy form4 %}
-                    </div>
-                </form>
+            <div>
+              <label class="block text-xs font-semibold text-white/80 mb-1">Email</label>
+              <input type="email" name="email" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="email@exemple.com" />
             </div>
-            <!-- /.modal-content -->
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Adresse</label>
+            <input type="text" name="adresseimportateur" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Adresse" />
+          </div>
         </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal-enreg">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">AJOUT CARGAISON</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{% url 'regularisationCargaison' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        {% crispy form5 %}
-                    </div>
-                </form>
-            </div>
-            <!-- /.modal-content -->
+        <div class="px-4 sm:px-5 pb-4 pt-2 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-imp">Annuler</button>
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-primary/80 hover:bg-primary text-slate-900 text-sm">Enregistrer</button>
         </div>
-        <!-- /.modal-dialog -->
+      </form>
     </div>
-    <!-- /.modal -->
+  </div>
+</div>
 
-
-
-    <div class="modal fade" id="modal-fourn">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">CORRECTION FOURNISSEUR</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                {#              <form action="{% url 'changementImportateur' %}" method="post">#}
-                {% csrf_token %}
-                <div class="modal-body">
-                    {% crispy form6 %}
-                </div>
-                {#                  </form>#}
-            </div>
-            <!-- /.modal-content -->
+{# AJOUT ENTREPOT #}
+<div id="modal-entrepot"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-md mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-400/20 text-indigo-200">
+            <i class="fas fa-warehouse text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            AJOUT ENTREPOT
+          </h4>
         </div>
-        <!-- /.modal-dialog -->
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-entrepot"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <form action="{% url 'regularisationEntrepot' %}" method="post" id="entrepot-form" class="space-y-3">
+        {% csrf_token %}
+        <div class="px-4 sm:px-5 py-4 space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Nom de l'entrepôt</label>
+            <input type="text" name="nomentrepot" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Nom" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Ville</label>
+            <select name="ville" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40">
+              {% for val, label in form4.fields.ville.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Adresse</label>
+            <input type="text" name="adresseentrepot" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="Adresse" />
+          </div>
+        </div>
+        <div class="px-4 sm:px-5 pb-4 pt-2 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-entrepot">Annuler</button>
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-primary/80 hover:bg-primary text-slate-9
+
+
+00 text-sm">Enregistrer</button>
+        </div>
+      </form>
     </div>
-    <!-- /.modal -->
+  </div>
+</div>
 
-
-
-
-{% endblock %}
-
-{% block content %}
-    {#    {% render_table table %}#}
-    <div id="data-table-wrapper" style="position: relative;">
-        <div class="loading-spinner"></div>
-        <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-            <tr>
-                <th>DATE ENTREE</th>
-                <th>FOURNISSEUR</th>
-                <th>ENTREPOT</th>
-                <th>PRODUIT</th>
-                <th>VOL.DECL.</th>
-                <th>IMMATRICULATION</th>
-                <th>#.T1E/DECL.</th>
-                <th>ACTIONS</th>
-            </tr>
-            </thead>
-        </table>
+{# AJOUT CARGAISON #}
+<div id="modal-enreg"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-5xl mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+            <i class="fas fa-plus-circle text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            AJOUT CARGAISON
+          </h4>
+        </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-enreg"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <form action="{% url 'regularisationCargaison' %}" method="post" id="cargaison-form" class="space-y-3">
+        {% csrf_token %}
+        <div class="px-4 sm:px-5 py-4">
+          <div class="grid sm:grid-cols-2 gap-3">
+            {% for field in form5 %}
+              <div class="col-span-2 sm:col-span-1">
+                <label class="block text-xs font-semibold text-white/80 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <p class="mt-1 text-[11px] text-white/60">{{ field.help_text }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                  <p class="mt-1 text-[11px] text-rose-300">{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="px-4 sm:px-5 pb-4 pt-2 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-enreg">Annuler</button>
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-primary/80 hover:bg-primary text-slate-900 text-sm">Enregistrer</button>
+        </div>
+      </form>
     </div>
+  </div>
+</div>
 
-{% endblock %}
+{# CORRECTION FOURNISSEUR #}
+<div id="modal-fourn"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-md mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-200">
+            <i class="fas fa-user-cog text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            CORRECTION FOURNISSEUR
+          </h4>
+        </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-fourn"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
+      </div>
+      <form action="{% url 'changementImportateur' %}" method="post" id="importateur-form-correction" class="space-y-3">
+        {% csrf_token %}
+        <div class="px-4 sm:px-5 py-4 space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Nouvel importateur</label>
+            <select name="importateur" class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40">
+              {% for val, label in form6.fields.importateur.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="px-4 sm:px-5 pb-4 pt-2 border-t border-white/10 flex justify-end gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm" data-modal-close="modal-fourn">Annuler</button>
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-primary/80 hover:bg-primary text-slate-900 text-sm">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
+{# ======================= HEADER + TABLE ======================= #}
 
+<section class="glass rounded-2xl shadow-glass mt-6">
+  <!-- Header -->
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-5 py-3 border-b border-white/10">
+    <div>
+      <h2 class="text-base sm:text-lg font-semibold flex items-center gap-2">
+        <svg class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M3 5h18M3 12h18M3 19h18"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Journal des cargaisons • Régularisation
+      </h2>
+      <p class="text-xs sm:text-sm text-white/70">
+        Visualisation et opérations de régularisation (destination, transbordement, nature, importateur, suppression).
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button"
+              data-modal-open="modal-enreg"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                     bg-gradient-to-r from-primary to-primary2 text-slate-900 hover:shadow-glassHover transition">
+        <i class="fas fa-plus-circle text-xs"></i>
+        Nouvelle cargaison
+      </button>
+    </div>
+  </header>
 
+  <!-- Barre de recherche -->
+  <div class="px-3 sm:px-4 pt-3">
+    <div class="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+      <div class="w-full sm:max-w-sm">
+        <input id="f-q"
+               type="text"
+               placeholder="Recherche globale (fournisseur, produit, immatriculation…)"
+               class="w-full px-3 py-1.5 rounded-lg bg-white/10 border border-white/10
+                      text-xs sm:text-sm text-white placeholder-white/40
+                      focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      </div>
+      <div class="flex gap-2 justify-end">
+        <button id="btn-search"
+                type="button"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                       bg-primary/80 hover:bg-primary text-slate-900 transition">
+          Rechercher
+        </button>
+        <button id="btn-reset"
+                type="button"
+                class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                       bg-white/10 hover:bg-white/15 text-white transition">
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table wrapper -->
+  <div class="px-3 sm:px-4 pb-4">
+    <div id="data-table-wrapper"
+         class="relative overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
+      <div class="loading-overlay"></div>
+
+      <table id="data-table"
+             class="min-w-full text-sm text-left text-white/80">
+        <thead class="bg-white/10 text-[11px] uppercase tracking-wide text-white/70">
+          <tr>
+            <th class="px-3 py-2 whitespace-nowrap">Date entrée</th>
+            <th class="px-3 py-2 whitespace-nowrap">Fournisseur</th>
+            <th class="px-3 py-2 whitespace-nowrap">Entrepôt</th>
+            <th class="px-3 py-2 whitespace-nowrap">Produit</th>
+            <th class="px-3 py-2 whitespace-nowrap">Vol. decl.</th>
+            <th class="px-3 py-2 whitespace-nowrap">Immatriculation</th>
+            <th class="px-3 py-2 whitespace-nowrap"># T1E/Decl.</th>
+            <th class="px-3 py-2 whitespace-nowrap text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="data-table-body" class="divide-y divide-white/5">
+          {# lignes remplies en JS #}
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div id="table-pagination"
+           class="flex items-center justify-between px-3 py-2 border-t border-white/10 text-xs sm:text-sm text-white/70">
+        <div class="hidden sm:block">
+          Affiche 25 enregistrements par page
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-first" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Première page">«</button>
+          <button id="btn-prev" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Page précédente">‹</button>
+          <span id="page-info" class="mx-2 select-none">Page 1 / 1</span>
+          <button id="btn-next" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Page suivante">›</button>
+          <button id="btn-last" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Dernière page">»</button>
+        </div>
+      </div>
+
+      <div id="data-table-empty"
+           class="hidden text-xs sm:text-sm text-white/60 text-center py-4">
+        Aucune donnée à afficher.
+      </div>
+
+      <div id="data-table-error"
+           class="hidden text-xs sm:text-sm text-rose-300 text-center py-4">
+        Une erreur est survenue lors du chargement des données.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Global Status Modal ===== -->
+<div id="status-modal-overlay" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="status-modal-title" aria-hidden="true">
+  <div class="app-modal" role="document">
+    <div class="app-modal-header">
+      <div class="flex items-center gap-2">
+        <span id="status-modal-icon" class="h-5 w-5 inline-flex items-center justify-center"></span>
+        <h3 id="status-modal-title" class="app-modal-title">Notification</h3>
+      </div>
+      <button id="status-modal-close-x" class="btn-modal btn-modal-secondary" aria-label="Fermer">×</button>
+    </div>
+    <div class="app-modal-body">
+      <div id="status-modal-message">—</div>
+    </div>
+    <div class="app-modal-footer">
+      <button id="status-modal-close" class="btn-modal btn-modal-primary">OK</button>
+    </div>
+  </div>
+  <div tabindex="0"></div>
+  <div tabindex="0"></div>
+</div>
+
+<!-- ===== Global Confirm Modal ===== -->
+<div id="confirm-modal-overlay" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-hidden="true">
+  <div class="app-modal" role="document">
+    <div class="app-modal-header">
+      <div class="flex items-center gap-2">
+        <span id="confirm-modal-icon" class="h-5 w-5 inline-flex items-center justify-center"></span>
+        <h3 id="confirm-modal-title" class="app-modal-title">Confirmation</h3>
+      </div>
+      <button id="confirm-modal-close-x" class="btn-modal btn-modal-secondary" aria-label="Fermer">×</button>
+    </div>
+    <div class="app-modal-body">
+      <div id="confirm-modal-message">Êtes-vous sûr ?</div>
+    </div>
+    <div class="app-modal-footer">
+      <button id="confirm-modal-cancel" class="btn-modal btn-modal-secondary">Annuler</button>
+      <button id="confirm-modal-ok" class="btn-modal btn-modal-primary">Confirmer</button>
+    </div>
+  </div>
+  <div tabindex="0"></div>
+  <div tabindex="0"></div>
+</div>
 
 <script>
-    {% block javascript %}
-        // Get CSRF token from the cookie
-        function getCSRFToken() {
-            var csrfToken = null;
-            document.cookie.split(';').forEach(function (cookie) {
-                if (cookie.trim().startsWith('csrftoken=')) {
-                    csrfToken = cookie.trim().substring('csrftoken='.length);
-                }
-            });
-            return csrfToken;
-        }
+  // ======= Small helpers =======
+  function qs(sel, root){ return (root || document).querySelector(sel); }
+  function qsa(sel, root){ return Array.from((root || document).querySelectorAll(sel)); }
 
-        var idCargaison;
-        var dataTable;
+  function getCSRFToken() {
+      let csrfToken = null;
+      document.cookie.split(';').forEach(function (cookie) {
+          cookie = cookie.trim();
+          if (cookie.startsWith('csrftoken=')) {
+              csrfToken = cookie.substring('csrftoken='.length);
+          }
+      });
+      return csrfToken;
+  }
 
-        // Function to reload the DataTable
-        function reloadDataTable() {
-            dataTable.ajax.reload(null, false);  // Reloads the DataTable with new data without resetting the page
-        }
+  function debounce(fn, delay){
+    let timer = null;
+    return function(...args){
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
 
+  // ======= Modal helpers (Tailwind only) =======
+  function openModal(id) {
+    const modal = typeof id === 'string' ? document.getElementById(id.replace('#','')) : id;
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+  }
 
-        $(document).ready(function () {
-            dataTable = $('#data-table').DataTable({
-                lengthChange: false, // Display the length change dropdown
-                processing: false,
-                serverSide: true,
-                responsive: true,
-                ajax: {
-                    url: '{% url 'regularisation_response' %}',
-                    type: 'GET',
-                    // Show the loading spinner during DataTable processing
-                    // Show the loading spinner during DataTable processing
-                    beforeSend: function () {
-                        $('#data-table-wrapper .loading-spinner').show();
-                    },
-                    // Hide the loading spinner after DataTable processing
-                    complete: function () {
-                        $('#data-table-wrapper .loading-spinner').hide();
-                    },
-                },
-                columns: [
-                    {data: 'dateheurecargaison__date'},
-                    {data: 'importateur__nomimportateur'},
-                    {data: 'entrepot__nomentrepot'},
-                    {data: 'produit__nomproduit'},
-                    {data: 'volume'},
-                    {data: 'immatriculation'},
-                    {data: 'declaration'},
-                    { // New column configuration
-                        data: 'idcargaison',
-                        render: function (data, type, row) {
-                            {#console.log("Rendering ID Cargaison:", data);#}
-                            return `
-                                <button class="btn btn-success action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-map-marker-alt"></i> <!-- Destination Icon -->
-                                </button>
-                                <button class="btn btn-outline-success action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-exchange-alt"></i> <!-- Transbordement Icon -->
-                                </button>
-                                <button class="btn btn-outline-danger action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-user"></i> <!-- Importateur Icon -->
-                                </button>
-                                <button class="btn btn-outline-primary action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-tag"></i> <!-- Nature Icon -->
-                                </button>
-                                <button class="btn btn-danger action-btn" data-row-id="${data}">
-                                    <i class="fas fa-trash-alt"></i> <!-- Delete Icon -->
-                                </button>
-                            `;
-                        }
-                    }
-                ],
-            })
+  function closeModal(id) {
+    const modal = typeof id === 'string' ? document.getElementById(id.replace('#','')) : id;
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+  }
 
-            // Handle button clicks using event delegation
-            $('#data-table tbody').on('click', '.action-btn', function () {
-                idCargaison = $(this).data('row-id'); // Get the ID of the clicked row
-                {#console.log('Clicked ID Cargaison:', idCargaison);#}
+  // ======= Table pagination & loading =======
+  let idCargaison = null;
+  let currentPage = 1;
+  const pageSize   = 25;
+  let totalPages   = 1;
+  let totalRecords = 0;
 
-                // If the clicked button is the 'DESTINATION' button
-                if ($(this).hasClass('btn-success')) {
-                    // Open the modal
-                    $('#modal-dest').modal('show');
-                    $('#modal-dest').removeAttr('inert');
-                    {#submitData(idCargaison);#}
-                }
-                if ($(this).hasClass('btn-outline-success')) {
-                    {#console.log('Transbordement')#}
-                    // Open the modal
-                    $('#modal-trans').modal('show');
-                }
-                if ($(this).hasClass('btn-outline-danger')) {
-                    {#console.log('Importateur')#}
-                    $('#modal-fourn').modal('show');
-                }
-                if ($(this).hasClass('btn-outline-primary')) {
-                    {#console.log('Nature')#}
-                    $('#modal-nat').modal('show');
-                }
-                if ($(this).hasClass('btn-danger')) {
-                    console.log('DELETE');
-                    console.log(idCargaison);
-                    var APIurl = '/shydro/del_record/';
-                    var $input = $('<input type="hidden" name="pk">').val(idCargaison);
-                    var SerializedData = $input.serialize();
-                    console.log(SerializedData);
-                    var csrfToken = getCSRFToken();
-                    $.ajax({
-                        url: APIurl,
-                        type: "POST",
-                        data: SerializedData,
-                        dataType: 'json',
-                        headers: {
-                            'X-CSRFToken': csrfToken // Include CSRF token in the header
-                        },
-                        success: function () {
-                            alert("Donnée supprimée");
-                            reloadDataTable();
-                        },
+  function showOverlay() {
+      const ov = qs('#data-table-wrapper .loading-overlay');
+      if (ov) ov.style.display = 'flex';
+  }
+  function hideOverlay() {
+      const ov = qs('#data-table-wrapper .loading-overlay');
+      if (ov) ov.style.display = 'none';
+  }
+  function showEmpty(msg) {
+      const el = qs('#data-table-empty');
+      if (!el) return;
+      el.textContent = msg || 'Aucune donnée à afficher.';
+      el.classList.remove('hidden');
+  }
+  function hideEmpty() {
+      const el = qs('#data-table-empty');
+      if (!el) return;
+      el.classList.add('hidden');
+  }
+  function showError(msg) {
+      const el = qs('#data-table-error');
+      if (!el) return;
+      if (msg) el.textContent = msg;
+      el.classList.remove('hidden');
+  }
+  function hideError() {
+      const el = qs('#data-table-error');
+      if (!el) return;
+      el.classList.add('hidden');
+  }
 
-                        error: function () {
-                            {#console.log('Erreur');#}
-                            alert("Erreur lors de la suppression");
-                            reloadDataTable();
-                        }
-                    })
+  function updatePaginationUI() {
+      if (totalPages < 1) totalPages = 1;
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
 
-                }
+      const pageInfo = qs('#page-info');
+      if (pageInfo) pageInfo.textContent = 'Page ' + currentPage + ' / ' + totalPages;
 
-            });
+      const atStart = currentPage <= 1;
+      const atEnd   = currentPage >= totalPages;
+
+      const btnFirst = qs('#btn-first');
+      const btnPrev  = qs('#btn-prev');
+      const btnNext  = qs('#btn-next');
+      const btnLast  = qs('#btn-last');
+
+      if (btnFirst) btnFirst.disabled = atStart;
+      if (btnPrev)  btnPrev.disabled  = atStart;
+      if (btnNext)  btnNext.disabled  = atEnd;
+      if (btnLast)  btnLast.disabled  = atEnd;
+  }
+
+  function renderRows(rows) {
+      const tbody = qs('#data-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (!rows || rows.length === 0) {
+          showEmpty();
+          return;
+      }
+      hideEmpty();
+
+      rows.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-white/5 transition';
+          const id = row.idcargaison;
+
+          tr.innerHTML = `
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.dateheurecargaison__date || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.importateur__nomimportateur || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.entrepot__nomentrepot || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.produit__nomproduit || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.volume ?? '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.immatriculation || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.declaration || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-center text-xs sm:text-sm">
+              <div class="flex flex-wrap gap-1 justify-center">
+                <button
+                  class="action-btn btn-destination inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                         bg-emerald-500/90 hover:bg-emerald-400 text-slate-900 font-semibold shadow-sm hover:shadow-md
+                         transition-transform transform hover:-translate-y-0.5"
+                  data-row-id="${id}"
+                  title="Destination">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-map-marker-alt text-[10px]"></i>
+                  </span>
+                </button>
+
+                <button
+                  class="action-btn btn-transbordement inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                         bg-emerald-500/10 border border-emerald-400/60 text-emerald-100 hover:bg-emerald-500/20
+                         font-semibold transition-transform transform hover:-translate-y-0.5"
+                  data-row-id="${id}"
+                  title="Transbordement">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-exchange-alt text-[10px]"></i>
+                  </span>
+                </button>
+
+                <button
+                  class="action-btn btn-fournisseur inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                         bg-rose-500/10 border border-rose-400/60 text-rose-100 hover:bg-rose-500/20
+                         font-semibold transition-transform transform hover:-translate-y-0.5"
+                  data-row-id="${id}"
+                  title="Correction fournisseur">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-user text-[10px]"></i>
+                  </span>
+                </button>
+
+                <button
+                  class="action-btn btn-nature inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                         bg-sky-500/10 border border-sky-400/60 text-sky-100 hover:bg-sky-500/20
+                         font-semibold transition-transform transform hover:-translate-y-0.5"
+                  data-row-id="${id}"
+                  title="Correction nature produit">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-tag text-[10px]"></i>
+                  </span>
+                </button>
+
+                <button
+                  class="action-btn btn-delete inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                         bg-rose-600/90 hover:bg-rose-500 text-slate-50 font-semibold shadow-sm hover:shadow-md
+                         transition-transform transform hover:-translate-y-0.5"
+                  data-row-id="${id}"
+                  title="Supprimer">
+                  <span class="inline-flex items-center gap-1">
+                    <i class="fas fa-trash-alt text-[10px]"></i>
+                  </span>
+                </button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+      });
+  }
+
+  async function loadTable(page) {
+      page = page || 1;
+      hideError();
+      hideEmpty();
+      showOverlay();
+
+      const start  = (page - 1) * pageSize;
+      const length = pageSize;
+
+      const params = new URLSearchParams();
+      params.set('start',  String(start));
+      params.set('length', String(length));
+      params.set('draw',   '1');  // compat DataTables
+
+      // Recherche globale
+      const fq = qs('#f-q');
+      const q  = fq && fq.value ? fq.value.trim() : '';
+      if (q) {
+        params.set('search[value]', q);
+        params.set('search[regex]', 'false');
+      }
+
+      try {
+          const res = await fetch(`{% url 'regularisation_response' %}?${params.toString()}`, {
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const json = await res.json();
+
+          const rows = json.data || [];
+          totalRecords = json.recordsFiltered || json.recordsTotal || rows.length;
+          totalPages   = Math.max(1, Math.ceil(totalRecords / pageSize));
+          currentPage  = page;
+
+          if (!rows.length) {
+              renderRows([]);
+              updatePaginationUI();
+              return;
+          }
+
+          renderRows(rows);
+          updatePaginationUI();
+      } catch (err) {
+          console.error('Erreur chargement données:', err);
+          showError("Erreur de chargement des données.");
+      } finally {
+          hideOverlay();
+      }
+  }
+
+  function reloadDataTable() {
+      loadTable(currentPage);
+  }
+
+  // ======= FORM helpers (POST with fetch) =======
+  async function postForm(url, formElement, extraFields) {
+      const csrfToken = getCSRFToken();
+      const formData  = new FormData(formElement);
+
+      if (extraFields) {
+          Object.keys(extraFields).forEach(k => {
+              formData.append(k, extraFields[k]);
+          });
+      }
+
+      const body = new URLSearchParams();
+      for (const [k, v] of formData.entries()) {
+          body.append(k, v);
+      }
+
+      const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+              'X-CSRFToken': csrfToken,
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: body.toString()
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+      // Initial load
+      loadTable(1);
+
+      // Pagination controls
+      const btnFirst = qs('#btn-first');
+      const btnPrev  = qs('#btn-prev');
+      const btnNext  = qs('#btn-next');
+      const btnLast  = qs('#btn-last');
+
+      if (btnFirst) btnFirst.addEventListener('click', () => { if (currentPage !== 1) loadTable(1); });
+      if (btnPrev)  btnPrev.addEventListener('click',  () => { if (currentPage > 1) loadTable(currentPage - 1); });
+      if (btnNext)  btnNext.addEventListener('click',  () => { if (currentPage < totalPages) loadTable(currentPage + 1); });
+      if (btnLast)  btnLast.addEventListener('click',  () => { if (currentPage !== totalPages) loadTable(totalPages); });
+
+      // Generic open-modal buttons
+      qsa('[data-modal-open]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          const target = btn.getAttribute('data-modal-open');
+          if (target) openModal(target);
+        });
+      });
+
+      // Generic close-modal buttons
+      qsa('[data-modal-close]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          const target = btn.getAttribute('data-modal-close');
+          if (target) closeModal(target);
+        });
+      });
+
+      // Close modal when clicking backdrop
+      qsa('#modal-dest, #modal-trans, #modal-nat, #modal-delete, #modal-imp, #modal-entrepot, #modal-enreg, #modal-fourn')
+        .forEach(modal => {
+          modal.addEventListener('click', e => {
+            if (e.target === modal) {
+              closeModal(modal);
+            }
+          });
         });
 
+      // Recherche
+      const fq = qs('#f-q');
+      const btnSearch = qs('#btn-search');
+      const btnReset  = qs('#btn-reset');
 
-        //Regularisation Destination Cargaison
-        $('#submit-id-valider').click(function (e) {
-            e.preventDefault();
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/regularisationDestination/';
-            var $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            var confirmInput = $('<input type="hidden" name="confirm">');
-            $('#destination-form').append($input);
-            var SerializedData = $("#destination-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function (response) {
-                    if (response.status === 'warning') {
-                        // Show warning alert if regions don't match
-                        var confirmation = confirm(response.message);
-                        if (confirmation) {
-                            // If user confirms, set confirm to true
-                            confirmInput.val('true');
-                            $('#destination-form').append(confirmInput); // Append the confirmation to form
-                            // Now submit the form with the confirm value
-                            $.ajax({
-                                url: APIurl,
-                                type: "POST",
-                                data: $("#destination-form").serialize(),
-                                dataType: 'json',
-                                headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-                                success: function () {
-                                    alert("Données sauvegardées");
-                                    $('#modal-dest').modal('hide');
-                                    $('#destination-form')[0].reset();
-                                    $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
-                                    reloadDataTable();
-                                },
-                                error: function () {
-                                    {#console.log('Erreur');#}
-                                    alert("An error occurred");
-                                    $('#modal-dest').modal('hide');
-                                    $('#destination-form')[0].reset();
-                                    $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
-                                    reloadDataTable();
-                                }
-                            });
-                        } else {
-                            alert("Operation canceled");
-                            $('#modal-dest').modal('hide');
-                            $('#destination-form')[0].reset();
-                        }
-                    } else {
-                        // Normal success case
-                        alert("Données sauvegardées");
-                        $('#modal-dest').modal('hide');
-                        $('#destination-form')[0].reset();
-                        $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
-                        reloadDataTable();
-                    }
-                },
-
-                error: function (response) {
-                    {#console.log('Erreur');#}
-                    alert("An error occured");
-                    $('#modal-dest').modal('hide');
-                    $('#destination-form')[0].reset();
-                    reloadDataTable();
-                }
-            });
-
-        })
-
-        //Regularisation Immatriculation & Volume
-        $('.btn.btn-outline-success').click(function (e) {
-            e.preventDefault()
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/transbordement/';
-            $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            $('#transbordement-form').append($input);
-            var SerializedData = $("#transbordement-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                 headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function () {
-                    alert("Données sauvegardées");
-                    $('#modal-trans').modal('hide');
-                    $('#transbordement-form')[0].reset();
-                    reloadDataTable();
-                },
-
-                error: function () {
-                    {#console.log('Erreur');#}
-                    alert("An error occured");
-                    $('#modal-trans').modal('hide');
-                    $('#transbordement-form')[0].reset();
-                    reloadDataTable();
-                }
-            });
-        })
-
-        // Correction product nature
-        $('.btn.btn-outline-primary').click(function (e) {
-            e.preventDefault()
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/changementNature/';
-            $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            $('#nature-form').append($input);
-            var SerializedData = $("#nature-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                 headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function () {
-                    alert("Données sauvegardées");
-                    $('#modal-nat').modal('hide');
-                    $('#nature-form')[0].reset();
-                    reloadDataTable();
-                },
-
-                error: function () {
-                    {#console.log('Erreur');#}
-                    alert("An error occured");
-                    $('#modal-nat').modal('hide');
-                    $('#nature-form')[0].reset();
-                    reloadDataTable();
-                }
-            });
-        })
-
-        // Change Importateur
-        $('.btn.btn-outline-danger').click(function (e) {
-            e.preventDefault();
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/changementImportateur/';
-
-            // Create a hidden input field with the name "pk" and the value of pk
-            $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            $('#importateur-form').append($input);
-
-            // Serialize the form data including the added "pk" input
-            var SerializedData = $("#importateur-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                 headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function () {
-                    alert("Données sauvegardées");
-                    $('#modal-fourn').modal('hide');
-                    {#$('#importateur-form')[0].reset();#}
-                    reloadDataTable();
-                },
-
-                error: function () {
-                    {#console.log('Erreur');#}
-                    alert("An error occurred");
-                    $('#modal-fourn').modal('hide');
-                    {#$('#importateur-form')[0].reset();#}
-                    reloadDataTable();
-                }
-            });
+      if (btnSearch) {
+        btnSearch.addEventListener('click', () => loadTable(1));
+      }
+      if (btnReset) {
+        btnReset.addEventListener('click', () => {
+          if (fq) fq.value = '';
+          loadTable(1);
         });
+      }
+      if (fq) {
+        fq.addEventListener('input', debounce(() => loadTable(1), 500));
+      }
 
+      // Handle action buttons on rows (open corresponding modal)
+      const tbody = qs('#data-table-body');
+      if (tbody) {
+          tbody.addEventListener('click', (e) => {
+              const btn = e.target.closest('.action-btn');
+              if (!btn) return;
 
-    {% endblock %}
+              idCargaison = btn.getAttribute('data-row-id');
+
+              if (btn.classList.contains('btn-destination')) {
+                  openModal('modal-dest');
+              } else if (btn.classList.contains('btn-transbordement')) {
+                  openModal('modal-trans');
+              } else if (btn.classList.contains('btn-fournisseur')) {
+                  openModal('modal-fourn');
+              } else if (btn.classList.contains('btn-nature')) {
+                  openModal('modal-nat');
+              } else if (btn.classList.contains('btn-delete')) {
+                  openModal('modal-delete');
+              }
+          });
+      }
+
+      // ===== Status/Confirm modal helpers =====
+      const statusOverlay = document.getElementById('status-modal-overlay');
+      const statusTitle = document.getElementById('status-modal-title');
+      const statusMsg = document.getElementById('status-modal-message');
+      const statusIcon = document.getElementById('status-modal-icon');
+      const statusClose = document.getElementById('status-modal-close');
+      const statusCloseX = document.getElementById('status-modal-close-x');
+
+      function openStatus({ title='Notification', message='', variant='info' }={}){
+        if (statusTitle) statusTitle.textContent = title;
+        if (statusMsg) statusMsg.innerHTML = message;
+        if (statusIcon){
+          let color = '#60a5fa'; // info
+          if (variant === 'success') color = '#34d399';
+          else if (variant === 'error') color = '#f43f5e';
+          else if (variant === 'warning') color = '#f59e0b';
+          statusIcon.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>`;
+        }
+        if (statusOverlay){ statusOverlay.style.display = 'flex'; statusOverlay.setAttribute('aria-hidden','false'); }
+      }
+      function closeStatus(){ if (statusOverlay){ statusOverlay.style.display='none'; statusOverlay.setAttribute('aria-hidden','true'); }}
+      statusClose?.addEventListener('click', closeStatus);
+      statusCloseX?.addEventListener('click', closeStatus);
+      statusOverlay?.addEventListener('click', (e)=>{ if (e.target === statusOverlay) closeStatus(); });
+      document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') closeStatus(); });
+
+      // Confirm modal
+      const confirmOverlay = document.getElementById('confirm-modal-overlay');
+      const confirmTitle = document.getElementById('confirm-modal-title');
+      const confirmMsg = document.getElementById('confirm-modal-message');
+      const confirmIcon = document.getElementById('confirm-modal-icon');
+      const confirmOk = document.getElementById('confirm-modal-ok');
+      const confirmCancel = document.getElementById('confirm-modal-cancel');
+      const confirmCloseX = document.getElementById('confirm-modal-close-x');
+
+      function openConfirm({ title='Confirmation', message='Êtes-vous sûr ?', variant='warning', okText='Confirmer', cancelText='Annuler' }={}){
+        return new Promise((resolve) => {
+          if (confirmTitle) confirmTitle.textContent = title;
+          if (confirmMsg) confirmMsg.innerHTML = message;
+          if (confirmIcon){
+            let color = '#f59e0b';
+            if (variant === 'danger' || variant === 'error') color = '#f43f5e';
+            else if (variant === 'success') color = '#34d399';
+            confirmIcon.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`;
+          }
+          if (confirmOk) confirmOk.textContent = okText;
+          if (confirmCancel) confirmCancel.textContent = cancelText;
+          if (confirmOverlay){ confirmOverlay.style.display = 'flex'; confirmOverlay.setAttribute('aria-hidden','false'); }
+
+          const cleanup = () => {
+            if (confirmOverlay){ confirmOverlay.style.display='none'; confirmOverlay.setAttribute('aria-hidden','true'); }
+            confirmOk?.removeEventListener('click', onOk);
+            confirmCancel?.removeEventListener('click', onCancel);
+            confirmOverlay?.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onEsc);
+            confirmCloseX?.removeEventListener('click', onCancel);
+          };
+          const onOk = ()=>{ cleanup(); resolve(true); };
+          const onCancel = ()=>{ cleanup(); resolve(false); };
+          const onBackdrop = (e)=>{ if (e.target === confirmOverlay) onCancel(); };
+          const onEsc = (e)=>{ if (e.key === 'Escape') onCancel(); };
+          confirmOk?.addEventListener('click', onOk);
+          confirmCancel?.addEventListener('click', onCancel);
+          confirmOverlay?.addEventListener('click', onBackdrop);
+          document.addEventListener('keydown', onEsc);
+          confirmCloseX?.addEventListener('click', onCancel);
+        });
+      }
+
+      // ===== Destination form =====
+      const destForm = qs('#destination-form');
+      if (destForm) {
+          destForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              if (!idCargaison) {
+                  openStatus({ title: 'Information', message: 'Aucune cargaison sélectionnée.', variant: 'warning' });
+                  return;
+              }
+              try {
+                  let response = await postForm('/shydro/regularisationDestination/', destForm, { pk: idCargaison });
+                  if (response.status === 'warning') {
+                      const ok = await openConfirm({ title:'Vérification', message: response.message || 'Les régions ne correspondent pas. Confirmer ?', variant:'warning', okText:'Confirmer', cancelText:'Annuler' });
+                      if (!ok) {
+                          openStatus({ title: 'Annulé', message: 'Opération annulée.', variant: 'info' });
+                          closeModal('modal-dest');
+                          destForm.reset();
+                          return;
+                      }
+                      response = await postForm('/shydro/regularisationDestination/', destForm, { pk: idCargaison, confirm: 'true' });
+                  }
+                  openStatus({ title: 'Succès', message: 'Données sauvegardées', variant: 'success' });
+                  closeModal('modal-dest');
+                  destForm.reset();
+                  reloadDataTable();
+              } catch (err) {
+                  console.error(err);
+                  openStatus({ title: 'Erreur', message: 'Une erreur est survenue', variant: 'error' });
+                  closeModal('modal-dest');
+                  destForm.reset();
+                  reloadDataTable();
+              }
+          });
+      }
+
+      // ===== Transbordement form =====
+      const transForm = qs('#transbordement-form');
+      if (transForm) {
+          transForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              if (!idCargaison) {
+                  openStatus({ title: 'Information', message: 'Aucune cargaison sélectionnée.', variant: 'warning' });
+                  return;
+              }
+              try {
+                  await postForm('/shydro/transbordement/', transForm, { pk: idCargaison });
+                  openStatus({ title: 'Succès', message: 'Données sauvegardées', variant: 'success' });
+                  closeModal('modal-trans');
+                  transForm.reset();
+                  reloadDataTable();
+              } catch (err) {
+                  console.error(err);
+                  openStatus({ title: 'Erreur', message: 'Une erreur est survenue', variant: 'error' });
+                  closeModal('modal-trans');
+                  transForm.reset();
+                  reloadDataTable();
+              }
+          });
+      }
+
+      // ===== Nature produit form =====
+      const natureForm = qs('#nature-form');
+      if (natureForm) {
+          natureForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              if (!idCargaison) {
+                  openStatus({ title: 'Information', message: 'Aucune cargaison sélectionnée.', variant: 'warning' });
+                  return;
+              }
+              try {
+                  await postForm('/shydro/changementNature/', natureForm, { pk: idCargaison });
+                  openStatus({ title: 'Succès', message: 'Données sauvegardées', variant: 'success' });
+                  closeModal('modal-nat');
+                  natureForm.reset();
+                  reloadDataTable();
+              } catch (err) {
+                  console.error(err);
+                  openStatus({ title: 'Erreur', message: 'Une erreur est survenue', variant: 'error' });
+                  closeModal('modal-nat');
+                  natureForm.reset();
+                  reloadDataTable();
+              }
+          });
+      }
+
+      // ===== Correction importateur form =====
+      const importForm = qs('#importateur-form-correction');
+      if (importForm) {
+          importForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              if (!idCargaison) {
+                  openStatus({ title: 'Information', message: 'Aucune cargaison sélectionnée.', variant: 'warning' });
+                  return;
+              }
+              try {
+                  await postForm('/shydro/changementImportateur/', importForm, { pk: idCargaison });
+                  openStatus({ title: 'Succès', message: 'Données sauvegardées', variant: 'success' });
+                  closeModal('modal-fourn');
+                  reloadDataTable();
+              } catch (err) {
+                  console.error(err);
+                  openStatus({ title: 'Erreur', message: 'Une erreur est survenue', variant: 'error' });
+                  closeModal('modal-fourn');
+                  reloadDataTable();
+              }
+          });
+      }
+
+      // ===== Delete confirmation (code + pk) =====
+      const btnConfirmDelete = qs('#btn-confirm-delete');
+      if (btnConfirmDelete) {
+          btnConfirmDelete.addEventListener('click', async (e) => {
+              e.preventDefault();
+              if (!idCargaison) {
+                  openStatus({ title: 'Information', message: 'Aucune cargaison sélectionnée.', variant: 'warning' });
+                  return;
+              }
+              const deleteForm = qs('#modal-delete form') || qs('#modal-delete');
+              try {
+                  const ok = await openConfirm({ title: 'Supprimer', message: 'Confirmez-vous la suppression de cet enregistrement ?', variant: 'danger', okText: 'Supprimer', cancelText: 'Annuler' });
+                  if (!ok) return;
+                  await postForm('/shydro/del_record/', deleteForm, { pk: idCargaison });
+                  openStatus({ title: 'Supprimé', message: 'Donnée supprimée', variant: 'success' });
+                  closeModal('modal-delete');
+                  reloadDataTable();
+              } catch (err) {
+                  console.error(err);
+                  openStatus({ title: 'Erreur', message: 'Erreur lors de la suppression', variant: 'error' });
+                  closeModal('modal-delete');
+                  reloadDataTable();
+              }
+          });
+      }
+  });
 </script>
+
+{% endblock %}

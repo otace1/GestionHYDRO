@@ -1,0 +1,53 @@
+{% extends 'shydro/data_sanitizing_master.html' %}
+{% load render_table from django_tables2 %}
+{% load querystring from django_tables2 %}
+
+
+{% block content %}
+<!-- DOUBLONS Modal -->
+<div class="modal fade" id="doublonModal" tabindex="-1" aria-labelledby="doublonModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" enctype="multipart/form-data" action="{% url 'data_duplicate' %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="doublonModalLabel">Upload Excel File for Doublon Check</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="file" name="excel_file" accept=".xlsx,.xls" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Analyze</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DATA MERGING Modal -->
+<div class="modal fade" id="mergeModal" tabindex="-1" aria-labelledby="mergeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" enctype="multipart/form-data" action="">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="mergeModalLabel">Upload Two Excel Files for Merging</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label>File 1 (Trackflow):</label>
+          <input type="file" name="merge_file_1" accept=".xlsx,.xls" class="form-control mb-3" required>
+          <label>File 2 (DGDA):</label>
+          <input type="file" name="merge_file_2" accept=".xlsx,.xls" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning">Merge</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+

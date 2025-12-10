@@ -2,21 +2,28 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.GestionEchantillonage.tableauechantillonnage, name='entrepot'),
-    path('echantilloner/', views.GestionEchantillonage.echantilloner, name='echantilloner'),
-    path('rechercher/', views.GestionEchantillonage.rechercheqrcode, name='rechercher'),
-    path('rechercherre/', views.GestionEchantillonage.rechercherre, name='rechercherre'),
-    path('dechargement/', views.GestionDechargement.tableaudechargement, name='dechargement'),
-    path('dechargement/response', views.GestionDechargement.tableauDechargementResponse, name='tableauDechargementResponse'),
+    path('', views.tableauechantillonnage, name='entrepot'),
+    path('pending/', views.cargaisons_pending, name='cargaisons_pending'),
+    # path('cargaison/status/', views.cargaisons_status_requisition, name='cargaisons_status_requisition'),
+    path('sampling/', views.record_sampling, name='record_sampling'),
+
+    #Ajout recent
+    path("sampling/<int:pk>/report.pdf", views.sampling_report_pdf, name="sampling_report"),
+
+    # path('echantilloner/', views.GestionEchantillonage.echantilloner, name='echantilloner'),
+    # path('rechercher/', views.GestionEchantillonage.rechercheqrcode, name='rechercher'),
+    # path('rechercherre/', views.GestionEchantillonage.rechercherre, name='rechercherre'),
+    # path('dechargement/', views.GestionDechargement.tableaudechargement, name='dechargement'),
+    # path('dechargement/response', views.GestionDechargement.tableauDechargementResponse, name='tableauDechargementResponse'),
     # path('rapport/<int:pk>', views.impressionRapport, name='rapport'),
     path('rapport/<int:pk>', views.impressionRapport, name='rapport'),
     path('impressionRe/<int:pk>', views.impressionRe, name='impressionRe'),
 
-    # Compteur
-    path('c1/', views.GestionEchantillonage.c1, name='c1'),
-    path('c2/', views.GestionEchantillonage.c2, name='c2'),
+    # # Compteur
+    # path('c1/', views.GestionEchantillonage.c1, name='c1'),
+    # path('c2/', views.GestionEchantillonage.c2, name='c2'),
 
-    path('echantillonage/', views.echantillonage, name='echantillonage'),  # Echantillonnage nouveau formulaire
+    # path('echantillonage/', views.echantillonage, name='echantillonage'),  # Echantillonnage nouveau formulaire
     # path('decharger/<int:pk>', views.dechargement, name='decharger'),  # Echantillonnage nouveau formulaire
 
     # Rapport d'echantillonage
@@ -67,14 +74,14 @@ urlpatterns = [
     # path('check/', views.reportCheck, name='reportCheck'),
     #
     # Nature du produit
-    path('nature/<int:pk>', views.natureProduit, name='natureProduit'),
+    # path('nature/<int:pk>', views.natureProduit, name='natureProduit'),
 
     path('nonconforme/', views.affichageProduitNonConforme, name='affichageProduitNonConforme'),  # Non conforme
     path('affichageEnAttenteRequisition/', views.affichageEnAttenteRequisition, name='affichageEnAttenteRequisition'),
     # En attente de requisition
 
     #Correction de la non conformite declarative
-    path('correctionNonConformite/<int:pk>', views.correctionNonConformite, name='correctionConformiteProduit'),  # Non conforme
+    # path('correctionNonConformite/<int:pk>', views.correctionNonConformite, name='correctionConformiteProduit'),  # Non conforme
 
     #Inspection
     path('inspection/<int:pk>', views.inspection, name='inspection'),
@@ -87,5 +94,24 @@ urlpatterns = [
     #NonConformeGestion
     path('consignatedOk/<int:pk>', views.consignatedOk, name='consignatedOk'),
     path('refouleOk/<int:pk>', views.refouleOk, name='refouleOk'),
+
+
+    #Ajout
+    path("workbench/", views.workbench_list, name="workbench_list"),
+    # Separate endpoints per KPI card
+    path("workbench/requisition/", views.workbench_requisition, name="wb_requisition"),
+    path("workbench/inspection/", views.workbench_inspection, name="wb_inspection"),
+    path("workbench/conformes/", views.workbench_conformes, name="wb_conformes"),
+    path("workbench/reports/", views.workbench_reports, name="wb_reports"),
+
+    # path("inspection/compartiment/<int:pk>/details/", views.compartiment, name="compartiment-details"),
+    # Wizard POST + Start page
+    path("inspection/wizard/<int:pk>/post/", views.inspection_wizard_post, name="inspection_wizard_post"),
+    path("inspection/wizard/<int:pk>/finalize/", views.inspection_wizard_finalize, name="inspection_wizard_finalize"),
+    path("inspection/start/<int:pk>/", views.inspection_start, name="inspection_start"),
+    # Allow no-trailing-slash variant (some environments strip it)
+    path("inspection/start/<int:pk>", views.inspection_start),
+
+
 
 ]

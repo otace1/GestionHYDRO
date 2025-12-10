@@ -1,0 +1,1060 @@
+{# templates/partials/kpis_cards.html #}
+<section id="kpis"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+         data-url-requisition="{% url 'wb_requisition' %}"
+         data-url-inspection="{% url 'wb_inspection' %}"
+         data-url-conformes="{% url 'wb_conformes' %}"
+         data-url-reports="{% url 'wb_reports' %}"
+         data-inspect-url-template="/entrepot/inspection/start/{id}/"
+         data-inspect-post-url-template="{% url 'inspection_wizard_finalize' pk=0 %}"
+         data-report-url-template="/entrepot/rapport/{id}"
+         data-decharger-url-template="/dechargement/nouveau/{id}"
+         data-sealstates-url="/api/sealstates/">
+
+  <!-- En attente de réquisition -->
+  <button type="button" class="kpi-card group rounded-2xl px-4 py-4 text-left glass hover:shadow-glassHover transition border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" data-scope="requisition">
+    <div class="text-xs text-white/60 mb-2">En attente de réquisition</div>
+    <div id="kpi-waiting" class="text-2xl font-semibold">{{ waiting|default:0 }}</div>
+    <div class="mt-2 text-[11px] text-white/50">Cliquez pour voir la liste</div>
+  </button>
+
+  <!-- En inspection -->
+  <button type="button" class="kpi-card group rounded-2xl px-4 py-4 text-left glass hover:shadow-glassHover transition border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" data-scope="inspection">
+    <div class="text-xs text-white/60 mb-2">En inspection</div>
+    <div id="kpi-inspection" class="text-2xl font-semibold">{{ inspection|default:0 }}</div>
+    <div class="mt-2 text-[11px] text-white/50">Cliquez pour voir la liste</div>
+  </button>
+
+  <!-- Conformes -->
+  <button type="button" class="kpi-card group rounded-2xl px-4 py-4 text-left glass hover:shadow-glassHover transition border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" data-scope="conformes">
+    <div class="text-xs text-white/60 mb-2">Conformes et en attente de déchargement</div>
+    <div id="kpi-conformes" class="text-2xl font-semibold">{{ conformes|default:0 }}</div>
+    <div class="mt-2 text-[11px] text-white/50">Cliquez pour voir la liste</div>
+  </button>
+
+  <!-- Rapports -->
+  <button type="button" class="kpi-card group rounded-2xl px-4 py-4 text-left glass hover:shadow-glassHover transition border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" data-scope="reports">
+    <div class="text-xs text-white/60 mb-2">Rapports / Historique</div>
+    <div id="kpi-actions" class="text-2xl font-semibold">{{ reports|default:0 }}</div>
+    <div class="mt-2 text-[11px] text-white/50">Cliquez pour voir la liste</div>
+  </button>
+</section>
+
+<!-- (Optional) a tiny invisible form to expose CSRF token for JS -->
+<form style="display:none;">{% csrf_token %}</form>
+
+<!-- =================== LIST MODALS =================== -->
+<!-- Requisition -->
+<div id="modal-requisition" class="hidden fixed inset-0 z-[85]" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="kpimodal"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-semibold">En attente de réquisition</h3>
+          <p class="text-xs sm:text-sm text-white/70" id="mr-sub">—</p>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto">
+          <input id="mr-search" type="search" placeholder="Rechercher (immat., importateur...)" class="w-full sm:w-56 rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50">
+          <button type="button" class="kpi-modal-close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+            <tr>
+              <th class="px-3 py-2">Date entrée</th>
+              <th class="px-3 py-2">Importateur</th>
+              <th class="px-3 py-2">Entrepôt</th>
+              <th class="px-3 py-2">Immatriculation</th>
+              <th class="px-3 py-2">Produit</th>
+              <th class="px-3 py-2">Volume (m³)</th>
+            </tr>
+          </thead>
+          <tbody id="mr-tbody"></tbody>
+        </table>
+      </div>
+      <div class="px-5 py-3 border-t border-white/10 flex items-center justify-between gap-3">
+        <div id="mr-info" class="text-xs text-white/70">—</div>
+        <div class="flex items-center gap-1">
+          <button type="button" class="pg-btn" data-kpi="requisition" data-dir="first">«</button>
+          <button type="button" class="pg-btn" data-kpi="requisition" data-dir="prev">‹</button>
+          <span id="mr-page" class="text-xs text-white/80 px-2">1 / 1</span>
+          <button type="button" class="pg-btn" data-kpi="requisition" data-dir="next">›</button>
+          <button type="button" class="pg-btn" data-kpi="requisition" data-dir="last">»</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inspection (with Actions) -->
+<div id="modal-inspection" class="hidden fixed inset-0 z-[85]" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="kpimodal"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-semibold">En inspection</h3>
+          <p class="text-xs sm:text-sm text-white/70" id="mi-sub">—</p>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto">
+          <input id="mi-search" type="search" placeholder="Rechercher (immat., importateur...)" class="w-full sm:w-56 rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50">
+          <button type="button" class="kpi-modal-close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+            <tr>
+              <th class="px-3 py-2">Date entrée</th>
+              <th class="px-3 py-2">Importateur</th>
+              <th class="px-3 py-2">Entrepôt</th>
+              <th class="px-3 py-2">Immatriculation</th>
+              <th class="px-3 py-2">Produit</th>
+              <th class="px-3 py-2">Volume (m³)</th>
+              <th class="px-3 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="mi-tbody"></tbody>
+        </table>
+      </div>
+      <div class="px-5 py-3 border-t border-white/10 flex items-center justify-between gap-3">
+        <div id="mi-info" class="text-xs text-white/70">—</div>
+        <div class="flex items-center gap-1">
+          <button type="button" class="pg-btn" data-kpi="inspection" data-dir="first">«</button>
+          <button type="button" class="pg-btn" data-kpi="inspection" data-dir="prev">‹</button>
+          <span id="mi-page" class="text-xs text-white/80 px-2">1 / 1</span>
+          <button type="button" class="pg-btn" data-kpi="inspection" data-dir="next">›</button>
+          <button type="button" class="pg-btn" data-kpi="inspection" data-dir="last">»</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Conformes (with Actions) -->
+<div id="modal-conformes" class="hidden fixed inset-0 z-[85]" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="kpimodal"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-semibold">Conformes et en attente de déchargement</h3>
+          <p class="text-xs sm:text-sm text-white/70" id="mc-sub">—</p>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto">
+          <input id="mc-search" type="search" placeholder="Rechercher (immat., importateur...)" class="w-full sm:w-56 rounded-lg bg-white/10 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/50">
+          <button type="button" class="kpi-modal-close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+            <tr>
+              <th class="px-3 py-2">Date entrée</th>
+              <th class="px-3 py-2">Importateur</th>
+              <th class="px-3 py-2">Entrepôt</th>
+              <th class="px-3 py-2">Immatriculation</th>
+              <th class="px-3 py-2">Produit</th>
+              <th class="px-3 py-2">Volume (m³)</th>
+              <th class="px-3 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="mc-tbody"></tbody>
+        </table>
+      </div>
+      <div class="px-5 py-3 border-t border-white/10 flex items-center justify-between gap-3">
+        <div id="mc-info" class="text-xs text-white/70">—</div>
+        <div class="flex items-center gap-1">
+          <button type="button" class="pg-btn" data-kpi="conformes" data-dir="first">«</button>
+          <button type="button" class="pg-btn" data-kpi="conformes" data-dir="prev">‹</button>
+          <span id="mc-page" class="text-xs text-white/80 px-2">1 / 1</span>
+          <button type="button" class="pg-btn" data-kpi="conformes" data-dir="next">›</button>
+          <button type="button" class="pg-btn" data-kpi="conformes" data-dir="last">»</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== ACTION MODALS =================== -->
+
+<!-- 4-STEP INSPECTION WIZARD (WIDER) -->
+<div id="modal-inspection-wizard" class="hidden fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-labelledby="iw-title">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="kpimodal"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <form id="iw-form" class="modal-panel w-full max-w-6xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl">
+      <!-- Header -->
+      <div class="px-5 py-4 border-b border-white/10">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 id="iw-title" class="text-base sm:text-lg font-semibold">Démarrer l’inspection</h3>
+            <p id="iw-sub" class="text-xs sm:text-sm text-white/70">Complétez les informations en 4 étapes.</p>
+          </div>
+          <button type="button" class="kpi-modal-close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
+        <!-- Stepper -->
+        <div class="mt-4 grid grid-cols-4 gap-2 text-xs">
+          <div id="iw-stepchip-1" class="rounded-lg px-3 py-2 bg-white/10 border border-white/10">1. Type</div>
+          <div id="iw-stepchip-2" class="rounded-lg px-3 py-2 bg-white/5 border border-white/10">2. Sceaux</div>
+          <div id="iw-stepchip-3" class="rounded-lg px-3 py-2 bg-white/5 border border-white/10">3. Mesures</div>
+          <div id="iw-stepchip-4" class="rounded-lg px-3 py-2 bg-white/5 border border-white/10">4. Compartiment</div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 grid gap-4 text-sm">
+        <!-- STEP 1 -->
+        <section id="iw-step-1" class="grid gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label class="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2">
+              <input id="iw-meter" type="checkbox" class="h-4 w-4"> <span>METER</span>
+            </label>
+            <label class="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2">
+              <input id="iw-tanker" type="checkbox" class="h-4 w-4"> <span>TANKER</span>
+            </label>
+            <label id="iw-shore-wrap" class="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-2">
+              <input id="iw-shore" type="checkbox" class="h-4 w-4"> <span>SHORE</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-white/60 text-xs">ID Cargaison</label>
+              <input id="iw-id" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2" readonly>
+            </div>
+            <div>
+              <label class="text-white/60 text-xs">Immatriculation</label>
+              <input id="iw-immat" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2" readonly>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3 text-white/70 text-xs">
+            Combinaisons autorisées : <b>Meter</b>, <b>Meter + Tanker</b>, <b>Tanker</b>, <b>Shore</b>, <b>Shore + Meter</b>.
+            <span class="text-white/50">Shore est indisponible pour la voie routière.</span>
+          </div>
+        </section>
+
+        <!-- STEP 2 -->
+        <section id="iw-step-2" class="hidden grid gap-4">
+          <div class="flex items-center justify-between">
+            <div class="text-white/80 font-medium">Sceaux — Manifold(s)</div>
+            <button type="button" id="iw-seal-add" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Ajouter une ligne</button>
+          </div>
+
+          <div id="iw-seals-list" class="grid gap-2"></div>
+
+          <template id="tpl-seal-row">
+            <div class="seal-row grid grid-cols-1 sm:grid-cols-12 gap-2 items-end rounded-xl bg-white/5 border border-white/10 p-3">
+              <div class="sm:col-span-6">
+                <label class="text-white/60 text-xs">MANIFOLD NUMBER</label>
+                <input class="seal-mn w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2" placeholder="ex: MN-001">
+              </div>
+              <div class="sm:col-span-5">
+                <label class="text-white/60 text-xs">SEALS STATE</label>
+                <select class="seal-state w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+                  <option value="">— Sélectionner —</option>
+                </select>
+              </div>
+              <div class="sm:col-span-1">
+                <button type="button" class="seal-del w-full mt-6 px-3 py-2 rounded-lg bg-rose-500/80 hover:bg-rose-500" title="Supprimer">✕</button>
+              </div>
+            </div>
+          </template>
+
+          <div class="text-xs text-white/60">Ajoutez une ligne par manifold scellé et renseignez l’état des sceaux.</div>
+        </section>
+
+        <!-- STEP 3 -->
+        <section id="iw-step-3" class="hidden grid gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-white/60 text-xs">DENSITE (Ex. 820.907)</label>
+              <input id="iw-dens" type="number" step="0.0001" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+            </div>
+            <div>
+              <label class="text-white/60 text-xs">TEMPERATURE</label>
+              <input id="iw-temp" type="number" step="0.1" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="text-white/60 text-xs">INNAGE IN</label>
+              <select id="iw-innagein" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+                <option value="">—</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-white/60 text-xs">VOLUME IN</label>
+              <select id="iw-volumein" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+                <option value="">—</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-white/60 text-xs">TEMP IN</label>
+              <select id="iw-tempin" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+                <option value="">—</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-white/60 text-xs">WEIGHT IN</label>
+              <select id="iw-weightin" class="w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+                <option value="">—</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 4 -->
+        <section id="iw-step-4" class="hidden grid gap-3">
+          <div class="flex items-center justify-between">
+            <div class="text-white/80 font-medium">Compartiments</div>
+            <button type="button" id="iw-comp-add" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Ajouter un compartiment</button>
+          </div>
+
+          <div id="iw-comp-list" class="grid gap-2"></div>
+
+          <template id="tpl-comp-row">
+            <div class="comp-row grid grid-cols-1 sm:grid-cols-12 gap-2 items-end rounded-xl bg-white/5 border border-white/10 p-3">
+              <div class="sm:col-span-3">
+                <label class="text-white/60 text-xs">DENOM. COMPARTIMENT</label>
+                <input class="comp-compart w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2" placeholder="ex: COMP-1">
+              </div>
+              <div class="sm:col-span-3">
+                <label class="text-white/60 text-xs">SEAL NUMBER</label>
+                <input class="comp-sealnumber w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-white/60 text-xs">SEAL STATE</label>
+                <select class="comp-sealstate w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+                  <option value="">—</option>
+                </select>
+              </div>
+              <div class="sm:col-span-1">
+                <label class="text-white/60 text-xs">INNAGE</label>
+                <input type="number" step="0.001" class="comp-innage w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+              </div>
+              <div class="sm:col-span-1">
+                <label class="text-white/60 text-xs">GOV JAUGE</label>
+                <input type="number" step="0.001" class="comp-gov w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+              </div>
+              <div class="sm:col-span-1">
+                <label class="text-white/60 text-xs">TEMP</label>
+                <input type="number" step="0.1" class="comp-temp w-full mt-1 rounded-lg bg-white/10 border border-white/10 px-3 py-2">
+              </div>
+              <div class="sm:col-span-1">
+                <button type="button" class="comp-del w-full mt-6 px-3 py-2 rounded-lg bg-rose-500/80 hover:bg-rose-500" title="Supprimer">✕</button>
+              </div>
+            </div>
+          </template>
+
+          <div class="rounded-xl bg-white/5 border border-white/10 p-3 text-white/80 text-xs">
+            Ajoutez une ligne par compartiment et vérifiez toutes les valeurs avant de terminer.
+          </div>
+
+          <!-- Submit button INSIDE Step 4 (green) -->
+          <div class="flex justify-end">
+            <button type="button" id="iw-submit-step4"
+                    class="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-[#0b1223] font-semibold">
+              Soumettre
+            </button>
+          </div>
+        </section>
+
+        <!-- Errors -->
+        <div id="iw-error" class="hidden rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-200 text-xs px-3 py-2"></div>
+      </div>
+
+      <!-- Footer (Prev/Next only) -->
+      <div class="px-5 pb-5 flex items-center justify-between gap-2 border-t border-white/10">
+        <div id="iw-status" class="text-xs text-white/60">Étape <span id="iw-stepnum">1</span> / 4</div>
+        <div class="flex gap-2">
+          <button type="button" id="iw-prev" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15" disabled>Précédent</button>
+          <button type="button" id="iw-next" class="px-4 py-2 rounded-lg bg-emerald-500 text-[#0b1223] font-semibold hover:bg-emerald-400">Suivant</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Déchargement modal -->
+<div id="modal-dechargement-start" class="hidden fixed inset-0 z-[90]" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="kpimodal"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-semibold">Préparer le déchargement</h3>
+          <p class="text-xs sm:text-sm text-white/70">Vérifiez les informations avant de continuer</p>
+        </div>
+        <button type="button" class="kpi-modal-close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="p-5 grid gap-3 text-sm" id="mds-body"><div class="text-white/60">Chargement…</div></div>
+      <div class="px-5 pb-5 flex justify-end gap-2">
+        <button type="button" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 kpi-modal-close">Annuler</button>
+        <a id="mds-continue" href="#" class="px-4 py-2 rounded-lg bg-sky-400 text-[#0b1223] font-semibold hover:bg-sky-300">Continuer</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== CONFIRMATION MODAL (for starting inspect / decharger only) =================== -->
+<div id="modal-confirm" class="hidden fixed inset-0 z-[95]" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="kpimodal"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10">
+        <h3 id="confirm-title" class="text-base sm:text-lg font-semibold">Confirmer l’action</h3>
+      </div>
+      <div class="p-5 grid gap-3 text-sm">
+        <p id="confirm-message" class="text-white/80"></p>
+      </div>
+      <div class="px-5 pb-5 flex justify-end gap-2">
+        <button type="button" id="confirm-cancel" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15">Annuler</button>
+        <button type="button" id="confirm-continue" class="px-4 py-2 rounded-lg bg-emerald-500 text-[#0b1223] font-semibold hover:bg-emerald-400">Continuer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ---------- Utils ----------
+  function esc(s){ s = (s==null)?'':String(s); return s.replace(/[&<>\"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
+  function nfmt(n){ if(isFinite(n)) { try{ return new Intl.NumberFormat('fr-FR').format(n);}catch(e){return String(n);} } return '—'; }
+  function fmtDate(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d.getTime())?'—':d.toLocaleDateString('fr-FR'); }
+  function getId(r){ return r && (r.id || r.idcargaison || r.pk || r.ID || r.Id); }
+  function show(el){ el && el.classList.remove('hidden'); }
+  function hide(el){ el && el.classList.add('hidden'); }
+
+  var kpiRoot = document.getElementById('kpis');
+  function d(key){ return (kpiRoot && kpiRoot.dataset && kpiRoot.dataset[key]) ? kpiRoot.dataset[key] : ''; }
+
+  var URLS = {
+    requisition: d('urlRequisition'),
+    inspection:  d('urlInspection'),
+    conformes:   d('urlConformes'),
+    reports:     d('urlReports'),
+    sealstates:  d('sealstatesUrl')
+  };
+
+  var ACTION_TPL = {
+    inspectGET:  d('inspectUrlTemplate'),
+    inspectPOST: d('inspectPostUrlTemplate') || '',
+    decharger:   d('dechargerUrlTemplate')
+  };
+
+  var UI = {
+    requisition: { modal:'modal-requisition', tbody:'mr-tbody', info:'mr-info', page:'mr-page', search:'mr-search', sub:'mr-sub' },
+    inspection:  { modal:'modal-inspection',  tbody:'mi-tbody', info:'mi-info', page:'mi-page', search:'mi-search', sub:'mi-sub' },
+    conformes:   { modal:'modal-conformes',   tbody:'mc-tbody', info:'mc-info', page:'mc-page', search:'mc-search', sub:'mc-sub' },
+    reports:     { modal:'modal-reports',     tbody:'mrp-tbody', info:'mrp-info', page:'mrp-page', search:'mrp-search', sub:'mrp-sub' }
+  };
+
+  var STATE = {
+    requisition:{ page:1, per_page:10, pages:1, total:0, q:'' },
+    inspection: { page:1, per_page:10, pages:1, total:0, q:'' },
+    conformes:  { page:1, per_page:10, pages:1, total:0, q:'' },
+    reports:    { page:1, per_page:10, pages:1, total:0, q:'' }
+  };
+
+  var CACHE = { requisition: [], inspection: [], conformes: [], reports: [] };
+
+  // ---------- Confirm modal helpers ----------
+  function confirmModal(config){
+    var mdl = document.getElementById('modal-confirm');
+    var titleEl = document.getElementById('confirm-title');
+    var msgEl = document.getElementById('confirm-message');
+    var okBtn = document.getElementById('confirm-continue');
+    var cancelBtn = document.getElementById('confirm-cancel');
+
+    titleEl.textContent = config.title || 'Confirmer';
+    msgEl.innerHTML = config.message || '';
+    okBtn.textContent = config.confirmText || 'Continuer';
+
+    return new Promise(function(resolve){
+      function cleanup(){
+        cancelBtn.removeEventListener('click', onCancel);
+        okBtn.removeEventListener('click', onOk);
+        document.removeEventListener('click', onBackdrop);
+        hide(mdl);
+      }
+      function onCancel(){ cleanup(); resolve(false); }
+      function onOk(){ cleanup(); resolve(true); }
+      function onBackdrop(e){ if (e.target && e.target.getAttribute && e.target.getAttribute('data-close')==='kpimodal'){ cleanup(); resolve(false);} }
+
+      cancelBtn.addEventListener('click', onCancel);
+      okBtn.addEventListener('click', onOk);
+      document.addEventListener('click', onBackdrop);
+      show(mdl);
+    });
+  }
+
+  function confirmActionFR(action){
+    var label = (action==='inspecter') ? 'INSPECTER' : 'DÉCHARGER';
+    return confirmModal({
+      title: 'Confirmer l’action',
+      message:
+        'Vous êtes sur le point de <b>' + label + '</b> cette cargaison.<br><br>' +
+        'Assurez-vous d’être en possession de tous les éléments requis avant de continuer.<br>' +
+        'Souhaitez-vous poursuivre ?',
+      confirmText: 'Continuer'
+    });
+  }
+
+  // ---------- Row HTML ----------
+  function rowHTML(r, scope){
+    var id = getId(r);
+    var immat = esc(r.immatriculation || r.plate || '—');
+    var voieName = esc(r.voie_name || r.voie || '');
+    var base =
+      '<tr data-id="'+esc(id)+'" data-voie="'+ voieName +'">' +
+        '<td class="px-3 py-2">'+ fmtDate(r.dateheurecargaison || r.date) +'</td>' +
+        '<td class="px-3 py-2">'+ esc(r.importateur_name || r.importateur || '—') +'</td>' +
+        '<td class="px-3 py-2">'+ esc(r.entrepot_name || r.entrepot || '—') +'</td>' +
+        '<td class="px-3 py-2"><span class="chip chip--immat">'+ immat +'</span></td>' +
+        '<td class="px-3 py-2">'+ esc(r.produit_name || r.produit || '—') +'</td>' +
+        '<td class="px-3 py-2">'+ (isFinite(r.volume) ? (nfmt(r.volume) + ' m³') : '—') +'</td>';
+
+    if (scope==='inspection'){
+      base += '<td class="px-3 py-2 text-right">' +
+                '<button type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500/90 hover:bg-emerald-400 text-[#0b1223] font-semibold act-inspect" data-id="'+esc(id)+'">Inspecter</button>' +
+              '</td>';
+    } else if (scope==='conformes'){
+      base += '<td class="px-3 py-2 text-right">' +
+                '<button type="button" class="px-3 py-1.5 rounded-lg bg-sky-400/90 hover:bg-sky-300 text-[#0b1223] font-semibold act-decharger" data-id="'+esc(id)+'">Décharger</button>' +
+              '</td>';
+    }
+    return base + '</tr>';
+  }
+
+  function render(scope, payload){
+    var ids = UI[scope]; if (!ids) return;
+    var body = document.getElementById(ids.tbody);
+    var info = document.getElementById(ids.info);
+    var page = document.getElementById(ids.page);
+    var sub  = document.getElementById(ids.sub);
+    var items = (payload && payload.items) ? payload.items : [];
+    var p = (payload && payload.pagination) ? payload.pagination : {};
+
+    CACHE[scope] = items;
+    STATE[scope].page = p.page || 1;
+    STATE[scope].per_page = p.per_page || 10;
+    STATE[scope].total = (typeof p.total==='number') ? p.total : items.length;
+    STATE[scope].pages = p.pages || Math.max(1, Math.ceil(STATE[scope].total / STATE[scope].per_page));
+
+    if (body){
+      var cols = (scope==='inspection'||scope==='conformes') ? 7 : 6;
+      body.innerHTML = items.length ? items.map(function(x){ return rowHTML(x, scope); }).join('') :
+        '<tr><td class="px-3 py-6 text-center text-white/70" colspan="'+cols+'">Aucun enregistrement.</td></tr>';
+    }
+    if (info){
+      if (STATE[scope].total > 0){
+        var start = (STATE[scope].per_page * (STATE[scope].page - 1)) + (items.length ? 1 : 0);
+        var end   = (STATE[scope].per_page * (STATE[scope].page - 1)) + items.length;
+        info.textContent = 'Affichage ' + start + '–' + end + ' sur ' + STATE[scope].total;
+      } else info.textContent = '—';
+    }
+    if (page){ page.textContent = STATE[scope].page + ' / ' + STATE[scope].pages; }
+    if (sub){ sub.textContent = (STATE[scope].q ? ('Filtre: “'+STATE[scope].q+'”') : '—'); }
+  }
+
+  function load(scope, opts){
+    var url = URLS[scope];
+    if (!url) { console.warn('Missing URL for scope:', scope); return; }
+    var page = (opts && opts.page) || STATE[scope].page || 1;
+    var per_page = STATE[scope].per_page || 10;
+    var q = (opts && typeof opts.q!=='undefined') ? opts.q : (STATE[scope].q || '');
+    STATE[scope].page = page; STATE[scope].q = q;
+
+    var u = url + (url.indexOf('?')===-1?'?':'&') + 'page='+encodeURIComponent(page)+'&per_page='+encodeURIComponent(per_page);
+    if (q) u += '&q=' + encodeURIComponent(q);
+
+    fetch(u, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(data){ render(scope, data); })
+      .catch(function(err){ console.error('Load failed ['+scope+']:', err); render(scope, {items:[], pagination:{page:1, per_page:per_page, total:0, pages:1}}); });
+  }
+
+  // ---------- Open/Close ----------
+  function openModal(scope){ var ids=UI[scope]; if(!ids) return; show(document.getElementById(ids.modal)); STATE[scope].page=1; load(scope,{page:1}); }
+  function closeModal(node){ hide(node); }
+  function closeAllListModals(){ Object.keys(UI).forEach(function(k){ closeModal(document.getElementById(UI[k].modal)); }); }
+
+  // KPI cards
+  document.addEventListener('click', function(e){
+    var card = e.target.closest && e.target.closest('.kpi-card[data-scope]'); if(!card) return;
+    var scope = String(card.getAttribute('data-scope')||'').toLowerCase(); if(UI[scope]) openModal(scope);
+  });
+
+  // Backdrop + close
+  document.addEventListener('click', function(e){
+    if (e.target && e.target.getAttribute && e.target.getAttribute('data-close')==='kpimodal'){
+      var mdl = e.target.closest && e.target.closest('[role="dialog"]'); return closeModal(mdl);
+    }
+    var c = e.target.closest && e.target.closest('.kpi-modal-close');
+    if (c){ var mdl2 = c.closest && c.closest('[role="dialog"]'); return closeModal(mdl2); }
+  });
+
+  // ESC
+  document.addEventListener('keydown', function(e){
+    if (e.key==='Escape' || e.keyCode===27){
+      closeAllListModals();
+      hide(document.getElementById('modal-dechargement-start'));
+      hide(document.getElementById('modal-inspection-wizard'));
+      hide(document.getElementById('modal-confirm'));
+    }
+  });
+
+  // Pagination
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('.pg-btn[data-kpi][data-dir]'); if(!btn) return;
+    var scope = btn.getAttribute('data-kpi'); var dir = btn.getAttribute('data-dir'); var st = STATE[scope]; if(!st) return;
+    var t = st.page; if(dir==='first') t=1; if(dir==='prev') t=Math.max(1,st.page-1); if(dir==='next') t=Math.min(st.pages,st.page+1); if(dir==='last') t=st.pages;
+    if(t!==st.page) load(scope,{page:t});
+  });
+
+  // Search
+  function bindSearch(scope){
+    var ids=UI[scope]; if(!ids) return; var inp=document.getElementById(ids.search); if(!inp) return;
+    inp.addEventListener('keydown', function(ev){
+      if(ev.key==='Enter'||ev.keyCode===13){ ev.preventDefault(); STATE[scope].q=(inp.value||'').trim(); load(scope,{page:1,q:STATE[scope].q}); }
+    });
+  }
+  ['requisition','inspection','conformes','reports'].forEach(bindSearch);
+
+  // ---------- Helpers ----------
+  function findRec(scope,id){ var list=(CACHE[scope]||[]); for(var i=0;i<list.length;i++){ var rid=getId(list[i]); if(String(rid)===String(id)) return list[i]; } return null; }
+  function buildRecFromRow(tr){
+    if(!tr) return null;
+    var td=tr.querySelectorAll('td');
+    function cell(i){ return td[i]?td[i].textContent.trim():''; }
+    return {
+      id: tr.getAttribute('data-id'),
+      voie: tr.getAttribute('data-voie') || '',
+      voie_name: tr.getAttribute('data-voie') || '',
+      dateheurecargaison: cell(0),
+      importateur_name: cell(1),
+      entrepot_name: cell(2),
+      immatriculation: cell(3),
+      produit_name: cell(4),
+      volume: cell(5).replace(/[^\d.,-]/g,'')
+    };
+  }
+
+  // ---- Seal states (generic + API merge) ----
+  var SEAL_STATE_OPTIONS = [
+    { value: 'INTACT',   label: 'INTACT' },
+    { value: 'BROKEN',   label: 'BROKEN' },
+    { value: 'MISSING',  label: 'MISSING' },
+    { value: 'TAMPERED', label: 'TAMPERED' },
+    { value: 'RESEALED', label: 'RESEALED' },
+    { value: 'DAMAGED',  label: 'DAMAGED' }
+  ];
+  var sealOptionsLoaded = false;
+
+  function ensureSealOptionsOnSelect(sel){
+    if (!sel) return;
+    var existing = {};
+    for (var i=0;i<sel.options.length;i++){
+      existing[String(sel.options[i].value).toUpperCase()] = true;
+    }
+    SEAL_STATE_OPTIONS.forEach(function(o){
+      var key = String(o.value).toUpperCase();
+      if (!existing[key]){
+        var opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.label || o.value;
+        sel.appendChild(opt);
+        existing[key] = true;
+      }
+    });
+  }
+
+  function mergeSealOptions(list){
+    var seen = {};
+    SEAL_STATE_OPTIONS.forEach(function(o){ seen[String(o.value).toUpperCase()] = true; });
+    list.forEach(function(o){
+      var v = String(o.id || o.value || o.code || '').trim();
+      var l = String(o.sealstate || o.label || o.name || '').trim();
+      if (!v || !l) return;
+      var key = v.toUpperCase();
+      if (!seen[key]){ SEAL_STATE_OPTIONS.push({value:v, label:l}); seen[key] = true; }
+    });
+  }
+
+  function loadSealStatesIfNeeded(){
+    if (sealOptionsLoaded) return Promise.resolve();
+    var url = URLS.sealstates;
+    if (!url){ sealOptionsLoaded = true; return Promise.resolve(); }
+    return fetch(url, {headers:{'Accept':'application/json'}, credentials:'same-origin'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(js){
+        var raw = Array.isArray(js) ? js : (js.items || []);
+        var mapped = raw.map(function(o){
+          return { value: String(o.id || o.value || o.code || '').trim(),
+                   label: String(o.sealstate || o.label || o.name || '').trim() };
+        }).filter(function(x){ return x.value && x.label; });
+        mergeSealOptions(mapped);
+        sealOptionsLoaded = true;
+      }).catch(function(err){ console.warn('Seal states load failed:', err); sealOptionsLoaded = true; });
+  }
+
+  // ---- Measurement units (Step 3) ----
+  var UNITS = {
+    innage: [{ value: 'm',  label: 'm' }, { value: 'cm', label: 'cm' }, { value: 'ft', label: 'ft' }, { value: 'in', label: 'in' }],
+    volume: [{ value: 'm3', label: 'm³' }, { value: 'L', label: 'L' }, { value: 'bbl', label: 'bbl' }, { value: 'USgal', label: 'US gal' }],
+    temp:   [{ value: 'C',  label: '°C' }, { value: 'F',  label: '°F' }, { value: 'K',  label: 'K' }],
+    weight: [{ value: 'kg', label: 'kg' }, { value: 't',  label: 't (metric tonne)' }, { value: 'lb', label: 'lb' }]
+  };
+  function addOptionsOnce(selectId, options) {
+    var sel = document.getElementById(selectId);
+    if (!sel) return;
+    var existing = {};
+    for (var i = 0; i < sel.options.length; i++) {
+      existing[ String(sel.options[i].value).toUpperCase() ] = true;
+    }
+    options.forEach(function (o) {
+      var val = String((o.value || '')).toUpperCase();
+      var lab = String(o.label || o.value || '').trim();
+      if (!val || !lab || existing[val]) return;
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = lab;
+      sel.appendChild(opt);
+      existing[val] = true;
+    });
+  }
+  function populateMeasurementUnits(){
+    addOptionsOnce('iw-innagein', UNITS.innage);
+    addOptionsOnce('iw-volumein', UNITS.volume);
+    addOptionsOnce('iw-tempin',   UNITS.temp);
+    addOptionsOnce('iw-weightin', UNITS.weight);
+  }
+
+  // ---------- Dynamic rows: STEP 2 (seals) ----------
+  function createSealRow(defaults){
+    var tpl = document.getElementById('tpl-seal-row');
+    var frag = tpl.content.cloneNode(true);
+    var row  = frag.querySelector('.seal-row');
+    var mn   = row.querySelector('.seal-mn');
+    var ss   = row.querySelector('.seal-state');
+    var del  = row.querySelector('.seal-del');
+
+    mn.value = (defaults && defaults.manifoldnumber) || '';
+    ensureSealOptionsOnSelect(ss);
+    if (defaults && defaults.sealstate){ ss.value = defaults.sealstate; }
+
+    del.addEventListener('click', function(){
+      row.parentNode && row.parentNode.removeChild(row);
+    });
+    return row;
+  }
+  function getSealRowsData(){
+    var list = [];
+    var rows = document.querySelectorAll('#iw-seals-list .seal-row');
+    rows.forEach(function(r){
+      var mn = r.querySelector('.seal-mn').value.trim();
+      var ss = r.querySelector('.seal-state').value.trim();
+      if (mn || ss){ list.push({ manifoldnumber: mn, sealstate: ss }); }
+    });
+    return list;
+  }
+
+  // ---------- Dynamic rows: STEP 4 (compartments) ----------
+  function createCompRow(defaults){
+    var tpl = document.getElementById('tpl-comp-row');
+    var frag = tpl.content.cloneNode(true);
+    var row  = frag.querySelector('.comp-row');
+    var compart    = row.querySelector('.comp-compart');
+    var sealnumber = row.querySelector('.comp-sealnumber');
+    var sealstate  = row.querySelector('.comp-sealstate');
+    var innage     = row.querySelector('.comp-innage');
+    var gov        = row.querySelector('.comp-gov');
+    var temp       = row.querySelector('.comp-temp');
+    var del        = row.querySelector('.comp-del');
+
+    compart.value    = (defaults && defaults.compart) || '';
+    sealnumber.value = (defaults && defaults.sealNumber) || '';
+    ensureSealOptionsOnSelect(sealstate);
+    if (defaults && defaults.sealstate){ sealstate.value = defaults.sealstate; }
+    innage.value     = (defaults && (defaults.innage ?? '')) ;
+    gov.value        = (defaults && (defaults.gov ?? '')) ;
+    temp.value       = (defaults && (defaults.tempcomp ?? '')) ;
+
+    del.addEventListener('click', function(){
+      row.parentNode && row.parentNode.removeChild(row);
+    });
+    return row;
+  }
+  function getCompRowsData(){
+    var list = [];
+    var rows = document.querySelectorAll('#iw-comp-list .comp-row');
+    rows.forEach(function(r){
+      var comp = r.querySelector('.comp-compart').value.trim();
+      var sn   = r.querySelector('.comp-sealnumber').value.trim();
+      var ss   = r.querySelector('.comp-sealstate').value.trim();
+      var inn  = r.querySelector('.comp-innage').value.trim();
+      var gv   = r.querySelector('.comp-gov').value.trim();
+      var tp   = r.querySelector('.comp-temp').value.trim();
+      if (comp || sn || ss || inn || gv || tp){
+        list.push({
+          compart: comp,
+          sealNumber: sn,
+          sealstate: ss,
+          innage: inn ? parseFloat(inn) : null,
+          gov: gv ? parseFloat(gv) : null,
+          tempcomp: tp ? parseFloat(tp) : null
+        });
+      }
+    });
+    return list;
+  }
+
+  // ---------- Step navigation (no validations blocking) ----------
+  var curStep = 1;
+  function stepEl(n){ return document.getElementById('iw-step-'+n); }
+  function chipEl(n){ return document.getElementById('iw-stepchip-'+n); }
+
+  function goStep(n){
+    curStep = Math.max(1, Math.min(4, n));
+    for (var i=1;i<=4;i++){ hide(stepEl(i)); chipEl(i).className = chipEl(i).className.replace(' bg-white/10',' bg-white/5'); }
+    show(stepEl(curStep)); chipEl(curStep).className = chipEl(curStep).className.replace(' bg-white/5',' bg-white/10');
+
+    var prevBtn = document.getElementById('iw-prev');
+    var nextBtn = document.getElementById('iw-next');
+
+    prevBtn.disabled = (curStep===1);
+    nextBtn.classList.toggle('hidden', curStep===4);
+
+    document.getElementById('iw-stepnum').textContent = String(curStep);
+
+    if (curStep===2){
+      loadSealStatesIfNeeded().then(function(){
+        document.querySelectorAll('#iw-seals-list .seal-row .seal-state').forEach(ensureSealOptionsOnSelect);
+      });
+    }
+    if (curStep===3) populateMeasurementUnits();
+    if (curStep===4){
+      loadSealStatesIfNeeded().then(function(){
+        document.querySelectorAll('#iw-comp-list .comp-row .comp-sealstate').forEach(ensureSealOptionsOnSelect);
+      });
+    }
+  }
+
+  function openInspectionWizard(rec){
+    document.getElementById('iw-id').value = getId(rec) || '';
+    document.getElementById('iw-immat').value = rec.immatriculation || '';
+
+    ['iw-meter','iw-tanker','iw-shore'].forEach(function(id){ var el=document.getElementById(id); if(el) el.checked=false; });
+
+    // Hide SHORE if voie routière
+    var voieVal = String(rec.voie_name || rec.voie || '').toLowerCase();
+    var shoreWrap = document.getElementById('iw-shore-wrap');
+    var shoreInput = document.getElementById('iw-shore');
+    var isRoad = /routi[eè]re|route/.test(voieVal);
+    if (isRoad) {
+      if (shoreInput) shoreInput.checked = false;
+      if (shoreWrap) shoreWrap.style.display = 'none';
+    } else {
+      if (shoreWrap) shoreWrap.style.display = '';
+    }
+
+    // Reset dynamic lists
+    var sealList = document.getElementById('iw-seals-list'); sealList.innerHTML='';
+    var compList = document.getElementById('iw-comp-list'); compList.innerHTML='';
+    sealList.appendChild(createSealRow());
+    compList.appendChild(createCompRow());
+
+    populateMeasurementUnits();
+
+    goStep(1);
+    show(document.getElementById('modal-inspection-wizard'));
+  }
+
+  // Add-row buttons (step 2 / step 4)
+  document.getElementById('iw-seal-add').addEventListener('click', function(){
+    document.getElementById('iw-seals-list').appendChild(createSealRow());
+  });
+  document.getElementById('iw-comp-add').addEventListener('click', function(){
+    document.getElementById('iw-comp-list').appendChild(createCompRow());
+  });
+
+  // ---------- URL builder (handles {id} or reversed /0/ pattern) ----------
+  function buildPostUrlFromTemplate(tpl, id) {
+    const enc = encodeURIComponent(String(id));
+    if (tpl.indexOf('{id}') > -1) {
+      return tpl.replace('{id}', enc);
+    }
+    // Replace /0/ (or trailing /0) with /{id}/
+    return tpl.replace(/\/0(\/|$)/, '/' + enc + '$1');
+  }
+
+  // ---------- Collect ----------
+  function collectWizardDataSimple(){
+    return {
+      idcargaison: document.getElementById('iw-id').value,
+      immatriculation: document.getElementById('iw-immat').value,
+
+      meter:  !!document.getElementById('iw-meter').checked,
+      tanker: !!document.getElementById('iw-tanker').checked,
+      shore:  !!document.getElementById('iw-shore').checked,
+
+      seals: getSealRowsData(),
+
+      tankerInspection: {
+        dens: parseFloat(document.getElementById('iw-dens').value || 0) || null,
+        temp: parseFloat(document.getElementById('iw-temp').value || 0) || null,
+        innagein: (document.getElementById('iw-innagein').value || '').trim(),
+        volumein: (document.getElementById('iw-volumein').value || '').trim(),
+        tempin:   (document.getElementById('iw-tempin').value   || '').trim(),
+        weightin: (document.getElementById('iw-weightin').value || '').trim()
+      },
+
+      compartiments: getCompRowsData()
+    };
+  }
+
+  // ---------- Simple submit ----------
+  async function submitInspectionSimple(){
+    var ebox = document.getElementById('iw-error');
+    function showErr(msg){
+      if (ebox){ ebox.textContent = msg || 'Échec d’envoi des données.'; ebox.classList.remove('hidden'); }
+    }
+    if (ebox) ebox.classList.add('hidden');
+
+    var payload = collectWizardDataSimple();
+    var id = (payload.idcargaison || '').toString().trim();
+    if (!id){
+      return showErr('Identifiant cargaison manquant.');
+    }
+
+    var btn = document.getElementById('iw-submit-step4');
+    btn && (btn.disabled = true);
+
+    try{
+      const url = buildPostUrlFromTemplate((document.getElementById('kpis').dataset.inspectPostUrlTemplate || ''), id);
+      const csrf = (document.querySelector('[name=csrfmiddlewaretoken]')||{}).value || '';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRFToken': csrf },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok){
+        let js = null; try { js = await res.json(); } catch(_){}
+        throw new Error(js && js.error ? js.error : ('HTTP '+res.status));
+      }
+
+      let js = {};
+      try { js = await res.json(); } catch(_){}
+      // New behavior: stay on the same page and refresh all tables
+      if (js && (js.ok === true || js.success === true)){
+        // Open the report in a new tab/window
+        try {
+          var rptTpl = (document.getElementById('kpis').dataset.reportUrlTemplate || '');
+          if (rptTpl) {
+            var urlRpt = rptTpl.replace('{id}', encodeURIComponent(String(id)));
+            window.open(urlRpt, '_blank');
+          }
+        } catch(_){ }
+        // Close modal and refresh KPI tables
+        try { hide && hide(document.getElementById('modal-inspection-wizard')); } catch(_){ }
+        window.location.reload();
+        return;
+      }
+      // Fallbacks (legacy behavior) if server sends a redirect (kept for compatibility)
+      if (js && js.redirect){
+        window.location.href = js.redirect;
+      } else {
+        const getTpl = (document.getElementById('kpis').dataset.inspectUrlTemplate || '');
+        if (getTpl){
+          window.location.href = getTpl.replace('{id}', encodeURIComponent(String(id)));
+        } else {
+          try { hide && hide(document.getElementById('modal-inspection-wizard')); } catch(_){ }
+        }
+      }
+    } catch(err){
+      console.error(err);
+      showErr(err.message || 'Échec d’envoi des données.');
+      btn && (btn.disabled = false);
+    }
+  }
+
+  // ---------- Row clicks (Inspecter / Décharger) ----------
+  function closeAllListModals(){ Object.keys(UI).forEach(function(k){ hide(document.getElementById(UI[k].modal)); }); }
+
+  document.addEventListener('click', function(e){
+    // Inspecter
+    var ib = e.target.closest && e.target.closest('.act-inspect[data-id]');
+    if (ib){
+      var id = ib.getAttribute('data-id');
+      var rec = findRec('inspection', id) || buildRecFromRow(ib.closest('tr[data-id]'));
+      if (!rec){ console.warn('Inspecter: record not found.'); return; }
+      confirmActionFR('inspecter').then(function(ok){
+        if (!ok) return;
+        closeAllListModals();
+        openInspectionWizard(rec);
+      });
+      return;
+    }
+    // Décharger
+    var db = e.target.closest && e.target.closest('.act-decharger[data-id]');
+    if (db){
+      var id2 = db.getAttribute('data-id');
+      var tr = db.closest('tr[data-id]');
+      var rec2 = findRec('conformes', id2) || buildRecFromRow(tr);
+      if (!rec2){ console.warn('Décharger: record not found.'); return; }
+      confirmActionFR('decharger').then(function(ok){
+        if (!ok) return;
+        closeAllListModals();
+        // Fill recap
+        var body = document.getElementById('mds-body');
+        if (body){
+          body.innerHTML =
+            '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
+            '<div><span class="text-white/60">ID:</span> <span class="font-medium">'+ esc(getId(rec2)||'—') +'</span></div>' +
+            '<div><span class="text-white/60">Immatriculation:</span> <span class="font-medium">'+ esc(rec2.immatriculation||'—') +'</span></div>' +
+            '<div><span class="text-white/60">Importateur:</span> <span class="font-medium">'+ esc(rec2.importateur_name||rec2.importateur||'—') +'</span></div>' +
+            '<div><span class="text-white/60">Produit:</span> <span class="font-medium">'+ esc(rec2.produit_name||rec2.produit||'—') +'</span></div>' +
+            '<div><span class="text-white/60">Entrepôt:</span> <span class="font-medium">'+ esc(rec2.entrepot_name||rec2.entrepot||'—') +'</span></div>' +
+            '<div><span class="text-white/60">Volume:</span> <span class="font-medium">'+ (isFinite(rec2.volume)? nfmt(rec2.volume)+' m³' : esc(rec2.volume||'—')) +'</span></div>' +
+            '</div>';
+        }
+        var cont = document.getElementById('mds-continue');
+        if (cont && ACTION_TPL.decharger) cont.href = ACTION_TPL.decharger.replace('{id}', encodeURIComponent(String(getId(rec2))));
+        show(document.getElementById('modal-dechargement-start'));
+      });
+      return;
+    }
+  });
+
+  // ---------- Wizard buttons (no validation gating) ----------
+  document.getElementById('iw-prev').addEventListener('click', function(){ goStep(curStep-1); });
+  document.getElementById('iw-next').addEventListener('click', function(){ goStep(curStep+1); });
+
+  // Submit (inside Step 4) → directly post
+  (function bindSimpleSubmit(){
+    var btn = document.getElementById('iw-submit-step4');
+    if (!btn) return;
+    // Remove previous listeners by cloning
+    var clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener('click', submitInspectionSimple);
+  })();
+
+})();
+</script>

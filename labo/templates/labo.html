@@ -1,150 +1,548 @@
-{% extends 'base_lab_layout.html' %}
+{% extends 'base/base_template.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
 
-{% block dashboard %}
-    <style>
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+{% block main_content %}
 
-    .loading-spinner {
-      border: 4px solid rgba(0, 0, 0, 0.3);
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 2s linear infinite;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      margin-left: -20px;
-      margin-top: -20px;
-      z-index: 9999;
-    }
-    </style>
+<style>
+/* ===== Motion & depth ===== */
+@keyframes shimmerMove { to { background-position: -200% 0; } }
+@keyframes slideUp { from{ transform: translateY(6px); opacity:0 } to{ transform: translateY(0); opacity:1 } }
+.shadow-glass { box-shadow: 0 10px 30px rgba(3, 8, 20, .35), inset 0 1px 0 rgba(255,255,255,.06); }
 
-    <div id="data-table-wrapper" style="position: relative;">
-        <div class="loading-spinner"></div>
-          <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-              <tr>
-                <th>DATE ENTREE</th>
-                <th>DATE ECHANT</th>
-                <th>ENTREPOT</th>
-                <th>PRODUIT</th>
-                <th>IMMATRICULATION</th>
-                <th>NUM. DOSSIER</th>
-                <th>NUM. RE</th>
-                <th>ACTION(s)</th>
-              </tr>
-            </thead>
-          </table>
+/* ===== Glass cards & brand bits ===== */
+.glass { background: rgba(255,255,255,.04); backdrop-filter: blur(10px); }
+.brand-mark { display:grid; place-items:center; color: #7dd3fc; }
+
+/* ===== Table base ===== */
+.data-grid { width:100%; border-collapse: separate !important; border-spacing: 0 10px !important; }
+.data-grid thead tr { border-bottom: 1px solid rgba(255,255,255,.08); }
+.data-grid thead th {
+  padding:.7rem .9rem; font-weight:700; letter-spacing:.03em;
+  border-bottom:1px solid rgba(255,255,255,.10); user-select:none; white-space:nowrap;
+}
+.data-grid .tbody tr {
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 1px 0 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(3,8,20,.25);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.data-grid .tbody tr:hover { background: rgba(255,255,255,.06); transform: translateY(-1px); box-shadow: 0 1px 0 0 rgba(255,255,255,.08) inset, 0 10px 24px rgba(3,8,20,.32); }
+.data-grid .tbody td { padding:.7rem .9rem; vertical-align:top; border-top:1px solid rgba(255,255,255,.06); }
+.data-grid .tbody tr td + td { border-left: 1px solid rgba(255,255,255,.03); }
+.data-grid .tbody tr td:first-child { border-top-left-radius: 12px; }
+.data-grid .tbody tr td:last-child  { border-top-right-radius: 12px; }
+.data-grid .tbody tr td:first-child,
+.data-grid .tbody tr td:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* ===== Chips ===== */
+.chip{
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.125rem .55rem; border-radius:.55rem;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+  font-size:.85em;
+}
+.chip--immat{
+  font-weight:700; letter-spacing:.02em; color:#e8fbff;
+  background: linear-gradient(135deg, rgba(56,189,248,.16), rgba(20,184,166,.16));
+  border-color: rgba(255,255,255,.18);
+  text-shadow: 0 1px 0 rgba(0,0,0,.18);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+/* ===== Buttons ===== */
+.actions{ display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap; }
+.btn{
+  --ring: rgba(255,255,255,.18);
+  display:inline-flex; align-items:center; gap:.45rem;
+  padding:.45rem .7rem; border-radius:.6rem; font-size:.8125rem; line-height:1;
+  border:1px solid transparent;
+  transition: transform .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  will-change: transform;
+}
+.btn--ghost{
+  background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); color:#fff;
+}
+.btn--ghost:hover{ background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.16); transform: translateY(-1px); }
+.btn--primary{
+  color:#0b1223; font-weight:700;
+  background: linear-gradient(90deg, rgba(56,189,248,.9), rgba(20,184,166,.9));
+  border:1px solid rgba(255,255,255,.14);
+}
+.btn--primary:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+.btn.is-busy{ opacity:.65; pointer-events:none; }
+
+/* ===== Toast ===== */
+#toast{
+  position: fixed; bottom: 18px; right: 18px; display:flex; flex-direction:column; gap:8px; z-index: 1200;
+}
+.toast-item{
+  background: rgba(16,185,129,.15);
+  color:#eafff6; border:1px solid rgba(16,185,129,.35);
+  padding:.55rem .75rem; border-radius:.6rem; backdrop-filter: blur(6px);
+  transform: translateY(6px); opacity:0; animation: slideUp .25s ease-out forwards;
+}
+.toast-item--error{ background: rgba(244,63,94,.15); border-color: rgba(244,63,94,.35); color: #ffe7eb; }
+.toast-item.is-out{ opacity:0; transform: translateY(8px); transition: .25s ease; }
+
+/* ===== Responsive ===== */
+@media (max-width: 768px){
+  .data-grid thead{ display:none; }
+  .data-grid .tbody tr{ display:block; border-radius:12px; padding:.35rem .2rem; margin:.5rem 0; }
+  .data-grid .tbody td{
+    display:grid; grid-template-columns: 44% 56%; align-items:center;
+    border:none; border-bottom:1px dashed rgba(255,255,255,.08); padding:.55rem .75rem;
+  }
+  .data-grid .tbody tr td:last-child{ border-bottom:none; }
+  .data-grid .tbody td::before{
+    content: attr(data-th);
+    font-size:.72rem; letter-spacing:.03em; text-transform:uppercase; color: rgba(255,255,255,.65);
+    padding-right:.75rem; white-space: nowrap;
+  }
+  .actions{ justify-content:flex-start; }
+}
+
+/* ===== Container queries & sticky header ===== */
+section.glass, .modal-panel { container-type: inline-size; }
+.data-grid thead.sticky { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+</style>
+
+<!-- ========= Header ========= -->
+<section
+  class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur shadow-glass mb-5 px-4 sm:px-5 py-4"
+>
+  <div class="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full
+              bg-gradient-to-tr from-primary/30 to-primary2/30 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-14 -left-10 h-36 w-36 rounded-full
+              bg-gradient-to-tr from-primary2/20 to-primary/20 blur-3xl"></div>
+
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="brand-mark h-10 w-10" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="brand-mark__svg" role="img" aria-label="Réception">
+          <defs>
+            <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"  stop-color="currentColor" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0.55"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 2.5l7 3v6.2c0 4.2-2.9 7.9-7 9.3-4.1-1.4-7-5.1-7-9.3V5.5l7-3z"
+                fill="url(#markGrad)" opacity=".35" />
+          <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3.8h4M12 3.8v5.2"/>
+            <path d="M8.2 14.6a3.8 3.8 0 003.8 3.8h0a3.8 3.8 0 003.8-3.8c0-.9-.3-1.8-.9-2.5l-1.1-1.3H10.2l-1.1 1.3c-.6.7-.9 1.6-.9 2.5z"/>
+            <path d="M10.3 13.2c.7.3 1.6.5 2.6.5s1.9-.2 2.6-.5"/>
+          </g>
+        </svg>
+      </span>
+
+      <div>
+        <h2 class="text-lg sm:text-xl font-semibold tracking-tight text-white">
+          Entrepôt — Réceptions Labo
+        </h2>
+        <p class="text-xs sm:text-sm text-white/60">
+          Liste des cargaisons prêtes à être réceptionnées au laboratoire.
+        </p>
+      </div>
     </div>
 
+    <div class="flex items-center gap-2">
+      <button id="btnRefresh"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/15">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 4v6h6M20 20v-6h-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M20 8a8 8 0 10-7.9 10" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+        Actualiser
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ========= Table + Filters ========= -->
+<section class="relative glass rounded-2xl shadow-glass border border-white/10 overflow-hidden">
+
+  <!-- Filters bar -->
+  <div class="px-4 sm:px-5 pt-4">
+    <div class="min-w-max flex flex-col md:flex-row md:items-end gap-2 md:gap-3">
+      <!-- Search -->
+      <div class="flex-1 min-w-[220px]">
+        <label class="sr-only" for="fltSearch">Rechercher</label>
+        <input id="fltSearch" type="search"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+               placeholder="Rechercher (immat., produit, entrepôt, dossier)…">
+      </div>
+      <!-- From -->
+      <div class="w-full md:w-44">
+        <label class="block text-xs text-white/60 mb-1" for="fltFrom">Du</label>
+        <input id="fltFrom" type="date"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+      </div>
+      <!-- To -->
+      <div class="w-full md:w-44">
+        <label class="block text-xs text-white/60 mb-1" for="fltTo">Au</label>
+        <input id="fltTo" type="date"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+      </div>
+      <!-- Entrepôt -->
+      <div class="w-full md:w-52">
+        <label class="block text-xs text-white/60 mb-1" for="fltEntrepot">Entrepôt</label>
+        <input id="fltEntrepot" type="text"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+               placeholder="Nom de l’entrepôt">
+      </div>
+      <!-- Produit -->
+      <div class="w-full md:w-52">
+        <label class="block text-xs text-white/60 mb-1" for="fltProduit">Produit</label>
+        <input id="fltProduit" type="text"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+               placeholder="Nom du produit">
+      </div>
+      <!-- Reset -->
+      <div class="w-full md:w-auto">
+        <button id="fltReset"
+                class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm w-full md:w-auto">
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <header class="mt-3 flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-b border-white/10">
+    <div>
+      <h3 class="text-base sm:text-lg font-semibold">En attente de réception</h3>
+      <p class="text-xs sm:text-sm text-white/70">Cliquez sur “Réception” pour enregistrer l’entrée au labo.</p>
+    </div>
+  </header>
+
+  <div class="overflow-x-auto">
+    <table class="data-grid min-w-full text-sm text-left">
+      <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+        <tr>
+          <th class="px-3 py-2">Date entrée</th>
+          <th class="px-3 py-2">Date échant.</th>
+          <th class="px-3 py-2">Entrepôt</th>
+          <th class="px-3 py-2">Produit</th>
+          <th class="px-3 py-2">Immatriculation</th>
+          <th class="px-3 py-2">Num. Dossier</th>
+          <th class="px-3 py-2">Num. RE</th>
+          <th class="px-3 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-pending" class="tbody"></tbody>
+    </table>
+  </div>
+
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 flex items-center justify-between">
+    <div id="pg-info" class="text-xs text-white/70">—</div>
+    <div class="flex items-center gap-1">
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-dir="first">«</button>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-dir="prev">‹</button>
+      <span id="pg-page" class="text-xs text-white/80 px-2">1 / 1</span>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-dir="next">›</button>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-dir="last">»</button>
+    </div>
+  </footer>
+
+  <div id="empty" class="hidden py-8 text-center text-white/70 text-sm">Aucune cargaison à afficher.</div>
+</section>
+
+<!-- ========= Code Labo Modal ========= -->
+<div id="codeLaboModal" class="hidden fixed inset-0 z-[200]">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="codeLaboBackdrop"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl"
+         role="dialog" aria-modal="true" aria-labelledby="codeLaboTitle" onclick="event.stopPropagation()">
+      <header class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <h3 id="codeLaboTitle" class="text-base sm:text-lg font-semibold text-white">Code Labo généré</h3>
+        <button id="codeLaboCloseX" class="w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+      <div class="p-6">
+        <p class="text-sm text-white/70 mb-2">Veuillez noter ou copier le code ci-dessous :</p>
+        <div class="text-center">
+          <div id="codeLaboValue"
+               class="inline-flex items-center justify-center px-4 py-3 rounded-xl border border-white/15 bg-white/10 text-2xl font-bold tracking-wider text-white"></div>
+        </div>
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
+          <button id="codeLaboCopy"
+                  class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm font-medium">
+            Copier
+          </button>
+          <button id="codeLaboClose"
+                  class="px-4 py-2 rounded-lg bg-emerald-500 text-[#0b1223] font-semibold hover:bg-emerald-400">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast holder -->
+<div id="toast"></div>
+
 <script>
-    const csrfToken = '{{ csrf_token }}';
-    let dataTable;
+/* ============================ Helpers ============================ */
+function $(sel, root=document){ return root.querySelector(sel); }
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+function fmtDateISO(iso){ if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('fr-FR'); }
+function getCookie(name){ const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return m?m.pop():''; }
+function toast(msg, ok=true){
+  let box=$('#toast'); if(!box){ box=document.createElement('div'); box.id='toast'; document.body.appendChild(box); }
+  const t=document.createElement('div'); t.className='toast-item '+(ok?'':'toast-item--error'); t.textContent=msg;
+  box.appendChild(t); setTimeout(()=>t.classList.add('is-out'),2200); setTimeout(()=>t.remove(),2600);
+}
 
-    $(document).ready(function () {
-        dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'affichageenchantillonResponse' %}',
-                type: 'GET',
-                // Show the loading spinner during DataTable processing
-                // Show the loading spinner during DataTable processing
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
-        },
-            columns: [
-                { data: 'dateheurecargaison__date' },
-                { data: 'entrepot_echantillon__dateechantillonage__date' },
-                { data: 'entrepot__nomentrepot' },
-                { data: 'produit__nomproduit' },
-                { data: 'immatriculation' },
-                { data: 'numdos' },
-                { data: 'entrepot_echantillon__numrappechauto' },
-                { // New column configuration
-                    data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // Include a button to submit the JSON data for the row
-                        const submitButton = '<button type="button" class="btn btn-block btn-warning" data-row-id="' + data + '">RECEPTION</button>';
-                        return submitButton;
-                    }
-                }
-            ],
-        });
+/* ============================ Endpoints ============================ */
+const LIST_URL = "{% url 'affichageenchantillonResponse' %}";
+const POST_URL = "{% url 'reception' %}";
+const CSRF = getCookie('csrftoken') || "{{ csrf_token }}";
 
+/* ============================ State (server-lazy) ============================ */
+const STATE = {
+  // DataTables-like paging (offset/limit)
+  draw: 1,
+  start: 0,
+  length: 10,
 
-        // Handle form submission on button click
-        $('#data-table').on('click', '.btn-warning', function () {
-            const button = $(this);
-            if (button.attr('disabled')) {
-                return; // Return if the button is disabled
-            }
+  // Server-lazy flags
+  lazy: true,
+  has_next: false,
+  page: 1,
 
-            const rowId = $(this).data('row-id');
-            const idcargaison = rowId;
+  // Filters (ALL sent to server)
+  q:"", from:"", to:"", entrepot:"", produit:""
+};
 
+let RAW_CACHE = [];   // last page from server
 
+/* ============================ Mapping & Render ============================ */
+function mapRow(src){
+  return {
+    idcargaison:  src.idcargaison ?? src.id ?? src.pk,
+    date_entree:  src['dateheurecargaison__date'] ?? src.dateheurecargaison ?? src.date ?? null,
+    date_echant:  src['entrepot_echantillon__dateechantillonage__date'] ?? src.dateechantillonage ?? null,
+    entrepot:     src['entrepot__nomentrepot'] ?? src.entrepot ?? null,
+    produit:      src['produit__nomproduit'] ?? src.produit ?? null,
+    immat:        src.immatriculation ?? null,
+    numdos:       src.numdos ?? src.num_dossier ?? null,
+    numre:        src['entrepot_echantillon__numrappechauto'] ?? src.numrappechauto ?? src.num_re ?? null
+  };
+}
 
-            // Disable the button and show the loading spinner
-            button.attr('disabled', true);
-            $('#data-table-wrapper .loading-spinner').show();
+function rowHTML(r){
+  const imm = esc(r.immat || '—');
+  return `
+    <tr data-id="${esc(r.idcargaison)}">
+      <td class="px-3 py-2" data-th="Date entrée">${fmtDateISO(r.date_entree)}</td>
+      <td class="px-3 py-2" data-th="Date échant.">${fmtDateISO(r.date_echant)}</td>
+      <td class="px-3 py-2" data-th="Entrepôt">${esc(r.entrepot || '—')}</td>
+      <td class="px-3 py-2" data-th="Produit">${r.produit ? `<span class="chip">${esc(r.produit)}</span>` : '—'}</td>
+      <td class="px-3 py-2" data-th="Immatriculation"><span class="chip chip--immat">${imm}</span></td>
+      <td class="px-3 py-2" data-th="Num. Dossier">${esc(r.numdos ?? '—')}</td>
+      <td class="px-3 py-2" data-th="Num. RE">${esc(r.numre ?? '—')}</td>
+      <td class="px-3 py-2 text-right" data-th="Actions">
+        <div class="actions">
+          <button type="button" class="btn btn--primary" data-action="recept" data-id="${esc(r.idcargaison)}">
+            Réception
+          </button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
 
-            // Include 'idcargaison' in the JSON data to send to the server
-            const dataToSend = {
-                idcargaison: idcargaison,
-            };
+function setPgButtons(){
+  const dis = (dir, on)=>{ const b=document.querySelector(`.pg-btn[data-dir="${dir}"]`); if(!b) return; b.disabled=on; b.classList.toggle('is-disabled', on); };
+  const onFirst = (STATE.start <= 0);
+  dis('first', onFirst);
+  dis('prev', onFirst);
+  dis('next', !STATE.has_next);
+  // unknown last page in lazy mode -> disable “last”
+  dis('last', true);
+}
 
-            console.log(dataToSend);
+function render(rows){
+  const body = $('#tbody-pending');
+  const info = $('#pg-info');
+  const page = $('#pg-page');
+  const empty= $('#empty');
 
-            // Send the JSON data to the URL using AJAX
-            $.ajax({
-                url: "{% url 'reception' %}", // Replace with your actual URL
-                type: 'POST',
-                data: JSON.stringify(dataToSend), // Send as JSON string
-                contentType: 'application/json', // Set content type to JSON
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                        if (response.success) {
-                            var codeLabo = response.codeLabo;
-                            alert("CODE LABO: " + codeLabo);
-                            $('#data-table-wrapper .loading-spinner').show();
-                            dataTable.ajax.reload();
-                        } else {
-                            alert("An error occurred");
-                            $('#data-table-wrapper .loading-spinner').show();
-                            dataTable.ajax.reload();
-                        }
-                        button.attr('disabled', false);
-                },
+  body.innerHTML = rows.length ? rows.map(rowHTML).join('') : '';
 
-                error: function () {
-                    console.log('Erreur');
-                    alert("An error occurred");
-                    {#$('.btn-warning').attr("disabled", false);#}
-                    // Enable the button and hide the loading spinner
-                    $('#data-table-wrapper .loading-spinner').show();
-                    button.attr('disabled', false);
-                    dataTable.ajax.reload();
-                }
-            });
-        });
+  if (rows.length){
+    empty.classList.add('hidden');
+    const startHuman = STATE.start + 1;
+    const endHuman   = STATE.start + rows.length;
+    page.textContent = `Page ${STATE.page}`;
+    info.textContent = `Affichage ${startHuman}–${endHuman}`;
+  } else {
+    empty.classList.remove('hidden');
+    page.textContent = `Page ${STATE.page}`;
+    info.textContent = '—';
+  }
+  setPgButtons();
+}
+
+/* ============================ Fetch (server-side search + filters) ============================ */
+async function loadList(){
+  try{
+    const url = new URL(LIST_URL, window.location.origin);
+    url.searchParams.set('draw',   String(++STATE.draw));
+    url.searchParams.set('start',  String(STATE.start));
+    url.searchParams.set('length', String(STATE.length));
+
+    // Server receives ALL filters
+    if (STATE.q)        url.searchParams.set('search[value]', STATE.q);
+    if (STATE.from)     url.searchParams.set('date_from', STATE.from);
+    if (STATE.to)       url.searchParams.set('date_to',   STATE.to);
+    if (STATE.entrepot) url.searchParams.set('entrepot',  STATE.entrepot);
+    if (STATE.produit)  url.searchParams.set('produit',   STATE.produit);
+
+    const res = await fetch(url.toString(), { headers: { 'Accept':'application/json' }});
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+
+    // Consume lazy flags from server
+    const meta = json && json.meta ? json.meta : {};
+    STATE.has_next = !!meta.has_next;
+    STATE.page = Math.floor(STATE.start / STATE.length) + 1;
+
+    // Map rows
+    const rows = Array.isArray(json.data) ? json.data : [];
+    RAW_CACHE = rows.map(mapRow);
+
+    render(RAW_CACHE);
+  } catch(e){
+    console.error(e);
+    RAW_CACHE = [];
+    render([]);
+    toast("Erreur de chargement des données.", false);
+  }
+}
+
+/* ============================ Pager (offset-based) ============================ */
+function goPage(dir){
+  if (dir==='first') STATE.start = 0;
+  if (dir==='prev')  STATE.start = Math.max(0, STATE.start - STATE.length);
+  if (dir==='next')  STATE.start = STATE.start + STATE.length; // server tells us later if there is a next
+  if (dir==='last')  return; // unknown in lazy mode
+  STATE.page = Math.floor(STATE.start / STATE.length) + 1;
+  loadList();
+}
+
+/* ============================ Modal (Code Labo) ============================ */
+function showCodeLaboModal(code){
+  const wrap=$('#codeLaboModal'); const out=$('#codeLaboValue');
+  if(out) out.textContent = code || '—';
+  wrap?.classList.remove('hidden');
+}
+function hideCodeLaboModal(){ $('#codeLaboModal')?.classList.add('hidden'); }
+document.addEventListener('click',(e)=>{ if(e.target?.dataset?.close==='codeLaboBackdrop') hideCodeLaboModal(); });
+document.addEventListener('DOMContentLoaded', ()=>{
+  $('#codeLaboClose')?.addEventListener('click', hideCodeLaboModal);
+  $('#codeLaboCloseX')?.addEventListener('click', hideCodeLaboModal);
+  $('#codeLaboCopy')?.addEventListener('click', async ()=>{
+    const val = $('#codeLaboValue')?.textContent?.trim(); if(!val) return;
+    try{ await navigator.clipboard.writeText(val); toast('Code copié.'); }catch(_){}
+  });
+});
+
+/* ============================ POST: Réception ============================ */
+async function doReception(idcargaison, btn){
+  if(!idcargaison) return;
+  try{
+    if(btn) btn.classList.add('is-busy');
+    const res = await fetch(POST_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-CSRFToken': CSRF, 'Accept':'application/json' },
+      body: JSON.stringify({ idcargaison })
     });
+    const json = await res.json().catch(()=>({}));
+    if(!res.ok || !json?.success){
+      toast("Une erreur est survenue lors de la réception.", false);
+    }else{
+      showCodeLaboModal(json.codeLabo || '(non communiqué)');
+      loadList(); // reload same offset with same filters
+    }
+  }catch(e){
+    console.error(e);
+    toast("Erreur réseau/serveur. Veuillez réessayer.", false);
+  }finally{
+    if(btn) btn.classList.remove('is-busy');
+  }
+}
 
+/* ============================ Events ============================ */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Initial fetch
+  loadList();
+
+  // Refresh (same offset & filters)
+  $('#btnRefresh')?.addEventListener('click', async ()=>{
+    const b=$('#btnRefresh'); b.disabled=true; b.classList.add('is-busy');
+    try{ await loadList(); } finally { b.disabled=false; b.classList.remove('is-busy'); }
+  });
+
+  // Pagination buttons
+  document.addEventListener('click', (e)=>{
+    const pg=e.target.closest('.pg-btn[data-dir]'); if(!pg) return;
+    e.preventDefault(); goPage(pg.dataset.dir);
+  });
+
+  // Action buttons
+  document.addEventListener('click', (e)=>{
+    const rec=e.target.closest('button[data-action="recept"]'); if(!rec) return;
+    doReception(rec.dataset.id, rec);
+  });
+
+  // ====== Filters (all server-side with debounce) ======
+  const inpSearch   = $('#fltSearch');
+  const inpFrom     = $('#fltFrom');
+  const inpTo       = $('#fltTo');
+  const inpEntrepot = $('#fltEntrepot');
+  const inpProduit  = $('#fltProduit');
+  const btnReset    = $('#fltReset');
+
+  let t;
+  function refetchFromStart(){
+    clearTimeout(t);
+    t = setTimeout(()=>{ STATE.start = 0; loadList(); }, 240);
+  }
+
+  inpSearch?.addEventListener('input', ()=>{
+    STATE.q = (inpSearch.value || '').trim();
+    refetchFromStart();
+  });
+  inpFrom?.addEventListener('change', ()=>{
+    STATE.from = inpFrom.value || '';
+    refetchFromStart();
+  });
+  inpTo?.addEventListener('change', ()=>{
+    STATE.to = inpTo.value || '';
+    refetchFromStart();
+  });
+  inpEntrepot?.addEventListener('input', ()=>{
+    STATE.entrepot = (inpEntrepot.value || '').trim();
+    refetchFromStart();
+  });
+  inpProduit?.addEventListener('input', ()=>{
+    STATE.produit = (inpProduit.value || '').trim();
+    refetchFromStart();
+  });
+
+  btnReset?.addEventListener('click', ()=>{
+    if (inpSearch)   inpSearch.value = '';
+    if (inpFrom)     inpFrom.value = '';
+    if (inpTo)       inpTo.value = '';
+    if (inpEntrepot) inpEntrepot.value = '';
+    if (inpProduit)  inpProduit.value = '';
+    STATE.q = ''; STATE.from = ''; STATE.to = ''; STATE.entrepot = ''; STATE.produit = '';
+    STATE.start = 0;
+    loadList();
+  });
+});
 </script>
 
 {% endblock %}
-
-
