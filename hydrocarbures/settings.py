@@ -145,6 +145,8 @@ DJANGO_TABLES2_TEMPLATE = "django_tables2/bootstrap4-responsive.html"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Enable gzip compression for faster JSON/HTML transfer
+    "django.middleware.gzip.GZipMiddleware",
     # "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django_session_timeout.middleware.SessionTimeoutMiddleware",
@@ -214,6 +216,8 @@ else:
                 "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
                 "ssl": {"ca": "/app/hydrocarbures/ca.crt"},
             },
+            # Keep DB connections open briefly to avoid handshake overhead
+            "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
         }
     }
 

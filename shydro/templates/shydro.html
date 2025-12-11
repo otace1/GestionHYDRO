@@ -57,14 +57,19 @@
 
     $(document).ready(function () {
         var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            processing: false,
-            serverSide: true,
+            lengthChange: false, // Hide the length change dropdown
+            processing: true, // Show DataTables built-in processing indicator
+            serverSide: true, // Enable server-side processing (lazy pagination)
+            deferRender: true, // Faster rendering for large data
             responsive: true,
+            searchDelay: 350, // Debounce search to reduce requests
+            pageLength: 20, // Keep UI page size aligned with backend default (20)
+            ordering: true, // Enable server-side ordering; backend maps indices to fields
+            stateSave: true, // Persist table state to reduce redundant reload work
             ajax: {
                 url: '{% url 'responseAffichageTableau' %}',
                 type: 'GET',
-                // Show the loading spinner during DataTable processing
+                dataSrc: 'data', // Map backend payload field
                 // Show the loading spinner during DataTable processing
                 beforeSend: function() {
                   $('#data-table-wrapper .loading-spinner').show();
@@ -75,7 +80,7 @@
                 }
         },
             columns: [
-                { data: 'dateheurecargaison__date' },
+                { data: 'date_entree_display' },
                 { data: 'importateur__nomimportateur' },
                 { data: 'entrepot__nomentrepot' },
                 { data: 'produit__nomproduit' },
@@ -83,8 +88,10 @@
                 { data: 'immatriculation' },
                 { data: 'declaration' },
                 { data: 'numreq' },
-                { // New column configuration
+                { // Action column (not orderable/searchable)
                     data: 'idcargaison',
+                    orderable: false,
+                    searchable: false,
                     render: function (data, type, row) {
                         // 'data' contains the value of 'idcargaison' for this row
                         // Here, we'll create a JSON input field and a button to submit the data
@@ -101,6 +108,12 @@
             ],
             // Optional: Add buttons for exporting to Excel
             dom: 'Bfrtip',
+            // Default order: by date desc (first column)
+            order: [[0, 'desc']],
+            // Explicitly mark last column (actions) as not orderable/searchable
+            columnDefs: [
+                { targets: -1, orderable: false, searchable: false }
+            ],
             buttons: [
                 {
                     extend: 'excelHtml5',
@@ -112,8 +125,14 @@
                         }
                     },
                     action: function (e, dt, node, config) {
-                        // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
+                        // Export using the same endpoint as the table, preserving current search filter
+                        var params = dt.ajax.params() || {};
+                        var searchValue = (params.search && params.search.value) ? params.search.value : '';
+                        var url = '{% url 'responseAffichageTableau' %}?export=excel';
+                        if (searchValue) {
+                            url += '&search[value]=' + encodeURIComponent(searchValue);
+                        }
+                        window.location.href = url;
                     }
                 }
             ],

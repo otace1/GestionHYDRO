@@ -5,295 +5,203 @@
 {% bootstrap_css %}
 {% bootstrap_javascript jquery='full' %}
 
-    <style>
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+<style>
+/* ONE GLOBAL SPINNER ONLY */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-    .loading-spinner {
-      border: 4px solid rgba(0, 0, 0, 0.3);
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 2s linear infinite;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      margin-left: -20px;
-      margin-top: -20px;
-      z-index: 9999;
-    }
-    </style>
+#global-spinner {
+  display: none; /* hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.6);
+  z-index: 9999;
+}
+
+#global-spinner .loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.3);
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -25px;
+  margin-top: -25px;
+}
+</style>
 
 
-{% block modal %}
-    <div class="modal fade" id="modal-default">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title">Filtres</h4>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-              <form action="{% url 'rapportActiviteFiltre' %}" method="post">
-            <div class="modal-body">
-                {% csrf_token %}
-                {% crispy form %}
-            </div>
-              </form>
-          </div>
-          <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-      </div>
-      <!-- /.modal -->
-{% endblock %}
+
 
 
 {% block content %}
-    {% render_table table %}
+
+{#    <!-- GLOBAL SPINNER (ONLY ONE) -->#}
+{#<div id="global-spinner">#}
+{#  <div class="loading-spinner"></div>#}
+{#</div>#}
+
+
+{{ block.super }}
 
 <script>
-var rowId;
-
 const csrfToken = '{{ csrf_token }}';
 
+// SHOW / HIDE GLOBAL SPINNER
+function showSpinner() {
+    document.getElementById("global-spinner").style.display = "block";
+}
+function hideSpinner() {
+    document.getElementById("global-spinner").style.display = "none";
+}
+
+// ----- EXISTING ACTIONS (just add showSpinner/hideSpinner) -----
+
 function confirmAction() {
-    event.preventDefault(); // Prevent the default action of the anchor element
-
-    // Get the row element containing the clicked button
+    event.preventDefault();
     const row = event.target.closest('tr');
+    const rowId = row.getAttribute('id');
 
-    // Get the value of the "id" attribute from the row element
-    rowId = row.getAttribute('id');
-
-    // Store the rowId in a variable or use it as needed
-    console.log('Row ID:', rowId);
-
-    // Display a confirmation dialog to the user
     const confirmed = confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?');
+    if (!confirmed) return false;
 
-    // If the user confirms, send the rowId to your endpoint
-    if (confirmed) {
-        // Make an AJAX request to your endpoint with the rowId
-        // Replace 'yourEndpointURL' with your actual endpoint URL
-        fetch('{% url "reInspecter" %}', {
-            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
-            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
-            contentType: 'application/json', // Set content type to JSON
-            headers: {
-                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-            },
-        })
-        .then(response => {
-            // Handle the response from the server
-            if (response.ok) {
-                // Request was successful
-                // You can perform any necessary actions here
-                console.log('Row ID sent to the server successfully.');
-                alert('Cargaison renvoyée en inspection');
-                window.location.reload();
-            } else {
-                // Request failed
-                console.error('Failed to send Row ID to the server.');
-                alert('Une erreur s\'est produite lors de la réinspection.');
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('An error occurred:', error);
-        });
-    }
+    showSpinner();
 
-    // Return false to prevent the anchor from navigating
+    fetch('{% url "reInspecter" %}', {
+        method: 'POST',
+        body: JSON.stringify({ rowId }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+    })
+    .then(response => {
+        hideSpinner();
+        if (response.ok) {
+            alert('Cargaison renvoyée en inspection');
+            location.reload();
+        } else {
+            alert('Erreur lors de la réinspection.');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        hideSpinner();
+        console.error(error);
+    });
+
     return false;
 }
 
 
 function printRappEchantillonnage() {
-    event.preventDefault(); // Prevent the default action of the anchor element
-
-    // Get the row element containing the clicked button
+    event.preventDefault();
     const row = event.target.closest('tr');
+    const rowId = row.getAttribute('id');
 
-    // Get the value of the "id" attribute from the row element
-    rowId = row.getAttribute('id');
+    if (!confirm("Afficher le rapport d'Echantillonnage?")) return false;
 
-    // Store the rowId in a variable or use it as needed
-    console.log('Row ID:', rowId);
+    showSpinner();
 
-    // Display a confirmation dialog to the user
-    const confirmed = confirm("Afficher le rapport d'Echantillonnage?");
+    fetch('{% url "impressionRappEch" %}', {
+        method: 'POST',
+        body: JSON.stringify({ rowId }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+    })
+    .then(r => r.json())
+    .then(data => {
+        hideSpinner();
+        if (data.status === 'success') {
+            const pdfBlob = new Blob([atob(data.pdf_base64)], { type: 'application/pdf' });
+            window.open(URL.createObjectURL(pdfBlob));
+            location.reload();
+        } else {
+            alert("Éléments du rapport manquants.");
+            location.reload();
+        }
+    })
+    .catch(error => {
+        hideSpinner();
+        console.error(error);
+    });
 
-    // If the user confirms, send the rowId to your endpoint
-    if (confirmed) {
-        // Make an AJAX request to your endpoint with the rowId
-        // Replace 'yourEndpointURL' with your actual endpoint URL
-        fetch('{% url "impressionRappEch" %}', {
-            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
-            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
-            contentType: 'application/json', // Set content type to JSON
-            headers: {
-                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-            },
-        })
-        .then(response => response.json()) // Parse the JSON response
-        .then(data => {
-            if (data.status === 'success') {
-                // Decode the PDF content from the response
-                var pdfContent = atob(data.pdf_base64);
-
-                // Create a Blob object from the decoded PDF content
-                var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
-
-                // Create a URL for the Blob object
-                var pdfURL = URL.createObjectURL(pdfBlob);
-
-                // Open the PDF in a new browser window
-                window.open(pdfURL);
-
-                location.reload();
-            } else {
-                // Request failed
-                console.error('Failed to generate PDF.');
-                alert("Un ou plusieurs éléments du rapport d'echantillannage sont manquants.");
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('An error occurred:', error);
-        });
-    }
-
-    // Return false to prevent the anchor from navigating
     return false;
 }
 
 
 function printRappInspection() {
-    event.preventDefault(); // Prevent the default action of the anchor element
-
-    // Get the row element containing the clicked button
+    event.preventDefault();
     const row = event.target.closest('tr');
+    const rowId = row.getAttribute('id');
 
-    // Get the value of the "id" attribute from the row element
-    rowId = row.getAttribute('id');
+    if (!confirm("Afficher le rapport d'Inspection?")) return false;
 
-    // Store the rowId in a variable or use it as needed
-    console.log('Row ID:', rowId);
+    showSpinner();
 
-    // Display a confirmation dialog to the user
-    const confirmed = confirm("Afficher le rapport d'Inspection?");
+    fetch('{% url "impressionRappInsp" %}', {
+        method: 'POST',
+        body: JSON.stringify({ rowId }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+    })
+    .then(r => r.json())
+    .then(data => {
+        hideSpinner();
+        if (data.status === 'success') {
+            const pdfBlob = new Blob([atob(data.pdf_base64)], { type: 'application/pdf' });
+            window.open(URL.createObjectURL(pdfBlob));
+            location.reload();
+        } else {
+            alert("Rapport d'inspection incomplet.");
+            location.reload();
+        }
+    })
+    .catch(error => {
+        hideSpinner();
+        console.error(error);
+    });
 
-    // If the user confirms, send the rowId to your endpoint
-    if (confirmed) {
-        // Make an AJAX request to your endpoint with the rowId
-        // Replace 'yourEndpointURL' with your actual endpoint URL
-        fetch('{% url "impressionRappInsp" %}', {
-            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
-            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
-            contentType: 'application/json', // Set content type to JSON
-            headers: {
-                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-            },
-        })
-        .then(response => response.json()) // Parse the JSON response
-        .then(data => {
-            if (data.status === 'success') {
-                // Decode the PDF content from the response
-                var pdfContent = atob(data.pdf_base64);
-
-                // Create a Blob object from the decoded PDF content
-                var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
-
-                // Create a URL for the Blob object
-                var pdfURL = URL.createObjectURL(pdfBlob);
-
-                // Open the PDF in a new browser window
-                window.open(pdfURL);
-
-                location.reload();
-            } else {
-                // Request failed
-                console.error('Failed to generate PDF.');
-                alert("Un ou plusieurs éléments du rapport d'inspection sont manquants.");
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('An error occurred:', error);
-        });
-    }
-
-    // Return false to prevent the anchor from navigating
     return false;
 }
 
 
 function printDossimport() {
-    event.preventDefault(); // Prevent the default action of the anchor element
-
-    // Get the row element containing the clicked button
+    event.preventDefault();
     const row = event.target.closest('tr');
+    const rowId = row.getAttribute('id');
 
-    // Get the value of the "id" attribute from the row element
-    rowId = row.getAttribute('id');
+    if (!confirm("Afficher les éléments du dossier?")) return false;
 
-    // Store the rowId in a variable or use it as needed
-    console.log('Row ID:', rowId);
+    showSpinner();
 
-    // Display a confirmation dialog to the user
-    const confirmed = confirm("Afficher les elements du dossier?");
-
-    // If the user confirms, send the rowId to your endpoint
-    if (confirmed) {
-        // Make an AJAX request to your endpoint with the rowId
-        // Replace 'yourEndpointURL' with your actual endpoint URL
-        fetch('{% url "afficherDossImport" %}', {
-            method: 'POST', // or 'GET', 'PUT', etc., depending on your API
-            body: JSON.stringify({ rowId: rowId }), // Send the rowId in the request body
-            headers: {
-                'Content-Type': 'application/json', // Set content type to JSON
-                'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-            },
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.blob();
-        })
-        .then(blob => {
-        // Create a URL for the Blob object
+    fetch('{% url "afficherDossImport" %}', {
+        method: 'POST',
+        body: JSON.stringify({ rowId }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+    })
+    .then(r => r.blob())
+    .then(blob => {
+        hideSpinner();
         const url = URL.createObjectURL(blob);
-
-        // Create a link element
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'file.pdf'; // Specify the filename for the downloaded file
-
-
-        // Append the link to the document body
+        const link = Object.assign(document.createElement('a'), {
+            href: url,
+            download: "file.pdf"
+        });
         document.body.appendChild(link);
-
-        // Simulate a click event on the link
         link.click();
-
-        // Remove the link from the document body
-        document.body.removeChild(link);
-
-        // Reload the current page after triggering the download
+        link.remove();
         location.reload();
     })
     .catch(error => {
-        console.error('An error occurred:', error);
-        alert("Failed to fetch file or invalid response.");
+        hideSpinner();
+        console.error(error);
+        alert("Erreur lors du téléchargement.");
     });
-}
-    // Return false to prevent the anchor from navigating
+
     return false;
 }
 

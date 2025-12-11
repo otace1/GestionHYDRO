@@ -21,10 +21,13 @@
 
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
+    <!-- Scroller extension for DataTables (improves huge table handling) -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/scroller/2.4.3/css/scroller.bootstrap5.min.css">
 
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/scroller/2.4.3/js/dataTables.scroller.min.js"></script>
 
     <!-- Ionicons -->
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
@@ -400,10 +403,14 @@
                             <span class="badge bg-success"></span>
                             <i class="fas fa-recycle"></i> CLEAR
                         </a>
-                        <a class="btn btn-app bg-warning" data-toggle="modal" data-target="#modal-default">
+                        <a class="btn btn-app bg-warning" data-bs-toggle="modal" data-bs-target="#modal-default">
                             <span class="badge bg-success"></span>
                             <i class="fas fa-filter"></i> FILTRES
                         </a>
+                        <!-- Visible Export button -->
+                        <button type="button" id="btn-export-excel" class="btn btn-app bg-success">
+                            <i class="fas fa-file-excel"></i> Exporter Excel
+                        </button>
                         {% block export %}{% endblock %}
                     </div>
                 </div>
@@ -411,8 +418,10 @@
                 <form id="search-form" action="{% url 'rechercheRapportActivite' %}" method="GET" class="form-inline">
                     <div class="input-group mb-1">
                         <input type="text" id="search-input" name="search" class="form-control"
-                               placeholder="Immatriculation|Num.Dossier|T1..." style="width: 300px; height: 40px;">
+                               placeholder="Immatriculation | Num.Dossier | T1 | ..."
+                               style="width: 340px; height: 40px;" autocomplete="on">
                         <div class="input-group-append">
+                            <button class="btn btn-secondary" id="search-clear" type="button" title="Effacer">&times;</button>
                             <button class="btn btn-primary" id="search-button" type="submit">RECHERCHE</button>
                         </div>
                     </div>
@@ -430,11 +439,136 @@
                                 {#                                    {% block export %}{% endblock %}#}
                                 {#                                </div>#}
                             </div>
-
-                            {% block modal %}{% endblock %}
+                            <!-- Modal block is defined once below -->
 
                             <div class="card-body">
+                                {% block modal %}
+                                <!-- Filters Modal -->
+                                <div class="modal fade" id="modal-default" tabindex="-1" aria-hidden="true">
+                                  <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                      <div class="modal-header">
+                                        <h5 class="modal-title"><b>Filtres avancés</b></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                      </div>
+                                      <div class="modal-body">
+                                        <div class="container-fluid">
+                                          <div class="row g-3">
+                                            <div class="col-md-3">
+                                              <label class="form-label">Date début</label>
+                                              <input type="date" id="flt-date-from" class="form-control" />
+                                            </div>
+                                            <div class="col-md-3">
+                                              <label class="form-label">Date fin</label>
+                                              <input type="date" id="flt-date-to" class="form-control" />
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Frontière</label>
+                                              <select id="flt-frontiere" class="form-control">
+                                                <option value="">Toutes</option>
+                                                {% if frontieres %}
+                                                  {% for f in frontieres %}
+                                                    <option value="{{ f.nomville }}">{{ f.nomville }}</option>
+                                                  {% endfor %}
+                                                {% endif %}
+                                              </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Fournisseur</label>
+                                              <select id="flt-importateur" class="form-control">
+                                                <option value="">Tous</option>
+                                                {% if fournisseurs %}
+                                                  {% for imp in fournisseurs %}
+                                                    <option value="{{ imp.nomimportateur }}">{{ imp.nomimportateur }}</option>
+                                                  {% endfor %}
+                                                {% endif %}
+                                              </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Entrepôt</label>
+                                              <select id="flt-entrepot" class="form-control">
+                                                <option value="">Tous</option>
+                                                {% if entrepots %}
+                                                  {% for e in entrepots %}
+                                                    <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
+                                                  {% endfor %}
+                                                {% endif %}
+                                              </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Produit</label>
+                                              <select id="flt-produit" class="form-control">
+                                                <option value="">Tous</option>
+                                                {% if produits %}
+                                                  {% for p in produits %}
+                                                    <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
+                                                  {% endfor %}
+                                                {% endif %}
+                                              </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Immatriculation</label>
+                                              <input type="text" id="flt-immat" class="form-control" placeholder="Ex: ABC-123" />
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Déclaration</label>
+                                              <input type="text" id="flt-declaration" class="form-control" placeholder="# Déclaration" />
+                                            </div>
+                                            <div class="col-md-6">
+                                              <label class="form-label">Dossier</label>
+                                              <input type="text" id="flt-numdos" class="form-control" placeholder="# Dossier" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" id="btn-reset-filters">Réinitialiser</button>
+                                        <button type="button" class="btn btn-primary" id="btn-apply-filters" data-bs-dismiss="modal">Appliquer</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                {% endblock %}
+
                                 {% block content %}
+                                <div id="rapport-table-wrapper" style="position: relative; min-height: 120px;">
+                                    <div id="rapport-loading" style="display:none; position:absolute; top: 40px; left: 50%; transform: translateX(-50%);">
+                                        <div class="spinner-border text-primary" role="status">
+                                          <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="rapport-table" class="table table-bordered table-striped" style="width:100%">
+                                            <thead>
+                                            <tr>
+                                                <th>DATE ENTREE</th>
+                                                <th>FRONTIERE</th>
+                                                <th>FOURNISSEUR</th>
+                                                <th>ENTREPOT</th>
+                                                <th>PRODUIT</th>
+                                                <th>VOL.DECL.</th>
+                                                <th>IMMATR.</th>
+                                                <th>#.DECLARATION</th>
+                                                <th>#.DOSSIER</th>
+                                                <th>DATE REQUISITION</th>
+                                                <th>DATE ECHANTILLONNAGE</th>
+                                                <th>DATE RECEPTION LABO</th>
+                                                <th>DATE D'ANALYSE</th>
+                                                <th>DATE D'INSPECTION</th>
+                                                <th>DATE DE DECHARGEMENT</th>
+                                                <th>VOL JAUGE (GOV)</th>
+                                                <th>DENSITE @15</th>
+                                                <th>TEMPERATURE</th>
+                                                <th>VCF</th>
+                                                <th>MTA</th>
+                                                <th>MTV</th>
+                                                <th>GSV</th>
+                                            <th>ACTIONS</th>
+                                            </tr>
+                                            </thead>
+                                        </table>
+                                    </div>
+                                </div>
                                 {% endblock %}
                                 <!-- /.box-header -->
                             </div>
@@ -474,7 +608,515 @@
     $(document).ready(function () {
 
         {% block javascript %}
+        // ---- Load dropdown options from backend endpoint and populate selects ----
+        function populateSelect($select, items, currentVal) {
+            try {
+                if (!$select || !$select.length) return;
+                var placeholder = '';
+                // Determine placeholder based on id
+                if ($select.attr('id') === 'flt-frontiere') placeholder = 'Toutes';
+                else placeholder = 'Tous';
 
+                var selected = currentVal || '';
+                $select.empty();
+                $select.append($('<option>', { value: '', text: placeholder }));
+                if (Array.isArray(items)) {
+                    items.forEach(function(it){
+                        var val = it && (it.value || it.label || it.name || '');
+                        var lbl = it && (it.label || it.value || it.name || '');
+                        if (!lbl) return;
+                        var opt = $('<option>', { value: val, text: lbl });
+                        if (selected && val === selected) opt.prop('selected', true);
+                        $select.append(opt);
+                    });
+                }
+                if (selected && $select.val() !== selected) {
+                    // If not found in the list, add a temp option so it displays
+                    $select.append($('<option>', { value: selected, text: selected, selected: true }));
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        function loadFilterOptions(cb) {
+            try {
+                var url = "{% url 'filterOptionsRapportActivite' %}";
+                $.getJSON(url)
+                 .done(function(payload){
+                    var f = readFiltersFromUrl();
+                    populateSelect($('#flt-frontiere'), payload.frontieres || [], f.frontiere || '');
+                    populateSelect($('#flt-importateur'), payload.fournisseurs || [], f.importateur || '');
+                    populateSelect($('#flt-entrepot'), payload.entrepots || [], f.entrepot || '');
+                    populateSelect($('#flt-produit'), payload.produits || [], f.produit || '');
+                 })
+                 .always(function(){ if (typeof cb === 'function') cb(); });
+            } catch (e) {
+                if (typeof cb === 'function') cb();
+            }
+        }
+
+        // Load dropdown options immediately at page load
+        loadFilterOptions();
+        // ---- Helpers for filters URL sync ----
+        function setFieldValue(selector, value) {
+            if (value === null || value === undefined) return;
+            var $el = $(selector);
+            if (!$el.length) return;
+            // For <select>, try to select matching option; if missing, append a temp option
+            if ($el.is('select')) {
+                if ($el.find('option').filter(function(){ return $(this).val() === value; }).length === 0 && value !== '') {
+                    $el.append($('<option>', { value: value, text: value }));
+                }
+            }
+            $el.val(value);
+        }
+
+        function readFiltersFromUrl() {
+            try {
+                var sp = new URL(window.location).searchParams;
+                return {
+                    date_from: sp.get('date_from') || '',
+                    date_to: sp.get('date_to') || '',
+                    frontiere: sp.get('frontiere') || '',
+                    importateur: sp.get('importateur') || '',
+                    entrepot: sp.get('entrepot') || '',
+                    produit: sp.get('produit') || '',
+                    immatriculation: sp.get('immatriculation') || '',
+                    declaration: sp.get('declaration') || '',
+                    numdos: sp.get('numdos') || ''
+                };
+            } catch (e) { return {}; }
+        }
+
+        function writeFiltersToUrl(filters) {
+            try {
+                var url = new URL(window.location);
+                var keys = ['date_from','date_to','frontiere','importateur','entrepot','produit','immatriculation','declaration','numdos'];
+                keys.forEach(function(k){
+                    var v = (filters && filters[k]) ? String(filters[k]).trim() : '';
+                    if (v) url.searchParams.set(k, v); else url.searchParams.delete(k);
+                });
+                window.history.replaceState({}, '', url);
+            } catch (e) { /* ignore */ }
+        }
+
+        function clearFiltersInUrl() {
+            try {
+                var url = new URL(window.location);
+                ['date_from','date_to','frontiere','importateur','entrepot','produit','immatriculation','declaration','numdos'].forEach(function(k){
+                    url.searchParams.delete(k);
+                });
+                window.history.replaceState({}, '', url);
+            } catch (e) { /* ignore */ }
+        }
+
+        // Restore modal fields from URL BEFORE initializing DataTable so the first draw uses them
+        (function prefillFiltersFromUrl(){
+            var f = readFiltersFromUrl();
+            setFieldValue('#flt-date-from', f.date_from || '');
+            setFieldValue('#flt-date-to', f.date_to || '');
+            setFieldValue('#flt-frontiere', f.frontiere || '');
+            setFieldValue('#flt-importateur', f.importateur || '');
+            setFieldValue('#flt-entrepot', f.entrepot || '');
+            setFieldValue('#flt-produit', f.produit || '');
+            setFieldValue('#flt-immat', f.immatriculation || '');
+            setFieldValue('#flt-declaration', f.declaration || '');
+            setFieldValue('#flt-numdos', f.numdos || '');
+        })();
+
+        // Initialize DataTable for Rapport d'activités
+        var table = $('#rapport-table').DataTable({
+            // Enable classic numbered pagination with page size selector
+            lengthChange: true,
+            lengthMenu: [[15, 20, 50, 100], [15, 20, 50, 100]],
+            pageLength: 15,
+            paging: true,
+            pagingType: 'simple_numbers',
+            info: true,
+
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            responsive: true,
+            searchDelay: 350,
+            ordering: true,
+            stateSave: true,
+            // Remove virtual scroller to show standard pagination controls
+            // scrollY: '60vh',
+            // scroller: true,
+            // Use idcargaison as <tr id="..."> so our existing action handlers can resolve the row id
+            rowId: 'idcargaison',
+            ajax: {
+                url: "{% url 'responseRapportActivite' %}",
+                type: 'GET',
+                dataSrc: 'data',
+                data: function(d) {
+                    // Attach advanced filters
+                    d.date_from = $('#flt-date-from').val() || '';
+                    d.date_to = $('#flt-date-to').val() || '';
+                    d.frontiere = $('#flt-frontiere').val() || '';
+                    d.importateur = $('#flt-importateur').val() || '';
+                    d.entrepot = $('#flt-entrepot').val() || '';
+                    d.produit = $('#flt-produit').val() || '';
+                    d.immatriculation = $('#flt-immat').val() || '';
+                    d.declaration = $('#flt-declaration').val() || '';
+                    d.numdos = $('#flt-numdos').val() || '';
+                },
+                beforeSend: function() { $('#rapport-loading').show(); },
+                complete: function() { $('#rapport-loading').hide(); }
+            },
+            order: [[0, 'desc']], // default order by DATE ENTREE desc
+            columns: [
+                { data: 'date_entree_display' },                // 0 (display)
+                { data: 'frontiere__nomville' },                // 1
+                { data: 'importateur__nomimportateur' },        // 2
+                { data: 'entrepot__nomentrepot' },              // 3
+                { data: 'produit__nomproduit' },                // 4
+                { data: 'volume' },                              // 5 (vol déclaré)
+                { data: 'immatriculation' },                     // 6
+                { data: 'declaration' },                         // 7
+                { data: 'numdos' },                              // 8
+                { data: 'date_requisition_display' },           // 9 (display)
+                { data: 'date_echant_display' },                // 10 (display)
+                { data: 'date_recep_labo_display' },            // 11 (display)
+                { data: 'date_analyse_display' },               // 12 (display)
+                { data: 'date_inspection_display' },            // 13 (display)
+                { data: 'date_dechargement_display' },          // 14 (display)
+                { data: 'vol_jauge' },                           // 15 (computed alias of volConst)
+                { data: 'densite15' },                           // 16 (computed)
+                { data: 'inspection__temp' },                    // 17
+                { data: 'vcf' },                                 // 18 (computed)
+                { data: 'mta' },                                 // 19
+                { data: 'mtv' },                                 // 20
+                { data: 'gsv' },                                 // 21
+                {                                               // 22 Actions (UI-only)
+                    data: 'idcargaison',
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        // Buttons call preconfigured functions defined in rapportActiviteFirst.html
+                        // Row id is also set on <tr> via rowId, so handlers can read closest('tr').id
+                        return (
+                            '<div class="btn-group btn-group-sm" role="group" aria-label="Actions">'
+                            + '<button type="button" class="btn btn-warning" title="Réinspecter" onclick="confirmAction(event)"><i class="fa fa-rotate-left"></i></button>'
+                            + '<button type="button" class="btn btn-info" title="Rapport Échantillonnage" onclick="printRappEchantillonnage(event)"><i class="fa fa-file-lines"></i></button>'
+                            + '<button type="button" class="btn btn-primary" title="Rapport Inspection" onclick="printRappInsp(event)"><i class="fa fa-file-signature"></i></button>'
+                            + '</div>'
+                        );
+                    }
+                }
+            ],
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/2.1.8/i18n/fr-FR.json'
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    text: 'Exporter Excel',
+                    className: 'btn btn-success',
+                    action: function (e, dt, node, config) {
+                        // Async export via Celery
+                        var $btn = $(node);
+                        if ($btn.data('busy')) return;
+
+                        function getCookie(name) {
+                            var value = "; " + document.cookie;
+                            var parts = value.split("; " + name + "=");
+                            if (parts.length === 2) return parts.pop().split(';').shift();
+                        }
+
+                        var p = dt.ajax.params() || {};
+                        var payload = {
+                            // carry DataTables search/order and our advanced filters
+                            search: p.search || {},
+                            order: Array.isArray(p.order) ? p.order : [],
+                            date_from: $('#flt-date-from').val() || '',
+                            date_to: $('#flt-date-to').val() || '',
+                            frontiere: $('#flt-frontiere').val() || '',
+                            importateur: $('#flt-importateur').val() || '',
+                            entrepot: $('#flt-entrepot').val() || '',
+                            produit: $('#flt-produit').val() || '',
+                            immatriculation: $('#flt-immat').val() || '',
+                            declaration: $('#flt-declaration').val() || '',
+                            numdos: $('#flt-numdos').val() || ''
+                        };
+
+                        var originalHtml = $btn.html();
+                        $btn.data('busy', true).prop('disabled', true)
+                            .html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Préparation…');
+
+                        fetch('{% url "startRapportActiviteExport" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken') || '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+                        .then(function(data){
+                            if (!data.task_id) throw new Error('Task non démarrée');
+                            var taskId = data.task_id;
+                            // poll status
+                            var pollInterval = 2000;
+                            var maxWait = 10 * 60 * 1000; // 10 minutes
+                            var elapsed = 0;
+                            var timer = setInterval(function(){
+                                fetch('{% url "checkExportTaskStatus" task_id="TASK" %}'.replace('TASK', taskId))
+                                  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+                                  .then(function(st){
+                                      if (st.state === 'SUCCESS') {
+                                          clearInterval(timer);
+                                          try {
+                                              var res = st.result || {};
+                                              if (res.file_url) {
+                                                  // Show a small toast and open in new tab
+                                                  window.open(res.file_url, '_blank');
+                                              } else {
+                                                  alert('Export terminé. Le fichier est prêt.');
+                                              }
+                                          } finally {
+                                              $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                                          }
+                                      } else if (st.state === 'FAILURE') {
+                                          clearInterval(timer);
+                                          alert('Echec de génération: ' + (st.error || 'Erreur inconnue'));
+                                          $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                                      } else {
+                                          elapsed += pollInterval;
+                                          if (elapsed >= maxWait) {
+                                              clearInterval(timer);
+                                              alert('Délai dépassé pour la génération. Réessayez plus tard.');
+                                              $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                                          }
+                                      }
+                                  })
+                                  .catch(function(err){
+                                      clearInterval(timer);
+                                      alert('Erreur lors du suivi de la tâche: ' + err.message);
+                                      $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                                  });
+                            }, pollInterval);
+                        })
+                        .catch(function(err){
+                            alert('Impossible de démarrer l\'export: ' + err.message);
+                            $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                        });
+                    }
+                }
+            ]
+        });
+
+        // Make the top visible Export button trigger the same async flow
+        (function bindVisibleExportButton(){
+            var $btn = $('#btn-export-excel');
+            if (!$btn.length) return;
+
+            function getCookie(name) {
+                var value = "; " + document.cookie;
+                var parts = value.split("; " + name + "=");
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            $btn.on('click', function(){
+                if ($btn.data('busy')) return;
+                var p = table.ajax.params() || {};
+                var payload = {
+                    search: p.search || {},
+                    order: Array.isArray(p.order) ? p.order : [],
+                    date_from: $('#flt-date-from').val() || '',
+                    date_to: $('#flt-date-to').val() || '',
+                    frontiere: $('#flt-frontiere').val() || '',
+                    importateur: $('#flt-importateur').val() || '',
+                    entrepot: $('#flt-entrepot').val() || '',
+                    produit: $('#flt-produit').val() || '',
+                    immatriculation: $('#flt-immat').val() || '',
+                    declaration: $('#flt-declaration').val() || '',
+                    numdos: $('#flt-numdos').val() || ''
+                };
+
+                var originalHtml = $btn.html();
+                $btn.data('busy', true).prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Préparation…');
+
+                fetch('{% url "startRapportActiviteExport" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') || '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+                .then(function(data){
+                    if (!data.task_id) throw new Error('Task non démarrée');
+                    var taskId = data.task_id;
+                    var pollInterval = 2000;
+                    var maxWait = 10 * 60 * 1000; // 10 minutes
+                    var elapsed = 0;
+                    var timer = setInterval(function(){
+                        fetch('{% url "checkExportTaskStatus" task_id="TASK" %}'.replace('TASK', taskId))
+                          .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+                          .then(function(st){
+                              if (st.state === 'SUCCESS') {
+                                  clearInterval(timer);
+                                  try {
+                                      var res = st.result || {};
+                                      if (res.file_url) {
+                                          window.open(res.file_url, '_blank');
+                                      } else {
+                                          alert('Export terminé. Le fichier est prêt.');
+                                      }
+                                  } finally {
+                                      $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                                  }
+                              } else if (st.state === 'FAILURE') {
+                                  clearInterval(timer);
+                                  alert('Echec de génération: ' + (st.error || 'Erreur inconnue'));
+                                  $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                              } else {
+                                  elapsed += pollInterval;
+                                  if (elapsed >= maxWait) {
+                                      clearInterval(timer);
+                                      alert('Délai dépassé pour la génération. Réessayez plus tard.');
+                                      $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                                  }
+                              }
+                          })
+                          .catch(function(err){
+                              clearInterval(timer);
+                              alert('Erreur lors du suivi de la tâche: ' + err.message);
+                              $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                          });
+                    }, pollInterval);
+                })
+                .catch(function(err){
+                    alert('Impossible de démarrer l\'export: ' + err.message);
+                    $btn.data('busy', false).prop('disabled', false).html(originalHtml);
+                });
+            });
+        })();
+
+        // Improve diagnostics for Ajax issues and redirect to login if session expired
+        $.fn.dataTable.ext.errMode = 'none';
+        $('#rapport-table').on('error.dt', function (e, settings, techNote, message) {
+            try {
+                var xhr = settings.jqXHR || {};
+                var status = xhr.status;
+                var text = (xhr.responseText || '').toString();
+                // If we got redirected to login page in the background, navigate the browser
+                if (status === 302 || (text.indexOf('name="username"') !== -1 && text.indexOf('name="password"') !== -1)) {
+                    window.location.href = '{% url 'login' %}';
+                    return;
+                }
+                console.error('DataTables Ajax error:', status, message);
+            } catch (err) {
+                console.error('DataTables error handler failed:', err);
+            }
+        });
+
+        // Hook up top search form to DataTables (optional UX)
+        $('#search-form').on('submit', function(e) {
+            e.preventDefault();
+            var q = $('#search-input').val();
+            table.search(q).draw();
+            try {
+                var url = new URL(window.location);
+                if (q) {
+                    url.searchParams.set('search', q);
+                } else {
+                    url.searchParams.delete('search');
+                }
+                window.history.replaceState({}, '', url);
+            } catch (err) { /* no-op */ }
+        });
+
+        // Debounced live search while typing
+        (function(){
+            var tId;
+            $('#search-input').on('input', function(){
+                var q = this.value || '';
+                clearTimeout(tId);
+                tId = setTimeout(function(){
+                    table.search(q).draw();
+                    try {
+                        var url = new URL(window.location);
+                        if (q) { url.searchParams.set('search', q); }
+                        else { url.searchParams.delete('search'); }
+                        window.history.replaceState({}, '', url);
+                    } catch (err) { /* ignore */ }
+                }, 400);
+            });
+        })();
+
+        // Clear button for search
+        $('#search-clear').on('click', function(){
+            $('#search-input').val('');
+            table.search('').draw();
+            try {
+                var url = new URL(window.location);
+                url.searchParams.delete('search');
+                window.history.replaceState({}, '', url);
+            } catch (err) { /* ignore */ }
+        });
+
+        // On load, apply search from URL if present
+        (function(){
+            try {
+                var url = new URL(window.location);
+                var initial = url.searchParams.get('search') || '';
+                if (initial) {
+                    $('#search-input').val(initial);
+                    table.search(initial).draw();
+                }
+            } catch (err) { /* ignore */ }
+        })();
+
+        // Apply filters
+        $('#btn-apply-filters').on('click', function(){
+            var filters = {
+                date_from: $('#flt-date-from').val() || '',
+                date_to: $('#flt-date-to').val() || '',
+                frontiere: $('#flt-frontiere').val() || '',
+                importateur: $('#flt-importateur').val() || '',
+                entrepot: $('#flt-entrepot').val() || '',
+                produit: $('#flt-produit').val() || '',
+                immatriculation: $('#flt-immat').val() || '',
+                declaration: $('#flt-declaration').val() || '',
+                numdos: $('#flt-numdos').val() || ''
+            };
+            writeFiltersToUrl(filters);
+            table.ajax.reload();
+        });
+
+        // Reset filters
+        $('#btn-reset-filters').on('click', function(){
+            $('#modal-default input').val('');
+            $('#flt-frontiere, #flt-importateur, #flt-entrepot, #flt-produit').val('');
+            clearFiltersInUrl();
+            table.ajax.reload();
+        });
+
+        // Each time the modal opens, sync fields from URL again (ensures persistence after page reloads)
+        $('#modal-default').on('shown.bs.modal', function(){
+            // Refresh options from server each time modal opens, preserve current selections
+            var f = readFiltersFromUrl();
+            loadFilterOptions(function(){
+                setFieldValue('#flt-date-from', f.date_from || '');
+                setFieldValue('#flt-date-to', f.date_to || '');
+                setFieldValue('#flt-frontiere', f.frontiere || '');
+                setFieldValue('#flt-importateur', f.importateur || '');
+                setFieldValue('#flt-entrepot', f.entrepot || '');
+                setFieldValue('#flt-produit', f.produit || '');
+                setFieldValue('#flt-immat', f.immatriculation || '');
+                setFieldValue('#flt-declaration', f.declaration || '');
+                setFieldValue('#flt-numdos', f.numdos || '');
+            });
+        });
+        
+        // Mark computed columns as not orderable for consistency with backend
+        table.columns([16, 18, 22]).every(function(){
+            this.orderable(false);
+        });
         {% endblock %}
 
     })
