@@ -1,35 +1,52 @@
-# Use Python 3.11-slim-buster base image
-FROM python:3.11-slim-buster
+# Use Python 3.11 slim base image
+FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Create Directory
-RUN mkdir /app
+# System deps
+# - libpq5 runtime for postgres
+# - build deps to compile psycopg2 (if your requirements need it)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libpq-dev \
+    gcc \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy the application files
+# Install python deps first (better cache)
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip \
+ && pip install -r /app/requirements.txt
+
+# (Optional) remove build deps after install to slim down
+RUN apt-get update && apt-get purge -y --auto-remove gcc libpq-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# Copy app source
 COPY . /app
 
-# Copy entrypoint script and set permissions
+# Copy scripts
 COPY ./scripts/entrypoint.sh /scripts/entrypoint.sh
 COPY ./scripts/worker-entrypoint.sh /scripts/worker-entrypoint.sh
 COPY ./scripts/migration.sh /scripts/migration.sh
 COPY ./scripts/collectstatic.sh /scripts/collectstatic.sh
 RUN chmod +x /scripts/*
 
+# Non-root user
+RUN useradd -m appuser \
+ && chown -R appuser:appuser /app /scripts
+USER appuser
 
-### Create directories for static and media files with appropriate permissions
-#RUN mkdir -p /app/vol/web/static
-#RUN mkdir -p /app/vol/web/media
+# DO provides $PORT at runtime; keep a conventional exposed port
+EXPOSE 8080
 
-## Copy contents of assets/img to MEDIA_ROOT
-#COPY ./assets/img /vol/web/media
-
-COPY ./requirements.txt requirements.txt
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Set the entrypoint
+# Entrypoint handles default gunicorn OR executes DO run command
 ENTRYPOINT ["/scripts/entrypoint.sh"]
+
+# Leave CMD empty-ish; DO App Platform will set a Run Command per component.
+# If no Run Command, entrypoint should start gunicorn by default.
+CMD []
