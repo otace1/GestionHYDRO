@@ -2,6 +2,7 @@ from crispy_forms.bootstrap import FormActions
 from crispy_forms.helper import FormHelper
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import PasswordChangeForm
 from django.db.models import Q
 from jsignature.forms import JSignatureField
 from jsignature.widgets import JSignatureWidget
@@ -267,3 +268,13 @@ class Affectation_Role(forms.Form):
 # Formulaire pour l'enregistrement des signatures electroniques
 class SignatureForm(forms.Form):
     signature = JSignatureField(widget=JSignatureWidget(jsignature_attrs={'color': '#CCC'}))
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    new_password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    new_password2 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        # model = forms.PasswordChangeForm
+        fields = ['old_password', 'new_password1', 'new_password2']

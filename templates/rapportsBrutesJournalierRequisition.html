@@ -1,541 +1,209 @@
 {% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
 
-
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>TrackFlow+</title>
-    <!-- Tell the browser to be responsive to screen width -->
-    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  <meta charset="utf-8" />
+  <title>TrackFlow+</title>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <!-- Mobile & PWA friendly meta -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1632" />
+  <meta name="color-scheme" content="dark" />
 
-    <!-- Bootstrap 4 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
-
-    <!-- DataTables -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
-
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
-
-    <!-- Ionicons -->
-    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-
-    <!-- iCheck -->
-    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-    <!-- JQVMap -->
-    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-    <!-- Theme style -->
-    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-    <!-- overlayScrollbars -->
-    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-    <!-- Daterange picker -->
-    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-    <!-- summernote -->
-    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-
-    
-
-    <!-- Google Font: Source Sans Pro -->
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-
-    
-
-    <!-- ChartJS -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Sparkline -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
-
-    <!-- overlayScrollbars -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.10.0/browser/overlayscrollbars.browser.es6.min.js"></script>
-
-    <!-- AdminLTE App -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
-
-
-
-
-    {% block extra_js %}
-    {% endblock %}
-    <style>
-        .wrapper {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:  '#4cc9f0',
+            primary2: '#00f5d4',
+            success:  '#19c37d',
+            danger:   '#ef476f',
+            warning:  '#ffd166',
+          },
+          boxShadow: {
+            glass: '0 18px 50px rgba(0,0,0,.25)',
+            glassHover: '0 24px 60px rgba(0,0,0,.30)',
+          },
+          screens: {
+            'xs': '420px' /* helpful micro-breakpoint for very small phones */
+          }
         }
-
-        .content-wrapper {
-            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
-        }
-    </style>
-
-
-</head>
-<!-- sidebar: style can be found in sidebar.less -->
-<body class="hold-transition sidebar-mini- layout-fixed">
-<div class="wrapper">
-
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-        <!-- Left navbar links -->
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
-                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="" class="nav-link"></a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="{% url 'logout' %}" class="nav-link"
-                   style="background-color: red; color: white">Déconnexion</a>
-            </li>
-        </ul>
-
-        <!-- Right navbar links -->
-        <ul class="navbar-nav ml-auto">
-            <!-- Navbar Search -->
-            <li class="nav-item">
-                <div class="navbar-search-block">
-                </div>
-            </li>
-        </ul>
-    </nav>
-
-    <aside class="main-sidebar sidebar-dark-secondary elevation-4">
-        <!-- Brand Logo -->
-        <a href="#" class="brand-link">
-            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold"
-                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
-        </a>
-
-        <!-- Sidebar -->
-        <div class="sidebar">
-
-            <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
-                    data-accordion="false">
-                    <!-- Add icons to the links using the .nav-icon class
-                         with font-awesome or any other icon font library -->
-                    {% if user.role_id == 1 or user.role_id == 8 %}
-                        <li class="header" style="color: red">DEPARTEMENT</li>
-                        <li class="nav-item has-treeview menu-open">
-                            <a href="{% url 'dashboard' %}" class="nav-link active">
-                                <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>TABLEAU DE BORD</p>
-                            </a>
-                        </li>
-
-                    {% endif %}
-
-                    {% if user.role_id == 2 or user.role_id == 1 %}
-                        <li class="header" style="color: red">FRONTIERE</li>
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'cargaison' %}" class="nav-link">
-                                <i class="nav-icon fas fa-truck-moving"></i>
-                                <p>
-                                    ENREGISTREMENT
-                                    <i class="fas fa-save right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-
-                        </li>
-                    {% endif %}
-
-
-                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
-                        <li class="header" style="color: red">ENTREPOT</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'entrepot' %}" class="nav-link">
-                                <i class="nav-icon fas fa fa-industry"></i>
-                                <p>
-                                    ENTREPOT
-                                    <i class="right fas fa-truck"></i>
-                                </p>
-                            </a>
-
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
-
-                        <li class="header" style="color: red">CERTIFICATION</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fas fa-flask"></i>
-                                <p>
-                                    LABORATOIRE
-                                    <i class="fas fa-angle-left right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-
-                                {% endif %}
-                                {% if user.role_id == 4 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'labo' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>RECEPTION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 5 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'analyse' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>ENCODAGE & IMPR.</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation1' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION SCE HYDRO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 10 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation2' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION CHEF LABO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'impression' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>IMPRESSION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-
-
-                    {% if user.role_id == 7 or user.role_id == 1 or user.role_id == 11 or user.role_id == 13 %}
-                        <li class="header" style="color: red">CELLULE HYDRO</li>
-
-                        <li class="nav-item has-treeview">
-                        <a href="" class="nav-link">
-                            <i class="nav-icon fas fa-building"></i>
-                            <p>
-                                HYDRO
-                                <i class="fas fa-trailer right"></i>
-                                <span class="badge badge-info right"></span>
-                            </p>
-                        </a>
-                        {% endif %}
-                        {% if user.role_id == 1 or user.role_id == 7 %}
-                            <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>TABLEAU DE BORD</p>
-                                </a>
-                            </li>
-                        {% endif %}
-
-                    {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 7 %}
-                        <li class="nav-item">
-                            <a href="{% url 'codification' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>GESTION REQUISITION</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="{% url 'regularisation' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>REGULARISATION</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
-                        <li class="nav-item">
-                            <a href="{% url 'rapportActivite' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>RAPPORT D'ACTIVITE</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% if user.role_id == 1 or user.role_id == 13 or user.role_id == 7 %}
-                        <li class="nav-item">
-                            <a href="{% url 'facturations' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>PAIEMENTS</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    </ul>
-                    </li>
-                    {% if role == 10 %}
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-file-archive"></i>
-                                <p>
-                                    FACTURATIONS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'facturations' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LIQUIDATION</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'appuration' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>APPURATION</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 1 %}
-                        <li class="nav-item has-treeview" style="color: red">ADMINISTRATION</li>
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-user"></i>
-                                <p>
-                                    USERS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-
-                                <li class="nav-item">
-                                    <a href="{% url 'userslist' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'UTILISATEURS</p>
-                                    </a>
-                                </li>
-
-
-                            </ul>
-                        </li>
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'activityLog' %}" class="nav-link">
-                                <i class="nav-icon fas fa-file"></i>
-                                <p>
-                                    JOURNAL D'ACTIVITES
-
-
-                                </p>
-                            </a>
-                        </li>
-
-
-                    {% endif %}
-
-                    <li class="nav-item has-treeview">
-                        <a href="" class="nav-link">
-                            <i class="nav-icon fas fa-hands-helping"></i>
-                            <p>
-                                AIDE
-                            </p>
-                        </a>
-                    </li>
-
-                </ul>
-            </nav>
-            <!-- /.sidebar -->
-        </div>
-    </aside>
-
-
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
-        <!-- Content Header (Page header) -->
-        <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1 class="m-0 text-blue"><b></b></h1>
-                    </div><!-- /.col -->
-                    <div class="col-sm-6">
-                        <ol class="breadcrumb float-sm-right">
-                            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Département</li>
-                            <li class="breadcrumb-item active">En attente de réquisition</li>
-                        </ol>
-                    </div><!-- /.col -->
-                </div><!-- /.row -->
-            </div><!-- /.container-fluid -->
-        </div>
-        <!-- /.content-header -->
-
-        <section class="content">
-            <!-- Main content -->
-            <div class="container-fluid">
-                <div class="row">
-                    <a class="btn btn-app bg-danger" href="{% url 'dashboard' %}">
-                        <span class="badge bg-success"></span>
-                        <i class="fas fa-backward"></i> RETOUR
-                    </a>
-                </div>
-
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header" style="background-color: darkgreen">
-                                <h3 class="card-title font-weight-bold" style="color: white">CARGAISON EN ATTENTE DE
-                                    REQUISITION</h3>
-                            </div>
-                            <!-- /.card-header -->
-                            <div class="card-body">
-                                {% block content %}
-                                {% endblock %}
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                        <!-- /.card -->
-
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- /.content -->
-    </div>
-    <!-- /.content-wrapper -->
-    <!-- /.content-wrapper -->
-    <footer class="main-footer">
-        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
-            SARL</a>.</strong>
-        All rights reserved.
-        <div class="float-right d-none d-sm-inline-block">
-            <b>Version</b> 3.0
-        </div>
-    </footer>
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <!-- Control sidebar content goes here -->
-    </aside>
-    <!-- /.control-sidebar -->
-
-</div>
-
-
-<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-<script>
-    {#$.widget.bridge('uibutton', $.ui.button)#}
-</script>
-
-{#<!-- ChartJS -->#}
-{#<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>#}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Sparkline -->
-<script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
-<!-- JQVMap -->
-<script src="{% static 'plugins/jqvmap/jquery.vmap.min.js' %}"></script>
-<script src="{% static 'plugins/jqvmap/maps/jquery.vmap.usa.js' %}"></script>
-<!-- jQuery Knob Chart -->
-<script src="{% static 'plugins/jquery-knob/jquery.knob.min.js' %}"></script>
-<!-- daterangepicker -->
-<script src="{% static 'plugins/moment/moment.min.js' %}"></script>
-<script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
-<!-- Tempusdominus Bootstrap 4 -->
-<script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
-<!-- Summernote -->
-<script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
-<!-- overlayScrollbars -->
-<script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
-<!-- AdminLTE App -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
-    <!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
-
-<!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-<script>
-    var Id;
-    var rowId;
-    $(document).ready(function () {
-
-        {% block javascript %}
-        {% endblock %}
-    })
-</script>
-<script>
-    function getRowId(button) {
-        var row = button.closest('tr');
-
-        if (row) {
-            rowId = row.id;
-            {#console.log('Row ID:', rowId);#}
-            // Perform further actions with the row ID, such as making an AJAX request
-        }
+      }
     }
-</script>
+  </script>
 
-<script>
-    $(function () {
-        $("#example1").DataTable({
-            dom: 'Bfrtip',
-            "responsive": true, "lengthChange": true, "autoWidth": false, "info": true, "paging": true, pageLength: 5, // Set the pagination to 10 records per page
-            "buttons": [
-                {
-                    extend: 'excelHtml5',
-                    text: 'Export to Excel',
-                    exportOptions: {
-                        format: {
-                            body: function (data, row, column, node) {
-                                // Replace "," with "." for decimal numbers during export
-                                if (typeof data === 'string' && data.includes(',')) {
-                                    data = data.replace(',', '.');
-                                }
-                                return data;
-                            }
-                        }
-                    }
-                },
-                'print'
-            ]
-        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-        $('#example2').DataTable({
-            "paging": true,
-            "lengthChange": false,
-            "searching": false,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": true,
-        });
+  <!-- Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+  <!-- DataTables core + Responsive extension -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.2/css/responsive.dataTables.min.css">
+  <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/3.0.2/js/dataTables.responsive.min.js"></script>
+
+  <!-- Chart.js (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Theme -->
+  <style>
+    :root{
+      --bg-grad:
+        radial-gradient(1200px 900px at 10% -10%, rgba(0,245,212,.08), transparent 60%),
+        radial-gradient(900px 700px at 120% 120%, rgba(76,201,240,.08), transparent 60%),
+        linear-gradient(160deg, #0a0f1e, #0f1632 70%);
+      /* iOS safe area support */
+      --safe-top: env(safe-area-inset-top);
+      --safe-right: env(safe-area-inset-right);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left);
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", sans-serif;
+      background: var(--bg-grad);
+      color: #e9eefc;
+      overflow-x: hidden;
+      padding-left: max(0px, var(--safe-left));
+      padding-right: max(0px, var(--safe-right));
+      padding-bottom: max(0px, var(--safe-bottom));
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Tailwind-y DataTables polish */
+    table.dataTable thead th { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: rgba(233,238,252,.7); font-weight: 600; }
+    table.dataTable tbody td { font-size: .9rem; color: rgba(255,255,255,.92); }
+    div.dataTables_wrapper .dataTables_info { font-size: .75rem; color: rgba(255,255,255,.6); margin-top: .375rem; }
+    div.dataTables_wrapper .dataTables_length select {
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: .5rem; color: #e9eefc; padding: .25rem .5rem; font-size: .875rem;
+    }
+    div.dataTables_wrapper .dataTables_paginate .paginate_button {
+      display: inline-flex; align-items: center; justify-content: center; border-radius: .5rem;
+      padding: .25rem .625rem; font-size: .75rem; background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.1); margin: 0 .125rem;
+    }
+    div.dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #4cc9f0; color: #0b1223; border-color: transparent; }
+    div.dataTables_wrapper .dataTables_paginate .paginate_button.disabled { opacity: .4; cursor: default; }
+
+    /* Small-screen table helpers: tighter cells & horizontal scroll spacing */
+    @media (max-width: 640px) {
+      .table-scroll {
+        margin-left: -0.75rem;  /* match px-3 */
+        margin-right: -0.75rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+      table.dataTable thead th, table.dataTable tbody td { white-space: nowrap; }
+    }
+
+    /* Reduce motion if user prefers */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen">
+
+  <!-- Skip to content (a11y) -->
+  <a href="#main-content"
+     class="sr-only focus:not-sr-only focus:fixed focus:z-[100] focus:top-2 focus:left-2
+            focus:px-3 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-[#0b1223]">
+    Aller au contenu
+  </a>
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar: off-canvas on mobile, sticky on md+ -->
+    {% include 'menus/side-menu/main-menu.html' %}
+
+    <!-- Main column -->
+    <div class="flex-1 flex flex-col">
+
+      <!-- Top bar (contains the mobile sidebar toggle inside your include) -->
+      {% include 'menus/navbar/navbar.html' %}
+
+      <!-- Breadcrumb slot -->
+      <div class="w-full px-3 sm:px-4 lg:px-6 mt-3 sm:mt-4">
+        {% block breadcrumb %}{% endblock %}
+      </div>
+
+      <!-- Main content -->
+      <main id="main-content" class="flex-1 w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+        <!-- Card container gives breathing room on mobile -->
+        <div class="max-w-[120rem] mx-auto">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer class="glass border-t border-white/10 py-3 sm:py-4 mt-auto">
+        <div class="w-full px-3 sm:px-4 lg:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 text-[13px] sm:text-sm text-white/70">
+          <div class="leading-tight">
+            Copyright &copy; {% now 'Y' %}
+            <a href="http://www.cgworldwide.org" target="_blank" rel="noopener" class="hover:text-primary underline-offset-2 hover:underline">
+              Compass Green WorldWide SARL
+            </a>.
+            Tous droits réservés.
+          </div>
+          <div class="sm:text-right"><b>Version</b> 3.0</div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  {% block extra_js %}{% endblock %}
+
+  <!-- Helpers: sidebar toggle + touch improvements -->
+  <script>
+    // Off-canvas sidebar for small screens
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        const isOpening = sidebar.classList.contains('hidden');
+        sidebar.classList.toggle('hidden');
+        sidebar.classList.toggle('absolute');
+        sidebar.classList.toggle('inset-y-0');
+        sidebar.classList.toggle('z-50');
+        sidebar.classList.toggle('left-0');
+
+        // trap body scroll when open
+        document.body.style.overflow = isOpening ? 'hidden' : '';
+      });
+
+      // close when clicking backdrop area if you implement a backdrop
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar.classList.contains('absolute')) {
+          sidebarToggle.click();
+        }
+      });
+    }
+
+    // If you initialize DataTables on this page, enable Responsive like:
+    // $('#myTable').DataTable({ responsive: true, ... });
+    // For tables inside narrow screens, wrap in .table-scroll for better UX.
+    document.querySelectorAll('table.dataTable').forEach(tbl => {
+      const wrapper = tbl.closest('.dataTables_wrapper');
+      if (wrapper && !wrapper.classList.contains('table-scroll')) {
+        wrapper.classList.add('table-scroll');
+      }
     });
-</script>
+  </script>
 </body>
 </html>

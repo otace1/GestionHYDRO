@@ -1,0 +1,180 @@
+<aside id="sidebar"
+       class="hidden md:flex md:flex-col w-72 shrink-0 p-4 space-y-3
+              glass shadow-glass border-r border-white/10 md:sticky md:top-0 md:h-screen">
+
+  <!-- Brand -->
+  <a href=""
+     class="glass rounded-xl px-4 py-3 flex items-center justify-between hover:shadow-glassHover transition">
+    <div class="flex items-center gap-3">
+      <span class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+        <i class="fa-solid fa-chart-line text-primary"></i>
+      </span>
+      <div class="text-lg font-extrabold tracking-wide">TrackFlow<span class="text-primary">+</span></div>
+    </div>
+    <i class="fa-solid fa-bolt text-primary"></i>
+  </a>
+
+  <!-- Menu -->
+  <nav class="mt-2 space-y-2 overflow-y-auto">
+
+    {% if user.role_id == 1 or user.role_id == 8 %}
+      <div class="px-2 pt-3 text-xs uppercase tracking-widest text-white/60">DÉPARTEMENT</div>
+      <a href="{% url 'dashboard' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition text-white/90 font-medium">
+        <i class="fa-solid fa-gauge-high w-5 text-center shrink-0 text-white/70"></i>
+        <span>Tableau de bord</span>
+      </a>
+    {% endif %}
+
+    {% if user.role_id == 2 or user.role_id == 1 %}
+      <div class="px-2 pt-4 text-xs uppercase tracking-widest text-white/60">FRONTIÈRE</div>
+      <a href="{% url 'cargaison' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition text-white/90 font-medium">
+        <i class="fa-solid fa-truck-moving w-5 text-center shrink-0 text-white/70"></i>
+        <span>Enregistrement</span>
+      </a>
+    {% endif %}
+
+    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
+      <div class="px-2 pt-4 text-xs uppercase tracking-widest text-white/60">ENTREPÔT</div>
+      <a href="{% url 'entrepot' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition text-white/90 font-medium">
+        <i class="fa-solid fa-industry w-5 text-center shrink-0 text-white/70"></i>
+        <span>Entrepôt</span>
+      </a>
+    {% endif %}
+
+    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
+      <div class="px-2 pt-4 text-xs uppercase tracking-widest text-white/60">CERTIFICATION</div>
+      <details class="group">
+        <summary class="flex items-center justify-between px-3 py-2 cursor-pointer rounded-lg hover:bg-white/10">
+          <span class="flex items-center gap-2 text-white/90 font-medium">
+            <i class="fa-solid fa-flask w-5 text-center shrink-0 text-white/70"></i>
+            <span>Laboratoire</span>
+          </span>
+          <i class="fa-solid fa-angle-down text-white/60 transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="mt-1 ml-3 space-y-1">
+          {% if user.role_id == 4 or user.role_id == 1 %}
+            <a href="{% url 'labo' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+              <i class="fa-solid fa-inbox w-5 text-center shrink-0 text-white/60"></i>
+              <span>Réception</span>
+            </a>
+          {% endif %}
+          {% if user.role_id == 5 or user.role_id == 1 %}
+            <a href="{% url 'analyse' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+              <i class="fa-solid fa-keyboard w-5 text-center shrink-0 text-white/60"></i>
+              <span>Encodage &amp; Impr.</span>
+            </a>
+          {% endif %}
+          {% if user.role_id == 6 or user.role_id == 1 %}
+            <a href="{% url 'validation1' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+              <i class="fa-solid fa-check-circle w-5 text-center shrink-0 text-white/60"></i>
+              <span>Validation Sce Hydro</span>
+            </a>
+          {% endif %}
+          {% if user.role_id == 10 or user.role_id == 1 %}
+            <a href="{% url 'validation2' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+              <i class="fa-solid fa-user-check w-5 text-center shrink-0 text-white/60"></i>
+              <span>Validation chef labo</span>
+            </a>
+          {% endif %}
+          {% if user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
+            <a href="{% url 'impression' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+              <i class="fa-solid fa-print w-5 text-center shrink-0 text-white/60"></i>
+              <span>Impression</span>
+            </a>
+          {% endif %}
+        </div>
+      </details>
+    {% endif %}
+
+    {% if user.role_id == 7 or user.role_id == 1 or user.role_id == 11 or user.role_id == 13 %}
+      <div class="px-2 pt-4 text-xs uppercase tracking-widest text-white/60">CELLULE HYDRO</div>
+      <details class="group">
+        <summary class="flex items-center justify-between px-3 py-2 cursor-pointer rounded-lg hover:bg-white/10">
+          <span class="flex items-center gap-2 text-white/90 font-medium">
+            <i class="fa-solid fa-building w-5 text-center shrink-0 text-white/70"></i>
+            <span>Hydro</span>
+          </span>
+          <i class="fa-solid fa-angle-down text-white/60 transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="mt-1 ml-3 space-y-1">
+          <a href="{% url 'tableaudeBordHydro' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-table-columns w-5 text-center shrink-0 text-white/60"></i>
+            <span>Tableau de bord</span>
+          </a>
+          <a href="{% url 'codification' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-pen-to-square w-5 text-center shrink-0 text-white/60"></i>
+            <span>Gestion réquisition</span>
+          </a>
+          <a href="{% url 'regularisation' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-rotate w-5 text-center shrink-0 text-white/60"></i>
+            <span>Régularisation</span>
+          </a>
+          <a href="{% url 'rapportActivite' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-file-alt w-5 text-center shrink-0 text-white/60"></i>
+            <span>Rapport d’activité</span>
+          </a>
+          <a href="{% url 'facturations' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-money-bill-wave w-5 text-center shrink-0 text-white/60"></i>
+            <span>Paiements</span>
+          </a>
+        </div>
+      </details>
+    {% endif %}
+
+    {% if role == 10 %}
+      <details class="group">
+        <summary class="flex items-center justify-between px-3 py-2 cursor-pointer rounded-lg hover:bg-white/10">
+          <span class="flex items-center gap-2 text-white/90 font-medium">
+            <i class="fa-solid fa-file-invoice-dollar w-5 text-center shrink-0 text-white/70"></i>
+            <span>Facturations</span>
+          </span>
+          <i class="fa-solid fa-angle-down text-white/60 transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="mt-1 ml-3 space-y-1">
+          <a href="{% url 'facturations' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-receipt w-5 text-center shrink-0 text-white/60"></i>
+            <span>Liquidation</span>
+          </a>
+          <a href="{% url 'appuration' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-file-signature w-5 text-center shrink-0 text-white/60"></i>
+            <span>Appuration</span>
+          </a>
+        </div>
+      </details>
+    {% endif %}
+
+    {% if user.role_id == 1 %}
+      <div class="px-2 pt-4 text-xs uppercase tracking-widest text-white/60">ADMINISTRATION</div>
+      <details class="group">
+        <summary class="flex items-center justify-between px-3 py-2 cursor-pointer rounded-lg hover:bg-white/10">
+          <span class="flex items-center gap-2 text-white/90 font-medium">
+            <i class="fa-solid fa-user-cog w-5 text-center shrink-0 text-white/70"></i>
+            <span>Users</span>
+          </span>
+          <i class="fa-solid fa-angle-down text-white/60 transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="mt-1 ml-3 space-y-1">
+          <a href="{% url 'userslist' %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 text-white/85">
+            <i class="fa-solid fa-users w-5 text-center shrink-0 text-white/60"></i>
+            <span>Liste d’utilisateurs</span>
+          </a>
+        </div>
+      </details>
+
+      <a href="{% url 'activityLog' %}"
+         class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition text-white/90 font-medium">
+        <i class="fa-solid fa-file-lines w-5 text-center shrink-0 text-white/70"></i>
+        <span>Log</span>
+      </a>
+    {% endif %}
+
+    <a href="#"
+       class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition text-white/90 font-medium">
+      <i class="fa-solid fa-circle-question w-5 text-center shrink-0 text-white/70"></i>
+      <span>Aide</span>
+    </a>
+  </nav>
+</aside>

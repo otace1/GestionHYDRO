@@ -1,187 +1,169 @@
-{% extends 'base_carg_layout.html' %}
+{% extends 'base/base_template.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
 {% load qr_code %}
 
+{#{% block extra_js %}#}
+{#  <script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>#}
+{#  <script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>#}
+{#{% endblock %}#}
 
-{% block extra_js %}
-    <script src="{% static 'qrcodejs-master/qrcode.js' %}"></script>
-    <script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
-{% endblock %}
+{% block main_content %}
 
-
-{% block content %}
-
+  <!-- Table in a glass card -->
+  <section class="glass rounded-2xl p-3 sm:p-4 shadow-glass mb-5">
     {% render_table table %}
+  </section>
 
-    <div class="modal fade" id="modal-xl">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">FORMULAIRE D'ENREGISTREMENT</h4>
-                    <button type="button" class="close" data-dismiss="modal-xl" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="post-form" method="post" action="">
-                    <div class="modal-body">
-                        {% csrf_token %}
-                        {% crispy form %}
-                    </div>
-                    <div id="submit-control" class="modal-footer justify-content-between">
-                        <button type="reset" id="closemodal" class="btn btn-danger" data-dismiss="modal">FERMER</button>
-                        <button id="submitButton" class="btn btn-success">ENREGISTRER</button>
-                    </div>
-                </form>
-            </div>
-            <!-- /.modal-content -->
+  <!-- ========== FORM MODAL (XL) ========== -->
+  <div class="modal fade" id="modal-xl" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content glass rounded-2xl shadow-glass overflow-hidden border-0">
+        <!-- Header -->
+        <div class="modal-header border-b border-white/10 bg-white/5 backdrop-blur-sm">
+          <h4 class="modal-title text-lg font-semibold">FORMULAIRE D'ENREGISTREMENT</h4>
+          <button type="button" class="close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10"
+                  data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" class="text-2xl leading-none">&times;</span>
+          </button>
         </div>
-        <!-- /.modal-dialog -->
-    </div>
 
-
-    <div class="modal fade" id="modal_qrcode">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">QR Code</h4>
-                </div>
-                <div class="modal-body">
-                    <div id="codeQR"></div>
-                </div>
-                <div class="modal-footer justify-content-between">
-
-                </div>
+        <!-- Body -->
+        <form id="post-form" method="post" action="">
+          <div class="modal-body p-3 sm:p-5">
+            {% csrf_token %}
+            <div class="glass rounded-xl p-3 sm:p-4 border border-white/10">
+              {% crispy form %}
             </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
+          </div>
+
+          <!-- Footer -->
+          <div id="submit-control"
+               class="modal-footer border-t border-white/10 bg-white/5 backdrop-blur-sm justify-between">
+            <button type="reset" id="closemodal"
+                    class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition"
+                    data-dismiss="modal">
+              FERMER
+            </button>
+            <button id="submitButton"
+                    class="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold
+                           bg-gradient-to-r from-primary to-primary2 text-[#0b1223] hover:shadow-glassHover">
+              <span class="absolute inset-0 rounded-lg shimmer opacity-60"></span>
+              <svg class="relative h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M5 20h14" stroke-width="2" stroke-linecap="round"></path>
+              </svg>
+              <span class="relative">ENREGISTRER</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
 
-
+  <!-- ========== QR CODE MODAL (SM) ========== -->
+  <div class="modal fade" id="modal_qrcode" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content glass rounded-2xl shadow-glass overflow-hidden border-0">
+        <div class="modal-header border-b border-white/10 bg-white/5 backdrop-blur-sm">
+          <h4 class="modal-title text-lg font-semibold">QR Code</h4>
+          <button type="button" class="close w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10"
+                  data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" class="text-2xl leading-none">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body p-4">
+          <div id="codeQR" class="grid place-items-center"></div>
+        </div>
+        <div class="modal-footer border-t border-white/10 bg-white/5 backdrop-blur-sm justify-end">
+          <!-- Filled dynamically after success -->
+        </div>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}
 
 <script>
+  {% block javascript %}
 
-</script>
-
-<script>
-
-    {% block javascript %}
- // Function to get CSRF token
-function getCSRFToken() {
+  // ---------------- CSRF helper ----------------
+  function getCSRFToken() {
     var cookieValue = null;
     if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
-                break;
-            }
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+          break;
         }
+      }
     }
     return cookieValue;
-}
+  }
 
-// AJAX setup for CSRF token
-$.ajaxSetup({
+  $.ajaxSetup({
     beforeSend: function(xhr, settings) {
-        if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-            xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
-        }
+      if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+        xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+      }
     }
-});
+  });
 
-
-// Click handler for submit button
-$('.btn.btn-success').click(function(e) {
+  // ---------------- Submit handler ----------------
+  // Keep same functionality; just scoped to the green button
+  $('.btn.btn-success, #submitButton').on('click', function(e) {
     e.preventDefault();
-    // Disable the button to prevent multiple submissions
-    $(this).attr("disabled", true);
 
-    // Create FormData object
+    var $btn = $(this);
+    $btn.attr('disabled', true);
+
     var formData = new FormData();
-
-    // Serialize the form data and append to FormData
     var form = $('#post-form')[0];
     var formDataSerialized = $(form).serializeArray();
     $.each(formDataSerialized, function(_, kv) {
-        formData.append(kv.name, kv.value);
+      formData.append(kv.name, kv.value);
     });
 
-{% comment %}    // Get the selected file
-    var file = $('#id_files')[0].files[0];
-    if (!file) {
-        alert('Please select a file.');
-        // Re-enable the button
-        $(this).attr("disabled", false);
-        return;
-    } else if (file.type !== 'application/pdf') {
-        alert('Please select a PDF file.');
-        // Re-enable the button
-        $(this).attr("disabled", false);
-        return;
-    }
-
-    // Append the file to FormData
-    formData.append('files', file);
-
-    // Read the file as text using FileReader
-    var reader = new FileReader();
-    reader.onload = function(event) {
-        // File content as Base64
-        var fileContent = event.target.result;
-
-        // Append the file content to the FormData
-        formData.append('file_content', fileContent);{% endcomment %}
-
-        // Send AJAX request
-        $.ajax({
-            url: "{% url 'nouvelle' %}",
-            type: "POST",
-            data: formData,
-            processData: false, // Prevent jQuery from processing the data
-            contentType: false, // Prevent jQuery from setting contentType
-            success: function(data) {
-                console.log(data);
-                var qrcode = new QRCode(document.getElementById("codeQR"), {
-                    text: data,
-                    width: 250,
-                    height: 250,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-
-                $('#modal-xl').modal('hide');
-                alert("Data saved successfully");
-
-                $('#modal_qrcode').modal('show');
-                var modalFooter = '<button type="reset" id="closemodal" onClick="window.location.reload();" class="btn btn-danger" data-dismiss="modal">Close</button>';
-                $('.modal-footer').html(modalFooter);
-            },
-            error: function(xhr, status, error) {
-                console.log(xhr.responseText);
-                alert('Error! Please check the mandatory fields and volume values entered');
-                // Re-enable the button on error
-                $('.btn.btn-success').attr("disabled", false);
-            }
+    $.ajax({
+      url: "{% url 'nouvelle' %}",
+      type: "POST",
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(data) {
+        // Build QR
+        $('#codeQR').empty();
+        new QRCode(document.getElementById("codeQR"), {
+          text: data,
+          width: 250,
+          height: 250,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
         });
-{% comment %}    };{% endcomment %}
-{% comment %}
-    // Read the file as text
-    reader.readAsDataURL(file);{% endcomment %}
-});
 
+        // Close form modal, show QR modal
+        $('#modal-xl').modal('hide');
+        // Friendlier toast-ish alert, but keep alert for unchanged behavior
+        alert("Data saved successfully");
+        $('#modal_qrcode').modal('show');
 
-    {% endblock %}
+        // Add a close button that refreshes the page
+        var modalFooter =
+          '<button type="button" class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" ' +
+          'onClick="window.location.reload();" data-dismiss="modal">Close</button>';
+        $('#modal_qrcode .modal-footer').html(modalFooter);
+      },
+      error: function(xhr) {
+        console.log(xhr.responseText);
+        alert('Error! Please check the mandatory fields and volume values entered');
+        $btn.attr('disabled', false);
+      }
+    });
+  });
+
+  {% endblock %}
 </script>
-
-
-
-
-
-

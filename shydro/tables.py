@@ -290,6 +290,7 @@ class EnAttenteResultatLabo(tables.Table):
         template_name = "django_tables2/bootstrap5-responsive.html"
 
 
+
 class RapportActivite(tables.Table):
     numdos = tables.Column(verbose_name="#.DOS")
     declaration = tables.Column(verbose_name="#.DECL.(T1E)")
@@ -345,4 +346,105 @@ class Regularisation(tables.Table):
             "id": lambda record: record.pk
         }
         template_name = "django_tables2/bootstrap5-responsive.html"
+
+
+# class RapportActivite(tables.Table):
+#     # Plain / model fields
+#     idcargaison = tables.Column(verbose_name="ID")
+#     numdos = tables.Column(verbose_name="Num. Dos")
+#     declaration = tables.Column(verbose_name="Déclaration")
+#     immatriculation = tables.Column(verbose_name="Immat.")
+#     dateheurecargaison = tables.DateTimeColumn(verbose_name="Date Cargaison", format="Y-m-d H:i")
+#     requisitiondackdate = tables.DateTimeColumn(verbose_name="Réquisition", format="Y-m-d")
+#     volume = tables.Column(verbose_name="Volume")
+#
+#     # Related fields (use accessors)
+#     frontiere__nomville = tables.Column(verbose_name="Frontière", accessor="frontiere.nomville")
+#     importateur__nomimportateur = tables.Column(verbose_name="Importateur", accessor="importateur.nomimportateur")
+#     entrepot__nomentrepot = tables.Column(verbose_name="Entrepôt", accessor="entrepot.nomentrepot")
+#     produit__nomproduit = tables.Column(verbose_name="Produit", accessor="produit.nomproduit")
+#     inspection__dens = tables.Column(verbose_name="Densité", accessor="inspection.dens")
+#     inspection__temp = tables.Column(verbose_name="Temp.", accessor="inspection.temp")
+#     inspection__dateinspection = tables.DateTimeColumn(
+#         verbose_name="Date Insp.", accessor="inspection.dateinspection", format="Y-m-d"
+#     )
+#
+#     # Annotated fields from the queryset (.annotate in the view)
+#     mtaTotal = tables.Column(verbose_name="MTA Total")
+#     mtvTotal = tables.Column(verbose_name="MTV Total")
+#     volConst = tables.Column(verbose_name="Vol. Const.")
+#     gsvT = tables.Column(verbose_name="GSV Total")
+#     echantillon_date = tables.DateTimeColumn(verbose_name="Date Échantillon", format="Y-m-d")
+#     labo_recep_date = tables.DateTimeColumn(verbose_name="Date Réception Labo", format="Y-m-d")
+#     print_date = tables.DateColumn(verbose_name="Date Impression", format="Y-m-d")
+#
+#     # Actions
+#     actions = tables.TemplateColumn(
+#         template_code="""
+#           <a href="#" class="btn btn-sm btn-outline-secondary" onclick="confirmAction(event)">Réinspecter</a>
+#           <a href="#" class="btn btn-sm btn-outline-primary" onclick="printRappEchantillonnage(event)">Rapport Éch.</a>
+#           <a href="#" class="btn btn-sm btn-outline-info" onclick="printRappInspection(event)">Rapport Insp.</a>
+#           <a href="#" class="btn btn-sm btn-outline-success" onclick="printDossimport(event)">Dossier</a>
+#         """,
+#         orderable=False,
+#         verbose_name="Actions",
+#     )
+#
+#     # -------- Render helpers (pretty numbers, blank on None) --------
+#     @staticmethod
+#     def _fmt3(v):
+#         try:
+#             return f"{float(v):.3f}"
+#         except (TypeError, ValueError):
+#             return ""
+#
+#     def render_inspection__dens(self, value):
+#         return self._fmt3(value)
+#
+#     def render_inspection__temp(self, value):
+#         return self._fmt3(value)
+#
+#     def render_mtaTotal(self, value):
+#         return self._fmt3(value)
+#
+#     def render_mtvTotal(self, value):
+#         return self._fmt3(value)
+#
+#     def render_volConst(self, value):
+#         return self._fmt3(value)
+#
+#     def render_gsvT(self, value):
+#         return self._fmt3(value)
+#
+#     def render_volume(self, value):
+#         return self._fmt3(value)
+#
+#     class Meta:
+#         attrs = {"class": "table table-striped table-bordered table-sm"}
+#         # Keep the tr id so your JS can read it:
+#         row_attrs = {"id": lambda record: record.idcargaison}
+#         sequence = (
+#             "idcargaison",
+#             "numdos",
+#             "declaration",
+#             "frontiere__nomville",
+#             "inspection__dens",
+#             "inspection__temp",
+#             "mtaTotal",
+#             "mtvTotal",
+#             "entrepot__nomentrepot",
+#             "inspection__dateinspection",
+#             "importateur__nomimportateur",
+#             "immatriculation",
+#             "produit__nomproduit",
+#             "dateheurecargaison",
+#             "requisitiondackdate",
+#             "echantillon_date",
+#             "labo_recep_date",
+#             "print_date",
+#             "volume",
+#             "volConst",
+#             "gsvT",
+#             "actions",
+#         )
 

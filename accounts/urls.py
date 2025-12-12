@@ -23,6 +23,7 @@ urlpatterns = [
     path('usersadd/', views.ajoututilisateurs, name='usersadd'),
     path('delete/<int:pk>', views.effacerutilisateurs, name='delete_user'),
     path('edit/<int:pk>', views.editionutilisateurs, name='edit'),
+    path('change_password/', views.change_password, name='change_password'),
 
 
     path('addUser/', views.addUser, name='addUser'),

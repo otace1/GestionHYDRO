@@ -210,6 +210,7 @@ class Entrepot_echantillon(models.Model):
     dateechantillonage = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     useredit = models.CharField(max_length=256, null=True, blank=True)
     matricule = models.CharField(max_length=256, blank=True)
+    notes = models.CharField(max_length=256, blank=True)
     methodeutilisee = models.CharField(max_length=256, blank=True)
 
 

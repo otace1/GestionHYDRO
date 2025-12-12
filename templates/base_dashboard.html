@@ -1,593 +1,992 @@
 {% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
-
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>TrackFlow+</title>
-    <!-- Tell the browser to be responsive to screen width -->
-    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <meta charset="utf-8"/>
+    <title>TrackFlow+ · Tableau de bord</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Bootstrap 4 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- DataTables -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
+    <!-- Font Awesome (icons for the sidebar) -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
 
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
 
-    <!-- Ionicons -->
-    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4cc9f0',
+                        primary2: '#00f5d4',
+                        success: '#19c37d',
+                        danger: '#ef476f',
+                        warning: '#ffd166',
+                        textc: '#e9eefc',
+                        muted: '#aab3c7',
+                    },
+                    boxShadow: {
+                        glass: '0 18px 50px rgba(0,0,0,.25)',
+                        glassHover: '0 24px 60px rgba(0,0,0,.30)',
+                    },
+                    keyframes: {
+                        gradientShift: {
+                            '0%': {backgroundPosition: '0% 50%'},
+                            '50%': {backgroundPosition: '100% 50%'},
+                            '100%': {backgroundPosition: '0% 50%'}
+                        },
+                        floatUp: {
+                            '0%': {transform: 'translateY(6px)', opacity: 0},
+                            '100%': {transform: 'translateY(0)', opacity: 1}
+                        },
+                        shimmerMove: {'100%': {transform: 'translateX(100%)'}}
+                    },
+                    animation: {
+                        gradientShift: 'gradientShift 9s ease infinite',
+                        floatUp: 'floatUp .5s ease both',
+                        shimmerMove: 'shimmerMove 2.2s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
 
-    <!-- iCheck -->
-    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-    <!-- JQVMap -->
-    <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-    <!-- Theme style -->
-    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-    <!-- overlayScrollbars -->
-    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-    <!-- Daterange picker -->
-    <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-    <!-- summernote -->
-    <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-
-    
-
-    <!-- Google Font: Source Sans Pro -->
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-
-    
-
-    <!-- ChartJS -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Sparkline -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
-
-    <!-- overlayScrollbars -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/overlayscrollbars/2.10.0/browser/overlayscrollbars.browser.es6.min.js"></script>
-
-    <!-- AdminLTE App -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
-
-
-
-
-    {% block extra_js %}
-    {% endblock %}
     <style>
-        .wrapper {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh; /* Set the wrapper to at least the height of the viewport */
+        :root {
+            --bg-grad: radial-gradient(1200px 900px at 10% -10%, rgba(0, 245, 212, .08), transparent 60%),
+            radial-gradient(900px 700px at 120% 120%, rgba(76, 201, 240, .08), transparent 60%),
+            linear-gradient(160deg, #0a0f1e, #0f1632 70%);
         }
 
-        .content-wrapper {
-            flex: 1; /* Allow the content wrapper to grow and push the footer to the bottom */
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", sans-serif;
+            background: var(--bg-grad);
+            color: #e9eefc;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
+            border: 1px solid rgba(255, 255, 255, .08);
+            backdrop-filter: blur(8px);
+        }
+
+        .shimmer:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, .08) 25%, transparent 55%);
+            transform: translateX(-100%);
+            animation: shimmerMove 2.2s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .shimmer:before {
+                animation: none;
+            }
+
+            [style*="gradientShift"], .animate-floatUp {
+                animation: none !important;
+            }
         }
     </style>
 
-
 </head>
-<!-- sidebar: style can be found in sidebar.less -->
-<body class="hold-transition sidebar-mini- layout-fixed">
-<div class="wrapper">
 
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-light navbar-light">
-        <!-- Left navbar links -->
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="" class="nav-link" style="background-color: green; color: white">Vous êtes connecté en tant
-                    que: {{ request.user.first_name }} {{ request.user.last_name }}</a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="" class="nav-link"></a>
-            </li>
-            <li class="nav-item d-none d-sm-inline-block">
-                <a href="{% url 'logout' %}" class="nav-link"
-                   style="background-color: red; color: white">Déconnexion</a>
-            </li>
-        </ul>
+<body class="min-h-screen">
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    {% include 'menus/side-menu/main-menu.html' %}
 
-        <!-- Right navbar links -->
-        <ul class="navbar-nav ml-auto">
-            <!-- Navbar Search -->
-            <li class="nav-item">
-                <div class="navbar-search-block">
+    <!-- Main column -->
+    <div class="flex-1 flex flex-col">
+
+        <!-- Top bar -->
+        {% include 'menus/navbar/navbar.html' %}
+
+        <!-- Page header -->
+        <div class="w-full px-3 sm:px-4 lg:px-6 xl:px-8 mt-4 sm:mt-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h1 class="text-2xl sm:text-3xl font-extrabold">Tableau de bord</h1>
+                <nav class="text-sm text-white/70" aria-label="breadcrumb">
+                    <ol class="flex items-center gap-2">
+                        <li><a href="#" class="hover:text-primary transition">Accueil</a></li>
+                        <li class="opacity-60">/</li>
+                        <li>Département</li>
+                        <li class="opacity-60">/</li>
+                        <li class="text-white">Tableau de bord</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <main class="flex-1 w-full">
+            <div class="w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
+
+                <!-- BODY Rapport CTA (button opens modal) -->
+                <section class="glass rounded-2xl p-4 sm:p-5 shadow-glass mb-5 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-primary/20 blur-2xl"></div>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 relative">
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-semibold">Besoin d’un rapport détaillé ?</h2>
+                            <p class="text-sm text-white/70">Générez vos rapports périodiques en un clic.</p>
+                        </div>
+                        <button type="button" id="openReportBtn"
+                                class="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold
+                        bg-gradient-to-r from-primary to-primary2 text-[#0b1223]
+                        shadow-glass hover:shadow-glassHover transition">
+                            <span class="absolute inset-0 rounded-xl shimmer opacity-60"></span>
+                            <!-- doc-check icon -->
+                            <svg class="relative h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M9 12l2 2 4-4" stroke-width="2" stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                                <path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke-width="2"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="relative">Créer un rapport</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- KPI STRIP · full-width auto-fit grid -->
+                <section class="glass rounded-2xl p-3 sm:p-4 shadow-glass">
+                    <div class="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
+                        {% for box in boxes|slice:":6" %}
+                            <article
+                                    class="group relative w-full rounded-xl p-3 sm:p-4 text-left
+                       bg-white/5 hover:bg-white/10 border border-white/10 transition"
+                            >
+                                <div class="flex items-center justify-between gap-2 min-w-0">
+                                    <div class="text-[11px] uppercase tracking-wider text-white/70 truncate">
+                                        {{ box.title }}
+                                    </div>
+                                    {% if box.delta is not None %}
+                                        <span class="shrink-0 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full
+                               bg-black/25 ring-1 ring-white/10
+                               {% if box.delta > 0 %} text-emerald-100 {% elif box.delta < 0 %} text-rose-100 {% else %} text-white/80 {% endif %}">
+                    {% if box.delta > 0 %}
+                        <!-- arrow-up-right -->
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M7 17L17 7M7 7h10v10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    {% elif box.delta < 0 %}
+                        <!-- arrow-down-right -->
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M7 7l10 10M17 7v10H7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    {% else %}
+                        <!-- minus -->
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M5 12h14" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    {% endif %}
+                                            {% if box.delta > 0 %}+{% endif %}{{ box.delta|default:"0" }}%
+                  </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mt-1 flex items-end justify-between gap-3">
+                                    <div class="text-2xl font-extrabold tabular-nums"
+                                         data-count="{{ box.count|default:0 }}">0
+                                    </div>
+
+                                    {% if box.percent is not None %}
+                                        <div class="relative shrink-0">
+                                            <svg viewBox="0 0 36 36" class="h-9 w-9">
+                                                <path class="text-white/15" stroke="currentColor" stroke-width="4"
+                                                      fill="none"
+                                                      d="M18 2 a 16 16 0 1 1 0 32 a 16 16 0 1 1 0 -32"/>
+                                                <path
+                                                        class="{% if box.color == 'primary' %} text-[#4cc9f0] {% elif box.color == 'success' %} text-[#19c37d]
+                               {% elif box.color == 'danger' %} text-[#ef476f] {% elif box.color == 'warning' %} text-[#ffd166]
+                               {% else %} text-white/60 {% endif %}"
+                                                        stroke="currentColor" stroke-width="4" fill="none"
+                                                        stroke-linecap="round"
+                                                        stroke-dasharray="{{ box.percent }},100"
+                                                        d="M18 2 a 16 16 0 1 1 0 32 a 16 16 0 1 1 0 -32"/>
+                                            </svg>
+                                            <div class="absolute inset-0 grid place-items-center text-[10px] font-semibold">
+                                                {{ box.percent }}%
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                {% if box.percent is not None %}
+                                    <div class="mt-2">
+                                        <div class="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                                            <div class="h-full rounded-full
+                                {% if box.color == 'primary' %} bg-primary
+                                {% elif box.color == 'success' %} bg-success
+                                {% elif box.color == 'danger' %} bg-danger
+                                {% elif box.color == 'warning' %} bg-warning
+                                {% else %} bg-white/60 {% endif %}"
+                                                 style="width: {{ box.percent }}%;"></div>
+                                        </div>
+                                        <div class="mt-1 text-[10px] text-white/70">
+                                            Performance&nbsp;: <span
+                                                class="text-white/85 font-semibold">{{ box.percent }}%</span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <div class="mt-3 flex items-center justify-end">
+                                    <a href="{{ box.url }}"
+                                       class="inline-flex items-center gap-1 text-[11px] font-semibold text-white/90 hover:text-white transition">
+                                        Détails
+                                        <!-- arrow-right -->
+                                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round"
+                                                  stroke-linejoin="round"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <!-- Main analytics row -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 mt-6">
+                    <!-- Chart takes 2/3 -->
+                    <section class="lg:col-span-2 glass rounded-2xl shadow-glass overflow-hidden">
+                        <header class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10">
+                            <div>
+                                <h2 class="text-base sm:text-lg font-semibold">Volumes par produit</h2>
+                                <p class="text-xs sm:text-sm text-white/70">Déclaré vs. Certifié (période
+                                    sélectionnée)</p>
+                            </div>
+                            <div class="hidden sm:flex items-center gap-2">
+                  <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/10">
+                    <span class="inline-block h-2 w-2 rounded-full bg-[rgba(76,201,240,1)]"></span> Déclaré
+                  </span>
+                                <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white/10">
+                    <span class="inline-block h-2 w-2 rounded-full bg-[rgba(0,245,212,1)]"></span> Certifié
+                  </span>
+                            </div>
+                        </header>
+
+                        <div class="relative p-3 sm:p-4 min-h-[280px] md:min-h-[360px]">
+                            <div id="chart-loading" class="absolute inset-0 grid place-items-center">
+                                <div class="w-11/12 md:w-10/12 h-48 rounded-xl bg-gradient-to-r from-white/5 via-white/10 to-white/5 animate-pulse"></div>
+                            </div>
+                            <div id="chart-empty"
+                                 class="hidden absolute inset-0 p-6 text-center grid place-items-center">
+                                <div>
+                                    <div class="mx-auto mb-3 h-10 w-10 grid place-items-center rounded-full bg-white/10">
+                                        <!-- chart-bar -->
+                                        <svg class="h-5 w-5 text-white/80" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor">
+                                            <path d="M4 19h16M7 10v6M12 6v10M17 13v3" stroke-width="2"
+                                                  stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-sm text-white/80">Aucune donnée disponible</p>
+                                    <p class="text-xs text-white/60">Modifiez la période ou réessayez plus tard.</p>
+                                </div>
+                            </div>
+                            <canvas id="myChart" class="block h-[260px] md:h-[320px]"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Latest 5 trucks -->
+                    <section class="glass rounded-2xl shadow-glass overflow-hidden animate-fadeIn">
+                        <header class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5 backdrop-blur-sm">
+                            <div>
+                                <h3 class="text-base sm:text-lg font-semibold flex items-center gap-2">
+                                    <!-- truck icon -->
+                                    <svg class="h-5 w-5 text-primary animate-[bounce_1.6s_infinite]" viewBox="0 0 24 24"
+                                         fill="none" stroke="currentColor">
+                                        <path d="M3 7h10v8H3zM13 10h4l3 3v2h-7z" stroke-width="2"
+                                              stroke-linejoin="round"/>
+                                        <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor"/>
+                                        <circle cx="17.5" cy="17.5" r="1.5" fill="currentColor"/>
+                                    </svg>
+                                    Nouveaux camions
+                                </h3>
+                                <p class="text-xs sm:text-sm text-white/70">5 derniers camions enregistrés</p>
+                            </div>
+                            <a href=""
+                               class="text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary to-primary2 text-[#0b1223] font-medium
+                          hover:shadow-glassHover transition relative overflow-hidden">
+                                <span class="absolute inset-0 shimmer opacity-40"></span>
+                                Voir tout
+                            </a>
+                        </header>
+
+                        <div class="p-3 sm:p-4">
+                            <ul class="divide-y divide-white/5">
+                                {% for truck in latest_trucks|slice:":5" %}
+                                    <li class="flex items-center gap-4 py-3 group hover:bg-white/5 rounded-lg px-3 transition">
+
+                                        <!-- Badge camion -->
+                                        <span class="h-10 w-10 flex items-center justify-center rounded-full bg-gradient-to-r from-primary to-primary2 text-[#0b1223] shadow-md group-hover:scale-105 transition-transform">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M3 7h10v8H3zM13 10h4l3 3v2h-7z" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor"/>
+          <circle cx="17.5" cy="17.5" r="1.5" fill="currentColor"/>
+        </svg>
+      </span>
+
+                                        <!-- Infos principales -->
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between">
+                                                <p class="text-sm font-semibold text-white truncate">
+                                                    Camion <span class="text-primary">{{ truck.plate_number }}</span>
+                                                </p>
+                                                <span class="text-[11px] text-white/50 whitespace-nowrap">
+            {{ truck.created_at|date:"d/m H:i" }}
+          </span>
+                                            </div>
+                                            <p class="text-xs text-white/70 mt-0.5 truncate">
+                                                <span class="font-medium text-white/80">Produit :</span> {{ truck.brand }}
+                                                · <span
+                                                    class="font-medium text-white/80">Importateur :</span> {{ truck.driver_name }}
+                                            </p>
+                                        </div>
+
+                                    </li>
+                                {% empty %}
+                                    <li class="text-sm text-white/60 text-center py-4">
+                                        Aucun camion enregistré récemment.
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                    </section>
                 </div>
-            </li>
-        </ul>
-    </nav>
 
-    <aside class="main-sidebar sidebar-dark-secondary elevation-4">
-        <!-- Brand Logo -->
-        <a href="#" class="brand-link">
-            <img src="" alt="" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-bold"
-                  style="color: yellow; display: flex; align-items: center; justify-content: center;"><b>TrackFlow +</b></span>
-        </a>
+                <!-- Secondary row: products & importers -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 mt-6 mb-2">
+                    <section class="glass rounded-2xl shadow-glass overflow-hidden">
+                        <!-- Header -->
+                        <header class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10">
+                            <div class="flex items-center gap-3">
+                                <div class="h-8 w-8 grid place-items-center rounded-lg bg-primary/10 text-primary">
+                                    <!-- chart icon -->
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                         aria-hidden="true">
+                                        <path d="M4 19h16M7 10v6M12 6v10M17 13v3" stroke-width="2"
+                                              stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-base sm:text-lg font-semibold leading-tight">Top produits</h3>
+                                    <p class="text-xs sm:text-sm text-white/70">Répartition des volumes (en %)</p>
+                                </div>
+                            </div>
 
-        <!-- Sidebar -->
-        <div class="sidebar">
+                            <div class="hidden sm:flex items-center gap-2">
+                            </div>
+                        </header>
 
-            <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
-                    data-accordion="false">
-                    <!-- Add icons to the links using the .nav-icon class
-                         with font-awesome or any other icon font library -->
-                    {% if user.role_id == 1 or user.role_id == 8 %}
-                        <li class="header" style="color: red">DEPARTEMENT</li>
-                        <li class="nav-item has-treeview menu-open">
-                            <a href="{% url 'dashboard' %}" class="nav-link active">
-                                <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>TABLEAU DE BORD</p>
-                            </a>
-                        </li>
+                        <!-- Legend / summary -->
+                        <div class="px-4 sm:px-5 pt-3">
+                            <div class="flex flex-wrap items-center gap-2 text-[11px] text-white/70">
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 ring-1 ring-white/10">
+        <span class="h-2 w-2 rounded-full bg-[rgba(76,201,240,1)]"></span> Part relative
+      </span>
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 ring-1 ring-white/10">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 5v14" stroke-width="2" stroke-linecap="round"/>
+        </svg> Valeur absolue
+      </span>
+                            </div>
+                        </div>
 
-                    {% endif %}
-
-                    {% if user.role_id == 2 or user.role_id == 1 %}
-                        <li class="header" style="color: red">FRONTIERE</li>
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'cargaison' %}" class="nav-link">
-                                <i class="nav-icon fas fa-truck-moving"></i>
-                                <p>
-                                    ENREGISTREMENT
-                                    <i class="fas fa-save right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-
-                        </li>
-                    {% endif %}
-
-
-                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
-                        <li class="header" style="color: red">ENTREPOT</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'entrepot' %}" class="nav-link">
-                                <i class="nav-icon fas fa fa-industry"></i>
-                                <p>
-                                    ENTREPOT
-                                    <i class="right fas fa-truck"></i>
-                                </p>
-                            </a>
-
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
-
-                        <li class="header" style="color: red">CERTIFICATION</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fas fa-flask"></i>
-                                <p>
-                                    LABORATOIRE
-                                    <i class="fas fa-angle-left right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-
-                                {% endif %}
-                                {% if user.role_id == 4 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'labo' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>RECEPTION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 5 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'analyse' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>ENCODAGE & IMPR.</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation1' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION SCE HYDRO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 10 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation2' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION CHEF LABO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'impression' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>IMPRESSION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-
-
-                    {% if user.role_id == 7 or user.role_id == 1 or user.role_id == 11 or user.role_id == 13 %}
-                        <li class="header" style="color: red">CELLULE HYDRO</li>
-
-                        <li class="nav-item has-treeview">
-                        <a href="" class="nav-link">
-                            <i class="nav-icon fas fa-building"></i>
-                            <p>
-                                HYDRO
-                                <i class="fas fa-trailer right"></i>
-                                <span class="badge badge-info right"></span>
-                            </p>
-                        </a>
-                        {% endif %}
-                        {% if user.role_id == 1 or user.role_id == 7 %}
-                            <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-                                    <i class="nav-icon fas fa-tachometer-alt"></i>
-                                    <p>TABLEAU DE BORD</p>
-                                </a>
-                            </li>
-                        {% endif %}
-
-                    {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 7 %}
-                        <li class="nav-item">
-                            <a href="{% url 'codification' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>GESTION REQUISITION</p>
-                            </a>
-                        </li>
-
-
-                        <li class="nav-item">
-                            <a href="{% url 'regularisation' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>REGULARISATION</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
-                        <li class="nav-item">
-                            <a href="{% url 'rapportActivite' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>RAPPORT D'ACTIVITE</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% if user.role_id == 1 or user.role_id == 13 or user.role_id == 7 %}
-                        <li class="nav-item">
-                            <a href="{% url 'facturations' %}" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>PAIEMENTS</p>
-                            </a>
-                        </li>
-                    {% endif %}
-                    </ul>
-                    </li>
-                    {% if role == 10 %}
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-file-archive"></i>
-                                <p>
-                                    FACTURATIONS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'facturations' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LIQUIDATION</p>
-                                    </a>
+                        <!-- Body -->
+                        <div class="p-3 sm:p-5">
+                            <!-- Loading skeleton (hidden when data arrives) -->
+                            <ul id="topProducts-skeleton" class="space-y-3 text-sm">
+                                <li class="space-y-1">
+                                    <div class="flex justify-between"><span
+                                            class="h-3 w-24 bg-white/10 rounded animate-pulse"></span><span
+                                            class="h-3 w-10 bg-white/10 rounded animate-pulse"></span></div>
+                                    <div class="h-2 w-full bg-white/10 rounded overflow-hidden">
+                                        <div class="h-full w-1/2 bg-white/20 animate-pulse"></div>
+                                    </div>
                                 </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'appuration' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>APPURATION</p>
-                                    </a>
+                                <li class="space-y-1">
+                                    <div class="flex justify-between"><span
+                                            class="h-3 w-28 bg-white/10 rounded animate-pulse"></span><span
+                                            class="h-3 w-10 bg-white/10 rounded animate-pulse"></span></div>
+                                    <div class="h-2 w-full bg-white/10 rounded overflow-hidden">
+                                        <div class="h-full w-1/3 bg-white/20 animate-pulse"></div>
+                                    </div>
+                                </li>
+                                <li class="space-y-1">
+                                    <div class="flex justify-between"><span
+                                            class="h-3 w-20 bg-white/10 rounded animate-pulse"></span><span
+                                            class="h-3 w-10 bg-white/10 rounded animate-pulse"></span></div>
+                                    <div class="h-2 w-full bg-white/10 rounded overflow-hidden">
+                                        <div class="h-full w-1/4 bg-white/20 animate-pulse"></div>
+                                    </div>
                                 </li>
                             </ul>
-                        </li>
-                    {% endif %}
 
-                    {% if user.role_id == 1 %}
-                        <li class="nav-item has-treeview" style="color: red">ADMINISTRATION</li>
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-user"></i>
-                                <p>
-                                    USERS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
+                            <!-- Real data goes here -->
+                            <ul id="topProducts" class="hidden space-y-3 text-sm text-white/85"></ul>
 
-                                <li class="nav-item">
-                                    <a href="{% url 'userslist' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'UTILISATEURS</p>
-                                    </a>
-                                </li>
-
-
-                            </ul>
-                        </li>
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'activityLog' %}" class="nav-link">
-                                <i class="nav-icon fas fa-file"></i>
-                                <p>
-                                    JOURNAL D'ACTIVITES
-
-
-                                </p>
-                            </a>
-                        </li>
-
-
-                    {% endif %}
-
-                    <li class="nav-item has-treeview">
-                        <a href="" class="nav-link">
-                            <i class="nav-icon fas fa-hands-helping"></i>
-                            <p>
-                                AIDE
-                            </p>
-                        </a>
-                    </li>
-
-                </ul>
-            </nav>
-            <!-- /.sidebar -->
-        </div>
-    </aside>
-
-
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
-        <!-- Content Header (Page header) -->
-        <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><b>Tableau de bord</b></h1>
-                    </div><!-- /.col -->
-                    <div class="col-sm-6">
-                        <ol class="breadcrumb float-sm-right">
-                            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item active">Département</li>
-                            <li class="breadcrumb-item active">Tableau de bord</li>
-                        </ol>
-                    </div><!-- /.col -->
-                </div><!-- /.row -->
-            </div><!-- /.container-fluid -->
-        </div>
-        <!-- /.content-header -->
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-6">
-                        <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-rapport">
-                            <span class="badge bg-success"></span>
-                            <i class="fas fa-file"></i> RAPPORTS
-                        </a>
-                    </div>
-                </div><!-- /.row -->
-                <div class="row">
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-info">
-                            <span class="info-box-icon"><i class="far fa-file"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de réquisition</span>
-                                <span class="info-box-number">{{ j }}</span>
-                                <a href="{% url 'rapportBrutJournalier' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                            <!-- Empty state -->
+                            <div id="topProducts-empty" class="hidden text-sm text-white/60 text-center py-6">
+                                Aucun produit à afficher.
                             </div>
-                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-success">
-                            <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente d'échantillonnage</span>
-                                <span class="info-box-number">{{ k }}</span>
-                                <a href="{% url 'rapportBrutEchantillonnage' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                    </section>
+
+
+                    <section class="glass rounded-2xl shadow-glass overflow-hidden">
+                        <header class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10">
+                            <div>
+                                <h3 class="text-base sm:text-lg font-semibold">Top importateurs</h3>
+                                <p class="text-xs sm:text-sm text-white/70">Classement récent</p>
                             </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-warning">
-                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de réception Labo</span>
-                                <span class="info-box-number">{{ i }}</span>
-                                <a href="{% url 'rapportAttenteReception' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                            <div class="hidden sm:flex items-center gap-2">
                             </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-warning">
-                            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de résultat d'analyse</span>
-                                <span class="info-box-number">{{ l }}</span>
-                                <a href="{% url 'rapportBrutAnalyse' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                        </header>
+                        <div class="p-3 sm:p-4">
+                            <ul id="topImporters" class="space-y-3 text-sm text-white/80 hidden"></ul>
+
+                            <!-- Optional: loading + empty states -->
+                            <div id="topImporters-skeleton" class="space-y-3">
+                                <div class="h-3 w-10/12 bg-white/10 rounded animate-pulse"></div>
+                                <div class="h-3 w-9/12 bg-white/10 rounded animate-pulse"></div>
+                                <div class="h-3 w-8/12 bg-white/10 rounded animate-pulse"></div>
                             </div>
-                            <!-- /.info-box-content -->
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente d'inspection</span>
-                                <span class="info-box-number">{{ m }}</span>
-                                <a href="{% url 'rapportBrutInspection' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                            <div id="topImporters-empty" class="hidden text-sm text-white/70">
+                                Aucun importateur à afficher.
                             </div>
-                            <!-- /.info-box-content -->
                         </div>
-                        <!-- /.info-box -->
+                    </section>
+
+                </div>
+
+
+            </div>
+        </main>
+
+        <!-- Report Modal -->
+        <div
+                id="reportModal"
+                class="hidden fixed inset-0 z-[60]"
+                aria-labelledby="reportTitle"
+                role="dialog"
+                aria-modal="true">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+            <!-- Panel -->
+            <div class="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
+                <div class="glass w-full max-w-3xl rounded-2xl shadow-glass overflow-hidden">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10">
+                        <div>
+                            <h3 id="reportTitle" class="text-lg font-semibold">Créer un rapport</h3>
+                            <p class="text-sm text-white/70">Choisissez les critères puis générez le fichier.</p>
+                        </div>
+                        <button id="closeReportBtn" class="w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10"
+                                aria-label="Fermer">
+                            <!-- x-mark -->
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div class="col-md-2 col-sm-3 col-12">
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">En attente de déchargement</span>
-                                <span class="info-box-number">{{ d }}</span>
-                                <a href="{% url 'rapportBrutDechargement' %}" class="small-box-footer">DETAILS <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+
+                    <!-- Body -->
+                    <form id="reportForm" class="px-4 sm:px-5 py-4" action="{% url 'rapports' %}" method="get">
+                        <!-- Date range + presets -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-white/80 mb-1" for="r_from">Du</label>
+                                <input id="r_from" name="from" type="date"
+                                       class="w-full glass rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                       required>
                             </div>
-                            <!-- /.info-box-content -->
+                            <div>
+                                <label class="block text-sm text-white/80 mb-1" for="r_to">Au</label>
+                                <input id="r_to" name="to" type="date"
+                                       class="w-full glass rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                       required>
+                            </div>
                         </div>
-                        <!-- /.info-box -->
-                    </div>
-                </div><!-- /.row -->
-                <div class="row">
-                    <div class="col-md-6">
-                        {% block chart %}
-                        {% endblock %}
-                    </div>
-                    <div class="col-md-6">
-                        {% block latest %}
-                        {% endblock %}
-                    </div>
+
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <button type="button" data-preset="7"
+                                    class="text-xs px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15">7&nbsp;jours
+                            </button>
+                            <button type="button" data-preset="30"
+                                    class="text-xs px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15">30&nbsp;jours
+                            </button>
+                            <button type="button" data-preset="mois"
+                                    class="text-xs px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15">Ce&nbsp;mois
+                            </button>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-white/80 mb-1" for="r_dept">Département</label>
+                                <select id="r_dept" name="department"
+                                        class="w-full glass rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+                                    <option value="">Tous</option>
+                                    {% for d in departments %}
+                                        <option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-white/80 mb-1" for="r_prod">Produit</label>
+                                <select id="r_prod" name="product"
+                                        class="w-full glass rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+                                    <option value="">Tous</option>
+                                    {% for p in products %}
+                                        <option value="{{ p.id }}">{{ p.nomproduit }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-white/80 mb-1" for="r_status">Statut</label>
+                                <select id="r_status" name="status"
+                                        class="w-full glass rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+                                    <option value="">Tous</option>
+                                    <option value="declared">Déclaré</option>
+                                    <option value="certified">Certifié</option>
+                                    <option value="pending">En attente</option>
+                                    <option value="rejected">Rejeté</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-white/80 mb-1" for="r_format">Format</label>
+                                <select id="r_format" name="format"
+                                        class="w-full glass rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                        required>
+                                    <option value="pdf">PDF</option>
+                                    <option value="xlsx">Excel (.xlsx)</option>
+                                    <option value="csv">CSV</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Toggles -->
+                        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="include_graphs" class="rounded border-white/20 bg-white/10"
+                                       checked>
+                                Inclure les graphiques
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="group_by_product"
+                                       class="rounded border-white/20 bg-white/10">
+                                Grouper par produit
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="group_by_importer"
+                                       class="rounded border-white/20 bg-white/10">
+                                Grouper par importateur
+                            </label>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="mt-6 flex flex-col sm:flex-row sm:justify-end gap-2">
+                            <button type="button" id="cancelReportBtn"
+                                    class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15">Annuler
+                            </button>
+                            <button type="submit"
+                                    class="relative inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold
+                           bg-gradient-to-r from-primary to-primary2 text-[#0b1223] hover:shadow-glassHover">
+                                <span class="absolute inset-0 rounded-lg shimmer opacity-60"></span>
+                                <!-- file-export -->
+                                <svg class="relative h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-width="2" stroke-linecap="round"
+                                          stroke-linejoin="round"/>
+                                    <path d="M5 20h14" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span class="relative">Générer</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-md-6">
-                        {% block importateur %}{% endblock %}
-                    </div>
-                    <div class="col-md-6">
-                        {% block products %}{% endblock %}
-                    </div>
+        </div>
+        <!-- /Report Modal -->
+
+        <!-- Footer -->
+        <footer class="glass border-t border-white/10 py-4 mt-auto">
+            <div class="w-full px-3 sm:px-4 lg:px-6 xl:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-white/70">
+                <div>
+                    Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org" target="_blank" rel="noopener"
+                                                      class="hover:text-primary">Compass Green WorldWide SARL</a>.
+                    Tous droits réservés.
                 </div>
+                <div class="sm:text-right"><b>Version</b> 3.0</div>
             </div>
-        </section>
-        <!-- /.content -->
+        </footer>
     </div>
-
-    <!-- /.content-wrapper -->
-    <!-- /.content-wrapper -->
-
-    <footer class="main-footer">
-        <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
-            SARL</a>.</strong>
-        All rights reserved.
-        <div class="float-right d-none d-sm-inline-block">
-            <b>Version</b> 3.0
-        </div>
-    </footer>
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <!-- Control sidebar content goes here -->
-    </aside>
-    <!-- /.control-sidebar -->
 </div>
 
 
-
-
-
+<!-- Page scripts -->
 <script>
+    // Sidebar toggle (if your sidebar include exposes #sidebar)
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('absolute');
+            sidebar.classList.toggle('inset-y-0');
+            sidebar.classList.toggle('z-50');
+            sidebar.classList.toggle('left-0');
+            document.body.style.overflow = sidebar.classList.contains('absolute') ? 'hidden' : '';
+        });
+    }
 
-    var Id;
+    // Count-up for KPI values
+    document.addEventListener('DOMContentLoaded', () => {
+        const els = document.querySelectorAll('[data-count]');
+        const ease = t => 1 - Math.pow(1 - t, 3); // easeOutCubic
+        els.forEach(el => {
+            const target = Number(el.getAttribute('data-count')) || 0;
+            const dur = 900;
+            let start = null;
 
-    $(document).ready(function () {
+            function step(ts) {
+                if (!start) start = ts;
+                const p = Math.min((ts - start) / dur, 1);
+                el.textContent = Math.floor(ease(p) * target).toLocaleString('fr-FR');
+                if (p < 1) requestAnimationFrame(step);
+            }
 
-        {% block javascript %}
+            requestAnimationFrame(step);
+        });
+    });
 
-        {% endblock %}
+    // Report modal
+    const reportModal = document.getElementById('reportModal');
+    const openReportBtn = document.getElementById('openReportBtn');
+    const closeReportBtn = document.getElementById('closeReportBtn');
+    const cancelReportBtn = document.getElementById('cancelReportBtn');
+    const reportForm = document.getElementById('reportForm');
+    const inputFrom = document.getElementById('r_from');
+    const inputTo = document.getElementById('r_to');
 
-    })
-</script>
+    const openModal = () => {
+        reportModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => inputFrom?.focus(), 50);
+    };
+    const closeModal = () => {
+        reportModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        openReportBtn?.focus();
+    };
 
-<script>
-    // Fetch the dataset from the Django view's URL using AJAX
-    fetch("{% url 'chartJs' %}")
-        .then(response => response.json())
-        .then(data => {
-            // Extract product names, controlled volumes, and declared volumes from the data
-            const productNames = data.map(item => item.idinspection__idcargaison__produit__nomproduit);
-            const declaredVolumes = data.map(item => item.totalVolume);
-            const certifiedVolumes = data.map(item => item.totalCertified);
+    openReportBtn?.addEventListener('click', openModal);
+    closeReportBtn?.addEventListener('click', closeModal);
+    cancelReportBtn?.addEventListener('click', closeModal);
 
-            // Create the Chart.js chart with the fetched data
-            const ctx = document.getElementById('myChart').getContext('2d');
+    // Close on backdrop click
+    reportModal?.addEventListener('click', (e) => {
+        if (e.target === reportModal) closeModal();
+    });
+
+    // Esc key to close
+    document.addEventListener('keydown', (e) => {
+        if (!reportModal.classList.contains('hidden') && e.key === 'Escape') closeModal();
+    });
+
+    // Date presets
+    function fmt(d) {
+        return d.toISOString().slice(0, 10);
+    }
+
+    function firstDayOfMonth(d) {
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+
+    function lastDayOfMonth(d) {
+        return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    }
+
+    reportModal.querySelectorAll('[data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const now = new Date();
+            const p = btn.getAttribute('data-preset');
+            if (p === 'mois') {
+                inputFrom.value = fmt(firstDayOfMonth(now));
+                inputTo.value = fmt(lastDayOfMonth(now));
+            } else {
+                const days = parseInt(p, 10) || 7;
+                const from = new Date(now);
+                from.setDate(from.getDate() - (days - 1));
+                inputFrom.value = fmt(from);
+                inputTo.value = fmt(now);
+            }
+        });
+    });
+
+    // Basic date validation
+    reportForm?.addEventListener('submit', (e) => {
+        const f = inputFrom.value, t = inputTo.value;
+        if (f && t && f > t) {
+            e.preventDefault();
+            alert('La date de début doit être antérieure ou égale à la date de fin.');
+        }
+    });
+
+    // Click-to-filter hook (if you later add data-filter on KPI buttons)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-filter]');
+        if (!btn) return;
+        const key = btn.getAttribute('data-filter');
+        if (!key) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('filter', key);
+        window.location.href = url.toString();
+    });
+
+    // Chart.js: volumes par produit
+    document.addEventListener("DOMContentLoaded", async () => {
+        const el = document.getElementById('myChart');
+        if (!el) return;
+        const loading = document.getElementById('chart-loading');
+        const empty = document.getElementById('chart-empty');
+
+        try {
+            const res = await fetch("{% url 'chartJs' %}");
+            const data = await res.json();
+
+            const labels = data.map(i => i.idinspection__idcargaison__produit__nomproduit);
+            const declared = data.map(i => i.totalVolume);
+            const certified = data.map(i => i.totalCertified);
+
+            if (!labels.length) {
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            const ctx = el.getContext('2d');
+            const gradBlue = ctx.createLinearGradient(0, 0, 0, el.height);
+            gradBlue.addColorStop(0, 'rgba(76,201,240,0.55)');
+            gradBlue.addColorStop(1, 'rgba(76,201,240,0.12)');
+            const gradGreen = ctx.createLinearGradient(0, 0, 0, el.height);
+            gradGreen.addColorStop(0, 'rgba(0,245,212,0.55)');
+            gradGreen.addColorStop(1, 'rgba(0,245,212,0.12)');
+
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: productNames,
+                    labels,
                     datasets: [
                         {
                             label: 'Volume déclaré',
-                            data: declaredVolumes,
-                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1
+                            data: declared,
+                            backgroundColor: gradBlue,
+                            borderColor: 'rgba(76,201,240,1)',
+                            borderWidth: 1.2,
+                            borderRadius: 8,
+                            maxBarThickness: 42
                         },
                         {
                             label: 'Volume certifié',
-                            data: certifiedVolumes,
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderColor: 'rgba(75, 192, 192, 0.2)',
-                            borderWidth: 1
-                        }]
+                            data: certified,
+                            backgroundColor: gradGreen,
+                            borderColor: 'rgba(0,245,212,1)',
+                            borderWidth: 1.2,
+                            borderRadius: 8,
+                            maxBarThickness: 42
+                        }
+                    ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    responsive: true, maintainAspectRatio: false,
+                    layout: {padding: 6},
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e9eefc',
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: {size: 12, weight: 600}
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(12,18,41,.95)',
+                            borderColor: 'rgba(255,255,255,.12)',
+                            borderWidth: 1,
+                            titleColor: '#fff',
+                            bodyColor: '#dfe7fb',
+                            cornerRadius: 10,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: (ctx) => {
+                                    const v = ctx.parsed.y ?? 0;
+                                    return `${ctx.dataset.label}: ${v.toLocaleString('fr-FR')} m³`;
+                                }
+                            }
                         }
-                    }
+                    },
+                    scales: {
+                        x: {ticks: {color: '#c7d2f0', maxRotation: 30, minRotation: 0}, grid: {display: false}},
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#c7d2f0',
+                                callback: (v) => Intl.NumberFormat('fr-FR', {
+                                    notation: 'compact',
+                                    maximumFractionDigits: 1
+                                }).format(v)
+                            },
+                            grid: {color: 'rgba(255,255,255,.08)', drawBorder: false}
+                        }
+                    },
+                    animation: {duration: 900, easing: 'easeOutQuart'}
                 }
             });
-        })
-        .catch(error => {
-            console.error('Error fetching data:', error);
-        });
+        } catch (e) {
+            console.error('Chart error:', e);
+            empty.classList.remove('hidden');
+        } finally {
+            loading.classList.add('hidden');
+        }
+    });
+
+    // Small entry animation
+    (function () {
+        const style = document.createElement('style');
+        style.innerHTML = `
+        @keyframes fadeIn { from {opacity:0; transform: translateY(10px)} to {opacity:1; transform:none} }
+        .animate-fadeIn { animation: fadeIn .6s ease-out both; }
+      `;
+        document.head.appendChild(style);
+    })();
+
+    async function loadProducts() {
+        try {
+            const res = await fetch("{% url 'productCount' %}");
+            const json = await res.json();
+            const container = document.getElementById("topProducts");
+            container.innerHTML = "";
+
+            // Hide skeleton & empty states
+            document.getElementById('topProducts-skeleton')?.classList.add('hidden');
+            document.getElementById('topProducts-empty')?.classList.add('hidden');
+
+            if (!json.data || !json.data.length) {
+                document.getElementById('topProducts-empty')?.classList.remove('hidden');
+                return;
+            }
+
+            // Calculate total count for percentages
+            const total = json.data.reduce((sum, p) => sum + p.count, 0);
+
+            json.data.forEach(item => {
+                const percent = total ? Math.round((item.count / total) * 100) : 0;
+
+                const li = document.createElement("li");
+                li.className = "space-y-1";
+
+                li.innerHTML = `
+        <!-- Row header -->
+        <div class="flex justify-between items-center">
+          <span class="text-white/90">${item.product}</span>
+          <span class="flex items-center gap-3">
+            <span class="text-xs text-white/60">${item.count.toLocaleString('fr-FR')} m³</span>
+            <span class="font-semibold text-white/90">${percent}%</span>
+          </span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+          <div class="h-full rounded-full bg-gradient-to-r from-primary to-primary2 transition-all duration-700"
+               style="width:${percent}%;"></div>
+        </div>
+      `;
+
+                container.appendChild(li);
+            });
+
+            container.classList.remove('hidden');
+        } catch (err) {
+            console.error("Erreur chargement produits:", err);
+            document.getElementById('topProducts-skeleton')?.classList.add('hidden');
+            document.getElementById('topProducts-empty')?.classList.remove('hidden');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadProducts);
+
+    async function loadTopImporters() {
+        try {
+            const res = await fetch("{% url 'topImporters' %}");
+            const {data} = await res.json();
+
+            const list = document.getElementById("topImporters");
+            const skel = document.getElementById("topImporters-skeleton");
+            const empty = document.getElementById("topImporters-empty");
+
+            skel?.classList.add("hidden");
+            list.innerHTML = "";
+
+            if (!data || !data.length) {
+                empty?.classList.remove("hidden");
+                return;
+            }
+            empty?.classList.add("hidden");
+
+            data.forEach((item, idx) => {
+                const li = document.createElement("li");
+                li.className = "space-y-1";
+
+                li.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="truncate">
+            <span class="inline-flex items-center justify-center h-5 w-5 mr-2 rounded bg-white/10 text-[11px] font-semibold">${idx + 1}</span>
+            <span class="align-middle">${item.name}</span>
+          </span>
+          <span class="flex items-center gap-3">
+            <span class="text-xs text-white/60">${item.volume.toLocaleString('fr-FR')} m³</span>
+            <span class="font-semibold">${item.percent}%</span>
+          </span>
+        </div>
+        <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+          <div class="h-full rounded-full bg-gradient-to-r from-primary to-primary2 transition-all duration-700" style="width:${item.percent}%;"></div>
+        </div>
+      `;
+                list.appendChild(li);
+            });
+
+            list.classList.remove("hidden");
+        } catch (e) {
+            console.error("Erreur chargement importateurs:", e);
+            document.getElementById("topImporters-skeleton")?.classList.add("hidden");
+            document.getElementById("topImporters-empty")?.classList.remove("hidden");
+        }
+    }
+
+    // Call once on load (or whenever the panel becomes visible)
+    document.addEventListener("DOMContentLoaded", loadTopImporters);
+
+
 </script>
-
-
 </body>
 </html>

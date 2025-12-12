@@ -99,6 +99,7 @@ class Echantilloner(forms.Form):
             ),
         )
 
+
 class Decharger(forms.Form):
     densite = forms.FloatField(label="Densité:", required=True)
     types = forms.CharField(widget=forms.Select(choices=types), label="Types :", required=True)

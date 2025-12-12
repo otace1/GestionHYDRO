@@ -1,173 +1,666 @@
-{% extends 'shydro/shydro_layout.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
+{% extends 'base/base_template.html' %}
+
+{% block main_content %}
+<style>
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  #data-table-wrapper {
+    position: relative;
+  }
+
+  .table-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: none; /* toggled via JS */
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.75); /* slate-900/75 style */
+    backdrop-filter: blur(6px);
+    z-index: 40;
+  }
+
+  .loading-spinner {
+    border-radius: 9999px;
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(148, 163, 184, 0.6); /* slate-400/60 */
+    border-top-color: #4f46e5;              /* primary-ish */
+    width: 32px;
+    height: 32px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Modal base styles (align look with Labo modals) */
+  .app-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none; /* toggled via JS */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* above table overlay */
+    backdrop-filter: blur(2px);
+  }
+  .app-modal {
+    width: min(92vw, 560px);
+    border-radius: 16px;
+    background: rgba(2, 6, 23, 0.96); /* slate-950/96 */
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e7eb; /* text-slate-200 */
+    box-shadow: 0 20px 60px rgba(3, 8, 20, .45), inset 0 1px 0 rgba(255,255,255,.06);
+    overflow: hidden;
+  }
+  .app-modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08);
+    background: rgba(2,6,23,.85);
+  }
+  .app-modal-title{font-weight:700;font-size:14px;letter-spacing:.2px}
+  .app-modal-body{padding:16px 18px;font-size:13px;color:rgba(255,255,255,0.85);background: rgba(2,6,23,.92)}
+  .app-modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid rgba(255,255,255,0.08);background: rgba(2,6,23,.85)}
+  .btn-modal{padding:8px 12px;border-radius:10px;font-weight:600;font-size:12px}
+  .btn-modal-primary{background:#34d399;color:#0b1223}
+  .btn-modal-danger{background:#f43f5e;color:#0b1223}
+  .btn-modal-secondary{background:rgba(255,255,255,0.08);color:#e5e7eb}
+
+  /* Highlighted number chip (like Labo reception number) */
+  .number-highlight{
+    margin-top:10px;
+    display:none; /* toggled via JS */
+  }
+  .number-chip{
+    display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+    padding:10px 12px;
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(16,185,129,.14), rgba(56,189,248,.10));
+    border: 1px solid rgba(16,185,129,.35);
+  }
+  .num-text{
+    font-size:20px;line-height:1.1;font-weight:800;letter-spacing:.08em;
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color:#e5fff4;
+    text-shadow: 0 0 18px rgba(16,185,129,.25);
+    word-break: break-all;
+  }
+  .btn-copy{
+    padding:8px 10px;border-radius:10px;font-weight:700;font-size:11px;
+    background: rgba(16,185,129,.15); color:#a7f3d0; border:1px solid rgba(16,185,129,.35);
+  }
+  .btn-copy:hover{ background: rgba(16,185,129,.25); }
+</style>
+
+<!-- ========== KPI STRIP ========== -->
+<section class="glass rounded-2xl p-3 sm:p-4 shadow-glass mt-6">
+  <div class="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+    <!-- Total déclarations -->
+    <article class="group relative w-full rounded-xl p-3 sm:p-4 text-left bg-white/5 hover:bg-white/10 border border-white/10 transition">
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="text-[11px] uppercase tracking-wider text-white/70 truncate">
+          Total déclarations
+        </div>
+        <span class="inline-flex items-center justify-center h-7 px-2 rounded-full bg-primary/15 text-[11px] text-primary font-semibold">
+          Journal
+        </span>
+      </div>
+      <div class="mt-1 flex items-end justify-between gap-3">
+        <div class="text-2xl font-extrabold tabular-nums" data-kpi-count="{{ total_count|default:0 }}">0</div>
+        <div class="h-9 w-9 rounded-full bg-primary/15 grid place-items-center text-primary">
+          <i class="fas fa-list-ul text-xs"></i>
+        </div>
+      </div>
+      <p class="mt-2 text-[11px] text-white/65">
+        Toutes les cargaisons enregistrées dans le journal.
+      </p>
+    </article>
+
+    <!-- Autorisées -->
+    <article class="group relative w-full rounded-xl p-3 sm:p-4 text-left bg-white/5 hover:bg-white/10 border border-white/10 transition">
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="text-[11px] uppercase tracking-wider text-white/70 truncate">
+          Autorisées
+        </div>
+        <span class="inline-flex items-center justify-center h-7 px-2 rounded-full bg-emerald-500/15 text-[11px] text-emerald-300 font-semibold">
+          # réquisition saisi
+        </span>
+      </div>
+      <div class="mt-1 flex items-end justify-between gap-3">
+        <div class="text-2xl font-extrabold tabular-nums" data-kpi-count="{{ authorized_count|default:0 }}">0</div>
+        <div class="h-9 w-9 rounded-full bg-emerald-500/15 grid place-items-center text-emerald-300">
+          <i class="fas fa-check-circle text-xs"></i>
+        </div>
+      </div>
+      <p class="mt-2 text-[11px] text-white/65">
+        Cargaisons pour lesquelles un numéro de réquisition est présent.
+      </p>
+    </article>
+
+    <!-- En attente -->
+    <article class="group relative w-full rounded-xl p-3 sm:p-4 text-left bg-white/5 hover:bg-white/10 border border-white/10 transition">
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="text-[11px] uppercase tracking-wider text-white/70 truncate">
+          En attente
+        </div>
+        <span class="inline-flex items-center justify-center h-7 px-2 rounded-full bg-amber-400/15 text-[11px] text-amber-200 font-semibold">
+          À traiter
+        </span>
+      </div>
+      <div class="mt-1 flex items-end justify-between gap-3">
+        <div class="text-2xl font-extrabold tabular-nums" data-kpi-count="{{ pending_count|default:0 }}">0</div>
+        <div class="h-9 w-9 rounded-full bg-amber-400/15 grid place-items-center text-amber-200">
+          <i class="fas fa-hourglass-half text-xs"></i>
+        </div>
+      </div>
+      <p class="mt-2 text-[11px] text-white/65">
+        Cargaisons sans numéro de réquisition (en attente d’autorisation).
+      </p>
+    </article>
+
+    <!-- Volume total -->
+    <article class="group relative w-full rounded-xl p-3 sm:p-4 text-left bg-white/5 hover:bg-white/10 border border-white/10 transition">
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="text-[11px] uppercase tracking-wider text-white/70 truncate">
+          Volume total déclaré
+        </div>
+        <span class="inline-flex items-center justify-center h-7 px-2 rounded-full bg-cyan-400/15 text-[11px] text-cyan-200 font-semibold">
+          m³
+        </span>
+      </div>
+      <div class="mt-1 flex items-end justify-between gap-3">
+        <div class="text-2xl font-extrabold tabular-nums" data-kpi-count="{{ total_volume|default:0 }}">0</div>
+        <div class="h-9 w-9 rounded-full bg-cyan-400/15 grid place-items-center text-cyan-200">
+          <i class="fas fa-tachometer-alt text-xs"></i>
+        </div>
+      </div>
+      <p class="mt-2 text-[11px] text-white/65">
+        Somme des volumes déclarés pour toutes les lignes du journal.
+      </p>
+    </article>
+  </div>
+</section>
 
 
-{% block extra_js%}
-    <style>
-    @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
-    .loading-spinner {
-      border: 4px solid rgba(0, 0, 0, 0.3);
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 2s linear infinite;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      margin-left: -20px;
-      margin-top: -20px;
-      z-index: 9999;
-    }
-    </style>
+<section class="glass rounded-2xl shadow-glass mt-6">
+  <!-- Header -->
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-5 py-3 border-b border-white/10">
+    <div>
+      <h2 class="text-base sm:text-lg font-semibold flex items-center gap-2">
+        <svg class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M3 5h18M3 12h18M3 19h18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Journal des déclarations brutes
+      </h2>
+      <p class="text-xs sm:text-sm text-white/70">
+        Visualisation et autorisation des cargaisons déclarées.
+      </p>
+    </div>
 
-{% endblock %}
+    <div class="flex items-center gap-2">
+    </div>
+  </header>
 
+  <!-- Filters + Table + Overlay -->
+  <div class="px-3 sm:px-4 pb-4">
+    <!-- Search toolbar -->
+    <div class="mb-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+      <input id="f-q" type="text" placeholder="Recherche globale" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input id="f-fournisseur" type="text" placeholder="Fournisseur" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input id="f-entrepot" type="text" placeholder="Entrepôt" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input id="f-produit" type="text" placeholder="Produit" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input id="f-immat" type="text" placeholder="Immatriculation" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input id="f-declaration" type="text" placeholder="# Déclaration" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <input id="f-numreq" type="text" placeholder="# Réquisition" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      <div class="flex items-center gap-2">
+        <input id="f-date-d" type="date" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-full" />
+        <span class="text-white/60 text-xs">→</span>
+        <input id="f-date-f" type="date" class="px-2 py-1.5 rounded bg-white/10 border border-white/10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-full" />
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-search" type="button" class="px-3 py-1.5 rounded bg-primary/80 hover:bg-primary text-white text-xs sm:text-sm">Rechercher</button>
+        <button id="btn-reset" type="button" class="px-3 py-1.5 rounded bg-white/10 hover:bg-white/15 text-white text-xs sm:text-sm">Réinitialiser</button>
+      </div>
+    </div>
+    <div id="data-table-wrapper" class="relative overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
+      <!-- Overlay while loading -->
+      <div id="table-loading-overlay" class="table-loading-overlay">
+        <div class="flex flex-col items-center gap-3">
+          <div class="loading-spinner"></div>
+          <p class="text-xs text-white/70">Chargement des données…</p>
+        </div>
+      </div>
 
-{% block content %}
-<div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-<table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-        <tr>
-            <th>DATE ENTREE</th>
-            <th>FOURNISSEUR</th>
-            <th>ENTREPOT</th>
-            <th>PRODUIT</th>
-            <th>VOL.DECL.</th>
-            <th>IMMATRICULATION</th>
-            <th>#.DECLARATION</th>
-            <th>#.REQUISITION</th>
-            <th>SAISIE REF.REQ.</th> <!-- New column header -->
-        </tr>
-    </thead>
-</table>
+      <table id="data-table" class="min-w-full text-sm text-left text-white/80">
+        <thead class="bg-white/10 text-[11px] uppercase tracking-wide text-white/70">
+          <tr>
+            <th class="px-3 py-2 whitespace-nowrap">Date entrée</th>
+            <th class="px-3 py-2 whitespace-nowrap">Fournisseur</th>
+            <th class="px-3 py-2 whitespace-nowrap">Entrepôt</th>
+            <th class="px-3 py-2 whitespace-nowrap">Produit</th>
+            <th class="px-3 py-2 whitespace-nowrap">Vol. déclaré</th>
+            <th class="px-3 py-2 whitespace-nowrap">Immatriculation</th>
+            <th class="px-3 py-2 whitespace-nowrap"># Déclaration</th>
+            <th class="px-3 py-2 whitespace-nowrap"># Réquisition</th>
+            <th class="px-3 py-2 whitespace-nowrap">Saisie réf. requ.</th>
+          </tr>
+        </thead>
+        <tbody id="data-table-body" class="divide-y divide-white/5">
+          <!-- Rempli en JS -->
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div id="table-pagination" class="flex items-center justify-between px-3 py-2 border-t border-white/10 text-xs sm:text-sm text-white/70">
+        <div class="hidden sm:block">Affiche 15 enregistrements par page</div>
+        <div class="flex items-center gap-2">
+          <button id="btn-first" type="button" class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40" aria-label="Première page">«</button>
+          <button id="btn-prev" type="button" class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40" aria-label="Page précédente">‹</button>
+          <span id="page-info" class="mx-2 select-none">Page 1 / 1</span>
+          <button id="btn-next" type="button" class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40" aria-label="Page suivante">›</button>
+          <button id="btn-last" type="button" class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40" aria-label="Dernière page">»</button>
+        </div>
+      </div>
+
+      <div id="data-table-empty" class="hidden text-xs sm:text-sm text-white/60 text-center py-4">
+        Aucune donnée à afficher.
+      </div>
+
+      <div id="data-table-error" class="hidden text-xs sm:text-sm text-rose-300 text-center py-4">
+        Une erreur est survenue lors du chargement des données.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Global App Modal -->
+<div id="app-modal-overlay" class="app-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="app-modal-title" aria-hidden="true">
+  <div class="app-modal" role="document">
+    <div class="app-modal-header">
+      <div class="flex items-center gap-2">
+        <span id="app-modal-icon" class="h-5 w-5 inline-flex items-center justify-center"></span>
+        <h3 id="app-modal-title" class="app-modal-title">Notification</h3>
+      </div>
+      <button id="app-modal-close-x" class="btn-modal btn-modal-secondary" aria-label="Fermer">×</button>
+    </div>
+    <div class="app-modal-body">
+      <div id="app-modal-message">—</div>
+      <!-- Highlighted number (dossier) -->
+      <div id="app-modal-number" class="number-highlight">
+        <div class="mb-2 text-xs text-white/70">NUM.DOSSIER</div>
+        <div class="number-chip">
+          <div class="num-text" id="app-modal-number-text">—</div>
+          <button type="button" id="btn-copy-number" class="btn-copy" title="Copier">Copier</button>
+        </div>
+      </div>
+    </div>
+    <div class="app-modal-footer">
+      <button id="app-modal-close" class="btn-modal btn-modal-primary">OK</button>
+    </div>
+  </div>
+  <div tabindex="0"></div>
+  <!-- focus trap end -->
+  <div tabindex="0"></div>
 </div>
 
-<!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
 <script>
-    const csrfToken = '{{ csrf_token }}';
+  const csrfToken = '{{ csrf_token }}';
 
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            processing: false,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'responseAffichageTableau' %}',
-                type: 'GET',
-                // Show the loading spinner during DataTable processing
-                // Show the loading spinner during DataTable processing
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
-        },
-            columns: [
-                { data: 'dateheurecargaison__date' },
-                { data: 'importateur__nomimportateur' },
-                { data: 'entrepot__nomentrepot' },
-                { data: 'produit__nomproduit' },
-                { data: 'volume' },
-                { data: 'immatriculation' },
-                { data: 'declaration' },
-                { data: 'numreq' },
-                { // New column configuration
-                    data: 'idcargaison',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
+  const $  = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-                        const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +
-                            '<input type="text" class="json-input" id="input-' + data + '">';
+  // ---------------- KPI count-up animation ----------------
+  document.addEventListener('DOMContentLoaded', () => {
+    const els = $$('[data-kpi-count]');
+    const ease = t => 1 - Math.pow(1 - t, 3); // easeOutCubic
 
-                        // Include a button to submit the JSON data for the row
-                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">AUTORISER</button>';
-
-                        return jsonInput + submitButton;
-                    }
-                }
-            ],
-            // Optional: Add buttons for exporting to Excel
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'excelHtml5',
-                    text: 'Export to Excel',
-                    filename: 'rapport_brut',
-                    exportOptions: {
-                        modifier: {
-                            search: 'none'
-                        }
-                    },
-                    action: function (e, dt, node, config) {
-                        // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'exportBrutJournalier' %}?export=excel';
-                    }
-                }
-            ],
-        });
-
-
-        // Handle form submission on button click
-        $('#data-table').on('click', '.btn-warning', function () {
-            const rowId = $(this).data('row-id');
-            const jsonData = $('#input-' + rowId).val();
-            const idcargaison = rowId;
-
-            // Show the loading icon while waiting for the response
-            $('#loading-icon').show();
-
-            // Include 'idcargaison' in the JSON data to send to the server
-            const dataToSend = {
-                idcargaison: idcargaison,
-                jsonData: jsonData // Directly use the JSON data typed in the input field
-            };
-
-            console.log(dataToSend);
-
-            // Send the JSON data to the URL using AJAX
-            $.ajax({
-                url: "{% url 'numreq' %}", // Replace with your actual URL
-                type: 'POST',
-                data: JSON.stringify(dataToSend), // Send as JSON string
-                contentType: 'application/json', // Set content type to JSON
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the success response here, if needed
-                    console.log('Data submitted successfully.');
-                    var num = response.num;
-                    alert("NUM.DOSSIER: " + num);
-                    $('#loading-icon').hide();
-                    dataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle the error response here, if needed
-                    console.error('Error submitting data:', error);
-                    // Hide the loading icon after receiving the response
-                    $('#loading-icon').hide();
-                    dataTable.ajax.reload();
-                }
-            });
-        });
+    els.forEach(el => {
+      const target = Number(el.getAttribute('data-kpi-count')) || 0;
+      const dur = 900;
+      let start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / dur, 1);
+        el.textContent = Math.floor(ease(p) * target).toLocaleString('fr-FR');
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
     });
+  });
+
+  // ---------------- Table + filters + pagination ----------------
+  document.addEventListener('DOMContentLoaded', () => {
+    const tbody   = $('#data-table-body');
+    const overlay = $('#table-loading-overlay');
+    const emptyEl = $('#data-table-empty');
+    const errorEl = $('#data-table-error');
+    // Pagination elements
+    const btnFirst = $('#btn-first');
+    const btnPrev  = $('#btn-prev');
+    const btnNext  = $('#btn-next');
+    const btnLast  = $('#btn-last');
+    const pageInfo = $('#page-info');
+
+    const PAGE_SIZE = 15; // Fixed page size server-side
+    let currentPage = 1;  // 1-based
+    let totalPages = 1;
+    let totalRecords = 0;
+
+    // Filter elements
+    const fq   = $('#f-q');
+    const ff   = $('#f-fournisseur');
+    const fe   = $('#f-entrepot');
+    const fp   = $('#f-produit');
+    const fi   = $('#f-immat');
+    const fd   = $('#f-declaration');
+    const fnr  = $('#f-numreq');
+    const fdd  = $('#f-date-d');
+    const fdf  = $('#f-date-f');
+    const btnSearch = $('#btn-search');
+    const btnReset  = $('#btn-reset');
+
+    // ---- Modal helpers ----
+    const modalOverlay = $('#app-modal-overlay');
+    const modalTitle = $('#app-modal-title');
+    const modalMsg = $('#app-modal-message');
+    const modalIcon = $('#app-modal-icon');
+    const modalClose = $('#app-modal-close');
+    const modalCloseX = $('#app-modal-close-x');
+    const modalNumWrap = $('#app-modal-number');
+    const modalNumText = $('#app-modal-number-text');
+    const btnCopyNum = $('#btn-copy-number');
+
+    function openModal({ title = 'Notification', message = '', variant = 'info', number = null } = {}){
+      if (modalTitle) modalTitle.textContent = title;
+      if (modalMsg) modalMsg.innerHTML = message;
+      // number highlight
+      if (modalNumWrap) {
+        if (number) {
+          modalNumText && (modalNumText.textContent = String(number));
+          modalNumWrap.style.display = 'block';
+        } else {
+          modalNumWrap.style.display = 'none';
+        }
+      }
+      if (modalIcon){
+        // Set small icon based on variant
+        let color = '#60a5fa'; // info
+        if (variant === 'success') color = '#34d399';
+        else if (variant === 'error') color = '#f43f5e';
+        else if (variant === 'warning') color = '#f59e0b';
+        modalIcon.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>`;
+      }
+      if (modalOverlay){
+        modalOverlay.style.display = 'flex';
+        modalOverlay.setAttribute('aria-hidden','false');
+      }
+    }
+    function closeModal(){
+      if (modalOverlay){
+        modalOverlay.style.display = 'none';
+        modalOverlay.setAttribute('aria-hidden','true');
+      }
+    }
+    modalClose?.addEventListener('click', closeModal);
+    modalCloseX?.addEventListener('click', closeModal);
+    modalOverlay?.addEventListener('click', (ev) => {
+      if (ev.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    // Copy to clipboard for number
+    btnCopyNum?.addEventListener('click', async () => {
+      try {
+        const txt = modalNumText?.textContent?.trim();
+        if (!txt) return;
+        await navigator.clipboard.writeText(txt);
+        // tiny feedback
+        btnCopyNum.textContent = 'Copié';
+        setTimeout(() => { btnCopyNum.textContent = 'Copier'; }, 1200);
+      } catch (_) {}
+    });
+
+    function showOverlay()  { if (overlay) overlay.style.display = 'flex'; }
+    function hideOverlay()  { if (overlay) overlay.style.display = 'none'; }
+    function showEmpty(msg) {
+      if (emptyEl) {
+        emptyEl.textContent = msg || 'Aucune donnée à afficher.';
+        emptyEl.classList.remove('hidden');
+      }
+    }
+    function hideEmpty()    { emptyEl && emptyEl.classList.add('hidden'); }
+    function showError(msg) {
+      if (errorEl) {
+        if (msg) errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      }
+    }
+    function hideError()    { errorEl && errorEl.classList.add('hidden'); }
+
+    function fmtNumber(v) {
+      const n = Number(v);
+      if (isNaN(n)) return v ?? '—';
+      return n.toLocaleString('fr-FR');
+    }
+
+    function updatePaginationUI() {
+      const safeTotal = Math.max(1, totalPages);
+      const safePage = Math.min(Math.max(1, currentPage), safeTotal);
+      if (pageInfo) pageInfo.textContent = `Page ${safePage} / ${safeTotal}`;
+      const atStart = safePage <= 1;
+      const atEnd = safePage >= safeTotal;
+      if (btnFirst) btnFirst.disabled = atStart;
+      if (btnPrev)  btnPrev.disabled  = atStart;
+      if (btnNext)  btnNext.disabled  = atEnd;
+      if (btnLast)  btnLast.disabled  = atEnd;
+    }
+
+    function renderRows(rows) {
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!rows || rows.length === 0) {
+        showEmpty();
+        return;
+      }
+      hideEmpty();
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-white/5 transition";
+        const id = row.idcargaison;
+        tr.innerHTML = `
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.dateheurecargaison__date || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.importateur__nomimportateur || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.entrepot__nomentrepot || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.produit__nomproduit || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${fmtNumber(row.volume)}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.immatriculation || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.declaration || '—'}
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
+              ${row.numreq || '—'}
+            </td>
+            <td class="px-3 py-2 text-xs sm:text-sm">
+              <div class="flex items-center gap-2">
+                <input type="text"
+                       class="json-input w-full max-w-[160px] px-2 py-1 rounded-md bg-slate-900/40 border border-white/10
+                              text-xs text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                       placeholder="# Réf. requ."
+                       data-input-id="${id}">
+                <button type="button"
+                        class="btn-autoriser inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold
+                               bg-gradient-to-r from-emerald-400 to-emerald-500 text-slate-900 hover:shadow-glassHover
+                               transition"
+                        data-row-id="${id}">
+                  Autoriser
+                </button>
+              </div>
+            </td>
+          `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function collectParams(page = 1) {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('per_page', String(PAGE_SIZE));
+      if (fq?.value)  params.set('q', fq.value.trim());
+      if (ff?.value)  params.set('fournisseur', ff.value.trim());
+      if (fe?.value)  params.set('entrepot', fe.value.trim());
+      if (fp?.value)  params.set('produit', fp.value.trim());
+      if (fi?.value)  params.set('immatriculation', fi.value.trim());
+      if (fd?.value)  params.set('declaration', fd.value.trim());
+      if (fnr?.value) params.set('numreq', fnr.value.trim());
+      if (fdd?.value) params.set('date_d', fdd.value);
+      if (fdf?.value) params.set('date_f', fdf.value);
+      return params;
+    }
+
+    async function loadTable(page = 1) {
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      hideEmpty();
+      hideError();
+      showOverlay();
+
+      try {
+        const params = collectParams(page);
+        const res = await fetch(`{% url 'responseAffichageTableau' %}?${params.toString()}` , {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          cache: 'no-cache'
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        const json = await res.json();
+        const rows = json.data || json.results || json.items || [];
+        totalPages   = json.total_pages || 1;
+        totalRecords = json.total || rows.length;
+        currentPage  = json.page || page || 1;
+
+        if (!rows.length) {
+          showEmpty();
+          updatePaginationUI();
+          return;
+        }
+
+        renderRows(rows);
+        updatePaginationUI();
+      } catch (e) {
+        console.error('Erreur chargement tableau:', e);
+        showError("Erreur de chargement des données.");
+      } finally {
+        hideOverlay();
+      }
+    }
+
+    // Autoriser handler (event delegation)
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.btn-autoriser');
+      if (!btn) return;
+
+      const rowId = btn.getAttribute('data-row-id');
+      if (!rowId) return;
+
+      const input = document.querySelector(`input[data-input-id="${rowId}"]`);
+      const jsonData = input ? input.value : '';
+
+      if (!jsonData) {
+        openModal({
+          title: 'Référence requise',
+          message: "Veuillez saisir la référence de réquisition avant d'autoriser.",
+          variant: 'warning'
+        });
+        return;
+      }
+
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-wait');
+
+      const payload = {
+        idcargaison: rowId,
+        jsonData: jsonData
+      };
+
+      try {
+        const res = await fetch("{% url 'numreq' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        if (data && data.num) {
+          openModal({
+            title: 'Autorisation réussie',
+            message: 'Réquisition enregistrée avec succès.',
+            variant: 'success',
+            number: data.num
+          });
+        } else {
+          openModal({
+            title: 'Succès',
+            message: 'Données enregistrées avec succès.',
+            variant: 'success'
+          });
+        }
+
+        await loadTable(currentPage);
+      } catch (err) {
+        console.error('Erreur soumission numreq:', err);
+        openModal({
+          title: 'Erreur',
+          message: "Une erreur est survenue lors de l’enregistrement.",
+          variant: 'error'
+        });
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-wait');
+      }
+    });
+
+    // Pagination controls
+    btnFirst?.addEventListener('click', () => { if (currentPage !== 1) loadTable(1); });
+    btnPrev?.addEventListener('click',  () => { if (currentPage > 1) loadTable(currentPage - 1); });
+    btnNext?.addEventListener('click',  () => { if (currentPage < totalPages) loadTable(currentPage + 1); });
+    btnLast?.addEventListener('click',  () => { if (currentPage !== totalPages) loadTable(totalPages); });
+
+    // Search handlers
+    btnSearch?.addEventListener('click', () => loadTable(1));
+    btnReset?.addEventListener('click', () => {
+      [fq, ff, fe, fp, fi, fd, fnr, fdd, fdf].forEach(el => { if (el) el.value = ''; });
+      loadTable(1);
+    });
+    function debounce(fn, ms=400) {
+      let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null,args), ms); };
+    }
+    const debouncedSearch = debounce(() => loadTable(1), 500);
+    [fq, ff, fe, fp, fi, fd, fnr].forEach(el => el && el.addEventListener('input', debouncedSearch));
+    [fdd, fdf].forEach(el => el && el.addEventListener('change', () => loadTable(1)));
+
+    // Initial load
+    loadTable(1);
+  });
 </script>
 
-
-
 {% endblock %}
-
-
