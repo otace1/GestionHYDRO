@@ -427,155 +427,8 @@
                     </div>
                 </form>
 
+            {% block content %}{% endblock %}
 
-                <!-- Main content -->
-                <div class="row">
-                    <div class="col-md-12">
-
-                        <div class="card">
-                            <div class="card-header" style="background-color: darkgreen">
-                                <h1 class="card-title" style="color: white"><b>RAPPORT(S) D'ACTIVITE(S)</b></h1>
-                                {#                                <div class="card-tools">#}
-                                {#                                    {% block export %}{% endblock %}#}
-                                {#                                </div>#}
-                            </div>
-                            <!-- Modal block is defined once below -->
-
-                            <div class="card-body">
-                                {% block modal %}
-                                <!-- Filters Modal -->
-                                <div class="modal fade" id="modal-default" tabindex="-1" aria-hidden="true">
-                                  <div class="modal-dialog modal-lg">
-                                    <div class="modal-content">
-                                      <div class="modal-header">
-                                        <h5 class="modal-title"><b>Filtres avancés</b></h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                      </div>
-                                      <div class="modal-body">
-                                        <div class="container-fluid">
-                                          <div class="row g-3">
-                                            <div class="col-md-3">
-                                              <label class="form-label">Date début</label>
-                                              <input type="date" id="flt-date-from" class="form-control" />
-                                            </div>
-                                            <div class="col-md-3">
-                                              <label class="form-label">Date fin</label>
-                                              <input type="date" id="flt-date-to" class="form-control" />
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Frontière</label>
-                                              <select id="flt-frontiere" class="form-control">
-                                                <option value="">Toutes</option>
-                                                {% if frontieres %}
-                                                  {% for f in frontieres %}
-                                                    <option value="{{ f.nomville }}">{{ f.nomville }}</option>
-                                                  {% endfor %}
-                                                {% endif %}
-                                              </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Fournisseur</label>
-                                              <select id="flt-importateur" class="form-control">
-                                                <option value="">Tous</option>
-                                                {% if fournisseurs %}
-                                                  {% for imp in fournisseurs %}
-                                                    <option value="{{ imp.nomimportateur }}">{{ imp.nomimportateur }}</option>
-                                                  {% endfor %}
-                                                {% endif %}
-                                              </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Entrepôt</label>
-                                              <select id="flt-entrepot" class="form-control">
-                                                <option value="">Tous</option>
-                                                {% if entrepots %}
-                                                  {% for e in entrepots %}
-                                                    <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
-                                                  {% endfor %}
-                                                {% endif %}
-                                              </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Produit</label>
-                                              <select id="flt-produit" class="form-control">
-                                                <option value="">Tous</option>
-                                                {% if produits %}
-                                                  {% for p in produits %}
-                                                    <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
-                                                  {% endfor %}
-                                                {% endif %}
-                                              </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Immatriculation</label>
-                                              <input type="text" id="flt-immat" class="form-control" placeholder="Ex: ABC-123" />
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Déclaration</label>
-                                              <input type="text" id="flt-declaration" class="form-control" placeholder="# Déclaration" />
-                                            </div>
-                                            <div class="col-md-6">
-                                              <label class="form-label">Dossier</label>
-                                              <input type="text" id="flt-numdos" class="form-control" placeholder="# Dossier" />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" id="btn-reset-filters">Réinitialiser</button>
-                                        <button type="button" class="btn btn-primary" id="btn-apply-filters" data-bs-dismiss="modal">Appliquer</button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                {% endblock %}
-
-                                {% block content %}
-                                <div id="rapport-table-wrapper" style="position: relative; min-height: 120px;">
-                                    <div id="rapport-loading" style="display:none; position:absolute; top: 40px; left: 50%; transform: translateX(-50%);">
-                                        <div class="spinner-border text-primary" role="status">
-                                          <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table id="rapport-table" class="table table-bordered table-striped" style="width:100%">
-                                            <thead>
-                                            <tr>
-                                                <th>DATE ENTREE</th>
-                                                <th>FRONTIERE</th>
-                                                <th>FOURNISSEUR</th>
-                                                <th>ENTREPOT</th>
-                                                <th>PRODUIT</th>
-                                                <th>VOL.DECL.</th>
-                                                <th>IMMATR.</th>
-                                                <th>#.DECLARATION</th>
-                                                <th>#.DOSSIER</th>
-                                                <th>DATE REQUISITION</th>
-                                                <th>DATE ECHANTILLONNAGE</th>
-                                                <th>DATE RECEPTION LABO</th>
-                                                <th>DATE D'ANALYSE</th>
-                                                <th>DATE D'INSPECTION</th>
-                                                <th>DATE DE DECHARGEMENT</th>
-                                                <th>VOL JAUGE (GOV)</th>
-                                                <th>DENSITE @15</th>
-                                                <th>TEMPERATURE</th>
-                                                <th>VCF</th>
-                                                <th>MTA</th>
-                                                <th>MTV</th>
-                                                <th>GSV</th>
-                                            <th>ACTIONS</th>
-                                            </tr>
-                                            </thead>
-                                        </table>
-                                    </div>
-                                </div>
-                                {% endblock %}
-                                <!-- /.box-header -->
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
             </div>
 
             <!-- /.row -->
@@ -609,6 +462,12 @@
 
         {% block javascript %}
         // ---- Load dropdown options from backend endpoint and populate selects ----
+        // CSRF helper for POST requests
+        function getCookie(name) {
+            var value = "; " + document.cookie;
+            var parts = value.split("; " + name + "=");
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
         function populateSelect($select, items, currentVal) {
             try {
                 if (!$select || !$select.length) return;
@@ -723,31 +582,40 @@
             setFieldValue('#flt-numdos', f.numdos || '');
         })();
 
-        // Initialize DataTable for Rapport d'activités
-        var table = $('#rapport-table').DataTable({
-            // Enable classic numbered pagination with page size selector
-            lengthChange: true,
-            lengthMenu: [[15, 20, 50, 100], [15, 20, 50, 100]],
-            pageLength: 15,
-            paging: true,
-            pagingType: 'simple_numbers',
-            info: true,
-
+        // Initialize DataTable for Rapport d'activités (guard against double init)
+        function initRapportTable() {
+            if ($.fn.DataTable.isDataTable('#rapport-table')) {
+                // Already initialized – return existing instance
+                return $('#rapport-table').DataTable();
+            }
+            return $('#rapport-table').DataTable({
+            // Virtual scrolling for large datasets (faster than rendering big pages)
             processing: true,
             serverSide: true,
             deferRender: true,
-            responsive: true,
+            stateSave: true,
             searchDelay: 350,
             ordering: true,
-            stateSave: true,
-            // Remove virtual scroller to show standard pagination controls
-            // scrollY: '60vh',
-            // scroller: true,
+            info: true,
+            responsive: true,
+            // If some other script tried to init before, safely retrieve that instance
+            retrieve: true,
+            // Scroller settings
+            scrollY: '70vh',
+            scrollCollapse: true,
+            scroller: {
+                loadingIndicator: true,
+                displayBuffer: 12
+            },
+            // With scroller we hide classic paging controls
+            paging: true,
+            lengthChange: false,
+            pageLength: 100,
             // Use idcargaison as <tr id="..."> so our existing action handlers can resolve the row id
             rowId: 'idcargaison',
             ajax: {
                 url: "{% url 'responseRapportActivite' %}",
-                type: 'GET',
+                type: 'POST',
                 dataSrc: 'data',
                 data: function(d) {
                     // Attach advanced filters
@@ -761,7 +629,11 @@
                     d.declaration = $('#flt-declaration').val() || '';
                     d.numdos = $('#flt-numdos').val() || '';
                 },
-                beforeSend: function() { $('#rapport-loading').show(); },
+                beforeSend: function(xhr) {
+                    // Add CSRF token for POST
+                    try { xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken') || '{{ csrf_token }}'); } catch (e) {}
+                    $('#rapport-loading').show();
+                },
                 complete: function() { $('#rapport-loading').hide(); }
             },
             order: [[0, 'desc']], // default order by DATE ENTREE desc
@@ -904,7 +776,10 @@
                     }
                 }
             ]
-        });
+            });
+        }
+
+        var table = initRapportTable();
 
         // Make the top visible Export button trigger the same async flow
         (function bindVisibleExportButton(){
@@ -1114,9 +989,11 @@
         });
         
         // Mark computed columns as not orderable for consistency with backend
-        table.columns([16, 18, 22]).every(function(){
-            this.orderable(false);
-        });
+        if ($.fn.DataTable.isDataTable('#rapport-table')) {
+            table.columns([16, 18, 22]).every(function(){
+                this.orderable(false);
+            });
+        }
         {% endblock %}
 
     })

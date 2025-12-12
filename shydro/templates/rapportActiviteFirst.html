@@ -15,10 +15,7 @@
 #global-spinner {
   display: none; /* hidden by default */
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(255,255,255,0.6);
   z-index: 9999;
 }
@@ -33,22 +30,155 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  margin-left: -25px;
-  margin-top: -25px;
+  transform: translate(-50%, -50%);
 }
 </style>
 
-
-
-
-
 {% block content %}
 
-{#    <!-- GLOBAL SPINNER (ONLY ONE) -->#}
-{#<div id="global-spinner">#}
-{#  <div class="loading-spinner"></div>#}
-{#</div>#}
+<!-- GLOBAL SPINNER (MUST EXIST IN HTML) -->
+<div id="global-spinner">
+  <div class="loading-spinner"></div>
+</div>
 
+<!-- Main content -->
+<div class="row">
+  <div class="col-md-12">
+
+    <div class="card">
+      <div class="card-header" style="background-color: darkgreen">
+        <h1 class="card-title" style="color: white"><b>RAPPORT(S) D'ACTIVITE(S)</b></h1>
+      </div>
+
+      <div class="card-body">
+
+        {% block modal %}
+        <!-- Filters Modal -->
+        <div class="modal fade" id="modal-default" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><b>Filtres avancés</b></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="container-fluid">
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <label class="form-label">Date début</label>
+                      <input type="date" id="flt-date-from" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Date fin</label>
+                      <input type="date" id="flt-date-to" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Frontière</label>
+                      <select id="flt-frontiere" class="form-control">
+                        <option value="">Toutes</option>
+                        {% if frontieres %}
+                          {% for f in frontieres %}
+                            <option value="{{ f.nomville }}">{{ f.nomville }}</option>
+                          {% endfor %}
+                        {% endif %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Fournisseur</label>
+                      <select id="flt-importateur" class="form-control">
+                        <option value="">Tous</option>
+                        {% if fournisseurs %}
+                          {% for imp in fournisseurs %}
+                            <option value="{{ imp.nomimportateur }}">{{ imp.nomimportateur }}</option>
+                          {% endfor %}
+                        {% endif %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Entrepôt</label>
+                      <select id="flt-entrepot" class="form-control">
+                        <option value="">Tous</option>
+                        {% if entrepots %}
+                          {% for e in entrepots %}
+                            <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
+                          {% endfor %}
+                        {% endif %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Produit</label>
+                      <select id="flt-produit" class="form-control">
+                        <option value="">Tous</option>
+                        {% if produits %}
+                          {% for p in produits %}
+                            <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
+                          {% endfor %}
+                        {% endif %}
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Immatriculation</label>
+                      <input type="text" id="flt-immat" class="form-control" placeholder="Ex: ABC-123" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Déclaration</label>
+                      <input type="text" id="flt-declaration" class="form-control" placeholder="# Déclaration" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Dossier</label>
+                      <input type="text" id="flt-numdos" class="form-control" placeholder="# Dossier" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btn-reset-filters">Réinitialiser</button>
+                <button type="button" class="btn btn-primary" id="btn-apply-filters" data-bs-dismiss="modal">Appliquer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endblock %}
+
+        <!-- TABLE -->
+        <div id="rapport-table-wrapper" style="position: relative; min-height: 120px;">
+          <div class="table-responsive">
+            <table id="rapport-table" class="table table-bordered table-striped" style="width:100%">
+              <thead>
+                <tr>
+                  <th>DATE ENTREE</th>
+                  <th>FRONTIERE</th>
+                  <th>FOURNISSEUR</th>
+                  <th>ENTREPOT</th>
+                  <th>PRODUIT</th>
+                  <th>VOL.DECL.</th>
+                  <th>IMMATR.</th>
+                  <th>#.DECLARATION</th>
+                  <th>#.DOSSIER</th>
+                  <th>DATE REQUISITION</th>
+                  <th>DATE ECHANTILLONNAGE</th>
+                  <th>DATE RECEPTION LABO</th>
+                  <th>DATE D'ANALYSE</th>
+                  <th>DATE D'INSPECTION</th>
+                  <th>DATE DE DECHARGEMENT</th>
+                  <th>VOL JAUGE (GOV)</th>
+                  <th>DENSITE @15</th>
+                  <th>TEMPERATURE</th>
+                  <th>VCF</th>
+                  <th>MTA</th>
+                  <th>MTV</th>
+                  <th>GSV</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
 
 {{ block.super }}
 
@@ -57,154 +187,276 @@ const csrfToken = '{{ csrf_token }}';
 
 // SHOW / HIDE GLOBAL SPINNER
 function showSpinner() {
-    document.getElementById("global-spinner").style.display = "block";
+  const el = document.getElementById("global-spinner");
+  if (el) el.style.display = "block";
 }
 function hideSpinner() {
-    document.getElementById("global-spinner").style.display = "none";
+  const el = document.getElementById("global-spinner");
+  if (el) el.style.display = "none";
 }
 
-// ----- EXISTING ACTIONS (just add showSpinner/hideSpinner) -----
+// -------------------------
+// DATATABLE INIT (SAFE - no reinit)
+// -------------------------
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.jQuery || !$.fn.DataTable) return;
 
-function confirmAction() {
-    event.preventDefault();
-    const row = event.target.closest('tr');
-    const rowId = row.getAttribute('id');
+  // ✅ Prevent warning: Cannot reinitialise DataTable
+  if ($.fn.DataTable.isDataTable('#rapport-table')) {
+    const existing = $('#rapport-table').DataTable();
+    existing.clear().destroy();
 
-    const confirmed = confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?');
-    if (!confirmed) return false;
+    // Remove DT-generated wrappers/classes
+    $('#rapport-table').removeClass('dataTable no-footer').removeAttr('role aria-describedby');
 
-    showSpinner();
+    // Rebuild header to be safe
+    $('#rapport-table').html(`
+      <thead>
+        <tr>
+          <th>DATE ENTREE</th>
+          <th>FRONTIERE</th>
+          <th>FOURNISSEUR</th>
+          <th>ENTREPOT</th>
+          <th>PRODUIT</th>
+          <th>VOL.DECL.</th>
+          <th>IMMATR.</th>
+          <th>#.DECLARATION</th>
+          <th>#.DOSSIER</th>
+          <th>DATE REQUISITION</th>
+          <th>DATE ECHANTILLONNAGE</th>
+          <th>DATE RECEPTION LABO</th>
+          <th>DATE D'ANALYSE</th>
+          <th>DATE D'INSPECTION</th>
+          <th>DATE DE DECHARGEMENT</th>
+          <th>VOL JAUGE (GOV)</th>
+          <th>DENSITE @15</th>
+          <th>TEMPERATURE</th>
+          <th>VCF</th>
+          <th>MTA</th>
+          <th>MTV</th>
+          <th>GSV</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+    `);
+  }
 
-    fetch('{% url "reInspecter" %}', {
-        method: 'POST',
-        body: JSON.stringify({ rowId }),
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-    })
-    .then(response => {
-        hideSpinner();
-        if (response.ok) {
-            alert('Cargaison renvoyée en inspection');
-            location.reload();
-        } else {
-            alert('Erreur lors de la réinspection.');
-            location.reload();
+  const dt = $('#rapport-table').DataTable({
+    serverSide: true,
+    processing: true,
+    deferRender: true,
+    pageLength: 20,
+    lengthMenu: [10, 20],
+    searchDelay: 500,
+    order: [[0, 'desc']],
+    ajax: {
+      url: "{% url 'responseAffichageTableau' %}",
+      type: "GET",
+      data: function (d) {
+        d.flt_date_from = document.getElementById('flt-date-from')?.value || '';
+        d.flt_date_to = document.getElementById('flt-date-to')?.value || '';
+        d.flt_frontiere = document.getElementById('flt-frontiere')?.value || '';
+        d.flt_importateur = document.getElementById('flt-importateur')?.value || '';
+        d.flt_entrepot = document.getElementById('flt-entrepot')?.value || '';
+        d.flt_produit = document.getElementById('flt-produit')?.value || '';
+        d.flt_immat = document.getElementById('flt-immat')?.value || '';
+        d.flt_declaration = document.getElementById('flt-declaration')?.value || '';
+        d.flt_numdos = document.getElementById('flt-numdos')?.value || '';
+      },
+      beforeSend: showSpinner,
+      complete: hideSpinner,
+      error: hideSpinner
+    },
+    columns: [
+      { data: 'date_entree_display', defaultContent: '' },
+      { data: 'frontiere__nomville', defaultContent: '' },
+      { data: 'importateur__nomimportateur', defaultContent: '' },
+      { data: 'entrepot__nomentrepot', defaultContent: '' },
+      { data: 'produit__nomproduit', defaultContent: '' },
+      { data: 'volume', defaultContent: '' },
+      { data: 'immatriculation', defaultContent: '' },
+      { data: 'declaration', defaultContent: '' },
+      { data: 'numreq', defaultContent: '' },
+      { data: 'date_requisition_display', defaultContent: '' },
+      { data: 'date_echantillonnage_display', defaultContent: '' },
+      { data: 'date_reception_labo_display', defaultContent: '' },
+      { data: 'date_analyse_display', defaultContent: '' },
+      { data: 'date_inspection_display', defaultContent: '' },
+      { data: 'date_dechargement_display', defaultContent: '' },
+      { data: 'vol_jauge_gov', defaultContent: '' },
+      { data: 'densite_15', defaultContent: '' },
+      { data: 'temperature', defaultContent: '' },
+      { data: 'vcf', defaultContent: '' },
+      { data: 'mta', defaultContent: '' },
+      { data: 'mtv', defaultContent: '' },
+      { data: 'gsv', defaultContent: '' },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function (data, type, row) {
+          const id = row.idcargaison || '';
+          return `
+            <div class="btn-group btn-group-sm" role="group">
+              <button class="btn btn-warning" onclick="return confirmAction('${id}')">Réinspecter</button>
+              <button class="btn btn-primary" onclick="return printRappEchantillonnage('${id}')">Rapp. Éch.</button>
+              <button class="btn btn-info" onclick="return printRappInspection('${id}')">Rapp. Insp.</button>
+              <button class="btn btn-secondary" onclick="return printDossimport('${id}')">Dossier</button>
+            </div>
+          `;
         }
-    })
-    .catch(error => {
-        hideSpinner();
-        console.error(error);
-    });
+      }
+    ],
+    drawCallback: function () { hideSpinner(); }
+  });
 
-    return false;
+  // ✅ Avoid binding handlers multiple times
+  const btnApply = document.getElementById('btn-apply-filters');
+  if (btnApply && !btnApply.dataset.bound) {
+    btnApply.dataset.bound = "1";
+    btnApply.addEventListener('click', function () {
+      dt.ajax.reload(null, true);
+    });
+  }
+
+  const btnReset = document.getElementById('btn-reset-filters');
+  if (btnReset && !btnReset.dataset.bound) {
+    btnReset.dataset.bound = "1";
+    btnReset.addEventListener('click', function () {
+      const ids = [
+        'flt-date-from','flt-date-to','flt-frontiere','flt-importateur','flt-entrepot','flt-produit',
+        'flt-immat','flt-declaration','flt-numdos'
+      ];
+      ids.forEach(i => {
+        const el = document.getElementById(i);
+        if (!el) return;
+        el.value = '';
+      });
+      dt.ajax.reload(null, true);
+    });
+  }
+});
+
+// -------------------------
+// ACTIONS
+// -------------------------
+function confirmAction(rowId) {
+  if (!confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?')) return false;
+
+  showSpinner();
+  fetch('{% url "reInspecter" %}', {
+    method: 'POST',
+    body: JSON.stringify({ rowId }),
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+  })
+  .then(response => {
+    hideSpinner();
+    if (response.ok) {
+      alert('Cargaison renvoyée en inspection');
+      if ($.fn.DataTable.isDataTable('#rapport-table')) {
+        $('#rapport-table').DataTable().ajax.reload(null, false);
+      }
+    } else {
+      alert('Erreur lors de la réinspection.');
+    }
+  })
+  .catch(error => {
+    hideSpinner();
+    console.error(error);
+  });
+
+  return false;
 }
 
+function printRappEchantillonnage(rowId) {
+  if (!confirm("Afficher le rapport d'Echantillonnage?")) return false;
 
-function printRappEchantillonnage() {
-    event.preventDefault();
-    const row = event.target.closest('tr');
-    const rowId = row.getAttribute('id');
+  showSpinner();
+  fetch('{% url "impressionRappEch" %}', {
+    method: 'POST',
+    body: JSON.stringify({ rowId }),
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+  })
+  .then(r => r.json())
+  .then(data => {
+    hideSpinner();
+    if (data.status === 'success') {
+      const byteChars = atob(data.pdf_base64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+      window.open(URL.createObjectURL(blob), '_blank');
+    } else {
+      alert("Éléments du rapport manquants.");
+    }
+  })
+  .catch(error => {
+    hideSpinner();
+    console.error(error);
+  });
 
-    if (!confirm("Afficher le rapport d'Echantillonnage?")) return false;
-
-    showSpinner();
-
-    fetch('{% url "impressionRappEch" %}', {
-        method: 'POST',
-        body: JSON.stringify({ rowId }),
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-    })
-    .then(r => r.json())
-    .then(data => {
-        hideSpinner();
-        if (data.status === 'success') {
-            const pdfBlob = new Blob([atob(data.pdf_base64)], { type: 'application/pdf' });
-            window.open(URL.createObjectURL(pdfBlob));
-            location.reload();
-        } else {
-            alert("Éléments du rapport manquants.");
-            location.reload();
-        }
-    })
-    .catch(error => {
-        hideSpinner();
-        console.error(error);
-    });
-
-    return false;
+  return false;
 }
 
+function printRappInspection(rowId) {
+  if (!confirm("Afficher le rapport d'Inspection?")) return false;
 
-function printRappInspection() {
-    event.preventDefault();
-    const row = event.target.closest('tr');
-    const rowId = row.getAttribute('id');
+  showSpinner();
+  fetch('{% url "impressionRappInsp" %}', {
+    method: 'POST',
+    body: JSON.stringify({ rowId }),
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+  })
+  .then(r => r.json())
+  .then(data => {
+    hideSpinner();
+    if (data.status === 'success') {
+      const byteChars = atob(data.pdf_base64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
+      window.open(URL.createObjectURL(blob), '_blank');
+    } else {
+      alert("Rapport d'inspection incomplet.");
+    }
+  })
+  .catch(error => {
+    hideSpinner();
+    console.error(error);
+  });
 
-    if (!confirm("Afficher le rapport d'Inspection?")) return false;
-
-    showSpinner();
-
-    fetch('{% url "impressionRappInsp" %}', {
-        method: 'POST',
-        body: JSON.stringify({ rowId }),
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-    })
-    .then(r => r.json())
-    .then(data => {
-        hideSpinner();
-        if (data.status === 'success') {
-            const pdfBlob = new Blob([atob(data.pdf_base64)], { type: 'application/pdf' });
-            window.open(URL.createObjectURL(pdfBlob));
-            location.reload();
-        } else {
-            alert("Rapport d'inspection incomplet.");
-            location.reload();
-        }
-    })
-    .catch(error => {
-        hideSpinner();
-        console.error(error);
-    });
-
-    return false;
+  return false;
 }
 
+function printDossimport(rowId) {
+  if (!confirm("Afficher les éléments du dossier?")) return false;
 
-function printDossimport() {
-    event.preventDefault();
-    const row = event.target.closest('tr');
-    const rowId = row.getAttribute('id');
-
-    if (!confirm("Afficher les éléments du dossier?")) return false;
-
-    showSpinner();
-
-    fetch('{% url "afficherDossImport" %}', {
-        method: 'POST',
-        body: JSON.stringify({ rowId }),
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-    })
-    .then(r => r.blob())
-    .then(blob => {
-        hideSpinner();
-        const url = URL.createObjectURL(blob);
-        const link = Object.assign(document.createElement('a'), {
-            href: url,
-            download: "file.pdf"
-        });
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        location.reload();
-    })
-    .catch(error => {
-        hideSpinner();
-        console.error(error);
-        alert("Erreur lors du téléchargement.");
+  showSpinner();
+  fetch('{% url "afficherDossImport" %}', {
+    method: 'POST',
+    body: JSON.stringify({ rowId }),
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+  })
+  .then(r => r.blob())
+  .then(blob => {
+    hideSpinner();
+    const url = URL.createObjectURL(blob);
+    const link = Object.assign(document.createElement('a'), {
+      href: url,
+      download: "file.pdf"
     });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  })
+  .catch(error => {
+    hideSpinner();
+    console.error(error);
+    alert("Erreur lors du téléchargement.");
+  });
 
-    return false;
+  return false;
 }
-
 </script>
 
 {% endblock %}

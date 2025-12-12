@@ -16,6 +16,7 @@ from django.forms import FloatField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from django_tables2.paginators import LazyPaginator
@@ -33,10 +34,13 @@ from .numact import num_cert_inspection
 from .numdossier import numDossier
 from .tables import *
 
+from django.core.cache import cache
+import hashlib
+
 
 # Class de gestion des codifacations des cargaisons
 class GestionCodification():
-    # Methode d'affichage du tableau pour la codification (Cargaison en attente de requisition)
+
     @login_required(login_url='login')
     def affichageTableau(request):
         user = request.user
@@ -44,22 +48,28 @@ class GestionCodification():
         role = user.role_id
 
         if role == 7 or role == 1 or role == 11:
-
-            current_year = date.today().year
-
             template = 'shydro.html'
 
-            e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                         entrepot__ville__affectationville__username_id=id).count()
-            # d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-            #                                       idcargaison__entrepot__ville__affectationville__username_id=id).count()
-            d = ImpressionResultat.objects.filter(idcargaison__etat="Conforme aux exigences",
-                                                  idcargaison__entrepot__ville__affectationville__username_id=id).count()
+            e = Cargaison.objects.filter(
+                etat="En attente d'echantillonage",
+                entrepot__ville__affectationville__username_id=id
+            ).count()
 
-            l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-                                         entrepot__ville__affectationville__username_id=id).count()
-            n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-                                                  isConforme=0, control=0).count()
+            d = ImpressionResultat.objects.filter(
+                idcargaison__etat="Conforme aux exigences",
+                idcargaison__entrepot__ville__affectationville__username_id=id
+            ).count()
+
+            l = Cargaison.objects.filter(
+                etat="Analyse Labo en cours",
+                entrepot__ville__affectationville__username_id=id
+            ).count()
+
+            n = ImpressionResultat.objects.filter(
+                idcargaison__entrepot__ville__affectationville__username_id=id,
+                isConforme=0, control=0
+            ).count()
+
             p = Entrepot_echantillon.objects.filter(
                 idcargaison__etat='Echantillonner',
                 idcargaison__entrepot__ville__affectationville__username_id=id
@@ -69,177 +79,135 @@ class GestionCodification():
                 entrepot__ville__affectationville__username_id=id
             ).count()
 
-            i = Cargaison.objects.filter(etatInspection=1,
-                                         entrepot__ville__affectationville__username_id=id).count()
+            i = Cargaison.objects.filter(
+                etatInspection=1,
+                entrepot__ville__affectationville__username_id=id
+            ).count()
 
-        context = {
-            'e': e,
-            'd': d,
-            'l': l,
-            'n': n,
-            'p': p,
-            'c': c,
-            'i': i,
-        }
-        return render(request, template, context)
+            context = {'e': e, 'd': d, 'l': l, 'n': n, 'p': p, 'c': c, 'i': i}
+            return render(request, template, context)
 
-        #     if 'search' in request.GET:
-        #         qs = request.GET['search']
-        #         if qs == "":
-        #             e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-        #                                          entrepot__ville__affectationville__username_id=id).count()
-        #             d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-        #                                                   idcargaison__entrepot__ville__affectationville__username_id=id).count()
-        #             # l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-        #             #                              entrepot__ville__affectationville__username_id=id).count()
-        #             l = LaboReception.objects.filter(idcargaison__idcargaison__etat="Analyse Labo en cours",
-        #                                               idcargaison__idcargaison_id__entrepot__ville__affectationville__username_id=user).count()
-        #             n = ImpressionResultat.objects.filter(
-        #                 idcargaison__entrepot__ville__affectationville__username_id=id,
-        #                 isConforme=0, control=1).count()
-        #             p = Entrepot_echantillon.objects.filter(
-        #                 idcargaison__etat='Echantillonner',
-        #                 idcargaison__entrepot__ville__affectationville__username_id=id
-        #             ).count()
-        #
-        #             c = Cargaison.objects.filter(
-        #                 entrepot__ville__affectationville__username_id=id
-        #             ).count()
-        #
-        #             i = Cargaison.objects.filter(etatInspection=1,
-        #                                          entrepot__ville__affectationville__username_id=id).count()
-        #
-        #             return render(request, 'shydro.html', {
-        #                 'e': e,
-        #                 'd': d,
-        #                 'l': l,
-        #                 'n': n,
-        #                 'p': p,
-        #                 'c': c,
-        #                 'i': i
-        #
-        #             })
-        #         else:
-        #             request.session['url'] = request.get_full_path()
-        #
-        #             e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-        #                                          entrepot__ville__affectationville__username_id=id).count()
-        #             d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-        #                                                   idcargaison__entrepot__ville__affectationville__username_id=id).count()
-        #             l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-        #                                          entrepot__ville__affectationville__username_id=id).count()
-        #             n = ImpressionResultat.objects.filter(
-        #                 idcargaison__entrepot__ville__affectationville__username_id=id,
-        #                 isConforme=0, control=1).count()
-        #             p = Entrepot_echantillon.objects.filter(
-        #                 idcargaison__etat='Echantillonner',
-        #                 idcargaison__entrepot__ville__affectationville__username_id=id
-        #             ).count()
-        #
-        #             c = Cargaison.objects.filter(
-        #                 entrepot__ville__affectationville__username_id=id
-        #             ).count()
-        #
-        #             i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
-        #                                          entrepot__ville__affectationville__username_id=id).count()
-        #
-        #             return render(request, 'shydro.html', {
-        #                 'e': e,
-        #                 'd': d,
-        #                 'l': l,
-        #                 'n': n,
-        #                 'p': p,
-        #                 'c': c,
-        #                 'i': i
-        #
-        #             })
-        #     else:
-        #         e = Cargaison.objects.filter(etat="En attente d'echantillonage",
-        #                                      entrepot__ville__affectationville__username_id=id).count()
-        #         d = ImpressionResultat.objects.filter(isConforme=1, idcargaison__etat="Conforme aux exigences",
-        #                                               idcargaison__entrepot__ville__affectationville__username_id=id).count()
-        #         l = Cargaison.objects.filter(etat="Analyse Labo en cours",
-        #                                      entrepot__ville__affectationville__username_id=id).count()
-        #         n = ImpressionResultat.objects.filter(idcargaison__entrepot__ville__affectationville__username_id=id,
-        #                                               isConforme=0, control=0).count()
-        #         p = Entrepot_echantillon.objects.filter(
-        #             idcargaison__etat='Echantillonner',
-        #             idcargaison__entrepot__ville__affectationville__username_id=id
-        #         ).count()
-        #
-        #         c = Cargaison.objects.filter(
-        #             entrepot__ville__affectationville__username_id=id
-        #         ).count()
-        #
-        #         i = Cargaison.objects.filter(inspection__dateinspection__isnull=True,
-        #                                      entrepot__ville__affectationville__username_id=id).count()
-        #
-        #         return render(request, 'shydro.html', {
-        #             'e': e,
-        #             'd': d,
-        #             'l': l,
-        #             'n': n,
-        #             'p': p,
-        #             'c': c,
-        #             'i': i
-        #
-        #         })
-        #         return render(request, 'shydro.html', context)
-        # else:
-        #     return redirect('logout')
+        return render(request, 'shydro.html', {})  # fallback
+
 
     @login_required(login_url='login')
     def responseAffichageTableau(request):
         user = request.user
-        id = user.id
+        uid = user.id
 
+        # -----------------------------
+        # BASE QUERYSET
+        # -----------------------------
         base_qs = Cargaison.objects.filter(
             etat="En attente requisition",
-            entrepot__ville__affectationville__username_id=id
+            entrepot__ville__affectationville__username_id=uid
         )
 
-        # Caching helpers (short TTL)
-        from django.core.cache import cache
-        import hashlib
-
-        # Total count before any search filter (for DataTables recordsTotal)
-        # Cache per-user total for a short time as it doesn't change rapidly
-        total_cache_key = f"carg_table:records_total:u{user.id}"
+        # -----------------------------
+        # CACHE: recordsTotal (longer TTL)
+        # -----------------------------
+        total_cache_key = f"carg_table:records_total:u{uid}"
         records_total = cache.get(total_cache_key)
         if records_total is None:
             records_total = base_qs.count()
-            cache.set(total_cache_key, records_total, timeout=20)
+            cache.set(total_cache_key, records_total, timeout=120)
 
-        # Build values queryset for fast, lightweight rows
+        # -----------------------------
+        # VALUES QUERYSET (include FRONTIERE and related ones for extra columns)
+        # -----------------------------
+        # Local import for aggregations (keeps global imports untouched)
+        from django.db.models import Sum, Avg
+
         qs = base_qs.select_related(
-            'dateheurecargaison',
             'importateur',
             'entrepot',
-            'produit'
+            'produit',
+            'frontiere',
+            # one-to-one reverse relations
+            'inspection',  # Cargaison -> Inspection
+            'entrepot_echantillon',  # Cargaison -> Entrepot_echantillon
+            'entrepot_echantillon__laboreception',  # -> LaboReception
+            'entrepot_echantillon__laboreception__resultat',  # -> Resultat
+            'entrepot_echantillon__laboreception__resultat__dechargement',  # -> Dechargement
+        ).annotate(
+            # Inspection-based aggregates from Compartiments
+            vcf_ins=Avg('inspection__compartiment__vcf'),
+            mta_ins=Sum('inspection__compartiment__mta'),
+            mtv_ins=Sum('inspection__compartiment__mtv'),
+            gsv_ins=Sum('inspection__compartiment__gsv'),
         ).values(
             'idcargaison',
             'dateheurecargaison',
             'dateheurecargaison__date',
+            'frontiere__nomville',
             'importateur__nomimportateur',
             'entrepot__nomentrepot',
             'produit__nomproduit',
             'volume',
             'immatriculation',
             'declaration',
-            'numreq'
+            'numreq',
+            # extra raw fields for display/computed columns
+            'requisitiondackdate',  # requisition date
+            'entrepot_echantillon__dateechantillonage',
+            'entrepot_echantillon__laboreception__datereceptionlabo',
+            'entrepot_echantillon__laboreception__resultat__dateanalyse',
+            'inspection__dateinspection',
+            'inspection__dens',
+            'entrepot_echantillon__laboreception__resultat__dechargement__datedechargement',
+            # volumetrics
+            'entrepot_echantillon__laboreception__resultat__dechargement__govjaugee',
+            'entrepot_echantillon__laboreception__resultat__massevolumique15',
+            'inspection__temp',
+            # inspection-based aggregates (annotated above)
+            'vcf_ins',
+            'mta_ins',
+            'mtv_ins',
+            'gsv_ins',
         )
 
-        # Default ordering when no client-provided order is present
-        default_ordering = ['-dateheurecargaison', 'frontiere__nomville']
+        # -----------------------------
+        # ADVANCED FILTERS (from modal)
+        # -----------------------------
+        flt_date_from = request.GET.get('flt_date_from', '').strip()
+        flt_date_to = request.GET.get('flt_date_to', '').strip()
+        flt_frontiere = request.GET.get('flt_frontiere', '').strip()
+        flt_importateur = request.GET.get('flt_importateur', '').strip()
+        flt_entrepot = request.GET.get('flt_entrepot', '').strip()
+        flt_produit = request.GET.get('flt_produit', '').strip()
+        flt_immat = request.GET.get('flt_immat', '').strip()
+        flt_declaration = request.GET.get('flt_declaration', '').strip()
+        flt_numdos = request.GET.get('flt_numdos', '').strip()
 
-        # Get the search value from the request's GET parameters
+        if flt_date_from:
+            qs = qs.filter(dateheurecargaison__date__gte=flt_date_from)
+        if flt_date_to:
+            qs = qs.filter(dateheurecargaison__date__lte=flt_date_to)
+        if flt_frontiere:
+            qs = qs.filter(frontiere__nomville=flt_frontiere)
+        if flt_importateur:
+            qs = qs.filter(importateur__nomimportateur=flt_importateur)
+        if flt_entrepot:
+            qs = qs.filter(entrepot__nomentrepot=flt_entrepot)
+        if flt_produit:
+            qs = qs.filter(produit__nomproduit=flt_produit)
+        if flt_immat:
+            qs = qs.filter(immatriculation__icontains=flt_immat)
+        if flt_declaration:
+            qs = qs.filter(declaration__icontains=flt_declaration)
+        if flt_numdos:
+            qs = qs.filter(numreq__icontains=flt_numdos)
+
+        # -----------------------------
+        # GLOBAL SEARCH (datatables)
+        # -----------------------------
         search_value = request.GET.get('search[value]', '').strip()
         search_key = hashlib.md5(search_value.lower().encode("utf-8")).hexdigest() if search_value else "_"
 
-        # Apply search filter to the QuerySet
         if search_value:
             qs = qs.filter(
                 Q(dateheurecargaison__date__icontains=search_value) |
+                Q(frontiere__nomville__icontains=search_value) |
                 Q(importateur__nomimportateur__icontains=search_value) |
                 Q(entrepot__nomentrepot__icontains=search_value) |
                 Q(produit__nomproduit__icontains=search_value) |
@@ -249,160 +217,208 @@ class GestionCodification():
                 Q(numreq__icontains=search_value)
             )
 
-        # Handle server-side ordering (DataTables -> Django order_by)
-        # DataTables columns mapping (by index in the rendered table)
-        # 0: date, 1: importateur, 2: entrepot, 3: produit, 4: volume,
-        # 5: immatriculation, 6: declaration, 7: numreq, 8: actions (not orderable)
+        # -----------------------------
+        # ORDERING (match your 22 columns)
+        # NOTE: Keep ONLY orderable fields here.
+        # -----------------------------
         dt_columns_to_fields = [
-            'dateheurecargaison__date',
-            'importateur__nomimportateur',
-            'entrepot__nomentrepot',
-            'produit__nomproduit',
-            'volume',
-            'immatriculation',
-            'declaration',
-            'numreq',
+            'dateheurecargaison__date',         # 0 DATE ENTREE
+            'frontiere__nomville',              # 1 FRONTIERE
+            'importateur__nomimportateur',      # 2 FOURNISSEUR
+            'entrepot__nomentrepot',            # 3 ENTREPOT
+            'produit__nomproduit',              # 4 PRODUIT
+            'volume',                           # 5 VOL.DECL.
+            'immatriculation',                  # 6 IMMATR.
+            'declaration',                      # 7 #.DECLARATION
+            'numreq',                           # 8 #.DOSSIER
+
+            # The next columns exist in your HTML but may not exist in your model.
+            # If they exist, add them here and include them in values() above.
+            # 'daterequisition',                 # 9
+            # 'dateechantillonnage',             # 10
+            # 'datereceptionlabo',               # 11
+            # 'dateanalyse',                     # 12
+            # 'dateinspection',                  # 13
+            # 'datedechargement',                # 14
+            # 'voljauge_gov',                    # 15
+            # 'densite_15',                      # 16
+            # 'temperature',                     # 17
+            # 'vcf',                             # 18
+            # 'mta',                             # 19
+            # 'mtv',                             # 20
+            # 'gsv',                             # 21
         ]
 
         order_by_fields = []
-        # Support multiple order levels: order[0], order[1], ...
         order_idx = 0
         while True:
             col_key = f'order[{order_idx}][column]'
             dir_key = f'order[{order_idx}][dir]'
             if col_key not in request.GET:
                 break
+
             try:
                 col_index = int(request.GET.get(col_key))
             except (TypeError, ValueError):
                 order_idx += 1
                 continue
+
             order_dir = request.GET.get(dir_key, 'asc')
-            # Validate column index (ignore the action column and out-of-range values)
+
             if 0 <= col_index < len(dt_columns_to_fields):
                 field_name = dt_columns_to_fields[col_index]
                 if order_dir == 'desc':
                     field_name = f'-{field_name}'
                 order_by_fields.append(field_name)
+
             order_idx += 1
 
-        if order_by_fields:
-            qs = qs.order_by(*order_by_fields)
-        else:
-            # Apply default ordering
-            qs = qs.order_by(*default_ordering)
+        # SAFE default ordering (no missing joins)
+        default_ordering = ['-dateheurecargaison__date']
 
-        # Count after search filter (for DataTables recordsFiltered)
-        # Cache per user + search
-        filtered_cache_key = f"carg_table:records_filtered:u{user.id}:s{search_key}"
+        qs = qs.order_by(*(order_by_fields or default_ordering))
+
+        # -----------------------------
+        # recordsFiltered (cached longer)
+        # include filters in cache key so it doesn't lie
+        # -----------------------------
+        filters_sig = "|".join([
+            search_key,
+            flt_date_from, flt_date_to, flt_frontiere, flt_importateur,
+            flt_entrepot, flt_produit, flt_immat, flt_declaration, flt_numdos
+        ])
+        filters_hash = hashlib.md5(filters_sig.encode("utf-8")).hexdigest()
+
+        filtered_cache_key = f"carg_table:records_filtered:u{uid}:f{filters_hash}"
         records_filtered = cache.get(filtered_cache_key)
         if records_filtered is None:
             records_filtered = qs.count()
-            cache.set(filtered_cache_key, records_filtered, timeout=20)
+            cache.set(filtered_cache_key, records_filtered, timeout=120)
 
-        # Server-side (lazy) pagination using slicing to avoid full evaluation
-        # Default and maximum page length is 20 to satisfy requirement
-        default_page_len = 20
+        # -----------------------------
+        # PAGINATION (clamp to 20)
+        # -----------------------------
         draw = int(request.GET.get('draw', 1))
         try:
             start = int(request.GET.get('start', 0))
         except (TypeError, ValueError):
             start = 0
         try:
-            length = int(request.GET.get('length', default_page_len))
+            length = int(request.GET.get('length', 20))
         except (TypeError, ValueError):
-            length = default_page_len
-        # Clamp length to [1, 20]
+            length = 20
+
         if length <= 0:
-            length = default_page_len
+            length = 20
         if length > 20:
             length = 20
 
         end = start + length
 
-        # Page-level cache key incorporates ordering + pagination window
+        # -----------------------------
+        # PAGE CACHE (include ordering + filters + window)
+        # -----------------------------
         order_key = ",".join(order_by_fields) if order_by_fields else ",".join(default_ordering)
-        page_cache_key = f"carg_table:page:u{user.id}:s{search_key}:o{hashlib.md5(order_key.encode('utf-8')).hexdigest()}:p{start}_{length}"
+        page_sig = f"{filters_hash}|{order_key}|{start}|{length}"
+        page_hash = hashlib.md5(page_sig.encode("utf-8")).hexdigest()
+
+        page_cache_key = f"carg_table:page:u{uid}:k{page_hash}"
         data = cache.get(page_cache_key)
-        if data is None:
-            qs_slice = qs[start:end]
-            # Convert QuerySet slice to list of dicts without loading the full set
-            rows = list(qs_slice)
 
-            # Helper: format datetime/date to readable string
-            def _fmt_dt(val):
-                try:
-                    if val is None:
-                        return None
-                    if isinstance(val, datetime.datetime):
-                        if timezone.is_aware(val):
-                            val = timezone.localtime(val)
-                        return val.strftime('%d/%m/%Y %H:%M')
-                    if isinstance(val, (datetime.date,)):
-                        return val.strftime('%d/%m/%Y')
-                except Exception:
+        # -----------------------------
+        # BUILD RESPONSE DATA
+        # -----------------------------
+        def _fmt_dt(val):
+            try:
+                if val is None:
+                    return ""
+                if isinstance(val, datetime.datetime):
+                    if timezone.is_aware(val):
+                        val = timezone.localtime(val)
+                    return val.strftime('%d/%m/%Y %H:%M')
+                if isinstance(val, datetime.date):
+                    return val.strftime('%d/%m/%Y')
+            except Exception:
+                return ""
+            return str(val)
+
+        def _round3(v):
+            try:
+                if v is None:
+                    return ''
+                return round(float(v), 3)
+            except Exception:
+                return ''
+
+        def _to_float(v):
+            try:
+                if v is None:
                     return None
-                return str(val)
+                if isinstance(v, (int, float)):
+                    return float(v)
+                s = str(v).strip().replace(',', '.')
+                return float(s) if s else None
+            except Exception:
+                return None
 
-            # Enrich with display fields
+        if data is None:
+            rows = list(qs[start:end])
             data = []
             for row in rows:
                 row = dict(row)
-                # Prefer full datetime if present; fallback to date-only
                 dt_full = row.get('dateheurecargaison')
                 dt_date = row.get('dateheurecargaison__date')
                 row['date_entree_display'] = _fmt_dt(dt_full) or _fmt_dt(dt_date)
+
+                # Populate additional display fields
+                row['date_requisition_display'] = _fmt_dt(row.get('requisitiondackdate'))
+                row['date_echantillonnage_display'] = _fmt_dt(row.get('entrepot_echantillon__dateechantillonage'))
+                row['date_reception_labo_display'] = _fmt_dt(row.get('entrepot_echantillon__laboreception__datereceptionlabo'))
+                row['date_analyse_display'] = _fmt_dt(row.get('entrepot_echantillon__laboreception__resultat__dateanalyse'))
+                row['date_inspection_display'] = _fmt_dt(row.get('inspection__dateinspection'))
+                row['date_dechargement_display'] = _fmt_dt(row.get('entrepot_echantillon__laboreception__resultat__dechargement__datedechargement'))
+
+                # Volumetric/computed columns with safe rounding
+                row['vol_jauge_gov'] = row.get('entrepot_echantillon__laboreception__resultat__dechargement__govjaugee') or ''
+                # densite @15: compute from inspection dens + temp when possible, else fall back to labo value
+                insp_dens = _to_float(row.get('inspection__dens'))
+                temp_val = _to_float(row.get('inspection__temp'))
+                d15_val = None
+                try:
+                    if insp_dens is not None and temp_val is not None:
+                        # calculs.densite15 expects (temperature, density_at_ambient)
+                        d15_val = densite15(temp_val, insp_dens)
+                except Exception:
+                    d15_val = None
+                if d15_val is None:
+                    d15_val = _to_float(row.get('entrepot_echantillon__laboreception__resultat__massevolumique15'))
+                row['densite_15'] = _round3(d15_val)
+                # alias for base template
+                row['densite15'] = row['densite_15']
+                # prefer Inspection temperature if present
+                row['temperature'] = _round3(temp_val)
+                # alias for base template which binds directly to inspection__temp
+                row['inspection__temp'] = temp_val
+                # vcf/mta/mtv/gsv must come from Inspection -> Compartiments aggregates
+                row['vcf'] = _round3(row.get('vcf_ins'))
+                row['mta'] = _round3(row.get('mta_ins'))
+                row['mtv'] = _round3(row.get('mtv_ins'))
+                row['gsv'] = _round3(row.get('gsv_ins'))
+
+                # Additional aliases expected by the other template variant
+                # dates: provide both verbose and short keys
+                row['date_echant_display'] = row.get('date_echantillonnage_display')
+                row['date_recep_labo_display'] = row.get('date_reception_labo_display')
+                # vol jauge alias
+                row['vol_jauge'] = row.get('vol_jauge_gov')
+                # dossier number alias (fallback numreq -> numdos key if missing)
+                if 'numdos' not in row or row.get('numdos') in (None, ''):
+                    row['numdos'] = row.get('numreq')
+
                 data.append(row)
 
-            cache.set(page_cache_key, data, timeout=20)
+            cache.set(page_cache_key, data, timeout=120)
 
-        # Check if it's an AJAX request and if the export flag is set
-        export = request.GET.get('export', None)
-        if export == 'excel':
-            # Stream the Excel generation to avoid loading all rows in memory
-            from openpyxl import Workbook
-            from django.http import FileResponse
-            import tempfile
-
-            # Use write_only mode for large datasets
-            wb = Workbook(write_only=True)
-            ws = wb.create_sheet("Données")
-            # In write_only mode, a default sheet may exist; avoid duplicates
-            try:
-                default_title = wb.worksheets[0].title
-                if default_title != "Données":
-                    # Remove the default if present and different
-                    wb.remove(wb.worksheets[0])
-            except Exception:
-                pass
-
-            # Headers
-            header_row = ['DATE ENTREE', 'FOURNISSEUR', 'ENTREPOT', 'PRODUIT', 'VOL.DECL.', 'IMMATR.', '#.T1D', '#.REQ.']
-            ws.append(header_row)
-
-            # Iterate efficiently over the filtered queryset
-            for row in qs.iterator(chunk_size=1000):
-                ws.append([
-                    row.get('dateheurecargaison__date'),
-                    row.get('importateur__nomimportateur'),
-                    row.get('entrepot__nomentrepot'),
-                    row.get('produit__nomproduit'),
-                    row.get('volume'),
-                    row.get('immatriculation'),
-                    row.get('declaration'),
-                    row.get('numreq'),
-                ])
-
-            # Save to a temporary file and stream it back
-            tmp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.xlsx', delete=False)
-            wb.save(tmp.name)
-            tmp.seek(0)
-
-            resp = FileResponse(open(tmp.name, 'rb'), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            resp['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-            return resp
-
-        # Return JSON response with the data
         return JsonResponse({
             'data': data,
             'draw': draw,
@@ -1110,12 +1126,13 @@ def rapportActivite(request):
     try:
         # Import here to avoid circulars in some environments
         from enreg.models import Ville, Importateur, Entrepot, Produit
-        frontieres = list(Ville.objects.all().order_by('nomville').values('id', 'nomville'))
-        fournisseurs = list(Importateur.objects.all().order_by('nomimportateur').values('id', 'nomimportateur'))
+        # Use 'pk' alias to be agnostic of legacy PK field names (e.g., idville, idproduit, ...)
+        frontieres = list(Ville.objects.all().order_by('nomville').values('pk', 'nomville'))
+        fournisseurs = list(Importateur.objects.all().order_by('nomimportateur').values('pk', 'nomimportateur'))
         entrepots = list(Entrepot.objects.filter(
             ville__affectationville__username_id=user_id
-        ).order_by('nomentrepot').values('id', 'nomentrepot'))
-        produits = list(Produit.objects.all().order_by('nomproduit').values('id', 'nomproduit'))
+        ).order_by('nomentrepot').values('pk', 'nomentrepot'))
+        produits = list(Produit.objects.all().order_by('nomproduit').values('pk', 'nomproduit'))
     except Exception:
         frontieres, fournisseurs, entrepots, produits = [], [], [], []
 
@@ -1130,7 +1147,9 @@ def rapportActivite(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def responseRapportActivite(request):
+
     """
     Server-side endpoint for Rapport d'activités DataTable.
     - True lazy pagination via LIMIT/OFFSET using queryset slicing
@@ -1138,14 +1157,17 @@ def responseRapportActivite(request):
     - Short‑TTL caching for counts and page slices
     - Streaming Excel export respecting current filters
     """
-    from django.core.cache import cache
-    import hashlib
+
 
     user_id = request.user.id
 
-    # Base queryset for counts (no values()/projection to keep accurate count)
-    base_qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user_id
+    # Base queryset for counts and subsequent projection
+    base_qs = (
+        Cargaison.objects
+        .select_related(
+            'entrepot', 'entrepot__ville', 'frontiere', 'importateur', 'produit', 'inspection'
+        )
+        .filter(entrepot__ville__affectationville__username_id=user_id)
     )
 
     # Annotation required by this report
@@ -1158,19 +1180,27 @@ def responseRapportActivite(request):
         mtvT=Sum('inspection__compartiment__mtv'),
     )
 
+    # Helper to read params from POST only (no GET fallback for safety)
+    def P(name, default=''):
+        try:
+            val = request.POST.get(name)
+            return val if val is not None else default
+        except Exception:
+            return default
+
     # Optional advanced filters (server-side)
     # Supported params: date_from, date_to (YYYY-MM-DD),
     # frontiere, importateur, entrepot, produit (name contains),
     # immatriculation (exact contains), declaration, numdos (contains)
-    date_from = (request.GET.get('date_from') or '').strip()
-    date_to = (request.GET.get('date_to') or '').strip()
-    ft_name = (request.GET.get('frontiere') or '').strip()
-    imp_name = (request.GET.get('importateur') or '').strip()
-    ent_name = (request.GET.get('entrepot') or '').strip()
-    prod_name = (request.GET.get('produit') or '').strip()
-    immat = (request.GET.get('immatriculation') or '').strip()
-    decl = (request.GET.get('declaration') or '').strip()
-    numd = (request.GET.get('numdos') or '').strip()
+    date_from = (P('date_from') or '').strip()
+    date_to = (P('date_to') or '').strip()
+    ft_name = (P('frontiere') or '').strip()
+    imp_name = (P('importateur') or '').strip()
+    ent_name = (P('entrepot') or '').strip()
+    prod_name = (P('produit') or '').strip()
+    immat = (P('immatriculation') or '').strip()
+    decl = (P('declaration') or '').strip()
+    numd = (P('numdos') or '').strip()
 
     adv_filters = Q()
     if date_from and date_to:
@@ -1238,15 +1268,15 @@ def responseRapportActivite(request):
     # DataTables params
     # 'draw' must be echoed back to DataTables; parse defensively
     try:
-        draw = int(request.GET.get('draw', '1'))
+        draw = int(P('draw', '1'))
     except (TypeError, ValueError):
         draw = 1
     try:
-        start = max(int(request.GET.get('start', '0')), 0)
+        start = max(int(P('start', '0')), 0)
     except ValueError:
         start = 0
 
-    # Always show 15 per page, ignore client length
+    # Always show 15 per page, ignore client length; hard-cap deep pagination window
     length = 15
 
     # Total count (cached per user)
@@ -1257,7 +1287,7 @@ def responseRapportActivite(request):
         cache.set(total_cache_key, records_total, timeout=20)
 
     # Search
-    search_value = (request.GET.get('search[value]', '') or '').strip()
+    search_value = (P('search[value]', '') or '').strip()
     if search_value:
         # Apply filter on projected fields
         qs = qs.filter(
@@ -1336,10 +1366,10 @@ def responseRapportActivite(request):
     order_by_fields = []
     i = 0
     while True:
-        col_index = request.GET.get(f'order[{i}][column]')
+        col_index = P(f'order[{i}][column]')
         if col_index is None:
             break
-        dir_value = request.GET.get(f'order[{i}][dir]', 'asc')
+        dir_value = P(f'order[{i}][dir]', 'asc')
         try:
             col_index = int(col_index)
         except ValueError:
@@ -1372,6 +1402,9 @@ def responseRapportActivite(request):
     order_key = hashlib.md5(order_key_src.encode('utf-8')).hexdigest()
     page_cache_key = f"rapport_activ:page:u{user_id}:s{search_key}:f{filter_key}:o{order_key}:p{start}_{length}"
     # If start is outside the filtered range, return empty page quickly
+    # Prevent pathological deep scans
+    if start > 100000:
+        start = 100000
     if start >= max(records_filtered, 0):
         data = []
     else:
@@ -1477,130 +1510,6 @@ def responseRapportActivite(request):
         cache.set(page_cache_key, data, timeout=20)
 
     # Excel export (streaming) respecting current filters (ignores pagination)
-    export = request.GET.get('export')
-    if export == 'excel':
-        from openpyxl import Workbook
-        from django.http import FileResponse
-        import tempfile
-
-        wb = Workbook(write_only=True)
-        ws = wb.create_sheet('Rapport')
-        # Remove default if duplicated
-        try:
-            if len(wb.worksheets) > 1:
-                wb.remove(wb.worksheets[0])
-        except Exception:
-            pass
-
-        headers = [
-            'DATE ENTREE',
-            'FRONTIERE',
-            'FOURNISSEUR',
-            'ENTREPOT',
-            'PRODUIT',
-            'VOL.DECL.',
-            'IMMATR.',
-            '#.DECLARATION',
-            '#.DOSSIER',
-            'DATE REQUISITION',
-            'DATE ECHANTILLONNAGE',
-            'DATE RECEPTION LABO',
-            "DATE D'ANALYSE",
-            "DATE D'INSPECTION",
-            'DATE DE DECHARGEMENT',
-            'VOL JAUGE (GOV)',
-            'DENSITE @15',
-            'TEMPERATURE',
-            'VCF',
-            'MTA',
-            'MTV',
-            'GSV',
-        ]
-        ws.append(headers)
-
-        # Reuse helpers within export scope
-        def _to_float_exp(val):
-            try:
-                if val is None:
-                    return None
-                if isinstance(val, (int, float)):
-                    return float(val)
-                s = str(val).strip()
-                if s == '':
-                    return None
-                s = s.replace(',', '.')
-                return float(s)
-            except Exception:
-                return None
-
-        for row in qs.iterator(chunk_size=1000):
-            dens = _to_float_exp(row.get('inspection__dens'))
-            temp = _to_float_exp(row.get('inspection__temp'))
-            d15 = None
-            vcf_val = None
-            try:
-                if dens is not None and temp is not None:
-                    # NOTE: calculs.densite15 expects (temperature, density_at_ambient)
-                    d15 = densite15(temp, dens)
-                    vcf_input_density = d15 if d15 is not None else dens
-                    vcf_val = vcf(vcf_input_density, temp)
-            except Exception:
-                d15 = None
-                vcf_val = None
-
-            # Round for Excel readability
-            if isinstance(d15, (int, float)):
-                try:
-                    d15 = round(float(d15), 5)
-                except Exception:
-                    pass
-            if isinstance(vcf_val, (int, float)):
-                try:
-                    vcf_val = round(float(vcf_val), 6)
-                except Exception:
-                    pass
-
-            # 3-decimal rounding for MTA/MTV/GSV
-            def _round3_exp(v):
-                try:
-                    if v is None:
-                        return None
-                    return round(float(v), 3)
-                except Exception:
-                    return v
-
-            ws.append([
-                row.get('dateheurecargaison__date'),
-                row.get('frontiere__nomville'),
-                row.get('importateur__nomimportateur'),
-                row.get('entrepot__nomentrepot'),
-                row.get('produit__nomproduit'),
-                row.get('volume'),
-                row.get('immatriculation'),
-                row.get('declaration'),
-                row.get('numdos'),
-                row.get('requisitiondackdate__date'),
-                row.get('entrepot_echantillon__dateechantillonage__date'),
-                row.get('entrepot_echantillon__laboreception__datereceptionlabo__date'),
-                row.get('impressionresultat__printDate'),
-                row.get('inspection__dateinspection'),
-                row.get('dateDechargement'),
-                row.get('volConst'),
-                d15,
-                temp,
-                vcf_val,
-                _round3_exp(row.get('mtaT')),
-                _round3_exp(row.get('mtvT')),
-                _round3_exp(row.get('gsvT')),
-            ])
-
-        tmp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.xlsx', delete=False)
-        wb.save(tmp.name)
-        tmp.seek(0)
-        resp = FileResponse(open(tmp.name, 'rb'), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        resp['Content-Disposition'] = 'attachment; filename="rapport_activites.xlsx"'
-        return resp
-
     return JsonResponse({
         'data': data,
         'draw': draw,
@@ -1617,34 +1526,44 @@ def filterOptionsRapportActivite(request):
     Each item contains: id, label, value (label duplicated for convenience on client side).
     """
     try:
+        from django.core.cache import cache
         from enreg.models import Ville, Importateur, Entrepot, Produit
         user_id = request.user.id
 
+        cache_key = f"rapport_activ:filters:u{user_id}"
+        cached = cache.get(cache_key)
+        if cached:
+            return JsonResponse(cached)
+
+        # Use 'pk' alias so this works regardless of actual PK field names
         frontieres = [
-            {'id': v['id'], 'label': v['nomville'], 'value': v['nomville']}
-            for v in Ville.objects.all().order_by('nomville').values('id', 'nomville')
+            {'id': v['pk'], 'label': v['nomville'], 'value': v['nomville']}
+            for v in Ville.objects.all().order_by('nomville').values('pk', 'nomville')
         ]
         fournisseurs = [
-            {'id': i['id'], 'label': i['nomimportateur'], 'value': i['nomimportateur']}
-            for i in Importateur.objects.all().order_by('nomimportateur').values('id', 'nomimportateur')
+            {'id': i['pk'], 'label': i['nomimportateur'], 'value': i['nomimportateur']}
+            for i in Importateur.objects.all().order_by('nomimportateur').values('pk', 'nomimportateur')
         ]
         entrepots = [
-            {'id': e['id'], 'label': e['nomentrepot'], 'value': e['nomentrepot']}
+            {'id': e['pk'], 'label': e['nomentrepot'], 'value': e['nomentrepot']}
             for e in Entrepot.objects.filter(
                 ville__affectationville__username_id=user_id
-            ).order_by('nomentrepot').values('id', 'nomentrepot')
+            ).order_by('nomentrepot').values('pk', 'nomentrepot')
         ]
         produits = [
-            {'id': p['id'], 'label': p['nomproduit'], 'value': p['nomproduit']}
-            for p in Produit.objects.all().order_by('nomproduit').values('id', 'nomproduit')
+            {'id': p['pk'], 'label': p['nomproduit'], 'value': p['nomproduit']}
+            for p in Produit.objects.all().order_by('nomproduit').values('pk', 'nomproduit')
         ]
 
-        return JsonResponse({
+        payload = {
             'frontieres': frontieres,
             'fournisseurs': fournisseurs,
             'entrepots': entrepots,
             'produits': produits,
-        })
+        }
+        # Cache for 1 hour (adjust as needed); cheap to rebuild if missed
+        cache.set(cache_key, payload, timeout=3600)
+        return JsonResponse(payload)
     except Exception as exc:
         return JsonResponse({'error': 'Failed to load filter options', 'detail': str(exc)}, status=500)
 
