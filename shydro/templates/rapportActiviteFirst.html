@@ -8,56 +8,158 @@
     100% { transform: rotate(360deg); }
   }
 
-  #data-table-wrapper-2 {
-    position: relative;
-  }
+  /* ===== Loading overlay ===== */
+  #data-table-wrapper-2 { position: relative; }
 
-  .loading-overlay-2 {
-    position: absolute;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
+  .loading-overlay-2{
+    position:absolute; inset:0;
+    display:none; align-items:center; justify-content:center;
     background: rgba(15, 23, 42, 0.75);
     backdrop-filter: blur(6px);
     z-index: 40;
   }
-
-  .loading-overlay-2::before {
-    content: "";
-    border-radius: 9999px;
-    border-width: 3px;
-    border-style: solid;
-    border-color: rgba(148, 163, 184, 0.6);
-    border-top-color: #4f46e5;
-    width: 32px;
-    height: 32px;
-    animation: spin 0.8s linear infinite;
+  .loading-overlay-2::before{
+    content:"";
+    border-radius:9999px;
+    border:3px solid rgba(148, 163, 184, 0.6);
+    border-top-color:#4f46e5;
+    width:32px; height:32px;
+    animation: spin .8s linear infinite;
   }
 
-  /* ===== Responsive table (stacked on small screens) ===== */
+  /* ===== Table responsiveness (all breakpoints) ===== */
+  #data-table-wrapper-2{
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  #data-table-2{ border-collapse: separate; border-spacing: 0; }
+
+  #data-table-2 th,
+  #data-table-2 td{
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 1024px){
+    #data-table-2 th{ padding:.65rem .75rem !important; }
+    #data-table-2 td{ padding:.7rem .75rem !important; }
+  }
+
+  /* Sticky header (>= 641px) */
+  @media (min-width: 641px){
+    #data-table-2 thead th{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(255,255,255,0.10);
+      backdrop-filter: blur(8px);
+    }
+  }
+
+  /* Sticky first column (>= 641px) */
+  @media (min-width: 641px){
+    #data-table-2 th:first-child,
+    #data-table-2 td:first-child{
+      position: sticky;
+      left: 0;
+      z-index: 6;
+      background: rgba(15, 23, 42, 0.92);
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+  }
+
+  /* Sticky actions column (>= 641px) */
+  @media (min-width: 641px){
+    #data-table-2 th:last-child,
+    #data-table-2 td:last-child{
+      position: sticky;
+      right: 0;
+      z-index: 6;
+      background: rgba(15, 23, 42, 0.92);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      min-width: 110px;
+    }
+  }
+
+  /* Row hover still works with sticky cells */
+  #data-table-2 tbody tr:hover td{ background: rgba(255,255,255,0.04); }
+  @media (min-width: 641px){
+    #data-table-2 tbody tr:hover td:first-child,
+    #data-table-2 tbody tr:hover td:last-child{
+      background: rgba(15, 23, 42, 0.92);
+    }
+  }
+
+  /* ===== Mobile card mode (<= 640px) ===== */
   @media (max-width: 640px){
-    #data-table-2 thead { display: none; }
+    /* remove wide forcing; mobile cards will wrap */
+    #data-table-2{ min-width: 100% !important; width:100% !important; }
+
+    #data-table-2 thead{ display:none; }
     #data-table-2,
     #data-table-2 tbody,
     #data-table-2 tr,
-    #data-table-2 td { display:block; width:100%; }
+    #data-table-2 td{ display:block; width:100%; }
 
-    #data-table-2 tbody tr { margin-bottom: .75rem; border-radius: 12px; }
-    #data-table-2 tbody td { padding: .5rem .75rem; border: 0 !important; }
-    #data-table-2 tbody tr td:first-child{ border-top-left-radius:12px; border-top-right-radius:12px; }
-    #data-table-2 tbody tr td:last-child{ border-bottom-left-radius:12px; border-bottom-right-radius:12px; }
+    #data-table-2 tbody tr{
+      margin: 0 0 .85rem 0;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
 
-    /* Inline labels */
+    #data-table-2 tbody td{
+      border: 0 !important;
+      padding: .7rem .85rem !important;
+      white-space: normal;
+    }
+
     #data-table-2 tbody td::before{
       content: attr(data-label);
       display:block;
-      font-size: .68rem;
+      font-size:.70rem;
       text-transform: uppercase;
-      letter-spacing: .08em;
-      color: rgba(148,163,184,.9);
-      margin-bottom: .15rem;
+      letter-spacing:.08em;
+      color: rgba(148,163,184,.95);
+      margin-bottom:.15rem;
     }
+
+    /* Actions become row footer, always reachable */
+    #data-table-2 tbody td[data-label="Actions"]{
+      background: rgba(0,0,0,0.18);
+      border-top: 1px solid rgba(255,255,255,0.06) !important;
+      position: sticky;
+      bottom: 0;
+    }
+
+    /* Pagination stacks */
+    #table-pagination-2{
+      flex-direction: column;
+      gap: .5rem;
+      align-items: stretch;
+    }
+    #table-pagination-2 > div{
+      justify-content: center;
+    }
+
+    /* Filter buttons full width on mobile */
+    #btn2-search, #btn2-reset{
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  /* Small quality improvements */
+  .kpi-card{
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    padding: 1rem;
   }
 </style>
 
@@ -83,7 +185,6 @@
         </button>
       </div>
       <div class="px-4 sm:px-5 py-4">
-        {# Exemple de contenu : tu peux adapter au besoin #}
         <form id="example-form" action="" method="post" class="space-y-3">
           {% csrf_token %}
           <div>
@@ -93,6 +194,7 @@
                           placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
                    placeholder="Ex: Rapport mensuel fournisseur X" />
           </div>
+
           <div class="grid sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-white/80 mb-1">Format d’export</label>
@@ -112,6 +214,7 @@
                      placeholder="Ex: Janvier 2025" />
             </div>
           </div>
+
           <div class="flex justify-end gap-2 pt-2">
             <button type="button"
                     class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm"
@@ -130,15 +233,13 @@
 </div>
 
 {# ======================= REPORTING PAGE ======================= #}
-
 <section class="glass rounded-2xl shadow-glass mt-6">
   <!-- Header -->
   <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-5 py-3 border-b border-white/10">
     <div>
       <h2 class="text-base sm:text-lg font-semibold flex items-center gap-2">
         <svg class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M3 5h18M3 12h18M3 19h18"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M3 5h18M3 12h18M3 19h18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         Tableau de bord • Reporting
       </h2>
@@ -157,11 +258,10 @@
     </div>
   </header>
 
-  {# ===== Bandeau KPIs / Statistiques ===== #}
+  {# ===== KPIs ===== #}
   <div class="px-4 sm:px-5 pt-4 pb-3">
     <div class="grid gap-3 sm:grid-cols-3">
-      <!-- Total enregistrements -->
-      <div class="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 px-4 py-3 flex flex-col justify-between">
+      <div class="kpi-card">
         <div class="flex items-center justify-between mb-2">
           <span class="text-[11px] uppercase tracking-wide text-white/60">Total lignes</span>
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -169,13 +269,10 @@
           </span>
         </div>
         <div class="text-2xl font-semibold text-white" id="metric-total-rows">0</div>
-        <p class="mt-1 text-[11px] text-white/60">
-          Nombre total d’enregistrements retournés par les filtres.
-        </p>
+        <p class="mt-1 text-[11px] text-white/60">Nombre total d’enregistrements retournés par les filtres.</p>
       </div>
 
-      <!-- Pages -->
-      <div class="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 px-4 py-3 flex flex-col justify-between">
+      <div class="kpi-card">
         <div class="flex items-center justify-between mb-2">
           <span class="text-[11px] uppercase tracking-wide text-white/60">Pagination</span>
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
@@ -183,13 +280,10 @@
           </span>
         </div>
         <div class="text-2xl font-semibold text-white" id="metric-total-pages">1</div>
-        <p class="mt-1 text-[11px] text-white/60">
-          Nombre de pages calculé sur la base de 25 lignes par page.
-        </p>
+        <p class="mt-1 text-[11px] text-white/60">Nombre de pages calculé sur la base de 25 lignes par page.</p>
       </div>
 
-      <!-- Dernière actualisation -->
-      <div class="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 px-4 py-3 flex flex-col justify-between">
+      <div class="kpi-card">
         <div class="flex items-center justify-between mb-2">
           <span class="text-[11px] uppercase tracking-wide text-white/60">Dernière actualisation</span>
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-400/15 text-sky-300">
@@ -197,14 +291,12 @@
           </span>
         </div>
         <div class="text-sm font-semibold text-white" id="metric-last-refresh">—</div>
-        <p class="mt-1 text-[11px] text-white/60">
-          Mise à jour à chaque rechargement du tableau.
-        </p>
+        <p class="mt-1 text-[11px] text-white/60">Mise à jour à chaque rechargement du tableau.</p>
       </div>
     </div>
   </div>
 
-  {# ===== Filtres et recherche ===== #}
+  {# ===== Filters & search ===== #}
   <div class="px-3 sm:px-4 pt-1">
     <div class="mb-3 flex flex-col lg:flex-row gap-3 lg:items-end lg:justify-between">
       <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 w-full lg:max-w-3xl">
@@ -215,6 +307,7 @@
                         text-xs sm:text-sm text-white placeholder-white/40
                         focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
+
         <div>
           <label class="block text-[11px] font-semibold text-white/70 mb-1">Période (date fin)</label>
           <input id="f2-end-date" type="date"
@@ -222,26 +315,25 @@
                         text-xs sm:text-sm text-white placeholder-white/40
                         focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
+
         <div>
           <label class="block text-[11px] font-semibold text-white/70 mb-1">Recherche globale</label>
-          <input id="f2-q"
-                 type="text"
-                 placeholder="Fournisseur, entrepôt, code, etc."
+          <input id="f2-q" type="text" placeholder="Fournisseur, entrepôt, code, etc."
                  class="w-full px-3 py-1.5 rounded-lg bg-white/10 border border-white/10
                         text-xs sm:text-sm text-white placeholder-white/40
                         focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
       </div>
-      <div class="flex gap-2 justify-end">
-        <button id="btn2-search"
-                type="button"
+
+      <div class="flex gap-2 justify-end w-full lg:w-auto">
+        <button id="btn2-search" type="button"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
                        bg-primary/80 hover:bg-primary text-slate-900 transition">
           <i class="fas fa-search text-[11px]"></i>
           Appliquer
         </button>
-        <button id="btn2-reset"
-                type="button"
+
+        <button id="btn2-reset" type="button"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
                        bg-white/10 hover:bg-white/15 text-white transition">
           <i class="fas fa-undo text-[11px]"></i>
@@ -251,9 +343,8 @@
     </div>
   </div>
 
-  {# Hint for mobile: horizontal scroll #}
   <p class="px-3 sm:px-4 pb-1 text-[11px] text-white/60 sm:hidden">
-    Astuce&nbsp;: faites défiler horizontalement le tableau pour voir toutes les colonnes.
+    Astuce : faites défiler horizontalement le tableau pour voir toutes les colonnes.
   </p>
 
   <!-- Table wrapper -->
@@ -265,7 +356,8 @@
 
       <div class="inline-block min-w-full align-middle">
         <table id="data-table-2"
-               class="min-w-[1200px] w-full text-sm text-left text-white/80">
+               class="w-full text-sm text-left text-white/80"
+               style="min-width: 1200px;">
           <thead class="bg-white/10 text-[11px] uppercase tracking-wide text-white/70">
             <tr>
               <th class="px-3 py-2 whitespace-nowrap">#.DOS</th>
@@ -291,8 +383,9 @@
               <th class="px-3 py-2 whitespace-nowrap text-center">Actions</th>
             </tr>
           </thead>
+
           <tbody id="data-table-body-2" class="divide-y divide-white/5">
-            {# lignes remplies en JS #}
+            {# rows injected by JS #}
           </tbody>
         </table>
       </div>
@@ -300,9 +393,7 @@
       <!-- Pagination -->
       <div id="table-pagination-2"
            class="flex items-center justify-between px-3 py-2 border-t border-white/10 text-xs sm:text-sm text-white/70">
-        <div class="hidden sm:block">
-          Affiche 25 enregistrements par page
-        </div>
+        <div class="hidden sm:block">Affiche 25 enregistrements par page</div>
         <div class="flex items-center gap-2">
           <button id="btn2-first" type="button"
                   class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
@@ -334,19 +425,17 @@
 </section>
 
 <script>
-  // -------- Small helpers ----------
+  // ---- Small helpers ----
   function qs(sel, root){ return (root || document).querySelector(sel); }
   function qsa(sel, root){ return Array.from((root || document).querySelectorAll(sel)); }
 
   function getCSRFToken() {
-      let csrfToken = null;
-      document.cookie.split(';').forEach(function (cookie) {
-          cookie = cookie.trim();
-          if (cookie.startsWith('csrftoken=')) {
-              csrfToken = cookie.substring('csrftoken='.length);
-          }
-      });
-      return csrfToken;
+    let csrfToken = null;
+    document.cookie.split(';').forEach(function (cookie) {
+      cookie = cookie.trim();
+      if (cookie.startsWith('csrftoken=')) csrfToken = cookie.substring('csrftoken='.length);
+    });
+    return csrfToken;
   }
 
   function debounce(fn, delay){
@@ -372,7 +461,7 @@
     document.body.classList.remove('overflow-hidden');
   }
 
-  // -------- Table 2 state ----------
+  // ---- Table state ----
   let currentPage2  = 1;
   const pageSize2   = 25;
   let totalPages2   = 1;
@@ -380,280 +469,245 @@
   let currentRowId2 = null;
 
   function showOverlay2() {
-      const ov = qs('#data-table-wrapper-2 .loading-overlay-2');
-      if (ov) ov.style.display = 'flex';
+    const ov = qs('#data-table-wrapper-2 .loading-overlay-2');
+    if (ov) ov.style.display = 'flex';
   }
   function hideOverlay2() {
-      const ov = qs('#data-table-wrapper-2 .loading-overlay-2');
-      if (ov) ov.style.display = 'none';
+    const ov = qs('#data-table-wrapper-2 .loading-overlay-2');
+    if (ov) ov.style.display = 'none';
   }
   function showEmpty2(msg) {
-      const el = qs('#data-table-empty-2');
-      if (!el) return;
-      el.textContent = msg || 'Aucune donnée à afficher.';
-      el.classList.remove('hidden');
+    const el = qs('#data-table-empty-2');
+    if (!el) return;
+    el.textContent = msg || 'Aucune donnée à afficher.';
+    el.classList.remove('hidden');
   }
   function hideEmpty2() {
-      const el = qs('#data-table-empty-2');
-      if (!el) return;
-      el.classList.add('hidden');
+    const el = qs('#data-table-empty-2');
+    if (!el) return;
+    el.classList.add('hidden');
   }
   function showError2(msg) {
-      const el = qs('#data-table-error-2');
-      if (!el) return;
-      if (msg) el.textContent = msg;
-      el.classList.remove('hidden');
+    const el = qs('#data-table-error-2');
+    if (!el) return;
+    if (msg) el.textContent = msg;
+    el.classList.remove('hidden');
   }
   function hideError2() {
-      const el = qs('#data-table-error-2');
-      if (!el) return;
-      el.classList.add('hidden');
+    const el = qs('#data-table-error-2');
+    if (!el) return;
+    el.classList.add('hidden');
   }
 
   function updatePaginationUI2() {
-      if (totalPages2 < 1) totalPages2 = 1;
-      if (currentPage2 < 1) currentPage2 = 1;
-      if (currentPage2 > totalPages2) currentPage2 = totalPages2;
+    if (totalPages2 < 1) totalPages2 = 1;
+    if (currentPage2 < 1) currentPage2 = 1;
+    if (currentPage2 > totalPages2) currentPage2 = totalPages2;
 
-      const pageInfo = qs('#page2-info');
-      if (pageInfo) pageInfo.textContent = 'Page ' + currentPage2 + ' / ' + totalPages2;
+    const pageInfo = qs('#page2-info');
+    if (pageInfo) pageInfo.textContent = 'Page ' + currentPage2 + ' / ' + totalPages2;
 
-      const atStart = currentPage2 <= 1;
-      const atEnd   = currentPage2 >= totalPages2;
+    const atStart = currentPage2 <= 1;
+    const atEnd   = currentPage2 >= totalPages2;
 
-      const btnFirst = qs('#btn2-first');
-      const btnPrev  = qs('#btn2-prev');
-      const btnNext  = qs('#btn2-next');
-      const btnLast  = qs('#btn2-last');
-
-      if (btnFirst) btnFirst.disabled = atStart;
-      if (btnPrev)  btnPrev.disabled  = atStart;
-      if (btnNext)  btnNext.disabled  = atEnd;
-      if (btnLast)  btnLast.disabled  = atEnd;
+    qs('#btn2-first') && (qs('#btn2-first').disabled = atStart);
+    qs('#btn2-prev')  && (qs('#btn2-prev').disabled  = atStart);
+    qs('#btn2-next')  && (qs('#btn2-next').disabled  = atEnd);
+    qs('#btn2-last')  && (qs('#btn2-last').disabled  = atEnd);
   }
 
   function updateMetrics2() {
-      const totalEl = qs('#metric-total-rows');
-      const pagesEl = qs('#metric-total-pages');
-      const lastEl  = qs('#metric-last-refresh');
+    const totalEl = qs('#metric-total-rows');
+    const pagesEl = qs('#metric-total-pages');
+    const lastEl  = qs('#metric-last-refresh');
 
-      if (totalEl) totalEl.textContent = totalRecords2.toLocaleString('fr-FR');
-      if (pagesEl) pagesEl.textContent = totalPages2.toLocaleString('fr-FR');
-      if (lastEl)  lastEl.textContent = new Date().toLocaleString('fr-FR');
+    if (totalEl) totalEl.textContent = totalRecords2.toLocaleString('fr-FR');
+    if (pagesEl) pagesEl.textContent = totalPages2.toLocaleString('fr-FR');
+    if (lastEl)  lastEl.textContent  = new Date().toLocaleString('fr-FR');
   }
 
-  // -------- Render rows (reporting style) ----------
+  // ---- Render rows ----
   function renderRows2(rows) {
-      const tbody = qs('#data-table-body-2');
-      if (!tbody) return;
-      tbody.innerHTML = '';
+    const tbody = qs('#data-table-body-2');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
-      if (!rows || rows.length === 0) {
-          showEmpty2();
-          return;
-      }
-      hideEmpty2();
+    if (!rows || rows.length === 0) {
+      showEmpty2();
+      return;
+    }
+    hideEmpty2();
 
-      rows.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-white/5 transition';
-          const id = row.idcargaison || row.id || row.pk || row.id_record;
+    const fmt = (v) => {
+      if (v === null || v === undefined || v === '') return '—';
+      if (typeof v === 'number') return v.toLocaleString('fr-FR');
+      return String(v);
+    };
 
-          function fmt(v){
-            if (v === null || v === undefined || v === '') return '—';
-            if (typeof v === 'number') return v.toLocaleString('fr-FR');
-            return String(v);
-          }
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/5 transition';
+      const id = row.idcargaison || row.id || row.pk || row.id_record || '';
 
-          tr.innerHTML = `
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="#.DOS">${fmt(row.numdos)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="#.DECL.(T1E)">${fmt(row.declaration)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="FOURNISSEUR">${fmt(row.importateur__nomimportateur)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="FRONTIERE">${fmt(row.frontiere__nomville)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="ENTREPOT">${fmt(row.entrepot__nomentrepot)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="PRODUIT">${fmt(row.produit__nomproduit)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="IMMAT.">${fmt(row.immatriculation)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE D'ENT.">${fmt(row.dateheurecargaison__date)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE REQ.">${fmt(row.requisitiondackdate__date)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE ECHANT.">${fmt(row.entrepot_echantillon__dateechantillonage__date)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE REC.LABO">${fmt(row.entrepot_echantillon__laboreception__datereceptionlabo__date)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE D'ANALYSE">${fmt(row.impressionresultat__printDate)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE D'INSPECTION">${fmt(row.inspection__dateinspection)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="VOL.DECL">${fmt(row.volume)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DENS.15">${fmt(row.inspection__dens)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="TEMP.ATA">${fmt(row.inspection__temp)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="MTA">${fmt(row.mtaTotal)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="MTV">${fmt(row.mtvTotal)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="GOV">${fmt(row.volConst)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="GSV">${fmt(row.gsvT)}</td>
-            <td class="px-3 py-2 whitespace-nowrap text-center text-xs sm:text-sm" data-label="Actions">
-              <div class="flex flex-wrap gap-1 justify-center">
-                <div class="relative group">
-                  <button
-                    class="action2-btn btn2-edit inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
-                           bg-sky-500/90 hover:bg-sky-400 text-slate-900 font-semibold shadow-sm hover:shadow-md
-                           transition-transform transform hover:-translate-y-0.5"
-                    data-row-id="${id}"
-                    type="button">
-                    <i class="fas fa-eye text-[10px]"></i>
-                  </button>
-                  <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 -translate-y-1 px-2 py-1 rounded bg-slate-900 text-[10px] text-white opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition whitespace-nowrap shadow-lg z-10">Voir le détail</span>
-                </div>
-                <div class="relative group">
-                  <button
-                    class="action2-btn btn2-export inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
-                           bg-emerald-500/10 border border-emerald-400/60 hover:bg-emerald-500/20 text-emerald-100 shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5"
-                    data-row-id="${id}" type="button">
-                    <i class="fas fa-file-export text-[10px]"></i>
-                  </button>
-                  <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 -translate-y-1 px-2 py-1 rounded bg-slate-900 text-[10px] text-white opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition whitespace-nowrap shadow-lg z-10">Exporter cette ligne</span>
-                </div>
-              </div>
-            </td>
-          `;
-          tbody.appendChild(tr);
-      });
+      tr.innerHTML = `
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="#.DOS">${fmt(row.numdos)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="#.DECL.(T1E)">${fmt(row.declaration)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="FOURNISSEUR">${fmt(row.importateur__nomimportateur)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="FRONTIERE">${fmt(row.frontiere__nomville)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="ENTREPOT">${fmt(row.entrepot__nomentrepot)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="PRODUIT">${fmt(row.produit__nomproduit)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="IMMAT.">${fmt(row.immatriculation)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE D'ENT.">${fmt(row.dateheurecargaison__date)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE REQ.">${fmt(row.requisitiondackdate__date)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE ECHANT.">${fmt(row.entrepot_echantillon__dateechantillonage__date)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE REC.LABO">${fmt(row.entrepot_echantillon__laboreception__datereceptionlabo__date)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE D'ANALYSE">${fmt(row.impressionresultat__printDate)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DATE D'INSPECTION">${fmt(row.inspection__dateinspection)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="VOL.DECL">${fmt(row.volume)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="DENS.15">${fmt(row.inspection__dens)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="TEMP.ATA">${fmt(row.inspection__temp)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="MTA">${fmt(row.mtaTotal)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="MTV">${fmt(row.mtvTotal)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="GOV">${fmt(row.volConst)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm" data-label="GSV">${fmt(row.gsvT)}</td>
+        <td class="px-3 py-2 whitespace-nowrap text-center text-xs sm:text-sm" data-label="Actions">
+          <div class="flex flex-row flex-wrap gap-2 justify-center">
+            <button
+              class="action2-btn btn2-edit inline-flex items-center justify-center w-9 h-9 rounded-full
+                     bg-sky-500/90 hover:bg-sky-400 text-slate-900 font-semibold shadow-sm hover:shadow-md
+                     transition-transform transform hover:-translate-y-0.5"
+              data-row-id="${id}" type="button" aria-label="Voir">
+              <i class="fas fa-eye text-[12px]"></i>
+            </button>
+
+            <button
+              class="action2-btn btn2-export inline-flex items-center justify-center w-9 h-9 rounded-full
+                     bg-emerald-500/10 border border-emerald-400/60 hover:bg-emerald-500/20 text-emerald-100
+                     shadow-sm hover:shadow-md transition-transform transform hover:-translate-y-0.5"
+              data-row-id="${id}" type="button" aria-label="Exporter">
+              <i class="fas fa-file-export text-[12px]"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
-  // -------- Load table (server-side reporting endpoint) ----------
+  // ---- Load table (server-side endpoint) ----
   async function loadTable2(page) {
-      page = page || 1;
-      hideError2();
-      hideEmpty2();
-      showOverlay2();
+    page = page || 1;
+    hideError2();
+    hideEmpty2();
+    showOverlay2();
 
-      const start  = (page - 1) * pageSize2;
-      const length = pageSize2;
+    const start  = (page - 1) * pageSize2;
+    const length = pageSize2;
 
-      const params = new URLSearchParams();
-      params.set('start',  String(start));
-      params.set('length', String(length));
-      params.set('draw',   '1');
+    const params = new URLSearchParams();
+    params.set('start',  String(start));
+    params.set('length', String(length));
+    params.set('draw',   '1');
 
-      const fq = qs('#f2-q');
-      const q  = fq && fq.value ? fq.value.trim() : '';
-      if (q) {
-        params.set('search[value]', q);
-        params.set('search[regex]', 'false');
-      }
+    const q  = (qs('#f2-q')?.value || '').trim();
+    if (q) {
+      params.set('search[value]', q);
+      params.set('search[regex]', 'false');
+    }
 
-      const fStart = qs('#f2-start-date');
-      const fEnd   = qs('#f2-end-date');
-      if (fStart && fStart.value) params.set('start_date', fStart.value);
-      if (fEnd && fEnd.value)     params.set('end_date',   fEnd.value);
+    const startDate = qs('#f2-start-date')?.value || '';
+    const endDate   = qs('#f2-end-date')?.value || '';
+    if (startDate) params.set('start_date', startDate);
+    if (endDate)   params.set('end_date', endDate);
 
-      try {
-          const res = await fetch(`{% url 'your_rapport_activite_list' %}?${params.toString()}`, {
-              headers: { 'X-Requested-With': 'XMLHttpRequest' }
-          });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const json = await res.json();
+    try {
+      const res = await fetch(`{% url 'your_rapport_activite_list' %}?${params.toString()}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
 
-          const rows = json.data || [];
-          totalRecords2 = json.recordsFiltered || json.recordsTotal || rows.length;
-          totalPages2   = Math.max(1, Math.ceil(totalRecords2 / pageSize2));
-          currentPage2  = page;
+      const json = await res.json();
 
-          if (!rows.length) {
-              renderRows2([]);
-              updatePaginationUI2();
-              updateMetrics2();
-              return;
-          }
+      const rows = json.data || [];
+      totalRecords2 = json.recordsFiltered || json.recordsTotal || rows.length;
+      totalPages2   = Math.max(1, Math.ceil(totalRecords2 / pageSize2));
+      currentPage2  = page;
 
-          renderRows2(rows);
-          updatePaginationUI2();
-          updateMetrics2();
-      } catch (err) {
-          console.error('Erreur chargement données (table 2):', err);
-          showError2("Erreur de chargement des données.");
-      } finally {
-          hideOverlay2();
-      }
-  }
-
-  function reloadDataTable2() {
-      loadTable2(currentPage2);
+      renderRows2(rows);
+      updatePaginationUI2();
+      updateMetrics2();
+    } catch (err) {
+      console.error('Erreur chargement données (table 2):', err);
+      showError2("Erreur de chargement des données.");
+    } finally {
+      hideOverlay2();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-      // Initial load
+    // initial load
+    loadTable2(1);
+
+    // pagination
+    qs('#btn2-first')?.addEventListener('click', () => { if (currentPage2 !== 1) loadTable2(1); });
+    qs('#btn2-prev') ?.addEventListener('click', () => { if (currentPage2 > 1) loadTable2(currentPage2 - 1); });
+    qs('#btn2-next') ?.addEventListener('click', () => { if (currentPage2 < totalPages2) loadTable2(currentPage2 + 1); });
+    qs('#btn2-last') ?.addEventListener('click', () => { if (currentPage2 !== totalPages2) loadTable2(totalPages2); });
+
+    // modal open/close
+    qsa('[data-modal-open]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const target = btn.getAttribute('data-modal-open');
+        if (target) openModal(target);
+      });
+    });
+    qsa('[data-modal-close]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const target = btn.getAttribute('data-modal-close');
+        if (target) closeModal(target);
+      });
+    });
+    const modal = qs('#modal-example');
+    if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(modal); });
+
+    // filters
+    qs('#btn2-search')?.addEventListener('click', () => loadTable2(1));
+    qs('#btn2-reset') ?.addEventListener('click', () => {
+      if (qs('#f2-start-date')) qs('#f2-start-date').value = '';
+      if (qs('#f2-end-date')) qs('#f2-end-date').value = '';
+      if (qs('#f2-q')) qs('#f2-q').value = '';
       loadTable2(1);
+    });
+    qs('#f2-q')?.addEventListener('input', debounce(() => loadTable2(1), 600));
 
-      // Pagination
-      qs('#btn2-first')?.addEventListener('click', () => { if (currentPage2 !== 1) loadTable2(1); });
-      qs('#btn2-prev') ?.addEventListener('click', () => { if (currentPage2 > 1) loadTable2(currentPage2 - 1); });
-      qs('#btn2-next') ?.addEventListener('click', () => { if (currentPage2 < totalPages2) loadTable2(currentPage2 + 1); });
-      qs('#btn2-last') ?.addEventListener('click', () => { if (currentPage2 !== totalPages2) loadTable2(totalPages2); });
+    // actions
+    qs('#data-table-body-2')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.action2-btn');
+      if (!btn) return;
 
-      // Open/close modal
-      qsa('[data-modal-open]').forEach(btn => {
-        btn.addEventListener('click', e => {
-          e.preventDefault();
-          const target = btn.getAttribute('data-modal-open');
-          if (target) openModal(target);
-        });
-      });
-      qsa('[data-modal-close]').forEach(btn => {
-        btn.addEventListener('click', e => {
-          e.preventDefault();
-          const target = btn.getAttribute('data-modal-close');
-          if (target) closeModal(target);
-        });
-      });
-      const exampleModal = qs('#modal-example');
-      if (exampleModal) {
-        exampleModal.addEventListener('click', e => {
-          if (e.target === exampleModal) closeModal(exampleModal);
-        });
+      currentRowId2 = btn.getAttribute('data-row-id') || '';
+
+      if (btn.classList.contains('btn2-edit')) {
+        openModal('modal-example');
+      } else if (btn.classList.contains('btn2-export')) {
+        fetch('{% url "codification" %}', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: new URLSearchParams({ pk: currentRowId2 }).toString()
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          alert('Export demandé pour cette ligne (adapter la logique backend ici).');
+        })
+        .catch(() => alert('Erreur lors de la demande d’export.'));
       }
-
-      // Search & filters
-      const fq = qs('#f2-q');
-      qs('#btn2-search')?.addEventListener('click', () => loadTable2(1));
-      qs('#btn2-reset') ?.addEventListener('click', () => {
-        const fStart = qs('#f2-start-date');
-        const fEnd   = qs('#f2-end-date');
-        if (fStart) fStart.value = '';
-        if (fEnd)   fEnd.value   = '';
-        if (fq)     fq.value     = '';
-        loadTable2(1);
-      });
-      if (fq) fq.addEventListener('input', debounce(() => loadTable2(1), 600));
-
-      // Actions in table 2
-      const tbody = qs('#data-table-body-2');
-      if (tbody) {
-        tbody.addEventListener('click', (e) => {
-          const btn = e.target.closest('.action2-btn');
-          if (!btn) return;
-
-          currentRowId2 = btn.getAttribute('data-row-id');
-
-          if (btn.classList.contains('btn2-edit')) {
-            // Ouvrir la modale de détail / export pour cette ligne
-            openModal('modal-example');
-            // Tu peux ici pré-remplir le formulaire avec des infos de la ligne si nécessaire
-          } else if (btn.classList.contains('btn2-export')) {
-            // Exemple simple d’export ligne (à adapter)
-            fetch('{% url "codification" %}', {
-              method: 'POST',
-              headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: new URLSearchParams({ pk: currentRowId2 }).toString()
-            }).then(res => {
-              if (!res.ok) throw new Error('HTTP ' + res.status);
-              // Ici, suivant ton backend, tu peux lancer un téléchargement ou afficher une notif
-              alert('Export demandé pour cette ligne (adapter logique au backend).');
-            }).catch(() => {
-              alert('Erreur lors de la demande d’export.');
-            });
-          }
-        });
-      }
+    });
   });
 </script>
 
