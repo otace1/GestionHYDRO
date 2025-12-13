@@ -5,8 +5,8 @@ from . import views
 
 urlpatterns = [
 
-    path('', views.GestionCodification.affichageTableau, name='codification'),
-    path('response/responseAffichageTableau/', views.GestionCodification.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
+    path('', views.affichageTableau, name='codification'),
+    path('response/responseAffichageTableau/', views.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
     path('details/<int:pk>', views.linedetails, name='details'),
     path('update/<int:pk>', views.lineupdate, name='update'),
     #
@@ -105,6 +105,8 @@ urlpatterns = [
 
     # Rapport Activité detailed table (replicates DjangoTables2 RapportActivite)
     path('second/rapport-activite/', views.reporting_rapport_activite_list, name='your_rapport_activite_list'),
+    # Alias with a clearer name for template usage
+    path('second/rapport-activite/json/', views.reporting_rapport_activite_list, name='reporting_rapport_activite_list'),
 
 
 

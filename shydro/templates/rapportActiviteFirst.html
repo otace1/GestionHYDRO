@@ -238,7 +238,7 @@
         </div>
         <div class="text-2xl font-semibold text-white" id="metric-total-pages">1</div>
         <p class="mt-1 text-[11px] text-white/60">
-          Nombre de pages calculé sur la base de 25 lignes par page.
+          Nombre de pages calculé sur la base de 15 lignes par page.
         </p>
       </div>
 
@@ -346,7 +346,7 @@
       <!-- Pagination -->
       <div id="table-pagination-2"
            class="flex items-center justify-between px-3 py-2 border-t border-white/10 text-xs sm:text-sm text-white/70">
-        <div class="hidden sm:block">Affiche 25 enregistrements par page</div>
+        <div class="hidden sm:block">Affiche 15 enregistrements par page</div>
         <div class="flex items-center gap-2">
           <button id="btn2-first" type="button"
                   class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
@@ -412,7 +412,7 @@
   }
 
   let currentPage2  = 1;
-  const pageSize2   = 25;
+  const pageSize2   = 15;
   let totalPages2   = 1;
   let totalRecords2 = 0;
   let currentRowId2 = null;
@@ -541,7 +541,7 @@
     if (ed) params.set('end_date', ed);
 
     try {
-      const res = await fetch(`{% url 'your_rapport_activite_list' %}?${params.toString()}`, {
+      const res = await fetch(`{% url 'reporting_rapport_activite_list' %}?${params.toString()}`, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
