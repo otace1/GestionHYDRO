@@ -13,8 +13,8 @@ cd /app
 # WEB: migrations + static
 # ---------------------------
 run_migrations() {
-  echo "==> collectstatic"
-  python manage.py collectstatic --noinput
+#  echo "==> collectstatic"
+#  python manage.py collectstatic --noinput
 
   echo "==> migrate"
   python manage.py migrate --noinput

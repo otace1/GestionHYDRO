@@ -6,14 +6,13 @@
   <title>TrackFlow +</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Inter font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<!-- Font Awesome (icons for the sidebar) -->
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
 
   <script>
     tailwind.config = {
@@ -47,94 +46,185 @@
     }
   </script>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        :root {
-            --bg-grad: radial-gradient(1200px 900px at 10% -10%, rgba(0, 245, 212, .08), transparent 60%),
-            radial-gradient(900px 700px at 120% 120%, rgba(76, 201, 240, .08), transparent 60%),
-            linear-gradient(160deg, #0a0f1e, #0f1632 70%);
-        }
+  <style>
+    :root {
+      --bg-grad:
+        radial-gradient(1200px 900px at 10% -10%, rgba(0, 245, 212, .08), transparent 60%),
+        radial-gradient(900px 700px at 120% 120%, rgba(76, 201, 240, .08), transparent 60%),
+        linear-gradient(160deg, #0a0f1e, #0f1632 70%);
+    }
 
-        html, body {
-            height: 100%;
-        }
+    html, body { height: 100%; }
 
-        body {
-            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", sans-serif;
-            background: var(--bg-grad);
-            color: #e9eefc;
-            overflow-x: hidden;
-        }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", sans-serif;
+      background: var(--bg-grad);
+      color: #e9eefc;
+      overflow-x: hidden;
+    }
 
-        .glass {
-            background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
-            border: 1px solid rgba(255, 255, 255, .08);
-            backdrop-filter: blur(8px);
-        }
+    .glass {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
+      border: 1px solid rgba(255, 255, 255, .08);
+      backdrop-filter: blur(8px);
+    }
 
-        .shimmer:before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            pointer-events: none;
-            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, .08) 25%, transparent 55%);
-            transform: translateX(-100%);
-            animation: shimmerMove 2.2s ease-in-out infinite;
-        }
+    .shimmer:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, .08) 25%, transparent 55%);
+      transform: translateX(-100%);
+      animation: shimmerMove 2.2s ease-in-out infinite;
+    }
 
-        @media (prefers-reduced-motion: reduce) {
-            .shimmer:before {
-                animation: none;
-            }
+    @media (prefers-reduced-motion: reduce) {
+      .shimmer:before { animation: none; }
+      [style*="gradientShift"], .animate-floatUp { animation: none !important; }
+    }
 
-            [style*="gradientShift"], .animate-floatUp {
-                animation: none !important;
-            }
-        }
-    </style>
+    /* ===== Responsive sidebar behavior helpers ===== */
+    /* On mobile: sidebar as overlay; on desktop: sidebar stays in flow */
+    .sidebar-mobile-overlay {
+      position: fixed !important;
+      top: 0; bottom: 0; left: 0;
+      z-index: 60;
+    }
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,.65);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+      display: none;
+    }
+    .sidebar-backdrop.show { display: block; }
+  </style>
 </head>
 
 <body class="min-h-screen">
-<div class="flex min-h-screen">
-    <!-- Sidebar -->
+  {# Backdrop for mobile sidebar #}
+  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <div class="min-h-screen flex">
+    <!-- Sidebar (your include must expose an element with id="sidebar") -->
     {% include 'menus/side-menu/main-menu.html' %}
+
     <!-- Main column -->
-    <div class="flex-1 flex flex-col">
-        <!-- Top bar -->
-        {% include 'menus/navbar/navbar.html' %}
-        {% block breadcrumb %}{% endblock %}
+    <div class="flex-1 min-w-0 flex flex-col">
+      <!-- Top bar (should contain a button with id="sidebarToggle" for mobile) -->
+      {% include 'menus/navbar/navbar.html' %}
 
-        <!-- CONTENT -->
-        <main class="flex-1 w-full">
-            <div class="w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
-                {% block main_content %}
-                {% endblock %}
-            </div>
-        </main>
+      {% block breadcrumb %}{% endblock %}
 
-        {% include 'menus/footer/footer.html' %}
+      <!-- CONTENT -->
+      <main class="flex-1 w-full min-w-0">
+        <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
+          {% block main_content %}{% endblock %}
+        </div>
+      </main>
+
+      {% include 'menus/footer/footer.html' %}
     </div>
-</div>
+  </div>
 
+  <script>
+    // Fully responsive sidebar:
+    // - < lg: sidebar overlays with backdrop + body scroll lock
+    // - >= lg: sidebar is always visible in layout (no overlay/backdrop)
+    const sidebarToggle   = document.getElementById('sidebarToggle');
+    const sidebar         = document.getElementById('sidebar');
+    const backdrop        = document.getElementById('sidebarBackdrop');
 
-<!-- Page scripts -->
-<script>
-    // Sidebar toggle (if your sidebar include exposes #sidebar)
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-    if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('hidden');
-            sidebar.classList.toggle('absolute');
-            sidebar.classList.toggle('inset-y-0');
-            sidebar.classList.toggle('z-50');
-            sidebar.classList.toggle('left-0');
-            document.body.style.overflow = sidebar.classList.contains('absolute') ? 'hidden' : '';
-        });
+    function isDesktop() {
+      // Tailwind lg breakpoint = 1024px
+      return window.matchMedia('(min-width: 1024px)').matches;
     }
-</script>
+
+    function openSidebarMobile(){
+      if (!sidebar) return;
+      // ensure visible
+      sidebar.classList.remove('hidden');
+
+      // overlay mode styles
+      sidebar.classList.add('sidebar-mobile-overlay');
+      sidebar.style.width = sidebar.style.width || '18rem'; // 288px default feel
+
+      // backdrop + lock scroll
+      if (backdrop) backdrop.classList.add('show');
+      document.body.style.overflow = 'hidden';
+
+      // a11y
+      sidebar.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeSidebarMobile(){
+      if (!sidebar) return;
+
+      sidebar.classList.remove('sidebar-mobile-overlay');
+
+      // hide sidebar on mobile only (desktop keeps it visible)
+      if (!isDesktop()){
+        sidebar.classList.add('hidden');
+      }
+
+      if (backdrop) backdrop.classList.remove('show');
+      document.body.style.overflow = '';
+
+      sidebar.setAttribute('aria-hidden', isDesktop() ? 'false' : 'true');
+    }
+
+    function syncSidebarMode(){
+      if (!sidebar) return;
+
+      if (isDesktop()){
+        // Desktop: always visible and in-flow
+        sidebar.classList.remove('hidden');
+        sidebar.classList.remove('sidebar-mobile-overlay');
+        if (backdrop) backdrop.classList.remove('show');
+        document.body.style.overflow = '';
+        sidebar.setAttribute('aria-hidden', 'false');
+      } else {
+        // Mobile: start closed by default (if you prefer open, remove next line)
+        sidebar.classList.add('hidden');
+        sidebar.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    // Initial
+    syncSidebarMode();
+
+    // Toggle button
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        const isHidden = sidebar.classList.contains('hidden');
+        if (isHidden) openSidebarMobile();
+        else closeSidebarMobile();
+      });
+    }
+
+    // Backdrop click closes
+    if (backdrop) {
+      backdrop.addEventListener('click', () => closeSidebarMobile());
+    }
+
+    // ESC closes on mobile overlay
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar && !isDesktop() && !sidebar.classList.contains('hidden')) {
+        closeSidebarMobile();
+      }
+    });
+
+    // On resize, switch modes safely
+    window.addEventListener('resize', () => {
+      // Debounce-ish: sync quickly but safely
+      syncSidebarMode();
+    });
+  </script>
 </body>
 </html>
