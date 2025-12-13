@@ -79,9 +79,6 @@ def affichageTableau(request):
         pending_count = qs_journal.filter(etat="En attente requisition", numdos__isnull=True).count()
         total_volume = qs_journal.aggregate(total=Coalesce(Sum('volume'), Value(0.0)))['total'] or 0
 
-        print('TEST')
-        print(total_volume)
-
     context = {
         # KPIs for shydro.html header strip
         'total_count': total_count if role in (7, 1, 11) else 0,
@@ -115,14 +112,14 @@ def responseAffichageTableau(request):
     # ----------------------------
     search_value = (request.GET.get('search[value]', '') or request.GET.get('q', '')).strip()
 
-    fournisseur  = (request.GET.get('fournisseur', '') or '').strip()
-    entrepot     = (request.GET.get('entrepot', '') or '').strip()
-    produit      = (request.GET.get('produit', '') or '').strip()
-    immat        = (request.GET.get('immatriculation', '') or '').strip()
-    declaration  = (request.GET.get('declaration', '') or '').strip()
-    numreq       = (request.GET.get('numreq', '') or '').strip()
-    date_d       = (request.GET.get('date_d', '') or request.GET.get('start_date', '') or '').strip()
-    date_f       = (request.GET.get('date_f', '') or request.GET.get('end_date', '') or '').strip()
+    fournisseur = (request.GET.get('fournisseur', '') or '').strip()
+    entrepot = (request.GET.get('entrepot', '') or '').strip()
+    produit = (request.GET.get('produit', '') or '').strip()
+    immat = (request.GET.get('immatriculation', '') or '').strip()
+    declaration = (request.GET.get('declaration', '') or '').strip()
+    numreq = (request.GET.get('numreq', '') or '').strip()
+    date_d = (request.GET.get('date_d', '') or request.GET.get('start_date', '') or '').strip()
+    date_f = (request.GET.get('date_f', '') or request.GET.get('end_date', '') or '').strip()
 
     if search_value:
         qs = qs.filter(
@@ -1003,7 +1000,7 @@ def rapportActivite(request):
         request,
         paginate={
             "per_page": 10,
-            "paginator_class": LazyPaginator,   # <- key part
+            "paginator_class": LazyPaginator,  # <- key part
         },
     ).configure(table)
 
@@ -1011,8 +1008,6 @@ def rapportActivite(request):
         'table': table,
         'form': form,
     })
-
-
 
 
 @login_required(login_url='login')
@@ -1282,8 +1277,6 @@ def regularisationDestination(request):
         return redirect('regularisation')
 
 
-
-
 @login_required(login_url='login')
 def transbordement(request):
     # template = 'regularisationDestination.html'
@@ -1356,14 +1349,12 @@ def del_record(request):
     else:
         return redirect('regularisation')
 
-
     # log = UserActivityLog(
     #     user=user,
     #     action= "Delete",
     #     description= "User has delete a record"
     # )
     # log.save()
-
 
 
 def checkExportTaskStatus(request, task_id):
@@ -3467,21 +3458,22 @@ def tableaudeBordHydro(request):
 
     # Percentages must still use numeric values, so recalc from floats
     tv = float(year_qs.aggregate(total=Coalesce(Sum('volume'), Value(0.0)))['total'] or 0.0)
+
     def pct(x):
         x = float(x or 0.0)
-        return round((x/tv)*100) if tv else 0
+        return round((x / tv) * 100) if tv else 0
 
     context = {
         'e': agg['e'], 'l': agg['l'], 'p': agg['p'], 'i': agg['i'], 'c': agg['c'],
         'd': imp_agg['d'], 'n': imp_agg['n'],
         'gasoilVolume': agg['gasoilVolume'],
-        'mogasVolume':  agg['mogasVolume'],
-        'jetVolume':    agg['jetVolume'],
-        'petroleVolume':agg['petroleVolume'],
-        'totalVolume':  agg['totalVolume'],
-        'gasoilPercentage':  pct(agg['gasoilVolume']),
-        'mogasPercentage':   pct(agg['mogasVolume']),
-        'jetPercentage':     pct(agg['jetVolume']),
+        'mogasVolume': agg['mogasVolume'],
+        'jetVolume': agg['jetVolume'],
+        'petroleVolume': agg['petroleVolume'],
+        'totalVolume': agg['totalVolume'],
+        'gasoilPercentage': pct(agg['gasoilVolume']),
+        'mogasPercentage': pct(agg['mogasVolume']),
+        'jetPercentage': pct(agg['jetVolume']),
         'petrolePercentage': pct(agg['petroleVolume']),
         'current_year': current_year,
         # KPI boxes displayed at the top of dashboardHydro.html
@@ -3618,7 +3610,6 @@ def kpiDetailsShydro(request):
     })
 
 
-
 @login_required(login_url='login')
 def lastrecordShydro(request):
     user = request.user
@@ -3634,7 +3625,7 @@ def lastrecordShydro(request):
             etat="En attente requisition",
             entrepot__ville__affectationville__username_id=user_id,
         )
-        .order_by("-dateheurecargaison")[:5]   # limit first, then serialize
+        .order_by("-dateheurecargaison")[:5]  # limit first, then serialize
     )
 
     data = [
@@ -3989,9 +3980,9 @@ def afficherDossImport(request):
 
 @login_required(login_url='login')
 def dataSanitizing(request):
-    template='data_sanitizing.html'
+    template = 'data_sanitizing.html'
     context = {}
-    return render( request, template, context)
+    return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -4006,10 +3997,10 @@ def data_duplicate(request):
         df.columns = df.columns.str.strip()  # Clean column names
 
         try:
-            entry_date_col = df.columns[1]   # Column 2
-            decl_col = df.columns[3]         # Column 4
+            entry_date_col = df.columns[1]  # Column 2
+            decl_col = df.columns[3]  # Column 4
             immatriculation_col = df.columns[6]  # Column 7
-            date_req_col = df.columns[8]     # Column 9
+            date_req_col = df.columns[8]  # Column 9
         except IndexError:
             return HttpResponse("The Excel file does not contain the required number of columns.", status=400)
 
@@ -4022,7 +4013,7 @@ def data_duplicate(request):
         # Get only duplicates with missing DATE REQ.
         duplicates_missing_req = df[
             (df['Duplicate']) & (df[date_req_col].isna())
-        ]
+            ]
 
         # Remove from main dataframe
         cleaned_df = df.drop(duplicates_missing_req.index)
@@ -4031,7 +4022,8 @@ def data_duplicate(request):
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             cleaned_df.drop(columns='Duplicate').to_excel(writer, index=False, sheet_name='Cleaned Data')
-            duplicates_missing_req.drop(columns='Duplicate').to_excel(writer, index=False, sheet_name='Removed Duplicates')
+            duplicates_missing_req.drop(columns='Duplicate').to_excel(writer, index=False,
+                                                                      sheet_name='Removed Duplicates')
 
         output.seek(0)
         response = HttpResponse(
@@ -4047,9 +4039,9 @@ def data_duplicate(request):
 
 @login_required(login_url='login')
 def data_merge(request):
-    template='data_sanitizing.html'
+    template = 'data_sanitizing.html'
     context = {}
-    return render( request, template, context)
+    return render(request, template, context)
 
 
 def _rapport_base_qs(request):
@@ -4088,15 +4080,15 @@ def _rapport_base_qs(request):
         )
         .annotate(
             # pull subquery aggregates (force FloatField result)
-            volConst = Subquery(comp_agg.values('total_gov')[:1], output_field=FloatField()),
-            gsvT     = Subquery(comp_agg.values('total_gsv')[:1], output_field=FloatField()),
-            mtaTotal = Subquery(comp_agg.values('total_mta')[:1], output_field=FloatField()),
-            mtvTotal = Subquery(comp_agg.values('total_mtv')[:1], output_field=FloatField()),
+            volConst=Subquery(comp_agg.values('total_gov')[:1], output_field=FloatField()),
+            gsvT=Subquery(comp_agg.values('total_gsv')[:1], output_field=FloatField()),
+            mtaTotal=Subquery(comp_agg.values('total_mta')[:1], output_field=FloatField()),
+            mtvTotal=Subquery(comp_agg.values('total_mtv')[:1], output_field=FloatField()),
 
             # dates along O2O chains
-            echantillon_date = Max('entrepot_echantillon__dateechantillonage'),
-            labo_recep_date  = Max('entrepot_echantillon__laboreception__datereceptionlabo'),
-            print_date       = Max('impressionresultat__printDate'),
+            echantillon_date=Max('entrepot_echantillon__dateechantillonage'),
+            labo_recep_date=Max('entrepot_echantillon__laboreception__datereceptionlabo'),
+            print_date=Max('impressionresultat__printDate'),
         )
         .order_by('-dateheurecargaison')
     )

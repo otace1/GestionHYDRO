@@ -500,15 +500,32 @@
         <td class="px-3 py-2 text-xs sm:text-sm" data-label="GSV">${fmt(row.gsvT)}</td>
         <td class="px-3 py-2 text-center text-xs sm:text-sm" data-label="Actions">
           <div class="flex flex-wrap gap-1 justify-center">
-            <button class="action2-btn btn2-edit inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+            <!-- View details -->
+            <button class="action2-btn btn2-details inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
                            bg-sky-500/90 hover:bg-sky-400 text-slate-900 font-semibold shadow-sm hover:shadow-md transition"
-                    data-row-id="${id}" type="button">
+                    title="Détails" data-row-id="${id}" type="button">
               <i class="fas fa-eye text-[10px]"></i>
             </button>
-            <button class="action2-btn btn2-export inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
-                           bg-emerald-500/10 border border-emerald-400/60 hover:bg-emerald-500/20 text-emerald-100 shadow-sm hover:shadow-md transition"
-                    data-row-id="${id}" type="button">
-              <i class="fas fa-file-export text-[10px]"></i>
+
+            <!-- Re‑inspect -->
+            <button class="action2-btn btn2-reinspect inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-amber-500/20 border border-amber-400/70 hover:bg-amber-500/30 text-amber-100 shadow-sm hover:shadow-md transition"
+                    title="Ré‑inspecter" data-row-id="${id}" type="button">
+              <i class="fas fa-rotate-left text-[10px]"></i>
+            </button>
+
+            <!-- Print: Rapport Echantillon -->
+            <button class="action2-btn btn2-print-re inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-emerald-500/20 border border-emerald-400/60 hover:bg-emerald-500/30 text-emerald-100 shadow-sm hover:shadow-md transition"
+                    title="Imprimer (Echantillon)" data-row-id="${id}" type="button">
+              <i class="fas fa-file-pdf text-[10px]"></i>
+            </button>
+
+            <!-- Print: Rapport Inspection -->
+            <button class="action2-btn btn2-print-is inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-purple-500/20 border border-purple-400/60 hover:bg-purple-500/30 text-purple-100 shadow-sm hover:shadow-md transition"
+                    title="Imprimer (Inspection)" data-row-id="${id}" type="button">
+              <i class="fas fa-print text-[10px]"></i>
             </button>
           </div>
         </td>
@@ -561,6 +578,17 @@
     } finally {
       hideOverlay2();
     }
+  }
+
+  // URL helpers for actions
+  const URL_DETAILS_TEMPLATE = "{% url 'details' 0 %}"; // will replace trailing /0 with /<id>
+  const URL_RAPP_RE_TEMPLATE = "{% url 'rapportRe' 0 %}";
+  const URL_RAPP_IS_TEMPLATE = "{% url 'rapportIs' 0 %}";
+  const URL_REINSPECTER      = "{% url 'reInspecter' %}";
+
+  function urlWithId(template, id) {
+    // Replace the last "/0" with "/<id>"
+    return template.replace(/\/?0\/?$/, `/${id}`);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -618,20 +646,35 @@
 
       currentRowId2 = btn.getAttribute('data-row-id');
 
-      if (btn.classList.contains('btn2-edit')) {
-        openModal('modal-example');
-      } else if (btn.classList.contains('btn2-export')) {
-        fetch('{% url "codification" %}', {
+      if (btn.classList.contains('btn2-details')) {
+        // Navigate to details/<pk>
+        const url = urlWithId(URL_DETAILS_TEMPLATE, currentRowId2);
+        window.location.href = url;
+      } else if (btn.classList.contains('btn2-reinspect')) {
+        // POST JSON to reInspecter with { rowId: pk }
+        fetch(URL_REINSPECTER, {
           method: 'POST',
           headers: {
             'X-CSRFToken': getCSRFToken(),
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
           },
-          body: new URLSearchParams({ pk: currentRowId2 }).toString()
+          body: JSON.stringify({ rowId: currentRowId2 })
         })
-        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); alert('Export demandé (adapter backend).'); })
-        .catch(() => alert('Erreur lors de la demande d’export.'));
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          // The backend redirects; just refresh the table to reflect status
+          alert('Ré‑inspection demandée.');
+          // Optionally reload current page or re-fetch current page of table
+          loadTable2(currentPage2);
+        })
+        .catch(() => alert('Erreur lors de la demande de ré‑inspection.'));
+      } else if (btn.classList.contains('btn2-print-re')) {
+        const url = urlWithId(URL_RAPP_RE_TEMPLATE, currentRowId2);
+        window.open(url, '_blank');
+      } else if (btn.classList.contains('btn2-print-is')) {
+        const url = urlWithId(URL_RAPP_IS_TEMPLATE, currentRowId2);
+        window.open(url, '_blank');
       }
     });
   });
