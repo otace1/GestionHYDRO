@@ -306,284 +306,89 @@
 </div>
 
 <script>
-  const csrfToken = '{{ csrf_token }}';
+    const csrfToken = '{{ csrf_token }}';
 
-  const $  = (sel, root=document) => root.querySelector(sel);
-  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+    $(document).ready(function () {
+        var dataTable = $('#data-table').DataTable({
+            lengthChange: false, // Hide the length change dropdown
+            processing: true, // Show DataTables built-in processing indicator
+            serverSide: true, // Enable server-side processing (lazy pagination)
+            deferRender: true, // Faster rendering for large data
+            responsive: true,
+            searchDelay: 350, // Debounce search to reduce requests
+            pageLength: 20, // Keep UI page size aligned with backend default (20)
+            ordering: true, // Enable server-side ordering; backend maps indices to fields
+            stateSave: true, // Persist table state to reduce redundant reload work
+            ajax: {
+                url: '{% url 'responseAffichageTableau' %}',
+                type: 'GET',
+                dataSrc: 'data', // Map backend payload field
+                // Show the loading spinner during DataTable processing
+                beforeSend: function() {
+                  $('#data-table-wrapper .loading-spinner').show();
+                },
+                // Hide the loading spinner after DataTable processing
+                complete: function() {
+                  $('#data-table-wrapper .loading-spinner').hide();
+                }
+        },
+            columns: [
+                { data: 'date_entree_display' },
+                { data: 'importateur__nomimportateur' },
+                { data: 'entrepot__nomentrepot' },
+                { data: 'produit__nomproduit' },
+                { data: 'volume' },
+                { data: 'immatriculation' },
+                { data: 'declaration' },
+                { data: 'numreq' },
+                { // Action column (not orderable/searchable)
+                    data: 'idcargaison',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        // 'data' contains the value of 'idcargaison' for this row
+                        // Here, we'll create a JSON input field and a button to submit the data
 
-  // ---------------- KPI count-up animation ----------------
-  document.addEventListener('DOMContentLoaded', () => {
-    const els = $$('[data-kpi-count]');
-    const ease = t => 1 - Math.pow(1 - t, 3); // easeOutCubic
+                        const jsonInput = '<input type="hidden" class="json-input-id" value="' + data + '">' +
+                            '<input type="text" class="json-input" id="input-' + data + '">';
 
-    els.forEach(el => {
-      const target = Number(el.getAttribute('data-kpi-count')) || 0;
-      const dur = 900;
-      let start = null;
-      function step(ts) {
-        if (!start) start = ts;
-        const p = Math.min((ts - start) / dur, 1);
-        el.textContent = Math.floor(ease(p) * target).toLocaleString('fr-FR');
-        if (p < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    });
-  });
+                        // Include a button to submit the JSON data for the row
+                        const submitButton = '<button class="btn-warning" data-row-id="' + data + '">AUTORISER</button>';
 
-  // ---------------- Table + filters + pagination ----------------
-  document.addEventListener('DOMContentLoaded', () => {
-    const tbody   = $('#data-table-body');
-    const overlay = $('#table-loading-overlay');
-    const emptyEl = $('#data-table-empty');
-    const errorEl = $('#data-table-error');
-    // Pagination elements
-    const btnFirst = $('#btn-first');
-    const btnPrev  = $('#btn-prev');
-    const btnNext  = $('#btn-next');
-    const btnLast  = $('#btn-last');
-    const pageInfo = $('#page-info');
-
-    const PAGE_SIZE = 15; // Fixed page size server-side
-    let currentPage = 1;  // 1-based
-    let totalPages = 1;
-    let totalRecords = 0;
-
-    // Filter elements
-    const fq   = $('#f-q');
-    const ff   = $('#f-fournisseur');
-    const fe   = $('#f-entrepot');
-    const fp   = $('#f-produit');
-    const fi   = $('#f-immat');
-    const fd   = $('#f-declaration');
-    const fnr  = $('#f-numreq');
-    const fdd  = $('#f-date-d');
-    const fdf  = $('#f-date-f');
-    const btnSearch = $('#btn-search');
-    const btnReset  = $('#btn-reset');
-
-    // ---- Modal helpers ----
-    const modalOverlay = $('#app-modal-overlay');
-    const modalTitle = $('#app-modal-title');
-    const modalMsg = $('#app-modal-message');
-    const modalIcon = $('#app-modal-icon');
-    const modalClose = $('#app-modal-close');
-    const modalCloseX = $('#app-modal-close-x');
-    const modalNumWrap = $('#app-modal-number');
-    const modalNumText = $('#app-modal-number-text');
-    const btnCopyNum = $('#btn-copy-number');
-
-    function openModal({ title = 'Notification', message = '', variant = 'info', number = null } = {}){
-      if (modalTitle) modalTitle.textContent = title;
-      if (modalMsg) modalMsg.innerHTML = message;
-      // number highlight
-      if (modalNumWrap) {
-        if (number) {
-          modalNumText && (modalNumText.textContent = String(number));
-          modalNumWrap.style.display = 'block';
-        } else {
-          modalNumWrap.style.display = 'none';
-        }
-      }
-      if (modalIcon){
-        // Set small icon based on variant
-        let color = '#60a5fa'; // info
-        if (variant === 'success') color = '#34d399';
-        else if (variant === 'error') color = '#f43f5e';
-        else if (variant === 'warning') color = '#f59e0b';
-        modalIcon.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>`;
-      }
-      if (modalOverlay){
-        modalOverlay.style.display = 'flex';
-        modalOverlay.setAttribute('aria-hidden','false');
-      }
-    }
-    function closeModal(){
-      if (modalOverlay){
-        modalOverlay.style.display = 'none';
-        modalOverlay.setAttribute('aria-hidden','true');
-      }
-    }
-    modalClose?.addEventListener('click', closeModal);
-    modalCloseX?.addEventListener('click', closeModal);
-    modalOverlay?.addEventListener('click', (ev) => {
-      if (ev.target === modalOverlay) closeModal();
-    });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-
-    // Copy to clipboard for number
-    btnCopyNum?.addEventListener('click', async () => {
-      try {
-        const txt = modalNumText?.textContent?.trim();
-        if (!txt) return;
-        await navigator.clipboard.writeText(txt);
-        // tiny feedback
-        btnCopyNum.textContent = 'Copié';
-        setTimeout(() => { btnCopyNum.textContent = 'Copier'; }, 1200);
-      } catch (_) {}
-    });
-
-    function showOverlay()  { if (overlay) overlay.style.display = 'flex'; }
-    function hideOverlay()  { if (overlay) overlay.style.display = 'none'; }
-    function showEmpty(msg) {
-      if (emptyEl) {
-        emptyEl.textContent = msg || 'Aucune donnée à afficher.';
-        emptyEl.classList.remove('hidden');
-      }
-    }
-    function hideEmpty()    { emptyEl && emptyEl.classList.add('hidden'); }
-    function showError(msg) {
-      if (errorEl) {
-        if (msg) errorEl.textContent = msg;
-        errorEl.classList.remove('hidden');
-      }
-    }
-    function hideError()    { errorEl && errorEl.classList.add('hidden'); }
-
-    function fmtNumber(v) {
-      const n = Number(v);
-      if (isNaN(n)) return v ?? '—';
-      return n.toLocaleString('fr-FR');
-    }
-
-    function updatePaginationUI() {
-      const safeTotal = Math.max(1, totalPages);
-      const safePage = Math.min(Math.max(1, currentPage), safeTotal);
-      if (pageInfo) pageInfo.textContent = `Page ${safePage} / ${safeTotal}`;
-      const atStart = safePage <= 1;
-      const atEnd = safePage >= safeTotal;
-      if (btnFirst) btnFirst.disabled = atStart;
-      if (btnPrev)  btnPrev.disabled  = atStart;
-      if (btnNext)  btnNext.disabled  = atEnd;
-      if (btnLast)  btnLast.disabled  = atEnd;
-    }
-
-    function renderRows(rows) {
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      if (!rows || rows.length === 0) {
-        showEmpty();
-        return;
-      }
-      hideEmpty();
-      rows.forEach(row => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-white/5 transition";
-        const id = row.idcargaison;
-        tr.innerHTML = `
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.dateheurecargaison__date || '—'}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.importateur__nomimportateur || '—'}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.entrepot__nomentrepot || '—'}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.produit__nomproduit || '—'}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${fmtNumber(row.volume)}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.immatriculation || '—'}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.declaration || '—'}
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap text-xs sm:text-sm">
-              ${row.numreq || '—'}
-            </td>
-            <td class="px-3 py-2 text-xs sm:text-sm">
-              <div class="flex items-center gap-2">
-                <input type="text"
-                       class="json-input w-full max-w-[160px] px-2 py-1 rounded-md bg-slate-900/40 border border-white/10
-                              text-xs text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                       placeholder="# Réf. requ."
-                       data-input-id="${id}">
-                <button type="button"
-                        class="btn-autoriser inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-semibold
-                               bg-gradient-to-r from-emerald-400 to-emerald-500 text-slate-900 hover:shadow-glassHover
-                               transition"
-                        data-row-id="${id}">
-                  Autoriser
-                </button>
-              </div>
-            </td>
-          `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function collectParams(page = 1) {
-      const params = new URLSearchParams();
-      params.set('page', String(page));
-      params.set('per_page', String(PAGE_SIZE));
-      if (fq?.value)  params.set('q', fq.value.trim());
-      if (ff?.value)  params.set('fournisseur', ff.value.trim());
-      if (fe?.value)  params.set('entrepot', fe.value.trim());
-      if (fp?.value)  params.set('produit', fp.value.trim());
-      if (fi?.value)  params.set('immatriculation', fi.value.trim());
-      if (fd?.value)  params.set('declaration', fd.value.trim());
-      if (fnr?.value) params.set('numreq', fnr.value.trim());
-      if (fdd?.value) params.set('date_d', fdd.value);
-      if (fdf?.value) params.set('date_f', fdf.value);
-      return params;
-    }
-
-    async function loadTable(page = 1) {
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      hideEmpty();
-      hideError();
-      showOverlay();
-
-      try {
-        const params = collectParams(page);
-        const res = await fetch(`{% url 'responseAffichageTableau' %}?${params.toString()}` , {
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
-          cache: 'no-cache'
-        });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-
-        const json = await res.json();
-        const rows = json.data || json.results || json.items || [];
-        totalPages   = json.total_pages || 1;
-        totalRecords = json.total || rows.length;
-        currentPage  = json.page || page || 1;
-
-        if (!rows.length) {
-          showEmpty();
-          updatePaginationUI();
-          return;
-        }
-
-        renderRows(rows);
-        updatePaginationUI();
-      } catch (e) {
-        console.error('Erreur chargement tableau:', e);
-        showError("Erreur de chargement des données.");
-      } finally {
-        hideOverlay();
-      }
-    }
-
-    // Autoriser handler (event delegation)
-    document.addEventListener('click', async (e) => {
-      const btn = e.target.closest('.btn-autoriser');
-      if (!btn) return;
-
-      const rowId = btn.getAttribute('data-row-id');
-      if (!rowId) return;
-
-      const input = document.querySelector(`input[data-input-id="${rowId}"]`);
-      const jsonData = input ? input.value : '';
-
-      if (!jsonData) {
-        openModal({
-          title: 'Référence requise',
-          message: "Veuillez saisir la référence de réquisition avant d'autoriser.",
-          variant: 'warning'
+                        return jsonInput + submitButton;
+                    }
+                }
+            ],
+            // Optional: Add buttons for exporting to Excel
+            dom: 'Bfrtip',
+            // Default order: by date desc (first column)
+            order: [[0, 'desc']],
+            // Explicitly mark last column (actions) as not orderable/searchable
+            columnDefs: [
+                { targets: -1, orderable: false, searchable: false }
+            ],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: 'Export to Excel',
+                    filename: 'rapport_brut',
+                    exportOptions: {
+                        modifier: {
+                            search: 'none'
+                        }
+                    },
+                    action: function (e, dt, node, config) {
+                        // Export using the same endpoint as the table, preserving current search filter
+                        var params = dt.ajax.params() || {};
+                        var searchValue = (params.search && params.search.value) ? params.search.value : '';
+                        var url = '{% url 'responseAffichageTableau' %}?export=excel';
+                        if (searchValue) {
+                            url += '&search[value]=' + encodeURIComponent(searchValue);
+                        }
+                        window.location.href = url;
+                    }
+                }
+            ],
         });
         return;
       }
