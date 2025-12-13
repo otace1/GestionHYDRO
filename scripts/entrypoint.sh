@@ -13,20 +13,23 @@ cd /app
 # WEB: migrations + static
 # ---------------------------
 run_migrations() {
-#  echo "==> collectstatic"
-#  python manage.py collectstatic --noinput
+  # If you want to enable later, uncomment below.
+  # echo "==> collectstatic"
+  # python manage.py collectstatic --noinput
+  #
+  # echo "==> migrate"
+  # python manage.py migrate --noinput
+  #
+  # echo "==> migrate django_celery_results"
+  # python manage.py migrate django_celery_results --noinput || true
 
-#  echo "==> migrate"
-#  python manage.py migrate --noinput
-
-#  echo "==> migrate django_celery_results"
-#  python manage.py migrate django_celery_results --noinput || true
+  : # <-- IMPORTANT: non-empty function body (prevents bash parse error)
 }
 
 # ---------------------------
 # Defaults tuned per DO sizing
-# Web: 4GB / 1 dedicated vCPU
-# Worker: 1GB / 1 shared vCPU
+# Web: 4 GB RAM / 1 Dedicated vCPU
+# Worker: 1 GB RAM / 1 Shared vCPU
 # ---------------------------
 
 # Gunicorn tuning for 1 vCPU / 4GB RAM
