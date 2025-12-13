@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+import importlib
 from dotenv import load_dotenv
 import dj_database_url
 import sentry_sdk
@@ -36,6 +37,9 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 DEBUG = bool(int(os.environ.get("DEBUG", "0")))
 DEVELOPMENT_MODE = bool(int(os.environ.get("DEVELOPMENT_MODE", "0")))
+
+# Feature flags / options
+ENABLE_ANALYTICS = os.environ.get("ENABLE_ANALYTICS", "0") == "1"
 
 ALLOWED_HOSTS = []
 ALLOWED_HOSTS.extend(
@@ -180,6 +184,17 @@ TEMPLATES = [
         },
     },
 ]
+
+# Try to include our optional context processor if available
+try:
+    importlib.import_module("hydrocarbures.context_processors")
+    # Insert without blowing up the settings module if import fails at runtime
+    TEMPLATES[0]["OPTIONS"]["context_processors"].append(
+        "hydrocarbures.context_processors.flags"
+    )
+except Exception:
+    # Safe fallback: continue without the optional context processor
+    pass
 
 WSGI_APPLICATION = "hydrocarbures.wsgi.application"
 
