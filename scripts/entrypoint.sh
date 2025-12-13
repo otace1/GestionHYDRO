@@ -16,11 +16,11 @@ run_migrations() {
 #  echo "==> collectstatic"
 #  python manage.py collectstatic --noinput
 
-  echo "==> migrate"
-  python manage.py migrate --noinput
+#  echo "==> migrate"
+#  python manage.py migrate --noinput
 
-  echo "==> migrate django_celery_results"
-  python manage.py migrate django_celery_results --noinput || true
+#  echo "==> migrate django_celery_results"
+#  python manage.py migrate django_celery_results --noinput || true
 }
 
 # ---------------------------
