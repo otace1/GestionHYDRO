@@ -1,84 +1,401 @@
-{% extends 'rapportsBrutesJournalieAnal.html' %}
-{% load crispy_forms_tags %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
+{% extends 'base/base_template.html' %}
+{% load static %}
 
+{% block main_content %}
+<!-- Safe placeholders for theme hooks -->
+<div class="hidden">
+  <span id="themeIconSun"></span>
+  <span id="themeIconMoon"></span>
+</div>
 
-{% block content %}
-{#    {% render_table table %}#}
+<!-- Back -->
+<div class="mb-4">
+  <a href="{% url 'dashboard' %}"
+     class="group inline-flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-semibold text-white/90 shadow-glass focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition">
+    <span class="h-7 w-7 grid place-items-center rounded-lg bg-primary/15 text-primary group-hover:bg-primary/20 transition">
+      <i class="fa-solid fa-arrow-left text-[13px]"></i>
+    </span>
+    <span>Retour au tableau de bord</span>
+  </a>
+</div>
 
-   <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-                <tr>
-                    <th>DATE</th>
-                    <th>FRONTIERE</th>
-                    <th>DECLARATION</th>
-                    <th>IMPORTATEUR</th>
-                    <th>ENTREPOT</th>
-                    <th>IMMATRICULATION</th>
-                    <th>PRODUIT</th>
-                    <th>VOLUME</th>
-                    <th>DATE REQUISITION</th>
-                    <th>DATE ECHANTILLONNAGE</th>
-                    <th>DATE RECEPTION LABO</th>
-                </tr>
-            </thead>
-        </table>
+<section class="glass rounded-2xl shadow-glass border border-white/10 overflow-hidden">
+  <!-- Header -->
+  <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 px-4 sm:px-5 py-4 border-b border-white/10">
+    <div>
+      <h2 class="text-lg sm:text-xl font-semibold">Rapport brut — Analyse labo en cours</h2>
+      <p class="text-sm text-white/70">État = « Analyse Labo en cours » • Paginé & exportable.</p>
+    </div>
 
-{#     <!-- Optional: Add Bootstrap JavaScript for table styling -->#}
-{#    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>#}
+    <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+      <!-- Column toggles -->
+      <div class="relative hidden sm:block">
+        <button id="colToggleBtn"
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-white/10 hover:bg-white/15 transition">
+          <i class="fa-solid fa-table-columns text-white/80"></i>
+          Colonnes
+          <i class="fa-solid fa-chevron-down text-xs opacity-70"></i>
+        </button>
+        <div id="colToggleMenu"
+             class="hidden absolute right-0 mt-2 w-56 glass rounded-xl border border-white/10 shadow-glass p-2 text-sm z-10"></div>
+      </div>
 
-    <!-- Include FileSaver.js library for saving the Excel file -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+      <!-- Page size -->
+      <label class="text-sm flex items-center gap-2">
+        <span class="text-white/70">Lignes</span>
+        <select id="page-size" class="glass rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+          <option value="8">8</option>
+          <option value="16" selected>16</option>
+          <option value="32">32</option>
+          <option value="64">64</option>
+        </select>
+      </label>
+
+      <!-- Export -->
+      <button id="dt-export"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary to-primary2 text-[#0b1223] hover:shadow-glassHover transition">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M5 20h14" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+        Export Excel
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile cards -->
+  <div id="mobile-cards" class="sm:hidden divide-y divide-white/10"></div>
+
+  <!-- Table (tablet/desktop) -->
+  <div class="hidden sm:block p-0">
+    <div class="overflow-x-auto">
+      <table class="data-grid min-w-full text-sm text-left">
+        <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+          <tr id="table-head-row"><!-- JS builds --></tr>
+        </thead>
+        <tbody id="table-body" class="tbody"><!-- JS fills --></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Empty -->
+  <div id="empty" class="hidden py-10 text-center text-white/70 text-sm">Aucune donnée disponible.</div>
+
+  <!-- Loader -->
+  <div id="loader" class="hidden py-6 flex items-center justify-center">
+    <div class="animate-spin rounded-full h-6 w-6 border-2 border-white/30 border-t-white"></div>
+    <span class="ml-3 text-white/70 text-sm">Chargement…</span>
+  </div>
+
+  <!-- Footer (rich pagination like the other page) -->
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+    <div id="page-info" class="text-xs text-white/70">—</div>
+    <div class="justify-self-center flex items-center gap-1">
+      <button id="first" class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs">«</button>
+      <button id="prev"  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs">‹</button>
+      <input id="page-input" type="number" min="1" class="w-14 text-center glass rounded px-2 py-1 text-xs" value="1" />
+      <span id="page-total" class="text-xs text-white/70">/ 1</span>
+      <button id="next"  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs">›</button>
+      <button id="last"  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs">»</button>
+    </div>
+    <div id="result-info" class="justify-self-end text-xs text-white/70"></div>
+  </footer>
+</section>
+
+<!-- Design-only CSS -->
+<style>
+  .data-grid { border-collapse: separate !important; border-spacing: 0 10px !important; }
+  .data-grid thead tr { border-bottom: 1px solid rgba(255,255,255,.08); }
+  .data-grid thead th { padding:.7rem .9rem; font-weight:700; letter-spacing:.03em; border-bottom:1px solid rgba(255,255,255,.10); user-select:none; }
+  .data-grid .tbody tr {
+    background: rgba(255,255,255,.04);
+    box-shadow: 0 1px 0 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(3,8,20,.25);
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .data-grid .tbody tr:hover {
+    background: rgba(255,255,255,.06);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 0 0 rgba(255,255,255,.08) inset, 0 10px 24px rgba(3,8,20,.32);
+  }
+  .data-grid .tbody td { padding:.7rem .9rem; vertical-align:top; border-top:1px solid rgba(255,255,255,.06); }
+  .data-grid .tbody tr td + td { border-left: 1px solid rgba(255,255,255,.03); }
+  .data-grid .tbody tr td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+  .data-grid .tbody tr td:last-child  { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+  .pill{ display:inline-flex; align-items:center; gap:.4rem; padding:.125rem .5rem; border-radius:.5rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08); }
+  .vol-cell{ display:grid; gap:.25rem; }
+  .vol-bar{ height:.375rem; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; }
+  .vol-fill{ height:100%; background:linear-gradient(90deg,#4cc9f0,#00f5d4); width:0%; transition:width .6s ease; }
+</style>
 
 <script>
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'responseRapportBrutAnalyse' %}',
-                type: 'GET',
-            },
-            columns: [
-                { data: 'dateheurecargaison__date' },
-                { data: 'frontiere__nomville' },
-                { data: 'declaration' },
-                { data: 'importateur__nomimportateur' },
-                { data: 'entrepot__nomentrepot' },
-                { data: 'immatriculation' },
-                { data: 'produit__nomproduit' },
-                { data: 'volume' },
-                { data: 'requisitiondackdate' },
-                { data: 'entrepot_echantillon__dateechantillonage' },
-                { data: 'entrepot_echantillon__laboreception__datereceptionlabo' },
-            ],
-            // Optional: Add buttons for exporting to Excel
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    extend: 'excelHtml5',
-                    text: 'Export to Excel',
-                    filename: 'rapport_brut',
-                    exportOptions: {
-                        modifier: {
-                            search: 'none'
-                        }
-                    },
-                    action: function (e, dt, node, config) {
-                        // Redirect to the export URL instead of using AJAX
-                        window.location.href = '{% url 'exportRapportBrutAnalyse' %}?export=excel';
-                    }
-                }
-            ],
-        });
+document.addEventListener('DOMContentLoaded', () => {
+  // safe theme placeholders
+  (function(){ const s=document.getElementById('themeIconSun'); const m=document.getElementById('themeIconMoon'); if(s)s.classList.add('hidden'); if(m)m.classList.add('hidden'); })();
+
+  /* ===== Helpers ===== */
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const nfmt = n => new Intl.NumberFormat('fr-FR').format(n);
+  const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('fr-FR'); };
+  const fmtDateTime = iso => { if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); };
+  function timeAgoFromISO(iso){
+    if(!iso) return '—';
+    const now=new Date(), then=new Date(iso);
+    if(isNaN(then)) return '—';
+    const s=Math.floor((now-then)/1000);
+    if(s<45) return "à l’instant";
+    if(s<90) return "il y a 1 min";
+    const m=Math.floor(s/60);
+    if(m<45) return `il y a ${m} min`;
+    if(m<90) return "il y a 1 h";
+    const h=Math.floor(m/60);
+    if(h<24) return `il y a ${h} h`;
+    const d=Math.floor(h/24);
+    if(d<30) return `il y a ${d} j`;
+    const mo=Math.floor(d/30);
+    if(mo<12) return `il y a ${mo} mois`;
+    const y=Math.floor(mo/12);
+    return `il y a ${y} an${y>1?'s':''}`;
+  }
+  function refreshTimeAgo(){
+    document.querySelectorAll('[data-timeago-iso]').forEach(el=>{
+      el.textContent = timeAgoFromISO(el.getAttribute('data-timeago-iso'));
     });
+  }
+  setInterval(refreshTimeAgo, 60000);
+
+  /* ===== Columns (match your view fields) ===== */
+  const columns = [
+    { key:'dateheurecargaison__date', title:'Date entrée',
+      render: d => `<span>${fmtDate(d)}</span>` },
+    { key:'frontiere__nomville', title:'Frontière',
+      render: d => d ? `<span class="pill">${esc(d)}</span>` : '—' },
+    { key:'declaration', title:'Déclaration',
+      render: d => d ? `<code class="px-1.5 py-0.5 bg-white/10 rounded text-xs">${esc(d)}</code>` : '—' },
+    { key:'importateur__nomimportateur', title:'Importateur',
+      render: d => esc(d)||'—' },
+    { key:'entrepot__nomentrepot', title:'Entrepôt',
+      render: d => esc(d)||'—' },
+    { key:'immatriculation', title:'Immatriculation',
+      render: d => esc(d)||'—' },
+    { key:'produit__nomproduit', title:'Produit',
+      render: d => d ? `<span class="pill">${esc(d)}</span>` : '—' },
+    { key:'volume', title:'Volume',
+      render: d => {
+        const v=Number(d||0);
+        return `<div class="vol-cell" data-volume="${v}">
+                  <div class="text-white/90 font-medium tabular-nums">${nfmt(v)} m³</div>
+                  <div class="vol-bar"><div class="vol-fill"></div></div>
+                </div>`;
+      }},
+    { key:'requisitiondackdate', title:'Date réquisition',
+      render: iso => iso ? fmtDateTime(iso) : '—' },
+    { key:'entrepot_echantillon__dateechantillonage', title:'Date échantillonnage',
+      render: iso => fmtDate(iso) },
+    { key:'entrepot_echantillon__laboreception__datereceptionlabo', title:'Date réception labo',
+      render: iso => {
+        if(!iso) return '—';
+        const full=fmtDate(iso);
+        return `<div class="flex items-center gap-2">
+                  <span>${esc(full)}</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-white/80"
+                        title="${esc(full)}" data-timeago-iso="${esc(iso)}">${esc(timeAgoFromISO(iso))}</span>
+                </div>`;
+      }},
+  ];
+
+  /* ===== DOM refs ===== */
+  const endpoint = '{% url "responseRapportBrutAnalyse" %}';
+  const headRow  = document.getElementById('table-head-row');
+  const tbody    = document.getElementById('table-body');
+  const cards    = document.getElementById('mobile-cards');
+  const empty    = document.getElementById('empty');
+  const loader   = document.getElementById('loader');
+
+  const pageInfo   = document.getElementById('page-info');
+  const resultInfo = document.getElementById('result-info');
+  const pageInput  = document.getElementById('page-input');
+  const pageTotal  = document.getElementById('page-total');
+  const btnFirst   = document.getElementById('first');
+  const btnPrev    = document.getElementById('prev');
+  const btnNext    = document.getElementById('next');
+  const btnLast    = document.getElementById('last');
+
+  const pageSizeEl = document.getElementById('page-size');
+  const toggleBtn  = document.getElementById('colToggleBtn');
+  const toggleMenu = document.getElementById('colToggleMenu');
+
+  /* ===== Build head ===== */
+  headRow.innerHTML = columns.map((c,i)=>`<th class="px-3 py-2" data-col="${i}">${c.title}</th>`).join('');
+
+  /* ===== Column toggles ===== */
+  const visibleCols = new Array(columns.length).fill(true);
+  function applyColumnVisibility(){
+    Array.from(headRow.children).forEach((th,i)=> th.classList.toggle('hidden', !visibleCols[i]));
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr=>{
+      Array.from(tr.children).forEach((td,i)=> td.classList.toggle('hidden', !visibleCols[i]));
+    });
+  }
+  function rebuildColumnMenu(){
+    if(!toggleMenu) return;
+    toggleMenu.innerHTML='';
+    columns.forEach((col,idx)=>{
+      const item=document.createElement('label');
+      item.className='flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white/10 cursor-pointer';
+      item.innerHTML=`<input type="checkbox" class="accent-primary" ${visibleCols[idx]?'checked':''} />
+                      <span>${col.title}</span>`;
+      item.querySelector('input').addEventListener('change',e=>{
+        visibleCols[idx]=e.target.checked; applyColumnVisibility();
+      });
+      toggleMenu.appendChild(item);
+    });
+  }
+  toggleBtn?.addEventListener('click', ()=> toggleMenu.classList.toggle('hidden'));
+  document.addEventListener('click', e=>{
+    if(!toggleBtn?.contains(e.target) && !toggleMenu?.contains(e.target)) toggleMenu?.classList.add('hidden');
+  });
+  rebuildColumnMenu();
+
+  /* ===== State (keep start/length/draw) ===== */
+  const DEFAULT_PAGE_SIZE = 16;
+  let state = {
+    start: 0,
+    length: parseInt(pageSizeEl?.value || DEFAULT_PAGE_SIZE,10) || DEFAULT_PAGE_SIZE,
+    draw: 1,
+    total: 0
+  };
+
+  function showLoader(on){ loader.classList.toggle('hidden', !on); }
+
+  /* ===== Fetch & render ===== */
+  async function loadPage(){
+    showLoader(true);
+    try{
+      const params = new URLSearchParams({ start:state.start, length:state.length, draw:state.draw });
+      const res = await fetch(`${endpoint}?${params.toString()}`, { headers:{ 'Accept':'application/json' } });
+      const json = await res.json();
+      const rows = Array.isArray(json) ? json : (json.data || []);
+      const total = json.recordsFiltered ?? json.recordsTotal ?? rows.length;
+      state.total = total;
+
+      // desktop
+      tbody.innerHTML = rows.map(row=>{
+        const tds = columns.map((col,idx)=>{
+          const raw = row[col.key];
+          const html = col.render ? col.render(raw, row) : esc(raw ?? '—');
+          return `<td class="px-3 py-2 align-top ${visibleCols[idx] ? '' : 'hidden'}">${html}</td>`;
+        }).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+
+      // mobile cards
+      cards.innerHTML = rows.map(row=>{
+        const vol=row['volume']; const volText=(vol||vol===0)?`${nfmt(vol)} m³`:'—';
+        const recISO=row['entrepot_echantillon__laboreception__datereceptionlabo'];
+        const recFull=fmtDate(recISO);
+        const recBadge= recISO ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-white/80" data-timeago-iso="${esc(recISO)}" title="${esc(recFull)}">${esc(timeAgoFromISO(recISO))}</span>` : '';
+        return `
+          <article class="p-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div><div class="text-xs text-white/50">Date entrée</div><div class="text-sm font-semibold">${fmtDate(row['dateheurecargaison__date'])}</div></div>
+              <div><div class="text-xs text-white/50">Réquisition</div><div class="text-sm">${row['requisitiondackdate']?fmtDateTime(row['requisitiondackdate']):'—'}</div></div>
+              <div><div class="text-xs text-white/50">Échantillonnage</div><div class="text-sm">${fmtDate(row['entrepot_echantillon__dateechantillonage'])}</div></div>
+              <div>
+                <div class="text-xs text-white/50">Réception labo</div>
+                <div class="text-sm flex items-center gap-2">
+                  <span>${recISO?recFull:'—'}</span>${recBadge}
+                </div>
+              </div>
+              <div><div class="text-xs text-white/50">Frontière</div><div class="text-sm">${esc(row['frontiere__nomville']??'—')}</div></div>
+              <div><div class="text-xs text-white/50">Déclaration</div><div class="text-sm">${esc(row['declaration']??'—')}</div></div>
+              <div><div class="text-xs text-white/50">Importateur</div><div class="text-sm">${esc(row['importateur__nomimportateur']??'—')}</div></div>
+              <div><div class="text-xs text-white/50">Entrepôt</div><div class="text-sm">${esc(row['entrepot__nomentrepot']??'—')}</div></div>
+              <div><div class="text-xs text-white/50">Immatriculation</div><div class="text-sm">${esc(row['immatriculation']??'—')}</div></div>
+              <div><div class="text-xs text-white/50">Produit</div><div class="text-sm">${esc(row['produit__nomproduit']??'—')}</div></div>
+              <div class="col-span-2"><div class="text-xs text-white/50">Volume</div><div class="text-sm font-semibold">${volText}</div></div>
+            </div>
+          </article>`;
+      }).join('');
+
+      // volume bars
+      const vols = rows.map(r=>Number(r.volume||0));
+      const maxV = Math.max(1, ...vols);
+      tbody.querySelectorAll('.vol-cell').forEach(cell=>{
+        const v = Number(cell.getAttribute('data-volume')||0);
+        const pct = Math.max(4, Math.round((v/maxV)*100));
+        const fill = cell.querySelector('.vol-fill'); if(fill) fill.style.width = pct + '%';
+      });
+
+      // footer
+      const startIdx = total ? state.start + 1 : 0;
+      const endIdx   = Math.min(state.start + state.length, total);
+      const totalPages = Math.max(1, Math.ceil((total||1)/state.length));
+      const currentPage = total ? Math.floor(state.start / state.length) + 1 : 1;
+
+      document.getElementById('page-info').textContent = total ? `Page ${currentPage} sur ${totalPages}` : '—';
+      document.getElementById('result-info').textContent = total ? `Affichage ${startIdx}–${endIdx} sur ${total}` : 'Aucun résultat';
+      document.getElementById('page-total').textContent = '/ ' + totalPages;
+      document.getElementById('page-input').value = String(currentPage);
+
+      btnFirst.disabled = btnPrev.disabled = currentPage <= 1;
+      btnNext.disabled  = btnLast.disabled = currentPage >= totalPages;
+      [btnFirst,btnPrev,btnNext,btnLast].forEach(b=>{
+        b.classList.toggle('opacity-40', b.disabled);
+        b.classList.toggle('cursor-not-allowed', b.disabled);
+      });
+
+      refreshTimeAgo();
+      applyColumnVisibility();
+      empty.classList.toggle('hidden', rows.length > 0);
+    }catch(e){
+      console.error(e);
+      empty.classList.remove('hidden');
+      tbody.innerHTML = '';
+      cards.innerHTML = '';
+    }finally{
+      showLoader(false);
+    }
+  }
+
+  /* ===== Pager that preserves start/length/draw ===== */
+  function goToPage(p){
+    const totalPages = Math.max(1, Math.ceil((state.total||1)/state.length));
+    const page = Math.min(Math.max(1, p), totalPages);
+    state.start = (page - 1) * state.length;
+    state.draw += 1;
+    loadPage();
+  }
+
+  /* ===== Events ===== */
+  pageSizeEl?.addEventListener('change', ()=>{
+    state.length = parseInt(pageSizeEl.value, 10) || 16;
+    goToPage(1);
+  });
+  btnFirst?.addEventListener('click', ()=> goToPage(1));
+  btnPrev ?.addEventListener('click', ()=>{
+    const cur = Math.floor(state.start / state.length) + 1;
+    goToPage(cur - 1);
+  });
+  btnNext ?.addEventListener('click', ()=>{
+    const cur = Math.floor(state.start / state.length) + 1;
+    goToPage(cur + 1);
+  });
+  btnLast ?.addEventListener('click', ()=>{
+    const totalPages = Math.max(1, Math.ceil((state.total||1)/state.length));
+    goToPage(totalPages);
+  });
+  pageInput?.addEventListener('change', ()=>{
+    const p = parseInt(pageInput.value, 10);
+    if (isNaN(p)) return;
+    goToPage(p);
+  });
+
+  document.getElementById('dt-export')?.addEventListener('click', ()=>{
+    window.location.href = `${endpoint}?export=excel`;
+  });
+
+  // Initial load
+  loadPage();
+});
 </script>
-
-
 {% endblock %}
-
-
-
-

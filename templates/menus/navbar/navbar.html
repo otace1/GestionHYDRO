@@ -1,0 +1,128 @@
+<header class="sticky top-0 z-40 border-b border-white/10 backdrop-blur-xl">
+  <div class="bg-gradient-to-r from-white/5 via-transparent to-white/5">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="h-14 sm:h-16 flex items-center justify-between">
+
+        <!-- Left: sidebar toggle (mobile) -->
+        <div class="flex items-center">
+          <button
+            id="sidebarToggle"
+            class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-white/10 hover:bg-white/10 transition"
+            aria-label="Basculer le menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+        </div>
+
+        <!-- Center: brand -->
+        <div class="flex items-center justify-center">
+        </div>
+
+        <!-- Right: actions -->
+        <div class="flex items-center gap-2 sm:gap-3 ml-auto">
+
+          <!-- User dropdown -->
+          <div class="relative">
+            <button
+              id="userBtn"
+              class="glass rounded-lg px-2.5 sm:px-3 py-2 flex items-center gap-2 hover:shadow-glassHover">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-[#0b1223]">
+                <i class="fa-solid fa-user"></i>
+              </span>
+              <span class="hidden sm:inline text-sm font-medium max-w-[12rem] truncate">
+                {{ request.user.first_name }} {{ request.user.last_name }}
+              </span>
+              <i class="fa-solid fa-chevron-down text-xs hidden sm:inline"></i>
+            </button>
+
+            <!-- Dropdown menu -->
+            <div
+              id="userMenu"
+              class="hidden absolute right-0 mt-2 w-64 glass rounded-xl shadow-glass border border-white/10 overflow-hidden">
+              <div class="px-4 py-3 text-sm">
+                Connecté en tant que<br>
+                <span class="font-semibold">{{ request.user.get_username }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logout button -->
+          <a href="{% url 'logout' %}"
+             class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium
+                    bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md
+                    hover:from-red-600 hover:to-red-700 hover:shadow-lg transition">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span class="hidden sm:inline">Déconnexion</span>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  /* Apply saved/system theme BEFORE paint (prevents flashing) */
+(function () {
+  try {
+    var saved = localStorage.getItem('theme');
+    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var dark = saved ? (saved === 'dark') : prefersDark;
+    document.documentElement.classList.toggle('dark', !!dark);
+  } catch (e) {}
+})();
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Ensure we have a toggle + icon; create a fallback if missing
+  function ensureTogglePresent() {
+    let toggle = document.getElementById('themeToggle');
+    let icon   = document.getElementById('themeIcon');
+
+    // Try to discover variants coming from your navbar include
+    if (!toggle) toggle = document.querySelector('[data-theme-toggle], .js-theme-toggle, #theme-toggle');
+    if (!icon && toggle) icon = toggle.querySelector('#themeIcon, i, .fa, .fa-solid');
+
+    // Create a minimal fallback if still missing
+    if (!toggle || !icon) {
+      const wrapper = document.createElement('div');
+      wrapper.id = 'themeToggleFallbackWrap';
+      wrapper.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:9999';
+      wrapper.innerHTML = `
+        <button id="themeToggle"
+                class="w-10 h-10 grid place-items-center rounded-lg bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20"
+                aria-label="Basculer le thème">
+          <i id="themeIcon" class="fa-solid"></i>
+        </button>`;
+      document.body.appendChild(wrapper);
+      toggle = wrapper.querySelector('#themeToggle');
+      icon   = wrapper.querySelector('#themeIcon');
+    }
+    return { toggle, icon };
+  }
+
+  const { toggle: themeToggle, icon: themeIcon } = ensureTogglePresent();
+
+  function applyThemeIcon() {
+    if (!themeIcon) return; // null-safe
+    const dark = document.documentElement.classList.contains('dark');
+    themeIcon.classList.remove('fa-moon', 'fa-sun');
+    themeIcon.classList.add(dark ? 'fa-sun' : 'fa-moon');
+  }
+
+  function setTheme(dark) {
+    document.documentElement.classList.toggle('dark', !!dark);
+    try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+    applyThemeIcon();
+  }
+
+  // Initialize the correct icon state
+  applyThemeIcon();
+
+  // Wire the click handler if the toggle exists
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const dark = !document.documentElement.classList.contains('dark');
+      setTheme(dark);
+    });
+  }
+});
+</script>

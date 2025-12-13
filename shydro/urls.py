@@ -5,8 +5,8 @@ from . import views
 
 urlpatterns = [
 
-    path('', views.GestionCodification.affichageTableau, name='codification'),
-    path('response/responseAffichageTableau/', views.GestionCodification.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
+    path('', views.affichageTableau, name='codification'),
+    path('response/responseAffichageTableau/', views.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
     path('details/<int:pk>', views.linedetails, name='details'),
     path('update/<int:pk>', views.lineupdate, name='update'),
     #
@@ -87,10 +87,31 @@ urlpatterns = [
     path('lastrecordShydro/', views.lastrecordShydro, name='lastrecordShydro'),
     path('topImportersShydro/', views.topImportersShydro, name='topImportersShydro'),
     path('productCountShydro/', views.productCountShydro, name='productCountShydro'),
+    path('kpiDetailsShydro/', views.kpiDetailsShydro, name='kpiDetailsShydro'),
 
 
     path('afficherDossImport/', views.afficherDossImport, name='afficherDossImport'),
-    #
+
+    # Data Sanitizing
+    path('dataSanitizing/', views.dataSanitizing, name='dataSanitizing'),
+    path('data_duplicate/', views.data_duplicate, name='data_duplicate'),
+    path('data_merge/', views.data_merge, name='data_merge'),
+
+
+    # path('rapportActivite/data/', views.rapportActiviteData, name='rapportActiviteData'),
+
+    # Generic reporting endpoints (used by rapportActiviteFirst.html)
+    path('second/list/', views.reporting_second_list, name='your_second_endpoint_list'),
+    path('second/delete/', views.reporting_second_delete, name='your_second_endpoint_delete'),
+    path('second/example/', views.reporting_example_submit, name='your_example_endpoint'),
+
+    # Rapport Activité detailed table (replicates DjangoTables2 RapportActivite)
+    path('second/rapport-activite/', views.reporting_rapport_activite_list, name='your_rapport_activite_list'),
+    # Alias with a clearer name for template usage
+    path('second/rapport-activite/json/', views.reporting_rapport_activite_list, name='reporting_rapport_activite_list'),
+
+    # Export enqueue endpoint for Rapport Activité (Celery)
+    # Note: The export view is not implemented. Route removed to avoid import-time errors.
 
 
 

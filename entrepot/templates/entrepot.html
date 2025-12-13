@@ -1,114 +1,1755 @@
-{% extends 'base_entrepot.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
-{% load bootstrap4 %}
+{% extends 'base/base_template.html' %}
+{% load static %}
 {% load crispy_forms_tags %}
 
+{% block main_content %}
 
-{% block content %}
-    {% render_table cargaison %}
-{% endblock %}
+    <style>
 
-{% block form %}
-    {% crispy form %}
-{% endblock %}
+    /* High-contrast RAPPORT modal */
+.modal-contrast{
+  /* nearly solid panel to improve readability on dark glassy background */
+  background: rgba(15, 23, 42, 0.96);                 /* slate-900/96 */
+  color: #e5e7eb;                                      /* text-gray-200 */
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 50px rgba(0,0,0,.55);
+}
+#reportDocsModal .modal-contrast .header,
+#reportDocsModal .modal-contrast .footer{
+  background: rgba(255,255,255,.04);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+#reportDocsModal .modal-contrast .footer{ border-top: 1px solid rgba(255,255,255,.10); border-bottom: 0; }
+#reportDocsModal .modal-contrast h3{ color:#fff; letter-spacing:.01em; }
+#reportDocsModal .modal-contrast .meta{ color: rgba(229,231,235,.85); }
+#reportDocsModal .modal-contrast a{
+  background: linear-gradient(90deg, rgba(56,189,248,.9), rgba(20,184,166,.9));
+  color: #0b1223; font-weight: 700; padding: .6rem .9rem; border-radius: .65rem;
+  display: inline-flex; align-items: center; gap: .5rem; text-decoration: none;
+}
+#reportDocsModal .modal-contrast a:hover{ filter: brightness(1.05); }
+#reportDocsModal .modal-contrast .content{
+  max-height: min(70vh, 560px); overflow: auto; padding: 1rem 1.25rem;
+}
+#reportDocsModal .modal-contrast .row{
+  display:flex; justify-content:space-between; gap:.75rem; padding:.35rem 0; font-size:.95rem;
+}
+#reportDocsModal .modal-contrast .label{ color: rgba(229,231,235,.65); }
+#reportDocsModal .modal-contrast .value{ color: #fff; font-weight: 600; }
+#reportDocsModal .close-btn{
+  width: 2.25rem; height: 2.25rem; display:grid; place-items:center; border-radius:.6rem;
+}
+#reportDocsModal .close-btn:hover{ background: rgba(255,255,255,.08); }
+/* ============= REPORT SECTION: RESPONSIVE ============= */
+
+/* -------- Tablet & small laptops (≤1024px) --------
+   Keep key columns visible; hide the rest to avoid horizontal scroll.
+   Column indices (from your thead):
+   1 Date, 2 Importateur, 3 Entrepôt, 4 Immatriculation, 5 Produit, 6 Volume,
+   7 REQ Ack, 8 Num Dossier, 9 Date échantillonnage, 10 Réception labo,
+   11 Inspection, 12 Déchargement, 13 Σ GOV, 14 Densité, 15 Temp., 16 VCF,
+   17 MTA, 18 MTV, 19 Σ GSV, 20 Actions
+*/
+@media (max-width: 1024px){
+  #report-section .data-grid thead th:nth-child(7),
+  #report-section .data-grid thead th:nth-child(8),
+  #report-section .data-grid thead th:nth-child(9),
+  #report-section .data-grid thead th:nth-child(10),
+  #report-section .data-grid thead th:nth-child(11),
+  #report-section .data-grid thead th:nth-child(12),
+  #report-section .data-grid thead th:nth-child(16),
+  #report-section .data-grid thead th:nth-child(17),
+  #report-section .data-grid thead th:nth-child(18),
+  #report-section .data-grid tbody td:nth-child(7),
+  #report-section .data-grid tbody td:nth-child(8),
+  #report-section .data-grid tbody td:nth-child(9),
+  #report-section .data-grid tbody td:nth-child(10),
+  #report-section .data-grid tbody td:nth-child(11),
+  #report-section .data-grid tbody td:nth-child(12),
+  #report-section .data-grid tbody td:nth-child(16),
+  #report-section .data-grid tbody td:nth-child(17),
+  #report-section .data-grid tbody td:nth-child(18){
+    display: none;
+  }
+
+  /* Slightly tighter padding so rows fit better */
+  #report-section .data-grid .tbody td{
+    padding: .55rem .7rem;
+  }
+}
+
+/* -------- Mobile (≤640px) --------
+   Collapse into card/list layout with label/value pairs.
+   This mirrors your existing mobile rules but scoped to #report-section.
+*/
+@media (max-width: 640px){
+  #report-section .data-grid thead{ display:none; }
+  #report-section .data-grid .tbody tr{
+    display:block;
+    border-radius:12px;
+    padding:.35rem .2rem;
+    margin:.5rem 0;
+    background: rgba(255,255,255,.04);
+    box-shadow: 0 1px 0 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(3,8,20,.25);
+  }
+  #report-section .data-grid .tbody td{
+    display:grid;
+    grid-template-columns: 46% 54%;
+    align-items:center;
+    border:none;
+    border-bottom:1px dashed rgba(255,255,255,.08);
+    padding:.55rem .75rem;
+  }
+  #report-section .data-grid .tbody tr td:last-child{ border-bottom:none; }
+
+  #report-section .data-grid .tbody td::before{
+    content: attr(data-th);
+    font-size:.72rem;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color: rgba(255,255,255,.65);
+    padding-right:.75rem;
+    white-space: nowrap;
+  }
+
+  /* On very small screens, show only the most critical fields by default.
+     Keep: Date, Importateur, Immatriculation, Produit, Actions.
+     Hide other numeric details to keep the card concise. */
+  #report-section .data-grid .tbody td:nth-child(3),  /* Entrepôt */
+  #report-section .data-grid .tbody td:nth-child(6),  /* Volume */
+  #report-section .data-grid .tbody td:nth-child(7),  /* REQ Ack */
+  #report-section .data-grid .tbody td:nth-child(8),  /* Num. Dossier */
+  #report-section .data-grid .tbody td:nth-child(9),  /* Date échantillonnage */
+  #report-section .data-grid .tbody td:nth-child(10), /* Réception labo */
+  #report-section .data-grid .tbody td:nth-child(11), /* Inspection */
+  #report-section .data-grid .tbody td:nth-child(12), /* Déchargement */
+  #report-section .data-grid .tbody td:nth-child(13), /* Σ GOV */
+  #report-section .data-grid .tbody td:nth-child(14), /* Densité */
+  #report-section .data-grid .tbody td:nth-child(15), /* Temp. */
+  #report-section .data-grid .tbody td:nth-child(16), /* VCF */
+  #report-section .data-grid .tbody td:nth-child(17), /* MTA */
+  #report-section .data-grid .tbody td:nth-child(18), /* MTV */
+  #report-section .data-grid .tbody td:nth-child(19){ /* Σ GSV */
+    display:none;
+  }
+
+  /* Ensure the Actions cell spans full width at the bottom and aligns right */
+  #report-section .data-grid .tbody td:nth-child(20){
+    grid-template-columns: 1fr;
+    justify-items: end;
+  }
+}
+</style>
+
+<!-- ========= Header ========= -->
+<section
+  class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur
+         shadow-glass mb-5 px-4 sm:px-5 py-4"
+>
+  <div class="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full
+              bg-gradient-to-tr from-primary/30 to-primary2/30 blur-3xl animate-float"></div>
+  <div class="pointer-events-none absolute -bottom-14 -left-10 h-36 w-36 rounded-full
+              bg-gradient-to-tr from-primary2/20 to-primary/20 blur-3xl animate-float-delayed"></div>
+
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="brand-mark h-10 w-10" aria-hidden="true">
+        <!-- Shield + Flask -->
+        <svg viewBox="0 0 24 24" class="brand-mark__svg" role="img" aria-label="Échantillonnage">
+          <defs>
+            <linearGradient id="markGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"  stop-color="currentColor" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0.55"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 2.5l7 3v6.2c0 4.2-2.9 7.9-7 9.3-4.1-1.4-7-5.1-7-9.3V5.5l7-3z"
+                fill="url(#markGrad)" opacity=".35" />
+          <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3.8h4M12 3.8v5.2"/>
+            <path d="M8.2 14.6a3.8 3.8 0 003.8 3.8h0a3.8 3.8 0 003.8-3.8c0-.9-.3-1.8-.9-2.5l-1.1-1.3H10.2l-1.1 1.3c-.6.7-.9 1.6-.9 2.5z"/>
+            <path d="M10.3 13.2c.7.3 1.6.5 2.6.5s1.9-.2 2.6-.5"/>
+          </g>
+        </svg>
+      </span>
+
+      <div>
+        <h2 class="text-lg sm:text-xl font-semibold tracking-tight text-white animate-slide-up">
+          Entrepôt — Cargaisons & Échantillonnage
+        </h2>
+        <p class="text-xs sm:text-sm text-white/60 animate-fade-in">
+          Données des 30 derniers jours (API interne, pagination).
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button id="btnRefresh"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/15">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 4v6h6M20 20v-6h-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M20 8a8 8 0 10-7.9 10" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+        Actualiser
+      </button>
+    </div>
+  </div>
+</section>
+
+{% include 'partials/kpis_cards.html' %}
+
+<!-- ========= List: En attente d’échantillonnage ========= -->
+<section class="glass rounded-2xl shadow-glass border border-white/10 overflow-hidden mb-6">
+  <header class="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-white/10">
+    <div>
+      <h3 class="text-base sm:text-lg font-semibold">En attente d’échantillonnage</h3>
+      <p class="text-xs sm:text-sm text-white/70">Sélectionnez une ligne pour échantillonner ou réafficher le QR.</p>
+    </div>
+  </header>
+  <div class="overflow-x-auto">
+    <table class="data-grid min-w-full text-sm text-left">
+      <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+        <tr>
+          <th class="px-3 py-2">Date entrée</th>
+          <th class="px-3 py-2">Importateur</th>
+          <th class="px-3 py-2">Entrepôt</th>
+          <th class="px-3 py-2">Immatriculation</th>
+          <th class="px-3 py-2">Produit</th>
+          <th class="px-3 py-2">Volume (m³)</th>
+          <th class="px-3 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-pending" class="tbody"></tbody>
+    </table>
+  </div>
+
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 flex items-center justify-between">
+    <div id="pg-pending-info" class="text-xs text-white/70">—</div>
+    <div class="flex items-center gap-1">
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs"
+              data-pg="pending" data-dir="first">«</button>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs"
+              data-pg="pending" data-dir="prev">‹</button>
+      <span id="pg-pending-page" class="text-xs text-white/80 px-2">1 / 1</span>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs"
+              data-pg="pending" data-dir="next">›</button>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs"
+              data-pg="pending" data-dir="last">»</button>
+    </div>
+  </footer>
+  <div id="empty-pending" class="hidden py-8 text-center text-white/70 text-sm">Aucune cargaison en attente.</div>
+</section>
+
+<!-- ========= Modal: Réafficher QR ========= -->
+<div id="qrModal" class="hidden fixed inset-0 z-[80]">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="qr-backdrop"></div>
+  <div class="absolute inset-0 grid place-items-center p-3">
+    <div class="modal-panel w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl"
+         onclick="event.stopPropagation()">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/20 ring-1 ring-emerald-400/30 text-emerald-300">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor">
+              <path d="M5 12l4 4L19 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <div>
+            <h4 class="text-base sm:text-lg font-semibold">QR de la cargaison</h4>
+            <p class="text-xs sm:text-sm text-white/70">Pour partage, copie ou téléchargement.</p>
+          </div>
+        </div>
+        <button id="closeQrBtn" class="w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="glass rounded-xl p-4 border border-white/10">
+          <div class="text-sm text-white/70 mb-2">QR Code</div>
+          <div id="codeQR" class="grid place-items-center bg-white rounded-xl p-3"></div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button id="btnCopyQR" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/15">Copier le code</button>
+            <button id="btnDownloadQR" class="px-3 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/15">Télécharger (PNG)</button>
+          </div>
+          <p id="qrRawValue" class="mt-2 text-[11px] text-white/50 break-all"></p>
+        </div>
+
+        <div class="glass rounded-xl p-4 border border-white/10">
+          <div class="text-sm text-white/70 mb-3">Résumé</div>
+          <div class="grid grid-cols-1 gap-3 text-sm">
+            <div class="flex justify-between gap-3"><span class="text-white/60">Immatriculation</span><span id="qrImmat" class="font-medium text-white/90">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Importateur</span><span id="qrImportateur" class="font-medium text-white/90">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Produit</span><span id="qrProduit" class="font-medium text-white/90">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Entrepôt</span><span id="qrEntrepot" class="font-medium text-white/90">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Volume (m³)</span><span id="qrVolume" class="font-medium text-white/90">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 pb-5">
+        <div class="flex justify-end gap-2">
+          <button id="qrClose" class="px-4 py-2 rounded-lg bg-emerald-500 text-[#0b1223] font-semibold hover:bg-emerald-400">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========= Modal: Détails cargaison ========= -->
+<div id="detailModal" class="hidden fixed inset-0 z-[78]" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="detail-backdrop"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl shadow-2xl"
+         onclick="event.stopPropagation()">
+
+      <header class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <h4 id="detailTitle" class="text-base sm:text-lg font-semibold">Détails de la cargaison</h4>
+          <p id="detailSub" class="text-xs sm:text-sm text-white/70">—</p>
+        </div>
+        <button id="detailClose" class="w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <div class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div class="glass rounded-xl p-4 border border-white/10">
+          <div class="space-y-2">
+            <div class="flex justify-between gap-3"><span class="text-white/60">Date d’entrée</span><span id="dDate" class="font-medium">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Importateur</span><span id="dImportateur" class="font-medium">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Entrepôt</span><span id="dEntrepot" class="font-medium">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Immatriculation</span><span id="dImmat" class="font-medium">—</span></div>
+          </div>
+        </div>
+        <div class="glass rounded-xl p-4 border border-white/10">
+          <div class="space-y-2">
+            <div class="flex justify-between gap-3"><span class="text-white/60">Produit</span><span id="dProduit" class="font-medium">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">Volume (m³)</span><span id="dVolume" class="font-medium">—</span></div>
+            <div class="flex justify-between gap-3"><span class="text-white/60">QR / Code</span><span id="dQR" class="font-medium break-all">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 pb-5">
+        <div class="flex flex-wrap justify-end gap-2">
+          <button id="detailToSample" class="px-4 py-2 rounded-lg bg-emerald-500 text-[#0b1223] font-semibold hover:bg-emerald-400">Échantillonner</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========= Sampling Modal ========= -->
+<div id="samplingModal" class="hidden fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-labelledby="samplingTitle" tabindex="-1">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-md" data-close="backdrop" aria-hidden="true"></div>
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div id="samplingPanel" role="document" onclick="event.stopPropagation()"
+         class="modal-panel w-full max-w-3xl sm:max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 shadow-2xl bg-gradient-to-b from-white/10 to-white/[0.04] backdrop-blur-xl ring-1 ring-black/5 translate-y-6 opacity-0 data-[open=true]:translate-y-0 data-[open=true]:opacity-100 transition">
+
+      <header class="sticky top-0 z-10 bg-white/5 backdrop-blur-sm border-b border-white/10">
+        <div class="flex items-start gap-3 px-4 sm:px-6 py-4">
+          <div class="shrink-0 brand-mark h-10 w-10" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="brand-mark__svg" role="img" aria-label="Échantillonnage">
+              <defs>
+                <linearGradient id="markGrad2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%"  stop-color="currentColor" stop-opacity="0.95"/>
+                  <stop offset="100%" stop-color="currentColor" stop-opacity="0.55"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 2.5l7 3v6.2c0 4.2-2.9 7.9-7 9.3-4.1-1.4-7-5.1-7-9.3V5.5l7-3z"
+                    fill="url(#markGrad2)" opacity=".35" />
+              <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 3.8h4M12 3.8v5.2"/>
+                <path d="M8.2 14.6a3.8 3.8 0 003.8 3.8h0a3.8 3.8 0 003.8-3.8c0-.9-.3-1.8-.9-2.5l-1.1-1.3H10.2l-1.1 1.3c-.6.7-.9 1.6-.9 2.5z"/>
+                <path d="M10.3 13.2c.7.3 1.6.5 2.6.5s1.9-.2 2.6-.5"/>
+              </g>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 id="samplingTitle" class="text-base sm:text-lg font-semibold tracking-tight">Échantillonnage</h3>
+            <p class="text-xs sm:text-sm text-white/70">Remplissez le formulaire puis validez.</p>
+          </div>
+          <button id="closeSamplingBtn" class="ml-2 w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60" aria-label="Fermer">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" aria-hidden="true"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="relative overflow-y-auto max-h[calc(90vh-5.5rem)]">
+        <form id="sampling-form" class="px-4 sm:px-6 py-5 space-y-5">
+          {% csrf_token %}
+          <input type="hidden" name="cargaison_id" />
+          <input type="hidden" name="immat" />
+          <input type="hidden" name="produit" />
+          <div id="sampling-summary" class="hidden mb-2 p-3 rounded-lg border border-white/10 bg-white/5 text-sm"></div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label for="matricule" class="block text-sm text-white/70 mb-1">Matricule de l’échantillonneur</label>
+              <input id="matricule" name="matricule" type="text" required
+                     class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+                     placeholder="Ex: TECH-001">
+            </div>
+
+            <div>
+              <label for="methodeutilisee" class="block text-sm text-white/70 mb-1">Méthode d’échantillonnage</label>
+              <select id="methodeutilisee" name="methodeutilisee" required
+                      class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+                <option value="" disabled selected>Choisir…</option>
+                <option value="pompage">Spot sampling</option>
+                <option value="pompage">Running sample</option>
+                <option value="robinet">All-level sample</option>
+                <option value="sonde">Composite sample</option>
+                <option value="autre">Valve Sampling</option>
+                <option value="autre">In-line sampling</option>
+                <option value="autre">Pump sampling</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="qte" class="block text-sm text-white/70 mb-1">Quantité échantillonnée</label>
+              <input id="qte" name="qte" type="number" step="0.001" min="0" required
+                     class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+                     placeholder="Ex: 0.50">
+            </div>
+          </div>
+
+          <div>
+            <label for="notes" class="block text-sm text-white/70 mb-1">Notes (optionnel)</label>
+            <textarea id="notes" name="notes" rows="3"
+                      class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+                      placeholder="Observations, numéro de scellé, etc."></textarea>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+            <button type="button" class="btn-cancel px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15"
+                    onclick="document.getElementById('samplingModal').classList.add('hidden')">Annuler</button>
+            <button type="submit"
+                    class="btn-submit relative inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-primary to-primary2 text-[#0b1223] hover:shadow-glassHover">
+              <span class="absolute inset-0 rounded-lg shimmer opacity-60"></span>
+              <span class="relative">Enregistrer</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========= Modal: Documents du rapport ========= -->
+<div id="reportDocsModal" class="hidden fixed inset-0 z-[100]" role="dialog" aria-modal="true" aria-labelledby="reportDocsTitle" tabindex="-1">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close="reportdocs-backdrop" aria-hidden="true"></div>
+  <!-- Centering wrapper -->
+  <div class="absolute inset-0 grid place-items-center p-3 sm:p-6">
+    <div class="modal-panel modal-contrast w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 shadow-2xl ring-1 ring-black/5" role="document" onclick="event.stopPropagation()">
+      <div class="px-4 sm:px-5 py-3 header flex items-center justify-between">
+        <h3 id="reportDocsTitle" class="text-base sm:text-lg font-semibold">Rapport</h3>
+        <button id="reportDocsClose" class="close-btn" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="content">
+        <div id="repDocsMeta" class="meta mb-3">—</div>
+
+        <!-- Optional structured summary for clarity -->
+        <div id="repDocsSummary" class="space-y-1 mb-4">
+          <!-- JS fills rows like below -->
+          <!-- <div class="row"><span class="label">Immatriculation</span><span class="value">ABC-123</span></div> -->
+        </div>
+
+        <a id="repDocsLink" href="#" target="_blank" rel="noopener">
+          Ouvrir le rapport
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 17l9-9M8 8h8v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'qrcodejs-master/qrcode.min.js' %}"></script>
+
+<script>
+/* ====================================================================
+   GLOBAL HELPERS & ENDPOINTS
+==================================================================== */
+function getCookie(name){
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? m.pop() : '';
+}
+const CSRF_COOKIE = getCookie('csrftoken');
+
+const $  = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const nfmt = n => (isFinite(n) ? new Intl.NumberFormat('fr-FR').format(n) : '—');
+const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString('fr-FR'); };
+const show = el => el?.classList.remove('hidden');
+const hide = el => el?.classList.add('hidden');
+
+/* ===== Endpoints (use template vars when provided) ===== */
+const ECHANTILLON_API_URL =
+  ("{{ ECHANTILLON_API_URL|default_if_none:'' }}".trim()) || "{% url 'record_sampling' %}";
+const PENDING_API_URL =
+  ("{{ PENDING_API_URL|default_if_none:'' }}".trim()) || "{% url 'cargaisons_pending' %}";
+
+/* ---- Report URL (ALWAYS Django route) ---- */
+const REPORT_URL_PREFIX =
+  "{% url 'rapportechantillonage' 123456 %}".replace(/\/?123456\/?$/, "");
+const buildReportUrl = (pk) => `${REPORT_URL_PREFIX}/${pk}`;
+function showReportLink(url, autoNum){
+  document.querySelectorAll('.report-banner').forEach(n => n.remove());
+  const wrap = document.createElement('div');
+  wrap.className = 'report-banner';
+  wrap.innerHTML = `
+    <span>Échantillonnage enregistré${autoNum ? ` — Numéro RE: <strong>${autoNum}</strong>` : ''}.</span>
+    <a href="${url}" target="_blank" rel="noopener">Imprimer le rapport</a>
+    <button type="button" aria-label="Fermer">✕</button>
+  `;
+  wrap.querySelector('button').addEventListener('click', ()=> wrap.remove());
+  document.body.appendChild(wrap);
+  setTimeout(()=> wrap.remove(), 12000);
+}
+
+/* ====================================================================
+   "EN ATTENTE D’ÉCHANTILLONNAGE" TABLE
+==================================================================== */
+function rowHTML(r){
+  const immat = esc(r.immatriculation || '—');
+  return `
+    <tr data-id="${esc(r.id)}">
+      <td class="px-3 py-2" data-th="Date entrée">${fmtDate(r.dateheurecargaison)}</td>
+      <td class="px-3 py-2" data-th="Importateur">${esc(r.importateur_name || '—')}</td>
+      <td class="px-3 py-2" data-th="Entrepôt">${esc(r.entrepot_name || '—')}</td>
+      <td class="px-3 py-2" data-th="Immatriculation"><span class="chip chip--immat">${immat}</span></td>
+      <td class="px-3 py-2" data-th="Produit">${r.produit_name ? `<span class="chip">${esc(r.produit_name)}</span>` : '—'}</td>
+      <td class="px-3 py-2" data-th="Volume">${r.volume!=null ? `${nfmt(r.volume)} m³` : '—'}</td>
+      <td class="px-3 py-2 text-right" data-th="Actions">
+        <div class="actions" role="group" aria-label="Actions">
+          <button type="button" class="btn btn--ghost" data-action="details" data-id="${esc(r.id)}" title="Détails">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 20l9-16H3l9 16z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="btn__label">Détails</span>
+          </button>
+          <button type="button" class="btn btn--sample" data-action="sample" data-id="${esc(r.id)}"
+                  aria-label="Échantillonner la cargaison ${immat}" title="Échantillonner">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 3.5h4M12 3.5v5.5"/>
+                <path d="M8.2 14.6a3.8 3.8 0 003.8 3.8h0a3.8 3.8 0 003.8-3.8c0-.9-.3-1.8-.9-2.5l-1.1-1.3H10.2l-1.1 1.3c-.6.7-.9 1.6-.9 2.5z"/>
+                <path d="M10.3 13.2c.7.3 1.6.5 2.6.5s1.9-.2 2.6-.5"/>
+              </g>
+            </svg>
+            <span class="btn__label">Échantillonner</span>
+            <span class="btn__pulse" aria-hidden="true"></span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+function mapApiToRow(c){
+  return {
+    id: c.id,
+    dateheurecargaison: c.dateheurecargaison,
+    importateur_name: c.importateur || c.importateur_name || null,
+    entrepot_name:     c.entrepot    || c.entrepot_name     || null,
+    immatriculation:   c.immatriculation || null,
+    produit_name:      c.produit || c.produit_name || null,
+    volume:            c.volume,
+    qrcode:            c.qrcode || c.uuid || c.code || null
+  };
+}
+
+/* ---- Client pagination state ---- */
+const PENDING_STATE = { page:1, per_page:10, total:0, pages:1, has_next:false, has_prev:false };
+let   PENDING_CACHE = [];
+let   CURRENT_RECORD = null;
+
+function setPendingPgBtnState(){
+  const q = dir => document.querySelector(`.pg-btn[data-pg="pending"][data-dir="${dir}"]`);
+  const dis = (btn,on)=>{ if(!btn) return; btn.disabled=on; btn.classList.toggle('is-disabled', on); };
+  dis(q('first'), PENDING_STATE.page <= 1);
+  dis(q('prev'),  !PENDING_STATE.has_prev);
+  dis(q('next'),  !PENDING_STATE.has_next);
+  dis(q('last'),  PENDING_STATE.page >= PENDING_STATE.pages);
+}
+function renderPendingList(rows){
+  $('#tbody-pending').innerHTML = rows.map(rowHTML).join('');
+  const info  = $('#pg-pending-info');
+  const page  = $('#pg-pending-page');
+  const empty = $('#empty-pending');
+
+  if (PENDING_STATE.total > 0){
+    empty.classList.add('hidden');
+    const start = (PENDING_STATE.per_page*(PENDING_STATE.page-1)) + (rows.length?1:0);
+    const end   = (PENDING_STATE.per_page*(PENDING_STATE.page-1)) + rows.length;
+    info.textContent = `Affichage ${start}–${end} sur ${PENDING_STATE.total}`;
+    page.textContent = `${PENDING_STATE.page} / ${PENDING_STATE.pages}`;
+  }else{
+    empty.classList.remove('hidden');
+    info.textContent = '—'; page.textContent = '1 / 1';
+  }
+  setPendingPgBtnState();
+}
+async function loadPendingFromAPI({page=PENDING_STATE.page, per_page=PENDING_STATE.per_page}={}){
+  try{
+    const url = new URL(PENDING_API_URL, window.location.origin);
+    url.searchParams.set('page', String(page));
+    url.searchParams.set('per_page', String(per_page));
+
+    const res = await fetch(url.toString(), { headers:{ 'Accept':'application/json' }});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    const items = (data?.pending || []).map(mapApiToRow);
+    PENDING_CACHE = items.slice();
+
+    const p = data?.pagination || {};
+    const num = v => (v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
+
+    PENDING_STATE.page     = num(p.page)     ?? page     ?? 1;
+    PENDING_STATE.per_page = num(p.per_page) ?? per_page ?? 10;
+    const total = num(p.total); const pages = num(p.pages);
+
+    PENDING_STATE.total    = (total ?? items.length);
+    PENDING_STATE.pages    = (pages ?? Math.max(1, Math.ceil(PENDING_STATE.total / PENDING_STATE.per_page)));
+    PENDING_STATE.has_next = ('has_next' in p) ? !!p.has_next : PENDING_STATE.page < PENDING_STATE.pages;
+    PENDING_STATE.has_prev = ('has_prev' in p) ? !!p.has_prev : PENDING_STATE.page > 1;
+
+    renderPendingList(items);
+
+  }catch(e){
+    console.error('Failed to load pending list:', e);
+    PENDING_CACHE = [];
+    Object.assign(PENDING_STATE, { page:1, per_page:10, total:0, pages:1, has_next:false, has_prev:false });
+    renderPendingList([]);
+  }
+}
+
+/* ====================================================================
+   DETAILS MODAL & QR MODAL
+==================================================================== */
+function getCachedRecord(id){ return PENDING_CACHE.find(x => String(x.id)===String(id)); }
+function openDetailModal(rec){
+  CURRENT_RECORD = rec;
+  $('#detailSub').textContent    = `ID: ${rec.id}`;
+  $('#dDate').textContent        = fmtDate(rec.dateheurecargaison);
+  $('#dImportateur').textContent = rec.importateur_name || '—';
+  $('#dEntrepot').textContent    = rec.entrepot_name || '—';
+  $('#dImmat').textContent       = rec.immatriculation || '—';
+  $('#dProduit').textContent     = rec.produit_name || '—';
+  $('#dVolume').textContent      = isFinite(rec.volume) ? nfmt(rec.volume) : '—';
+  $('#dQR').textContent          = rec.qrcode || '—';
+  show($('#detailModal'));
+}
+document.addEventListener('click', (e)=>{
+  const detailsBtn = e.target.closest('[data-action="details"]');
+  if (detailsBtn){
+    const rec = getCachedRecord(detailsBtn.dataset.id);
+    if (rec) openDetailModal(rec);
+    return;
+  }
+  if (e.target.id==='detailClose' || e.target.dataset.close==='detail-backdrop'){
+    hide($('#detailModal')); return;
+  }
+});
+
+function openQrFor(rec){
+  $('#qrImmat').textContent       = rec.immatriculation || '—';
+  $('#qrImportateur').textContent = rec.importateur_name || '—';
+  $('#qrProduit').textContent     = rec.produit_name || '—';
+  $('#qrEntrepot').textContent    = rec.entrepot_name || '—';
+  $('#qrVolume').textContent      = isFinite(rec.volume) ? nfmt(rec.volume) : '—';
+  $('#qrRawValue').textContent    = rec.qrcode || '—';
+  const qrWrap = $('#codeQR'); qrWrap.innerHTML='';
+  if (rec.qrcode){ new QRCode(qrWrap, { text: rec.qrcode, width: 180, height: 180 }); }
+  show($('#qrModal'));
+}
+document.addEventListener('click', (e)=>{
+  const qrBtn = e.target.closest('[data-action="qr"]');
+  if (!qrBtn) return;
+  const rec = getCachedRecord(qrBtn.dataset.id);
+  if (rec) openQrFor(rec);
+});
+document.getElementById('closeQrBtn')?.addEventListener('click', ()=> hide($('#qrModal')));
+document.getElementById('qrClose')?.addEventListener('click', ()=> hide($('#qrModal')));
+
+/* ====================================================================
+   SAMPLING (FORM IN MODAL)
+==================================================================== */
+function setOrCreateHidden(form, name, value){
+  let input = form.querySelector(`input[name="${name}"]`);
+  if (!input){ input = document.createElement('input'); input.type='hidden'; input.name=name; form.appendChild(input); }
+  input.value = value ?? '';
+}
+function ensureSamplingSummary(rec){
+  let box = document.getElementById('sampling-summary');
+  if (!box){
+    box = document.createElement('div');
+    box.id = 'sampling-summary';
+    box.className = 'mb-3 p-3 rounded-lg border border-white/10 bg-white/5 text-sm';
+    $('#sampling-form').prepend(box);
+  }
+  box.innerHTML = `
+    <div class="text-white/70 mb-1">Cargaison sélectionnée</div>
+    <div class="grid sm:grid-cols-2 gap-2">
+      <div><span class="text-white/60">ID:</span> <span class="font-medium">${esc(rec.id)}</span></div>
+      <div><span class="text-white/60">Immat.:</span> <span class="font-medium">${esc(rec.immatriculation || '—')}</span></div>
+      <div><span class="text-white/60">Produit:</span> <span class="font-medium">${esc(rec.produit_name || '—')}</span></div>
+      <div><span class="text-white/60">Volume:</span> <span class="font-medium">${isFinite(rec.volume)? nfmt(rec.volume)+' m³' : '—'}</span></div>
+    </div>`;
+}
+function openSamplingWithRecord(rec){
+  const form = $('#sampling-form');
+  if (form){
+    setOrCreateHidden(form, 'cargaison_id', rec.id);
+    setOrCreateHidden(form, 'immat', rec.immatriculation || '');
+    setOrCreateHidden(form, 'produit', rec.produit_name || '');
+    ensureSamplingSummary(rec);
+  }
+  $('#samplingPanel').setAttribute('data-open','true');
+  show($('#samplingModal'));
+}
+document.addEventListener('click', (e)=>{
+  const sampleBtn = e.target.closest('[data-action="sample"]');
+  if (!sampleBtn) return;
+  const rec = getCachedRecord(sampleBtn.dataset.id);
+  if (rec) openSamplingWithRecord(rec);
+});
+document.getElementById('detailToSample')?.addEventListener('click', ()=>{
+  if (CURRENT_RECORD){ hide($('#detailModal')); openSamplingWithRecord(CURRENT_RECORD); }
+});
+
+document.addEventListener('submit', async (e)=>{
+  const form = e.target;
+  if (form.id !== 'sampling-form') return;
+  e.preventDefault();
+
+  const btn = form.querySelector('.btn-submit');
+  btn?.classList.add('is-busy');
+
+  const fd = new FormData(form);
+  if (!fd.get('cargaison_id') && form.cargaison_id?.value) fd.set('cargaison_id', form.cargaison_id.value);
+  if (!fd.get('pk') && form.cargaison_id?.value) fd.set('pk', form.cargaison_id.value);
+  if (form.qte?.value) fd.set('qte', String(parseFloat(form.qte.value)));
+
+  const cid = fd.get('cargaison_id') || fd.get('pk');
+
+  try{
+    const res = await fetch(ECHANTILLON_API_URL, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || CSRF_COOKIE,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: fd,
+      credentials: 'same-origin'
+    });
+
+    const data = await res.json().catch(()=> ({}));
+    if(!res.ok){
+      const detail = data?.error ? ` — ${data.error}` : '';
+      throw new Error(`HTTP ${res.status}${detail}`);
+    }
+
+    document.getElementById('samplingModal')?.classList.add('hidden');
+    const pk = cid || fd.get('pk');
+    if (pk) {
+      const url = buildReportUrl(pk);
+      showReportLink(url, data?.numrappechauto);
+    }
+
+    loadPendingFromAPI({ page: 1 });
+
+  }catch(err){
+    console.error(err);
+    let box = document.getElementById('toast'); if(!box){ box=document.createElement('div'); box.id='toast'; document.body.appendChild(box); }
+    const t = document.createElement('div'); t.className='toast-item toast-item--error'; t.textContent="Échec d'enregistrement de l'échantillonnage.";
+    box.appendChild(t); setTimeout(()=> t.classList.add('is-out'), 2200); setTimeout(()=> t.remove(), 2600);
+  }finally{
+    btn?.classList.remove('is-busy');
+  }
+});
+
+/* ====================================================================
+   GENERIC CLICK HANDLERS (ROW CLICK, REFRESH, CLOSE MODALS)
+==================================================================== */
+document.addEventListener('click', (e)=>{
+  const tr = e.target.closest('tbody#tbody-pending tr');
+  if (!tr) return;
+  if (e.target.closest('.actions')) return;
+  const rec = getCachedRecord(tr.dataset.id);
+  if (rec) openDetailModal(rec);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadPendingFromAPI({ page: 1 });
+  const btn = document.getElementById('btnRefresh');
+  if (btn){
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.classList.add('is-disabled');
+      try { await loadPendingFromAPI({ page: 1 }); }
+      finally { btn.disabled = false; btn.classList.remove('is-disabled'); }
+    });
+  }
+});
+
+document.addEventListener('click', (e)=>{
+  if (e.target?.dataset?.close === 'backdrop')
+    document.getElementById('samplingModal')?.classList.add('hidden');
+  if (e.target?.dataset?.close === 'qr-backdrop')
+    document.getElementById('qrModal')?.classList.add('hidden');
+  if (e.target?.dataset?.close === 'detail-backdrop')
+    document.getElementById('detailModal')?.classList.add('hidden');
+  if (e.target?.dataset?.close === 'reportdocs-backdrop')
+    document.getElementById('reportDocsModal')?.classList.add('hidden');
+});
+document.getElementById('closeSamplingBtn')?.addEventListener('click', () => {
+  document.getElementById('samplingModal')?.classList.add('hidden');
+});
+document.getElementById('detailClose')?.addEventListener('click', () => {
+  document.getElementById('detailModal')?.classList.add('hidden');
+});
+document.getElementById('reportDocsClose')?.addEventListener('click', () => {
+  document.getElementById('reportDocsModal')?.classList.add('hidden');
+});
+
+/* ====================================================================
+   WORKBENCH MODAL (standalone; NO KPI dependencies)
+==================================================================== */
+(function () {
+  const workbenchModal = document.getElementById('workbenchModal');
+  if (!workbenchModal) return;
+
+  // Set via template var or default to Django route
+  let WORKBENCH_API_URL =
+    ("{{ WORKBENCH_API_URL|default_if_none:'' }}".trim()) || "{% url 'workbench_list' %}";
+
+  const qInWB = (sel) => workbenchModal.querySelector(sel);
+
+  const WB_STATE = { status:"requisition", page:1, per_page:10, total:0, pages:1, has_next:false, has_prev:false, q:"", _lazy:false };
+  let WB_CACHE = [];
+
+  function mapApiToRowWB(c){
+    return {
+      id: c.id,
+      dateheurecargaison: c.dateheurecargaison,
+      importateur_name: c.importateur || c.importateur_name || null,
+      entrepot_name:     c.entrepot    || c.entrepot_name     || null,
+      immatriculation:   c.immatriculation || null,
+      produit_name:      c.produit || c.produit_name || null,
+      volume:            c.volume,
+      qrcode:            c.qrcode || c.uuid || c.code || null
+    };
+  }
+  function wbRowHTML(r){
+    const immat = esc(r.immatriculation || '—');
+    return `
+      <tr data-id="${esc(r.id)}">
+        <td class="px-3 py-2" data-th="Date entrée">${fmtDate(r.dateheurecargaison)}</td>
+        <td class="px-3 py-2" data-th="Importateur">${esc(r.importateur_name || '—')}</td>
+        <td class="px-3 py-2" data-th="Entrepôt">${esc(r.entrepot_name || '—')}</td>
+        <td class="px-3 py-2" data-th="Immatriculation"><span class="chip chip--immat">${immat}</span></td>
+        <td class="px-3 py-2" data-th="Produit">${r.produit_name ? `<span class="chip">${esc(r.produit_name)}</span>` : '—'}</td>
+        <td class="px-3 py-2" data-th="Volume">${isFinite(r.volume) ? `${nfmt(r.volume)} m³` : '—'}</td>
+      </tr>
+    `;
+  }
+  function setWbPgBtnState(){
+    const dis = (dir, on) => {
+      const btn = qInWB(`.pg-btn[data-wb-dir="${dir}"]`);
+      if (!btn) return;
+      btn.disabled = on;
+      btn.classList.toggle('is-disabled', on);
+    };
+    const lazy = !!WB_STATE._lazy;
+    if (lazy){
+      dis('first', WB_STATE.page <= 1);
+      dis('prev',  !WB_STATE.has_prev);
+      dis('next',  !WB_STATE.has_next);
+      dis('last',  true); // disable in lazy mode (unknown last page)
+    } else {
+      dis('first', WB_STATE.page <= 1);
+      dis('prev',  !WB_STATE.has_prev);
+      dis('next',  !WB_STATE.has_next);
+      dis('last',  WB_STATE.page >= WB_STATE.pages);
+    }
+  }
+  function renderWorkbench(rows){
+    const body = qInWB('#wbTbody');
+    const info = qInWB('#wbInfo');
+    const page = qInWB('#wbPage');
+
+    if (body){
+      body.innerHTML = rows.length
+        ? rows.map(wbRowHTML).join('')
+        : `<tr><td class="px-3 py-6 text-center text-white/70" colspan="6">Aucun enregistrement pour ce filtre.</td></tr>`;
+    }
+
+    const lazy = !!WB_STATE._lazy;
+    const hasRows = rows.length > 0;
+    if (hasRows){
+      const start = (WB_STATE.per_page*(WB_STATE.page-1)) + (rows.length?1:0);
+      const end   = (WB_STATE.per_page*(WB_STATE.page-1)) + rows.length;
+      if (info) info.textContent = lazy
+        ? `Affichage ${start}–${end}`
+        : `Affichage ${start}–${end} sur ${WB_STATE.total}`;
+      if (page) page.textContent = lazy ? `Page ${WB_STATE.page}` : `${WB_STATE.page} / ${WB_STATE.pages}`;
+    } else {
+      if (info) info.textContent = '—';
+      if (page) page.textContent = lazy ? `Page ${WB_STATE.page}` : '1 / 1';
+    }
+
+    setWbPgBtnState();
+  }
+  async function loadWorkbenchFromAPI(opts = {}) {
+    const { status = WB_STATE.status, page = WB_STATE.page, per_page = WB_STATE.per_page, q = WB_STATE.q } = opts;
+
+    if (!WORKBENCH_API_URL) { console.warn('WORKBENCH_API_URL is empty.'); renderWorkbench([]); return; }
+
+    try {
+      const url = new URL(WORKBENCH_API_URL, window.location.origin);
+      url.searchParams.set('status', status);
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('per_page', String(per_page));
+      if (q) url.searchParams.set('q', q);
+
+      const res  = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      const list = (data && (data.items || data.pending)) || [];
+      const rows = list.map(mapApiToRowWB);
+      WB_CACHE = rows.slice();
+
+      const p = (data && data.pagination) || {};
+      const num = v => (v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
+
+      WB_STATE.status   = status;
+      WB_STATE.page     = num(p.page)     ?? page     ?? 1;
+      WB_STATE.per_page = num(p.per_page) ?? per_page ?? 10;
+
+      const srv_total = num(p.total ?? p.count);
+      const srv_pages = num(p.pages);
+      WB_STATE._lazy   = (srv_total == null && srv_pages == null);
+
+      if (WB_STATE._lazy){
+        WB_STATE.total = null;
+        WB_STATE.pages = null;
+      } else {
+        WB_STATE.total = (srv_total != null) ? srv_total : (num(data?.total) ?? rows.length);
+        WB_STATE.pages = (srv_pages != null) ? srv_pages : Math.max(1, Math.ceil(WB_STATE.total / WB_STATE.per_page));
+      }
+
+      WB_STATE.has_next = ('has_next' in p) ? !!p.has_next : (!WB_STATE._lazy && WB_STATE.page < WB_STATE.pages);
+      WB_STATE.has_prev = ('has_prev' in p) ? !!p.has_prev : (WB_STATE.page > 1);
+
+      const titleMap = {
+        requisition: "Cargaisons — En attente de réquisition",
+        pending:     "Cargaisons — En attente",
+        inspection:  "Cargaisons — En inspection",
+        conformes:   "Cargaisons — En attente de déchargement",
+        reports:     "Rapports / Historique"
+      };
+      const wbTitle = qInWB('#wbTitle');
+      const wbSub   = qInWB('#wbSubtitle');
+      if (wbTitle) wbTitle.textContent = titleMap[status] || "Tableau de travail";
+      if (wbSub)   wbSub.textContent   = q ? `Filtre: “${q}”` : `Statut: ${status}`;
+
+      renderWorkbench(rows);
+    } catch (err) {
+      console.error('Workbench load failed:', err);
+      WB_CACHE = [];
+      Object.assign(WB_STATE, { page: 1, total: 0, pages: 1, has_next: false, has_prev: false });
+      renderWorkbench([]);
+    }
+  }
+
+  function openWorkbench(status="requisition"){
+    WB_STATE.status = status || "requisition";
+    WB_STATE.page   = 1;
+    WB_STATE.q      = "";
+    const search = qInWB('#wbSearch');
+    if (search) search.value = "";
+    workbenchModal.classList.remove('hidden');
+    loadWorkbenchFromAPI({ status: WB_STATE.status, page:1, per_page: WB_STATE.per_page });
+  }
+
+  // Modal search
+  (function(){
+    const inp = qInWB('#wbSearch');
+    if (!inp) return;
+    let t;
+    inp.addEventListener('keydown', (ev)=>{
+      if (ev.key === 'Enter'){
+        ev.preventDefault();
+        WB_STATE.q = inp.value.trim();
+        loadWorkbenchFromAPI({ page:1, q: WB_STATE.q });
+      }
+    });
+    inp.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        WB_STATE.q = inp.value.trim();
+        loadWorkbenchFromAPI({ page:1, q: WB_STATE.q });
+      }, 250);
+    });
+  })();
+
+  // Pagination buttons INSIDE the workbench modal
+  workbenchModal.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.pg-btn[data-wb-dir]');
+    if (!btn) return;
+    e.preventDefault();
+
+    const lazy = !!WB_STATE._lazy;
+    let target = WB_STATE.page;
+    const dir = btn.dataset.wbDir;
+
+    if (dir==='first') target = 1;
+    if (dir==='prev')  target = Math.max(1, WB_STATE.page-1);
+    if (dir==='next')  target = lazy ? (WB_STATE.page + 1) : Math.min(WB_STATE.pages, WB_STATE.page+1);
+    if (dir==='last')  target = lazy ? WB_STATE.page : WB_STATE.pages; // disabled in lazy mode
+
+    if (lazy && (dir==='next') && !WB_STATE.has_next) return; // extra guard
+
+    if (target !== WB_STATE.page) {
+      loadWorkbenchFromAPI({ page: target });
+    }
+  });
+
+  // Close modal
+  qInWB('#wbClose')?.addEventListener('click', () => {
+    workbenchModal.classList.add('hidden');
+  });
+  document.addEventListener('click', (e)=>{
+    if (e.target?.dataset?.close === 'wb-backdrop')
+      workbenchModal.classList.add('hidden');
+  });
+
+  // Public API (no KPIs)
+  window.Workbench = {
+    open: openWorkbench,
+    setApiUrl: (url) => { if (url) WORKBENCH_API_URL = url; },
+    _debug_state: WB_STATE
+  };
+})();
+</script>
+
+
+<style>
+/* ===== Motion & depth ===== */
+@keyframes shimmerMove { to { background-position: -200% 0; } }
+@keyframes float { 0%,100%{ transform: translateY(0)} 50%{ transform: translateY(8px)} }
+@keyframes pop { 0%{ transform: scale(.95); opacity:0 } 100%{ transform: scale(1); opacity:1 } }
+@keyframes slideUp { from{ transform: translateY(6px); opacity:0 } to{ transform: translateY(0); opacity:1 } }
+@keyframes fadeIn { from{ opacity:0 } to{ opacity:1 } }
+.shadow-glass { box-shadow: 0 10px 30px rgba(3, 8, 20, .35), inset 0 1px 0 rgba(255,255,255,.06); }
+
+/* ===== Table base ===== */
+.data-grid { width:100%; border-collapse: separate !important; border-spacing: 0 10px !important; }
+.data-grid thead tr { border-bottom: 1px solid rgba(255,255,255,.08); }
+.data-grid thead th { padding:.7rem .9rem; font-weight:700; letter-spacing:.03em; border-bottom:1px solid rgba(255,255,255,.10); user-select:none; white-space:nowrap; }
+.data-grid .tbody tr {
+  background: rgba(255,255,255,.04);
+  box-shadow: 0 1px 0 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(3,8,20,.25);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.data-grid .tbody tr:hover { background: rgba(255,255,255,.06); transform: translateY(-1px); box-shadow: 0 1px 0 0 rgba(255,255,255,.08) inset, 0 10px 24px rgba(3,8,20,.32); }
+.data-grid .tbody td { padding:.7rem .9rem; vertical-align:top; border-top:1px solid rgba(255,255,255,.06); }
+.data-grid .tbody tr td + td { border-left: 1px solid rgba(255,255,255,.03); }
+.data-grid .tbody tr td:first-child { border-top-left-radius: 12px; }
+.data-grid .tbody tr td:last-child  { border-top-right-radius: 12px; }
+.data-grid .tbody tr td:first-child,
+.data-grid .tbody tr td:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* ===== Chips ===== */
+.chip{
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.125rem .55rem; border-radius:.55rem;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+  font-size:.85em;
+}
+.chip--immat{
+  font-weight:700; letter-spacing:.02em; color:#e8fbff;
+  background: linear-gradient(135deg, rgba(56,189,248,.16), rgba(20,184,166,.16));
+  border-color: rgba(255,255,255,.18);
+  text-shadow: 0 1px 0 rgba(0,0,0,.18);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+/* ===== Buttons ===== */
+.actions{ display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap; }
+.icon{ width:18px; height:18px; }
+
+.btn{
+  --ring: rgba(255,255,255,.18);
+  display:inline-flex; align-items:center; gap:.45rem;
+  padding:.45rem .7rem; border-radius:.6rem; font-size:.8125rem; line-height:1;
+  border:1px solid transparent;
+  transition: transform .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  will-change: transform;
+}
+.btn--ghost{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+  color:#fff;
+}
+.btn--ghost:hover{ background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.16); transform: translateY(-1px); }
+
+.pg-btn{ padding:.35rem .5rem; border-radius:.5rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#fff; }
+.pg-btn:hover{ background:rgba(255,255,255,.12); }
+.pg-btn.is-disabled{ opacity:.45; cursor:not-allowed; }
+
+/* ===== Modals (mobile-friendly) ===== */
+@media (max-width: 768px){
+  .data-grid thead{ display:none; }
+  .data-grid .tbody tr{ display:block; border-radius:12px; padding:.35rem .2rem; margin:.5rem 0; }
+  .data-grid .tbody td{
+    display:grid; grid-template-columns: 42% 58%; align-items:center;
+    border:none; border-bottom:1px dashed rgba(255,255,255,.08); padding:.55rem .75rem;
+  }
+  .data-grid .tbody tr td:last-child{ border-bottom:none; }
+  .data-grid .tbody td::before{
+    content: attr(data-th);
+    font-size:.72rem; letter-spacing:.03em; text-transform:uppercase; color: rgba(255,255,255,.65);
+    padding-right:.75rem;
+  }
+  .actions{ justify-content:flex-start; }
+}
+
+/* ===== Submit button ===== */
+.btn-submit {
+  background-image: linear-gradient(to right, var(--color-primary, #6ee7f9), var(--color-primary2, #22d3ee));
+  color: #0b1223; font-weight: 600; border: none; border-radius: .7rem; padding: .45rem .9rem;
+}
+.btn-submit.is-busy{ opacity:.7; pointer-events:none; }
+
+/* ===== Toast / Report banner ===== */
+#toast{
+  position: fixed; bottom: 18px; right: 18px; display:flex; flex-direction:column; gap:8px; z-index: 1200;
+}
+.toast-item{
+  background: rgba(16,185,129,.15);
+  color:#eafff6; border:1px solid rgba(16,185,129,.35);
+  padding:.55rem .75rem; border-radius:.6rem; backdrop-filter: blur(6px);
+  transform: translateY(6px); opacity:0; animation: slideUp .25s ease-out forwards;
+}
+.toast-item--error{
+  background: rgba(244,63,94,.15);
+  border-color: rgba(244,63,94,.35);
+  color: #ffe7eb;
+}
+.toast-item.is-out{ opacity:0; transform: translateY(8px); transition: .25s ease; }
+
+.report-banner{
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 24px; z-index: 1201; display: flex; gap: 10px; align-items: center;
+  background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.35);
+  backdrop-filter: blur(6px); padding: .6rem .85rem; border-radius: .7rem; color: #eafff6;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+.report-banner a{ font-weight: 700; text-decoration: underline; color: #fff; }
+.report-banner button{ background: transparent; color: #eafff6; border: none; cursor: pointer; font-weight: 600; }
+</style>
+
+<!-- ========= Reports / Historique (inline table) ========= -->
+<section id="report-section" class="glass rounded-2xl shadow-glass border border-white/10 overflow-hidden mb-6 hidden">
+  <header class="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-white/10">
+    <div>
+      <h3 class="text-base sm:text-lg font-semibold">Rapports / Historique</h3>
+      <p class="text-xs sm:text-sm text-white/70">Historique des rapports de votre entrepôt. Utilisez les filtres pour affiner.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btnBackToPending" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/15">
+        ← Retour
+      </button>
+    </div>
+  </header>
+
+<div class="px-4 sm:px-5 py-3 border-b border-white/10">
+  <!-- Outer wrapper allows horizontal scroll on narrow screens -->
+  <div class="overflow-x-auto">
+    <!-- min-w-max keeps everything on one line; no wrap -->
+    <div class="min-w-max flex items-end gap-2 whitespace-nowrap">
+
+      <!-- Search (grows) -->
+      <div class="flex-1 min-w-[280px]">
+        <label class="sr-only" for="repSearch">Rechercher</label>
+        <input id="repSearch" type="search"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50"
+               placeholder="Rechercher (immat., produit, importateur)…">
+      </div>
+
+      <!-- From -->
+      <div class="w-40">
+        <label class="block text-xs text-white/60 mb-1" for="repFrom">Du</label>
+        <input id="repFrom" type="date"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+      </div>
+
+      <!-- To -->
+      <div class="w-40">
+        <label class="block text-xs text-white/60 mb-1" for="repTo">Au</label>
+        <input id="repTo" type="date"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50">
+      </div>
+
+      <!-- Reset -->
+      <div>
+        <button id="repReset"
+                class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm">
+          Réinitialiser
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+  <div class="overflow-x-auto">
+    <table class="data-grid min-w-full text-sm text-left">
+      <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+        <tr>
+          <th class="px-3 py-2">Date</th>
+          <th class="px-3 py-2">Importateur</th>
+          <th class="px-3 py-2">Entrepôt</th>
+          <th class="px-3 py-2">Immatriculation</th>
+          <th class="px-3 py-2">Produit</th>
+          <th class="px-3 py-2">Volume (m³)</th>
+          <th class="px-3 py-2">REQ Ack</th>
+          <th class="px-3 py-2">Num. Dossier</th>
+          <th class="px-3 py-2">Date échantillonnage</th>
+          <th class="px-3 py-2">Réception labo</th>
+          <th class="px-3 py-2">Inspection</th>
+          <th class="px-3 py-2">Déchargement</th>
+          <th class="px-3 py-2">Σ GOV</th>
+          <th class="px-3 py-2">Densité</th>
+          <th class="px-3 py-2">Temp.</th>
+          <th class="px-3 py-2">VCF</th>
+          <th class="px-3 py-2">MTA</th>
+          <th class="px-3 py-2">MTV</th>
+          <th class="px-3 py-2">Σ GSV</th>
+          <th class="px-3 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-report" class="tbody"></tbody>
+    </table>
+  </div>
+
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 flex items-center justify-between">
+    <div id="pg-report-info" class="text-xs text-white/70">—</div>
+    <div class="flex items-center gap-1">
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-report-dir="first">«</button>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-report-dir="prev">‹</button>
+      <span id="pg-report-page" class="text-xs text-white/80 px-2">1 / 1</span>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-report-dir="next">›</button>
+      <button type="button" class="pg-btn px-2 py-1 rounded bg-white/10 hover:bg-white/15 text-xs" data-report-dir="last">»</button>
+    </div>
+  </footer>
+  <div id="empty-report" class="hidden py-8 text-center text-white/70 text-sm">Aucun rapport à afficher.</div>
+</section>
 
 
 <script>
-    {% block javascript %}
-        function getRowId(button) {
-          var row = button.closest('tr');
+/* ====================================================================
+   REPORTS / HISTORIQUE INLINE TABLE
+==================================================================== */
+(function(){
+  const reportSection = document.getElementById('report-section');
+  if (!reportSection) return;
 
-          if (row) {
-            rowId = row.id;
-            console.log('Row ID:', rowId);
-            // Perform further actions with the row ID, such as making an AJAX request
-          }
-        }
+  // Prefer provided API url if any, fallback to workbench_list which supports status=reports
+  const REPORTS_API_URL = ("{{ WORKBENCH_API_URL|default_if_none:'' }}".trim()) || "{% url 'workbench_list' %}";
 
+  const REPORT_STATE = { page:1, per_page:10, total:null, pages:null, has_next:false, has_prev:false, q:"", from:"", to:"", _lazy:false };
+  let REPORT_CACHE = [];
 
-        // using jQuery
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
+  function mapReportRow(c){
+    // Map backend payload to UI-friendly structure; be tolerant to missing fields
+    const pick = (obj, ...keys) => keys.find(k => obj && obj[k] != null);
+    const val  = (obj, ...keys) => { const k = pick(obj, ...keys); return k ? obj[k] : null; };
+    return {
+      id:               c.id || c.idcargaison || c.pk || null,
+      dateheurecargaison: c.dateheurecargaison || c.date || null,
+      importateur_name: c.importateur_name || c.importateur || null,
+      entrepot_name:    c.entrepot_name || c.entrepot || null,
+      immatriculation:  c.immatriculation || null,
+      produit_name:     c.produit_name || c.produit || null,
+      volume:           c.volume,
+      // New fields
+      requisitiondackdate: c.requisitiondackdate || c.requisition_dack_date || null,
+      numdos:           c.numdos || c.num_dossier || c.numdossier || null,
+      dateechantillonage: c.dateechantillonage || c.echantillon_date || c.entrepot_echantillon__dateechantillonage || null,
+      datereceptionlabo: c.datereceptionlabo || c.labo_reception_date || c.entrepot_echantillon__laboreception__datereceptionlabo || null,
+      dateinspection:   c.dateinspection || c.inspection_date || null,
+      datedechargement: c.datedechargement || c.dateDechargement || c.date_dechargement || null,
+      gov_sum:          val(c, 'gov_sum', 'sum_gov', 'gov'),
+      densite:          val(c, 'densite', 'dens', 'density'),
+      temperature:      val(c, 'temperature', 'temp'),
+      vcf:              c.vcf ?? null,
+      mta:              c.mta ?? null,
+      mtv:              c.mtv ?? null,
+      gsv_sum:          val(c, 'gsv_sum', 'sum_gsv', 'gsv')
+    };
+  }
 
-        var csrftoken = getCookie('csrftoken');
+  function reportRowHTML(r){
+    const immat = esc(r.immatriculation || '—');
+    const dens  = (r.densite != null && isFinite(r.densite)) ? Number(r.densite) : null;
+    const temp  = (r.temperature != null && isFinite(r.temperature)) ? Number(r.temperature) : null;
+    const vcf   = (r.vcf != null && isFinite(r.vcf)) ? Number(r.vcf) : null;
+    const mta   = (r.mta != null && isFinite(r.mta)) ? Number(r.mta) : null;
+    const mtv   = (r.mtv != null && isFinite(r.mtv)) ? Number(r.mtv) : null;
+    const gov   = (r.gov_sum != null && isFinite(r.gov_sum)) ? Number(r.gov_sum) : null;
+    const gsv   = (r.gsv_sum != null && isFinite(r.gsv_sum)) ? Number(r.gsv_sum) : null;
+    return `
+      <tr data-id="${esc(r.id)}">
+        <td class="px-3 py-2" data-th="Date">${fmtDate(r.dateheurecargaison)}</td>
+        <td class="px-3 py-2" data-th="Importateur">${esc(r.importateur_name || '—')}</td>
+        <td class="px-3 py-2" data-th="Entrepôt">${esc(r.entrepot_name || '—')}</td>
+        <td class="px-3 py-2" data-th="Immatriculation"><span class="chip chip--immat">${immat}</span></td>
+        <td class="px-3 py-2" data-th="Produit">${r.produit_name ? `<span class="chip">${esc(r.produit_name)}</span>` : '—'}</td>
+        <td class="px-3 py-2" data-th="Volume">${isFinite(r.volume) ? `${nfmt(r.volume)} m³` : '—'}</td>
+        <td class="px-3 py-2" data-th="REQ Ack">${fmtDate(r.requisitiondackdate)}</td>
+        <td class="px-3 py-2" data-th="Num. Dossier">${esc(r.numdos ?? '—')}</td>
+        <td class="px-3 py-2" data-th="Date échantillonnage">${fmtDate(r.dateechantillonage)}</td>
+        <td class="px-3 py-2" data-th="Réception labo">${fmtDate(r.datereceptionlabo)}</td>
+        <td class="px-3 py-2" data-th="Inspection">${fmtDate(r.dateinspection)}</td>
+        <td class="px-3 py-2" data-th="Déchargement">${fmtDate(r.datedechargement)}</td>
+        <td class="px-3 py-2" data-th="Σ GOV">${gov!=null ? nfmt(gov) : '—'}</td>
+        <td class="px-3 py-2" data-th="Densité">${dens!=null ? dens.toFixed(3) : '—'}</td>
+        <td class="px-3 py-2" data-th="Temp.">${temp!=null ? temp.toFixed(1) : '—'}</td>
+        <td class="px-3 py-2" data-th="VCF">${vcf!=null ? vcf.toFixed(5) : '—'}</td>
+        <td class="px-3 py-2" data-th="MTA">${mta!=null ? nfmt(mta) : '—'}</td>
+        <td class="px-3 py-2" data-th="MTV">${mtv!=null ? nfmt(mtv) : '—'}</td>
+        <td class="px-3 py-2" data-th="Σ GSV">${gsv!=null ? nfmt(gsv) : '—'}</td>
+        <td class="px-3 py-2 text-right" data-th="Actions">
+          <button type="button" class="btn btn--ghost" data-action="rep-docs" data-id="${esc(r.id)}" aria-controls="reportDocsModal">Voir</button>
+        </td>
+      </tr>
+    `;
+  }
 
-        function csrfSafeMethod(method) {
-            // these HTTP methods do not require CSRF protection
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
-        $.ajaxSetup({
-            beforeSend: function (xhr, settings) {
-        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
+  function setReportPgButtons(){
+    const dis = (dir, on)=>{
+      const btn = document.querySelector(`.pg-btn[data-report-dir="${dir}"]`);
+      if (!btn) return; btn.disabled = on; btn.classList.toggle('is-disabled', on);
+    };
+    const lazy = !!REPORT_STATE._lazy;
+    if (lazy){
+      dis('first', REPORT_STATE.page <= 1);
+      dis('prev',  !REPORT_STATE.has_prev);
+      dis('next',  !REPORT_STATE.has_next);
+      dis('last',  true); // disable "last" in lazy mode
+    } else {
+      dis('first', REPORT_STATE.page <= 1);
+      dis('prev',  !REPORT_STATE.has_prev);
+      dis('next',  !REPORT_STATE.has_next);
+      dis('last',  REPORT_STATE.page >= REPORT_STATE.pages);
     }
-});
+  }
 
-        //script for submitting data in ajax
-        $('.btn.btn-default').click(function () {
-            Id = rowId; //getting the id of the row which equal to the pk into the database
-            console.log(Id); // debug
-        });
+  function renderReports(rows){
+    const body  = document.getElementById('tbody-report');
+    const info  = document.getElementById('pg-report-info');
+    const page  = document.getElementById('pg-report-page');
+    const empty = document.getElementById('empty-report');
 
-        $('.btn.btn-success').click(function (e) {
-            e.preventDefault()
+    if (body) body.innerHTML = rows.length ? rows.map(reportRowHTML).join('') : '';
 
-            //Disable Submit button
-            $('.btn.btn-success').attr("disabled", true);
-            var pk = Id;
-            var APIurl = '/entrepot/echantillonage/';
-         $input = $('<input type="hidden" name="pk">').val(pk);
-         $('#sampling-form').append($input);
-         var SerializedData = $("#sampling-form").serialize();
-         console.log(SerializedData);
-         $.ajax({
-    url: APIurl,
-    type: "POST",
-    data: SerializedData,
-    dataType: 'json',
-
-    success: function (response) {
-        alert("Données sauvegardées");
-
-        // Decode the PDF content from the response
-        var pdfContent = atob(response.pdf_base64);
-
-        // Create a Blob object from the decoded PDF content
-        var pdfBlob = new Blob([pdfContent], { type: 'application/pdf' });
-
-        // Create a URL for the Blob object
-        var pdfURL = URL.createObjectURL(pdfBlob);
-
-        // Open the PDF in a new browser window
-        window.open(pdfURL);
-
-        location.reload();
-    },
-
-    error: function () {
-        console.log('Erreur');
-        alert("An error occurred");
-        $('.btn.btn-success').attr("disabled", false);
-        location.reload();
+    const lazy = !!REPORT_STATE._lazy;
+    const hasRows = rows.length > 0;
+    if (hasRows){
+      empty.classList.add('hidden');
+      const start = (REPORT_STATE.per_page*(REPORT_STATE.page-1)) + (rows.length?1:0);
+      const end   = (REPORT_STATE.per_page*(REPORT_STATE.page-1)) + rows.length;
+      if (info) info.textContent = lazy ? `Affichage ${start}–${end}` : `Affichage ${start}–${end} sur ${REPORT_STATE.total}`;
+      if (page) page.textContent = lazy ? `Page ${REPORT_STATE.page}` : `${REPORT_STATE.page} / ${REPORT_STATE.pages}`;
+    }else{
+      empty.classList.remove('hidden');
+      if (info) info.textContent = '—';
+      if (page) page.textContent = lazy ? `Page ${REPORT_STATE.page}` : '1 / 1';
     }
-});
 
-        })
+    setReportPgButtons();
+  }
 
-    {% endblock %}
+  async function loadReports(opts={}){
+    const { page = REPORT_STATE.page, per_page = REPORT_STATE.per_page, q = REPORT_STATE.q, from = REPORT_STATE.from, to = REPORT_STATE.to } = opts;
+
+    try{
+      const url = new URL(REPORTS_API_URL, window.location.origin);
+      url.searchParams.set('status', 'reports');
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('per_page', String(per_page));
+      if (q)    url.searchParams.set('q', q);
+      if (from) url.searchParams.set('date_from', from);
+      if (to)   url.searchParams.set('date_to', to);
+      // Hint to backend to restrict to current user's entrepôt, if supported
+      url.searchParams.set('mine', '1');
+
+      const res = await fetch(url.toString(), { headers:{ 'Accept':'application/json' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      const list = (data && (data.items || data.pending)) || [];
+      const rows = list.map(mapReportRow);
+      REPORT_CACHE = rows.slice();
+
+      const p = (data && data.pagination) || {};
+      const num = v => (v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
+
+      REPORT_STATE.page     = num(p.page)     ?? page     ?? 1;
+      REPORT_STATE.per_page = num(p.per_page) ?? per_page ?? 10;
+      const srv_total = num(p.total ?? p.count);
+      const srv_pages = num(p.pages);
+      REPORT_STATE._lazy    = (srv_total == null && srv_pages == null);
+
+      if (REPORT_STATE._lazy){
+        REPORT_STATE.total = null;
+        REPORT_STATE.pages = null;
+      } else {
+        REPORT_STATE.total = (srv_total != null) ? srv_total : rows.length;
+        REPORT_STATE.pages = (srv_pages != null) ? srv_pages : Math.max(1, Math.ceil(REPORT_STATE.total / REPORT_STATE.per_page));
+      }
+
+      REPORT_STATE.has_next = ('has_next' in p) ? !!p.has_next : (!REPORT_STATE._lazy && REPORT_STATE.page < REPORT_STATE.pages);
+      REPORT_STATE.has_prev = ('has_prev' in p) ? !!p.has_prev : (REPORT_STATE.page > 1);
+
+      renderReports(rows);
+    }catch(err){
+      console.error('Failed to load reports:', err);
+      REPORT_CACHE = [];
+      Object.assign(REPORT_STATE, { page:1, total:0, pages:1, has_next:false, has_prev:false });
+      renderReports([]);
+    }
+  }
+
+  function toggleSections(showReports){
+    const pendingTbody = document.getElementById('tbody-pending');
+    const pendingSection = pendingTbody ? pendingTbody.closest('section') : null;
+    if (showReports){
+      if (pendingSection) pendingSection.classList.add('hidden');
+      reportSection.classList.remove('hidden');
+    } else {
+      if (pendingSection) pendingSection.classList.remove('hidden');
+      reportSection.classList.add('hidden');
+    }
+  }
+
+  function openReportsView(){
+    toggleSections(true);
+    REPORT_STATE.page = 1;
+    loadReports({ page:1 });
+  }
+
+  // Back button
+  document.getElementById('btnBackToPending')?.addEventListener('click', ()=>{
+    toggleSections(false);
+  });
+
+  // Pagination buttons for report section
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.pg-btn[data-report-dir]');
+    if (!btn) return;
+    e.preventDefault();
+    const lazy = !!REPORT_STATE._lazy;
+    let target = REPORT_STATE.page;
+    const dir = btn.dataset.reportDir;
+    if (dir==='first') target = 1;
+    if (dir==='prev')  target = Math.max(1, REPORT_STATE.page-1);
+    if (dir==='next')  target = lazy ? (REPORT_STATE.page + 1) : Math.min(REPORT_STATE.pages, REPORT_STATE.page+1);
+    if (dir==='last')  target = lazy ? REPORT_STATE.page : REPORT_STATE.pages; // disabled in lazy mode
+    if (lazy && (dir==='next') && !REPORT_STATE.has_next) return; // guard
+    if (target !== REPORT_STATE.page) loadReports({ page: target });
+  });
+
+  // Filters
+  (function(){
+    const qInp   = document.getElementById('repSearch');
+    const fromIn = document.getElementById('repFrom');
+    const toIn   = document.getElementById('repTo');
+    const reset  = document.getElementById('repReset');
+    let t;
+
+    function reload(){ loadReports({ page:1 }); }
+
+    qInp?.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(()=>{ REPORT_STATE.q = qInp.value.trim(); reload(); }, 250); });
+    fromIn?.addEventListener('change', ()=>{ REPORT_STATE.from = fromIn.value; reload(); });
+    toIn?.addEventListener('change',   ()=>{ REPORT_STATE.to   = toIn.value;   reload(); });
+    reset?.addEventListener('click', ()=>{
+      if (qInp) qInp.value = '';
+      if (fromIn) fromIn.value = '';
+      if (toIn) toIn.value = '';
+      REPORT_STATE.q = REPORT_STATE.from = REPORT_STATE.to = '';
+      reload();
+    });
+  })();
+
+  // Detect clicks on the KPI "Rapports / Historique" card
+  document.addEventListener('click', (e)=>{
+    const cand = e.target.closest('[data-kpi], [data-status], [data-wb], .kpi-card, a, button');
+    if (!cand) return;
+    const txt = (cand.textContent || '').toLowerCase();
+    const isReports = cand.matches('[data-kpi="reports"], [data-status="reports"], [data-wb="reports"]') || (txt.includes('rapports') && txt.includes('historique'));
+    if (isReports){
+      e.preventDefault();
+      openReportsView();
+    }
+  });
+
+  // Open report docs modal when clicking "Voir"
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-action="rep-docs"]');
+    if (!btn) return;
+    e.preventDefault();
+    const id = btn.dataset.id;
+    const rec = (Array.isArray(REPORT_CACHE) ? REPORT_CACHE : []).find(r => String(r.id) === String(id));
+    const url = (typeof buildReportUrl === 'function') ? buildReportUrl(id) : '#';
+
+    const meta = document.getElementById('repDocsMeta');
+    if (meta){
+      const parts = [];
+      if (rec?.produit_name) parts.push(`Produit: <strong>${esc(rec.produit_name)}</strong>`);
+      if (rec?.importateur_name) parts.push(`Importateur: <strong>${esc(rec.importateur_name)}</strong>`);
+      if (rec?.immatriculation) parts.push(`Immatriculation: <span class="chip chip--immat">${esc(rec.immatriculation)}</span>`);
+      if (rec?.dateheurecargaison) parts.push(`Date: <strong>${fmtDate(rec.dateheurecargaison)}</strong>`);
+      meta.innerHTML = parts.length ? parts.join(' · ') : 'Rapport prêt à ouvrir.';
+    }
+    const link = document.getElementById('repDocsLink');
+    if (link){
+      link.href = url;
+    }
+    const title = document.getElementById('reportDocsTitle');
+    if (title){
+      title.textContent = rec?.numdos ? `Rapport — Dossier ${rec.numdos}` : 'Rapport';
+    }
+    const modal = document.getElementById('reportDocsModal');
+    if (modal){
+      modal.classList.remove('hidden');
+    }
+  });
+
+  // Public helper (optional) for other scripts/templates
+  window.showReportsTable = openReportsView;
+})();
 </script>
 
+<!-- ========================== RESPONSIVE BOOSTS (NEW) ========================== -->
+<style>
+/* ========================== RESPONSIVE BOOSTS ========================== */
+
+/* Enable container queries on the page blocks you already have */
+section.glass,
+section.shadow-glass,
+#report-section,
+.modal-panel {
+  container-type: inline-size;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-float-delayed, .animate-slide-up, .animate-fade-in,
+  .btn:hover, .data-grid .tbody tr:hover, .report-banner, .toast-item {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Mobile safe area + consistent horizontal paddings */
+@supports (padding: max(0px)) {
+  .px-4, .sm\:px-5, .p-3, .p-4, .p-5 {
+    padding-left: max(1rem, env(safe-area-inset-left)) !important;
+    padding-right: max(1rem, env(safe-area-inset-right)) !important;
+  }
+}
+
+/* Container-query driven table → card transformation */
+@container (max-width: 700px) {
+  .data-grid thead { display: none !important; }
+  .data-grid .tbody tr {
+    display: block;
+    border-radius: 12px;
+    margin: .5rem 0;
+    padding: .35rem .2rem;
+  }
+  .data-grid .tbody td {
+    display: grid;
+    grid-template-columns: 44% 56%;
+    align-items: center;
+    border: 0;
+    border-bottom: 1px dashed rgba(255,255,255,.08);
+    padding: .55rem .75rem;
+  }
+  .data-grid .tbody tr td:last-child { border-bottom: 0; }
+  .data-grid .tbody td::before {
+    content: attr(data-th);
+    font-size: .72rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.65);
+    padding-right: .75rem;
+    white-space: nowrap;
+  }
+  /* Actions full width, right aligned */
+  .data-grid .tbody td:last-child { grid-template-columns: 1fr; justify-items: end; }
+  .actions { width: 100%; justify-content: flex-end; gap: .4rem; }
+  .btn { padding: .5rem .7rem; }
+}
+
+/* Medium screens: collapse low-priority columns with container queries
+   (keeps your nth-child rules, but makes them resilient when column order changes) */
+@container (max-width: 1024px) {
+  /* If you add a class to low-priority cells (e.g. .col--lab, .col--dens), hide them here.
+     If not, your existing nth-child rules still apply. */
+}
+
+/* Scroll shadows on horizontal overflow wrappers for affordance */
+.overflow-x-auto {
+  position: relative;
+  --fade: linear-gradient(to right, rgba(11,18,35,0) 0, rgba(11,18,35,.6) 100%);
+}
+.overflow-x-auto::after {
+  content:"";
+  position:absolute; top:0; right:0; width:18px; height:100%;
+  pointer-events:none; background: var(--fade);
+}
+
+/* Modals: full-height on phones, better hit targets */
+@media (max-width: 480px) {
+  .modal-panel {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0.75rem;
+    margin: 0;
+  }
+  #samplingPanel, #detailModal .modal-panel, #qrModal .modal-panel {
+    max-height: calc(100vh - 1.5rem);
+  }
+  .w-9.h-9 { width: 44px !important; height: 44px !important; } /* bigger touch target */
+}
+
+/* Buttons: visible focus and compact on small screens */
+.btn,
+.pg-btn,
+button[id^="btn"] {
+  outline: none;
+}
+.btn:focus-visible,
+.pg-btn:focus-visible,
+button[id^="btn"]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(99,102,241,.45);
+}
+
+/* Card density tweaks on tight screens */
+@media (max-width: 380px) {
+  .chip { font-size: .78em; padding: .1rem .45rem; }
+  .icon { width: 16px; height: 16px; }
+}
+
+/* Make sticky headers stay readable on translucent backgrounds */
+.data-grid thead.sticky {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+</style>
+
+<!-- ==================== ADAPTIVE PAGING & RESIZE (NEW) ==================== -->
+<script>
+/* ==================== ADAPTIVE PAGING & RESIZE ==================== */
+/* Calculates how many rows fit on screen and updates per_page, then reloads. */
+
+(function () {
+  // Guards for your existing state objects
+  if (!window.matchMedia) return;
+
+  const MIN_ROW_HEIGHT = 56;   // px, conservative default row height
+  const HEADER_FOOTER  = 220;  // px, space used by header / toolbars / padders
+  const MIN_ROWS       = 6;    // never go below this, keeps UX predictable
+  const MAX_ROWS       = 20;   // safety cap
+
+  let pendingNeedsReload = false;
+  let reportNeedsReload  = false;
+
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function estimateRowHeight(tbody) {
+    const probe = tbody?.querySelector('tr');
+    if (!probe) return MIN_ROW_HEIGHT;
+    const rect = probe.getBoundingClientRect();
+    return Math.max(MIN_ROW_HEIGHT, Math.round(rect.height || MIN_ROW_HEIGHT));
+  }
+
+  function computePerPage(tbody) {
+    const h = window.innerHeight || document.documentElement.clientHeight || 800;
+    const rowH = estimateRowHeight(tbody);
+    const usable = Math.max(320, h - HEADER_FOOTER);
+    return clamp(Math.floor(usable / rowH), MIN_ROWS, MAX_ROWS);
+  }
+
+  function applyPending() {
+    const tbody = document.getElementById('tbody-pending');
+    if (!tbody || typeof PENDING_STATE !== 'object') return;
+    const per = computePerPage(tbody);
+    if (PENDING_STATE.per_page !== per) {
+      PENDING_STATE.per_page = per;
+      pendingNeedsReload = true;
+    }
+  }
+
+  function applyReports() {
+    const tbody = document.getElementById('tbody-report');
+    if (!tbody || typeof REPORT_STATE !== 'object') return;
+    const per = computePerPage(tbody);
+    if (REPORT_STATE.per_page !== per) {
+      REPORT_STATE.per_page = per;
+      reportNeedsReload = true;
+    }
+  }
+
+  function reloadIfNeeded() {
+    if (pendingNeedsReload && typeof loadPendingFromAPI === 'function') {
+      pendingNeedsReload = false;
+      loadPendingFromAPI({ page: 1, per_page: PENDING_STATE.per_page });
+    }
+    if (reportNeedsReload) {
+      reportNeedsReload = false;
+      const isVisible = !document.getElementById('report-section')?.classList.contains('hidden');
+      if (isVisible && typeof loadReports === 'function') {
+        loadReports({ page: 1, per_page: REPORT_STATE.per_page });
+      }
+    }
+  }
+
+  // Initial run (after your first data load has drawn at least one row)
+  window.addEventListener('load', () => {
+    setTimeout(() => { applyPending(); applyReports(); reloadIfNeeded(); }, 60);
+  });
+
+  // Recompute on resize/orientation changes (debounced)
+  let t;
+  window.addEventListener('resize', () => {
+    clearTimeout(t);
+    t = setTimeout(() => { applyPending(); applyReports(); reloadIfNeeded(); }, 120);
+  });
+
+  // Recompute when fonts load (row height can change)
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      applyPending(); applyReports(); reloadIfNeeded();
+    });
+  }
+
+  // Recompute when sections swap visibility
+  const reportSection = document.getElementById('report-section');
+  if (reportSection) {
+    const mo = new MutationObserver(() => { applyReports(); reloadIfNeeded(); });
+    mo.observe(reportSection, { attributes: true, attributeFilter: ['class'] });
+  }
+})();
+</script>
+
+{% endblock %}

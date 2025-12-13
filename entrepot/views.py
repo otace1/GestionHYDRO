@@ -1,78 +1,567 @@
+from __future__ import annotations
+
 import base64
 from datetime import date
+import datetime as dt
+from decimal import Decimal, InvalidOperation
+from math import ceil
 from re import template
+from typing import Any, List, Dict, Optional
+import json
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.staticfiles import finders
 # Sending email
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
-from django.db.models import Q, Sum, Case, When, FloatField, F, Value, CharField
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction
+from django.db.models import Q, Sum, Avg, Case, When, FloatField, F, Value, CharField, Count, Exists, OuterRef
+from django.forms import IntegerField
+from django.http import HttpResponse, HttpResponseBadRequest, Http404, HttpRequest, HttpResponseNotAllowed
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import NoReverseMatch, reverse
+from django.utils import timezone
+from django.utils.timezone import is_naive, make_naive, get_current_timezone, make_aware, localtime
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
 from django_tables2 import RequestConfig
 from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
+from reportlab.graphics.shapes import Image
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import Table, TableStyle, Paragraph, SimpleDocTemplate, Spacer
 
 from accounts.models import *
 from labo.utils import render_to_pdf
 from shydro.numact import num_cert_inspection
+from enreg.models import *
 from .calculs import *
 from .forms import *
 from .numrappech import numRappEch
 from .tables import *
 
 
+# --- Styles / helpers ---------------------------------------------------------
+BASE_FONT = "Helvetica"
+BOLD_FONT = "Helvetica-Bold"
+
+def _p(html, size=11, align="LEFT", bold=False):
+    return Paragraph(
+        html,
+        ParagraphStyle(
+            name="p",
+            fontName=BOLD_FONT if bold else BASE_FONT,
+            fontSize=size,
+            leading=size + 2,
+            alignment={"LEFT": TA_LEFT, "CENTER": TA_CENTER}.get(align, TA_LEFT),
+        ),
+    )
+
+def _section_title(text):
+    return Paragraph(
+        f"<b>{text}</b>",
+        ParagraphStyle(
+            name="section",
+            fontName=BOLD_FONT,
+            fontSize=12,
+            leading=14,
+            spaceBefore=4,
+            spaceAfter=2,
+        ),
+    )
+
+
+def _is_ajax(request) -> bool:
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
+@login_required
+def cargaisons_pending(request):
+    user = request.user
+    uid = user.id
+
+    # Query cargaisons
+    qs = (
+        Cargaison.objects
+        .filter(
+            etat="En attente d'echantillonage",
+            entrepot__affectationentrepot__username_id=uid
+        )
+        .order_by("-dateheurecargaison")
+    )
+
+    # Handle pagination (default page=1, per_page=10)
+    page_num = request.GET.get("page", 1)
+    per_page = int(request.GET.get("per_page", 10))
+
+    paginator = Paginator(qs, per_page)
+    page = paginator.get_page(page_num)
+
+    data = [
+        {
+            "id": c.idcargaison,
+            "dateheurecargaison": c.dateheurecargaison.isoformat() if c.dateheurecargaison else None,
+            "importateur": str(c.importateur) if c.importateur else None,
+            "entrepot": str(c.entrepot) if c.entrepot else None,
+            "immatriculation": c.immatriculation,
+            "produit": str(c.produit) if c.produit else None,
+            "volume": c.volume,
+            "etat": c.etat,
+        }
+        for c in page
+    ]
+
+    return JsonResponse({
+        "pending": data,
+        "pagination": {
+            "page": page.number,
+            "per_page": per_page,
+            "total": paginator.count,
+            "pages": paginator.num_pages,
+            "has_next": page.has_next(),
+            "has_prev": page.has_previous(),
+        }
+    }, safe=False)
+
+
+@login_required
+def cargaisons_status_requisition(request):
+    user   = request.user
+    uid    = getattr(user, "id", None)
+    status = "En attente requisition"
+
+    # Parse & clamp pagination inputs
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except ValueError:
+        page = 1
+    try:
+        per = int(request.GET.get("per_page", 10))
+        per = 1 if per < 1 else (100 if per > 100 else per)  # hard cap for safety
+    except ValueError:
+        per = 10
+
+    q = (request.GET.get("q", "") or "").strip()
+
+    # Base queryset (only this user's assigned entrepôt + status)
+    qs = (
+        Cargaison.objects
+        .filter(
+            etat=status,
+            entrepot__affectationentrepot__username_id=uid
+        )
+        .order_by("-dateheurecargaison")
+    )
+
+    # Text search (fix field name to 'immatriculation')
+    if q:
+        qs = qs.filter(
+            Q(immatriculation__icontains=q)
+            | Q(importateur__icontains=q)
+            | Q(produit__icontains=q)
+            | Q(entrepot__icontains=q)
+        )
+
+    total = qs.count()
+    pages = max(1, ceil(total / per)) if per else 1
+    if page > pages:
+        page = pages  # clamp to last page if out of range
+
+    start = (page - 1) * per
+    end   = start + per
+
+    # Normalize field names so the frontend mapper works:
+    # - provide 'id' (alias of idcargaison)
+    # - keep your simple string fields as-is
+    page_qs = (
+        qs
+        .annotate(id=F("idcargaison"))
+        .values(
+            "id",
+            "dateheurecargaison",
+            "importateur",
+            "entrepot",
+            "immatriculation",
+            "produit",
+            "volume",
+        )[start:end]
+    )
+
+    items = list(page_qs)
+
+    return JsonResponse({
+        "items": items,
+        "pagination": {
+            "page": page,
+            "per_page": per,
+            "total": total,
+            "pages": pages,
+            "has_next": page < pages,
+            "has_prev": page > 1,
+        },
+    })
+
+
+
+@require_GET
+@login_required
+@require_GET
+@login_required
+def tableauechantillonnage(request):
+    user = request.user
+    role = getattr(user, "role_id", None)
+    if role not in (1, 3, 9):
+        return redirect('logout')
+
+    request.session['url'] = request.get_full_path()
+    uid = user.id
+
+    base = (
+        Cargaison.objects
+        .filter(entrepot__affectationentrepot__username_id=uid)
+        .only(
+            'idcargaison', 'etat', 'etatInspection',
+            'toBeConsignated', 'toBeRefouler', 'isConsignated', 'isRefouler'
+        )
+    )
+
+    # EXISTS: record in ImpressionResultat with isConforme=True for this cargo
+    sub_conforme = Exists(
+        ImpressionResultat.objects.filter(
+            idcargaison_id=OuterRef('pk'),
+            isConforme=True
+        )
+    )
+
+    qs = base.annotate(
+        is_waiting=Case(
+            When(etat__iexact="En attente requisition", then=1),
+            default=0,
+            output_field=models.IntegerField(),  # fully qualified
+        ),
+        is_inspection=Case(
+            When(etatInspection=False, then=1),
+            default=0,
+            output_field=models.IntegerField(),
+        ),
+        is_conformes=Case(
+            When(Q(etat__iexact="Conforme aux exigences") & sub_conforme, then=1),
+            default=0,
+            output_field=models.IntegerField(),
+        ),
+        is_reports=Case(
+            When(
+                (Q(toBeConsignated=True) | Q(toBeRefouler=True)) &
+                (Q(isConsignated=False) | Q(isRefouler=False)),
+                then=1,
+            ),
+            default=0,
+            output_field=models.IntegerField(),
+        ),
+    )
+
+    agg = qs.aggregate(
+        waiting=Sum('is_waiting'),
+        inspection=Sum('is_inspection'),
+        conformes=Sum('is_conformes'),
+        reports=Sum('is_reports'),
+    )
+
+    kpis = {
+        "waiting":    int(agg["waiting"] or 0),
+        "inspection": int(agg["inspection"] or 0),
+        "conformes":  int(agg["conformes"] or 0),
+        "reports":    int(agg["reports"] or 0),
+    }
+
+    wants_json = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        or request.headers.get('accept', '').lower().startswith('application/json')
+        or request.GET.get('format') == 'json'
+    )
+    if wants_json:
+        return JsonResponse(kpis, status=200)
+
+    return render(request, "entrepot.html", kpis)
+
+
+@login_required(login_url="login")
+@require_POST
+def record_sampling(request):
+    # AJAX only
+    if not _is_ajax(request):
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    # Role check
+    user = request.user
+    if getattr(user, "role_id", None) not in (1, 3, 9):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    # Inputs
+    pk = request.POST.get("cargaison_id") or request.POST.get("pk")
+    matricule = (request.POST.get("matricule") or "").strip()
+    methodeutilisee = (request.POST.get("methodeutilisee") or "").strip()
+    qte = (request.POST.get("qte") or "").strip()
+    notes = (request.POST.get("notes") or "").strip()
+
+    if not (pk and matricule and methodeutilisee and qte):
+        return JsonResponse({"error": "Champs requis manquants."}, status=400)
+
+    # Fetch cargaison
+    cargaison = get_object_or_404(Cargaison, pk=pk)
+
+    # We assign/compute the auto number inside a transaction to avoid
+    # duplicate numbers under normal concurrency.
+    with transaction.atomic():
+        # Get or create the sampling row
+        echantillon, created = Entrepot_echantillon.objects.select_for_update().get_or_create(
+            idcargaison=cargaison
+        )
+
+        # Compute/assign auto number only if not already set
+        if echantillon.numrappechauto is None:
+            try:
+                ville = cargaison.entrepot.ville  # Ville instance
+            except Exception:
+                # If Entrepot or Ville missing, fail clearly
+                return JsonResponse({"error": "Ville d'entrepôt introuvable pour cette cargaison."}, status=400)
+
+            auto_num = numRappEch(cargaison.idcargaison, ville)
+            echantillon.numrappechauto = auto_num
+
+        # Update fields
+        echantillon.matricule = matricule
+        echantillon.methodeutilisee = methodeutilisee
+        echantillon.qte = qte
+        echantillon.notes = notes
+        echantillon.useredit = str(user) if user.is_authenticated else None
+        echantillon.save()
+
+        # Update cargaison state
+        # (tampon "1" semble signifier "pris en charge" dans votre logique)
+        if cargaison.tampon != "1":
+            cargaison.tampon = "1"
+        cargaison.etat = "Echantillonner"
+        cargaison.save(update_fields=["tampon", "etat"])
+
+    # Build print URL
+    print_url = reverse("sampling_report", args=[cargaison.pk])
+
+    return JsonResponse(
+        {
+            "valid": True,
+            "print_url": print_url,
+            "idcargaison": cargaison.pk,
+            "numrappechauto": echantillon.numrappechauto,
+        },
+        status=200,
+    )
+
+
+
+@login_required
+def sampling_report_pdf(request, pk: int):
+    c = get_object_or_404(
+        Cargaison.objects.select_related("importateur", "produit", "entrepot", "voie", "frontiere"),
+        pk=pk
+    )
+    e = Entrepot_echantillon.objects.filter(idcargaison=c).first()
+
+    # Variables
+    numrappechauto = e.numrappechauto if e and e.numrappechauto else "—"
+    numdos = c.numdos or "—"
+    importateur = getattr(c.importateur, "nomimportateur", "") or "—"
+    adresseimportateur = getattr(c.importateur, "adresseimportateur", "") or "—"
+    dateech = (e.dateechantillonage or c.dateheurecargaison or datetime.now()).strftime("%d/%m/%Y")
+    entrepot = getattr(c.entrepot, "nomentrepot", "") or "—"
+    matricule = getattr(e, "matricule", "") or "—"
+    produit = getattr(c.produit, "nomproduit", "") or "—"
+    volume = f"{c.volume:.3f}".rstrip("0").rstrip(".") if c.volume is not None else "—"
+    provenance = getattr(c, "provenance", "") or "—"
+    voie = getattr(c.voie, "nomvoie", "") or "—"
+    immatriculation = c.immatriculation or "—"
+    numplombh = ""
+    methodeutilisee = getattr(e, "methodeutilisee", "") or "—"
+    dateechantillonage = (e.dateechantillonage.strftime("%d/%m/%Y %H:%M") if e and e.dateechantillonage else "—")
+    qtelabo = getattr(e, "qte", "") or "—"
+
+    # HTTP response
+    filename = f"rapport_echantillonnage_{pk}.pdf"
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="{filename}"'
+
+    # Tighter page margins (less space at top)
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        leftMargin=15*mm,
+        rightMargin=15*mm,
+        topMargin=8*mm,       # ↓ smaller top margin
+        bottomMargin=10*mm
+    )
+    story = []
+
+    # ---- Compact centered header (logo + multi-line title) ----
+    # --- 100% width header: 30% logo (centered) + 70% text (centered) ---
+    logo_path = finders.find("Logo_occ_new.png")
+    img = Image(logo_path, width=42 * mm, height=42 * mm) if logo_path else Spacer(42 * mm, 42 * mm)
+
+    style_title = ParagraphStyle(
+        name="title_main",
+        alignment=TA_CENTER,
+        fontName=BASE_FONT,
+        fontSize=10.6,
+        leading=12.6,
+        spaceBefore=0,
+        spaceAfter=0,
+    )
+
+    style_legal = ParagraphStyle(
+        name="title_legal",
+        alignment=TA_CENTER,
+        fontName=BASE_FONT,
+        fontSize=8.0,
+        leading=10.0,
+        spaceBefore=0,
+        spaceAfter=0,
+    )
+
+    p1 = Paragraph("<b>OFFICE CONGOLAIS DE CONTROLE</b>", style_title)
+    p2 = Paragraph(f"<b>RAPPORT D’ECHANTILLONNAGE N° {numrappechauto}</b>", style_title)
+
+    legal_block = Paragraph(
+        "Etablissement Public à caractère technique et scientifique créé par Ordonnance-loi n° 74-013 du 10 janvier 1974<br/>"
+        "telle que modifiée par le décret n° 09/42 du 03 décembre 2009 fixant ses statuts.<br/>"
+        "98, avenue du Port, Kinshasa/Gombe – B.P. 8806 – NIF A0700325M <br/>"
+        "E-mail : occ_dg@occ.cd – site Web : www.occ.cd",
+        style_legal
+    )
+
+    # Right text block (centered), with small gaps
+    right_block = Table(
+        [
+            [p1],
+            [Spacer(1, 2)],  # tiny gap between line 1 & 2
+            [p2],
+            [Spacer(1, 3)],  # tiny gap before legal text
+            [legal_block],
+        ],
+        colWidths=[doc.width * 0.7],
+        hAlign="CENTER",
+    )
+    right_block.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+
+    # Wrap logo in a 1-cell table so we can center it in its 30% column
+    logo_cell = Table([[img]], colWidths=[doc.width * 0.3], hAlign="CENTER")
+    logo_cell.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+
+    # Two-column header across 100% width: 30% + 70%, both centered
+    header_table = Table(
+        [[logo_cell, right_block]],
+        colWidths=[doc.width * 0.3, doc.width * 0.7],
+        hAlign="CENTER",
+    )
+    header_table.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (0, 0), "CENTER"),  # logo column centered
+        ("ALIGN", (1, 0), (1, 0), "CENTER"),  # text column centered
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+
+    # Minimal top whitespace; subtle gap after header
+    story.append(Spacer(1, 2))
+    story.append(header_table)
+    story.append(Spacer(1, 10))
+
+
+    # ---- First line (dossier / importateur / date) ----
+    line1_tbl = Table(
+        [[
+            _p(f"<b>N° DOSSIER: {numdos}</b>", size=12),
+            _p(f"<b>Imp. Entité: {importateur}</b>", size=12),
+            _p(f"<b>Le {dateech}</b>", size=12, align="CENTER"),
+        ]],
+        colWidths=[45*mm, 85*mm, 45*mm],
+        hAlign="CENTER"
+    )
+    line1_tbl.setStyle(TableStyle([
+        ("LEFTPADDING",  (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING",   (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING",(0, 0), (-1, -1), 2),
+    ]))
+    story.append(line1_tbl)
+    story.append(Spacer(1, 10))
+
+    # ---- Body ----
+    story.append(
+        _p(f"Conformément aux dispositions légales, nous avons procédé dans les installations de <b>{entrepot}</b> au prélèvement d’échantillons.", size=12)
+    )
+    story.append(Spacer(1, 6))
+
+    story.append(_section_title("Agent échantillonneur"))
+    story.append(Spacer(1, 2))
+    story.append(_p("Noms & post-noms : <b></b>", size=12))
+    story.append(_p("N° de Téléphone : <b></b>", size=12))
+    story.append(_p(f"Matricule : <b>{matricule}</b>", size=12))
+    story.append(Spacer(1, 6))
+
+    story.append(_section_title("Client"))
+    story.append(Spacer(1, 2))
+    story.append(_p(f"Noms : <b>{importateur}</b>", size=12))
+    story.append(_p("Qualité : <b>IMPORTATEUR</b>", size=12))
+    story.append(_p(f"Adresse : <b>{adresseimportateur}</b>", size=12))
+    story.append(Spacer(1, 6))
+
+    story.append(_section_title("Marchandise"))
+    story.append(Spacer(1, 2))
+    story.append(_p("Nature de la marchandise : <b>PRODUIT PETROLIER</b>", size=12))
+    story.append(_p(f"Marque du produit : <b>{produit}</b>", size=12))
+    story.append(_p(f"Quantité de la marchandise : <b>{volume} m<super>3</super></b>", size=12))
+    story.append(_p(f"Pays d'origine/de provenance : <b>{provenance}</b>", size=12))
+    story.append(_p("Nombre de LT : <b>1</b>", size=12))
+    story.append(_p(f"Arrivée par : <b>VOIE {voie}</b>  dans : <b>{immatriculation}</b>", size=12))
+    story.append(_p("Type d'emballage : <b>BOITE METALLIQUE</b>", size=12))
+    story.append(_p(f"Nombres de plombs : <b></b> N° <b>{numplombh}</b>", size=12))
+    story.append(_p(f"Méthodes d'échantillonnage utilisées : <b>{methodeutilisee}</b>", size=12))
+    story.append(_p(f"Date et Heure d'échantillonnage : <b>Le {dateechantillonage}</b>", size=12))
+    story.append(_p("Date et Heure d'expédition au Laboratoire : <b></b>", size=12))
+    story.append(_p(f"Nombre de produit remis au Laboratoire : <b>{qtelabo} L</b>", size=12))
+
+    doc.build(story)
+    return response
+
+
+
+
 # Gestion des echantillonages
 class GestionEchantillonage():
-    # Methode permettant l'affichage du tableau d'echantillonage
-    @login_required(login_url='login')
-    def tableauechantillonnage(request):
-        user = request.user
-        role = user.role_id
-        id = user.id
-        template = 'entrepot.html'
-        today = date.today()
-        request.session['url'] = request.get_full_path()
-        form = Echantilloner(request.POST or None)
 
-        if role == 3 or role == 1 or role == 9:
-            qs1 = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                           entrepot__affectationentrepot__username_id=id).order_by(
-                '-dateheurecargaison')
-            qs2 = Cargaison.objects.filter(entrepot__affectationentrepot__username_id=id).filter(
-                Q(rapechctrl=1) | Q(etat="Echantillonner")).order_by('-dateheurecargaison')
-            table = EchantillonTable(qs1, prefix="1_")
-            # table1 = CargaisonEnAttenteRequisition(qs, prefix="2_")
-            table2 = RapportEchantillonage(qs2, prefix='3_')
-            RequestConfig(request, paginate={"per_page": 15}).configure(table)
-            # RequestConfig(request, paginate={"per_page": 5}).configure(table1)
-            RequestConfig(request, paginate={"per_page": 15}).configure(table2)
-
-            # #Compteur de la page principale de l'entrepot
-            n = Cargaison.objects.filter(etat='En attente requisition',
-                                         entrepot__affectationentrepot__username_id=id).count()
-            d = Cargaison.objects.filter(etat='Conforme aux exigences', impressionresultat__isConforme=1,
-                                         entrepot__affectationentrepot__username_id=id).count()
-            i = Cargaison.objects.filter(etatInspection=1, entrepot__affectationentrepot__username_id=id).count()
-            x = ImpressionResultat.objects.filter(idcargaison__entrepot__affectationentrepot__username_id=id).filter(
-                Q(idcargaison__toBeConsignated=1) | Q(idcargaison__toBeRefouler=1)).filter(
-                Q(idcargaison__isRefouler=0) | Q(idcargaison__isConsignated=0)).count()
-
-            return render(request, template, {
-                'cargaison': table,
-                'cargaison2': table2,
-                'form': form,
-                'n': n,
-                'd': d,
-                'i': i,
-                'x': x,
-            })
-        else:
-            return redirect('logout')
-
-    # Fonction d'affichage des resultats des compteurs
     @login_required(login_url='login')
     def c1(request):
         user = request.user
@@ -767,49 +1256,77 @@ def view_pdf(request):
 
 
 @login_required(login_url='login')
-def rapportechantillonage(request, pk):
-    template = 'rapportechantillonage.html'
-    c = Cargaison.objects.get(idcargaison=pk)
-    e = Entrepot_echantillon.objects.get(idcargaison=pk)
+def rapportechantillonage(request, pk: int):
+    template = "rapportechantillonage.html"
 
-    entrepot = c.entrepot
-    dateechantillonage = e.dateechantillonage
-    dateech = dateechantillonage
-    numdos = c.numdos
-    importateur = c.importateur
-    adresseimportateur = c.importateur_id
-    adresseimportateur = Importateur.objects.get(idimportateur=adresseimportateur).adresseimportateur
-    declarant = c.declarant
-    produit = c.produit
-    volume = c.volume
-    provenance = c.provenance.name
-    voie = c.voie.nomvoie
-    immatriculation = c.immatriculation
-    qtelabo = e.qte
-    numplombh = e.numplombh
-    numrappechauto = e.numrappechauto
+    # Load Cargaison and true relations (no CountryField in select_related)
+    c = get_object_or_404(
+        Cargaison.objects.select_related(
+            "importateur", "produit", "entrepot", "voie", "frontiere"
+        ),
+        idcargaison=pk,
+    )
+
+    # Sampling record may be missing
+    e = Entrepot_echantillon.objects.filter(idcargaison=pk).first()
+
+    # --- datetime helpers (handle naive or aware) ---------------------------
+    def _to_local(dt):
+        """Return a timezone-aware, localized datetime (or None)."""
+        if not dt:
+            return None
+        if timezone.is_naive(dt):
+            # Make it aware in the current timezone; fallback to UTC if anything odd
+            try:
+                dt = timezone.make_aware(dt, timezone.get_current_timezone())
+            except Exception:
+                dt = timezone.make_aware(dt, timezone.utc)
+        return timezone.localtime(dt)
+
+    def _fmt_date(dt, with_time=False):
+        d = _to_local(dt)
+        if not d:
+            return "—"
+        return d.strftime("%d/%m/%Y %H:%M" if with_time else "%d/%m/%Y")
+
+    # CountryField -> human name
+    try:
+        provenance_name = (c.provenance.name or "—") if c.provenance else "—"
+    except Exception:
+        provenance_name = getattr(c, "get_provenance_display", lambda: "—")() or "—"
+
+    adresse_import = (
+        getattr(c.importateur, "adresseimportateur", None)
+        or Importateur.objects.filter(idimportateur=c.importateur_id)
+           .values_list("adresseimportateur", flat=True)
+           .first()
+        or "—"
+    )
 
     data = {
-        'dateechantillonage': dateechantillonage,
-        'dateech': dateech,
-        'entrepot': entrepot,
-        'numdos': numdos,
-        'importateur': importateur,
-        'adresseimportateur': adresseimportateur,
-        'declarant': declarant,
-        'produit': produit,
-        'volume': volume,
-        'provenance': provenance,
-        'voie': voie,
-        'immatriculation': immatriculation,
-        'qtelabo': qtelabo,
-        'numplombh': numplombh,
-        'numrappechauto': numrappechauto,
+        "dateechantillonage": e.dateechantillonage if e else None,
+        "dateech": _fmt_date(e.dateechantillonage if e else c.dateheurecargaison),
+        "entrepot": getattr(c.entrepot, "nomentrepot", "—") or "—",
+        "numdos": c.numdos or "—",
+        "importateur": getattr(c.importateur, "nomimportateur", "—") or "—",
+        "adresseimportateur": adresse_import,
+        "declarant": getattr(c, "declarant", "—") or "—",
+        "produit": getattr(c.produit, "nomproduit", "—") or "—",
+        "volume": c.volume if c.volume is not None else "—",
+        "provenance": provenance_name,
+        "voie": getattr(getattr(c, "voie", None), "nomvoie", "—") or "—",
+        "immatriculation": c.immatriculation or "—",
+        "qtelabo": getattr(e, "qte", "—") if e else "—",
+        "numplombh": getattr(e, "numplombh", "—") if e else "—",
+        "numrappechauto": getattr(e, "numrappechauto", "—") if e else "—",
+        "dateechantillonage_h": _fmt_date(e.dateechantillonage, with_time=True) if e else "—",
     }
 
-    # Render PDF Files
     pdf = render_to_pdf(template, data)
-    return HttpResponse(pdf, content_type='application/pdf')
+    if not pdf:
+        raise Http404("Impossible de générer le rapport.")
+    return HttpResponse(pdf, content_type="application/pdf")
+
 
 
 @login_required(login_url='login')
@@ -2096,3 +2613,701 @@ def appurement_vol(request):
         return JsonResponse({"status": "error", "message": "Erreur de validation de formulaire"}, status=400)
 
 
+
+def _safe_iso(dt):
+    """Return an ISO string for a datetime, handling naive values safely."""
+    if not dt:
+        return None
+    try:
+        if timezone.is_naive(dt):
+            # Attach current timezone if value is naive (legacy rows / old imports)
+            dt = timezone.make_aware(dt, timezone.get_current_timezone())
+        else:
+            dt = timezone.localtime(dt)
+        return dt.isoformat()
+    except Exception:
+        # Fallback without TZ if anything odd happens
+        try:
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+        except Exception:
+            return None
+
+
+def _serialize_cargaison(c: Cargaison) -> dict:
+    return {
+        "id": c.idcargaison,
+        "dateheurecargaison": _safe_iso(c.dateheurecargaison),
+        "importateur_name": getattr(c.importateur, "nomimportateur", None),
+        "entrepot_name": getattr(c.entrepot, "nomentrepot", None),
+        "immatriculation": c.immatriculation,
+        "produit_name": getattr(c.produit, "nomproduit", None),
+        "volume": c.volume,
+        "qrcode": c.qrcode,
+    }
+
+
+@login_required(login_url="login")
+def workbench_list(request):
+    """
+    JSON endpoint for the Workbench modal table.
+
+    GET:
+      - status   : 'requisition' to list 'En attente requisition' or 'reports' for Rapports / Historique
+      - page     : int (default 1)
+      - per_page : int (default 10, max 100)
+      - q        : optional free-text search
+    """
+    user = request.user
+    if getattr(user, "role_id", None) not in (1, 3, 9):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    status_key = (request.GET.get("status") or "requisition").lower()
+    try:
+        page = max(1, int(request.GET.get("page") or 1))
+    except ValueError:
+        page = 1
+    try:
+        per_page = max(1, min(100, int(request.GET.get("per_page") or 10)))
+    except ValueError:
+        per_page = 10
+
+    q = (request.GET.get("q") or "").strip()
+
+    if status_key == "requisition":
+        # En attente de réquisition
+        qs = (
+            Cargaison.objects
+            .select_related("importateur", "entrepot", "produit")
+            .filter(
+                etat="En attente requisition",
+                entrepot__affectationentrepot__username_id=user.id
+            )
+            .order_by("-dateheurecargaison")
+        )
+    elif status_key == "reports":
+        # Rapports / Historique — afficher tous les enregistrements dans les entrepôts affectés à l'utilisateur
+        qs = (
+            Cargaison.objects
+            .select_related("importateur", "entrepot", "produit")
+            .filter(
+                entrepot__affectationentrepot__username_id=user.id,
+            )
+            .order_by("-dateheurecargaison")
+        )
+    else:
+        qs = Cargaison.objects.none()
+
+    if q:
+        qs = qs.filter(
+            Q(immatriculation__icontains=q)
+            | Q(importateur__nomimportateur__icontains=q)
+            | Q(entrepot__nomentrepot__icontains=q)
+            | Q(produit__nomproduit__icontains=q)
+        )
+
+    # Manual lazy pagination: fetch per_page + 1 to detect has_next without COUNT(*).
+    start = (page - 1) * per_page
+    if start < 0:
+        start = 0
+    batch = list(qs[start:start + per_page + 1])
+    has_next = len(batch) > per_page
+    rows = batch[:per_page]
+    has_prev = page > 1
+
+    items = [_serialize_cargaison(c) for c in rows]
+
+    return JsonResponse(
+        {
+            "items": items,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                # In lazy mode we do not compute total/pages to avoid expensive COUNT(*).
+                "total": None,
+                "pages": None,
+                "has_next": has_next,
+                "has_prev": has_prev,
+            },
+        },
+        status=200,
+        json_dumps_params={"ensure_ascii": False},
+    )
+
+
+
+# ----------------------------
+# Small helpers (DRY)
+# ----------------------------
+def _as_int(v, default):
+    try:
+        n = int(v)
+        return n if n > 0 else default
+    except Exception:
+        return default
+
+
+def _user_entrepot_ids(user):
+    """
+    IDs of entrepôts assigned to this user through the affectation table.
+    Adjust the relation name if needed (affectationentrepot__username_id).
+    """
+    return set(
+        Entrepot.objects.filter(affectationentrepot__username_id=user.id)
+        .values_list("identrepot", flat=True)
+    )
+
+
+def _visible_cargos_for(user, entrepot_id=None):
+    """
+    Base queryset: cargos in entrepôts assigned to this user.
+    Optionally restrict to a specific entrepôt_id (validated by caller).
+    """
+    qs = Cargaison.objects.filter(
+        entrepot__affectationentrepot__username_id=user.id
+    )
+    if entrepot_id:
+        qs = qs.filter(entrepot_id=entrepot_id)
+    return qs
+
+
+def _serialize_row(c: Cargaison):
+    return {
+        "id": c.idcargaison,
+        "dateheurecargaison": c.dateheurecargaison,
+        "importateur": getattr(c.importateur, "nomimportateur", None),
+        "importateur_name": getattr(c.importateur, "nomimportateur", None),
+        "entrepot": getattr(c.entrepot, "nomentrepot", None),
+        "entrepot_name": getattr(c.entrepot, "nomentrepot", None),
+        "immatriculation": c.immatriculation,
+        "produit": getattr(c.produit, "nomproduit", None),
+        "produit_name": getattr(c.produit, "nomproduit", None),
+        "volume": c.volume,
+        "qrcode": c.qrcode,
+        "etat": c.etat,
+        "etatInspection": bool(c.etatInspection),
+        "toBeRefouler": bool(c.toBeRefouler),
+        "toBeConsignated": bool(c.toBeConsignated),
+        "isRefouler": bool(c.isRefouler),
+        "isConsignated": bool(c.isConsignated),
+    }
+
+
+def _paginate_qs(qs, page, per_page):
+    total = qs.count()
+    start = (page - 1) * per_page
+    end   = start + per_page
+    pages = max(1, (total + per_page - 1) // per_page)
+    data  = {
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": pages,
+            "has_prev": page > 1,
+            "has_next": page < pages,
+        }
+    }
+    return data, qs[start:end]
+
+
+def _search_filter(q: str):
+    """
+    Build a Q() that searches across common fields.
+    """
+    if not q:
+        return Q()
+    return (
+        Q(immatriculation__icontains=q)
+        | Q(importateur__nomimportateur__icontains=q)
+        | Q(produit__nomproduit__icontains=q)
+        | Q(entrepot__nomentrepot__icontains=q)
+    )
+
+
+def _list_payload(request, base_q: Q, tag: str):
+    """
+    Shared engine:
+      - scope to user’s assigned entrepôts
+      - optional entrepôt filter (?entrepot=<id>) validated against user’s list
+      - optional text search (?q=…)
+      - select_related to avoid N+1
+      - pagination
+    """
+    page       = _as_int(request.GET.get("page"), 1)
+    per_page   = _as_int(request.GET.get("per_page"), 10)
+    q_text     = (request.GET.get("q") or "").strip()
+    ent_param  = request.GET.get("entrepot")
+    entrepot_id = _as_int(ent_param, None) if ent_param else None
+
+    # Validate entrepôt scope — only allow IDs the user actually has
+    if entrepot_id:
+        allowed_ids = _user_entrepot_ids(request.user)
+        if entrepot_id not in allowed_ids:
+            # If not allowed, return empty payload (or 403 if you prefer)
+            payload = {
+                "status": tag,
+                "q": q_text,
+                "pagination": {
+                    "page": 1, "per_page": per_page, "total": 0, "pages": 1,
+                    "has_prev": False, "has_next": False
+                },
+                "items": [],
+                "entrepot": entrepot_id,
+            }
+            return JsonResponse(payload)
+
+    qs = (
+        _visible_cargos_for(request.user, entrepot_id=entrepot_id)
+        .select_related("importateur", "entrepot", "produit")
+        .filter(base_q)
+        .filter(_search_filter(q_text))
+        .distinct()
+        .order_by("-dateheurecargaison", "-idcargaison")
+    )
+
+    meta, slice_qs = _paginate_qs(qs, page, per_page)
+    payload = {
+        "status": tag,
+        "q": q_text,
+        "entrepot": entrepot_id,
+        **meta,
+        "items": [_serialize_row(c) for c in slice_qs],
+    }
+    return JsonResponse(payload)
+
+
+# ----------------------------
+# Separate KPI endpoints
+# ----------------------------
+def _guard(request):
+    return getattr(request.user, "role_id", None) in (1, 3, 9)
+
+@login_required
+def workbench_requisition(request):
+    if not _guard(request):
+        return JsonResponse({"error": "forbidden"}, status=403)
+    # En attente de réquisition
+    base_q = Q(etat__iexact="En attente requisition")
+    return _list_payload(request, base_q, tag="requisition")
+
+@login_required
+def workbench_inspection(request):
+    if not _guard(request):
+        return JsonResponse({"error": "forbidden"}, status=403)
+    # En inspection (non encore inspectées)
+    base_q = Q(etatInspection=False)
+    return _list_payload(request, base_q, tag="inspection")
+
+@login_required
+def workbench_conformes(request):
+    if not _guard(request):
+        return JsonResponse({"error": "forbidden"}, status=403)
+    # Conformes: etat = "Conforme aux exigences" AND an ImpressionResultat exists with isConforme=True
+    base_q = Q(etat__iexact="Conforme aux exigences") & Exists(
+        ImpressionResultat.objects.filter(
+            idcargaison=OuterRef("idcargaison"),
+            isConforme=True,
+        )
+    )
+    return _list_payload(request, base_q, tag="conformes")
+
+
+@login_required
+def workbench_reports(request):
+    if not _guard(request):
+        return JsonResponse({"error": "forbidden"}, status=403)
+    # Rapports / Historique — montrer tous les enregistrements visibles (sans filtre de statut spécifique)
+    base_q = Q()
+    return _list_payload(request, base_q, tag="reports")
+
+
+
+# ----------------------------
+# Views
+# ----------------------------
+def _json_error(message: str, *, status: int = 400):
+    return JsonResponse({"ok": False, "error": message}, status=status)
+
+def _to_float(val: Any, ndigits: Optional[int] = None) -> Optional[float]:
+    """Convert to float (or None). Optionally round to 'ndigits'."""
+    if val in (None, "", "null"):
+        return None
+    try:
+        f = float(val)
+        return round(f, ndigits) if (ndigits is not None) else f
+    except (TypeError, ValueError):
+        return None
+
+def _reverse_inspection_start(pk: int) -> str:
+    """
+    Try to reverse a named URL, fallback to the hardcoded template used by your frontend.
+    Adjust the name below if your URL is named differently.
+    """
+    candidates = ("inspection_start", "entrepot_inspection_start")
+    for name in candidates:
+        try:
+            return reverse(name, kwargs={"pk": pk})
+        except Exception:
+            continue
+    return f"/entrepot/inspection/start/{pk}/"
+
+
+def _to_decimal(val, places=3):
+    """
+    Convert incoming numbers to Decimal or return None.
+    Accepts str|int|float|None. Rounds to 'places' if provided.
+    """
+    if val in ("", None):
+        return None
+    try:
+        d = Decimal(str(val))
+        if places is not None:
+            q = Decimal("1").scaleb(-places)  # e.g. places=3 -> Decimal("0.001")
+            d = d.quantize(q)
+        return d
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+
+
+def _sealstate_from_frontend(value) -> Optional[SealState]:
+    """
+    Resolve a SealState instance from a frontend-provided value/label.
+    - Matches on `sealstate` case-insensitively.
+    - Creates a new SealState if not found.
+    Returns None only if the input is empty/invalid.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return SealState.objects.get(sealstate__iexact=text)
+    except SealState.DoesNotExist:
+        try:
+            return SealState.objects.create(sealstate=text)
+        except Exception:
+            # Last resort: try again in case of race condition
+            try:
+                return SealState.objects.get(sealstate__iexact=text)
+            except Exception:
+                return None
+
+
+@login_required
+def inspection_start(request, pk: int):
+    """
+    Landing route after the wizard.
+    Ensures an Inspection exists for the cargo `pk` then redirects to the
+    existing compartiment form to continue/edit compartments.
+    """
+    cargo = get_object_or_404(Cargaison, pk=pk)
+    # Make sure an Inspection row exists so compartiment view can resolve it
+    Inspection.objects.get_or_create(idcargaison=cargo, defaults={})
+    return redirect('compartiment', pk=pk)
+
+
+@login_required
+@require_POST
+def inspection_wizard_post(request, pk: int):
+    """
+    Upserts Inspection for the given Cargaison, replaces related
+    InspectionSeal (FK -> Cargaison) and Compartiment (FK -> Inspection).
+    SealState is taken from FRONTEND label and created if missing.
+    """
+    # ---- Parse JSON
+    try:
+        payload: Dict[str, Any] = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return _json_error("Invalid JSON body.")
+
+    cargo = get_object_or_404(Cargaison, pk=pk)
+
+    body_id = str(payload.get("idcargaison", "")).strip()
+    if body_id and body_id != str(pk):
+        return _json_error("Payload cargo id does not match URL.")
+
+    seals_in = payload.get("seals") or []
+    comps_in = payload.get("compartiments") or []
+
+    ti = payload.get("tankerInspection") or {}
+    dens = _to_float(ti.get("dens"))
+    temp = _to_float(ti.get("temp"))
+    innagein = (ti.get("innagein") or "").strip() or None
+    volumein = (ti.get("volumein") or "").strip() or None
+    tempin = (ti.get("tempin") or "").strip() or None
+    weightin = (ti.get("weightin") or "").strip() or None
+
+    meterbefore = _to_float(payload.get("meterbefore"))
+    meterafter = _to_float(payload.get("meterafter"))
+
+    # ---- Minimal validation (FKs must not be NULL)
+    if not seals_in:
+        return _json_error("Au moins un manifold/seal est requis.")
+    for s in seals_in:
+        if not str(s.get("manifoldnumber", "")).strip():
+            return _json_error("Chaque manifold doit avoir un numéro.")
+        if not str(s.get("sealstate", "")).strip():
+            return _json_error("Chaque manifold doit avoir un état du sceau.")
+
+    if not comps_in:
+        return _json_error("Au moins un compartiment est requis.")
+    for c in comps_in:
+        if not str(c.get("compart", "")).strip():
+            return _json_error("Chaque compartiment doit avoir une dénomination.")
+        if not str(c.get("sealstate", "")).strip():
+            return _json_error("Chaque compartiment doit avoir un état du sceau.")
+
+    # ---- Persist
+    try:
+        with transaction.atomic():
+            # Upsert Inspection (OneToOne)
+            inspection, _created = Inspection.objects.select_for_update().get_or_create(
+                idcargaison=cargo,
+                defaults={}
+            )
+
+            # Mirror produit from cargo if present
+            if isinstance(getattr(cargo, "produit", None), Produit):
+                inspection.produit = cargo.produit
+
+            inspection.dens = dens
+            inspection.temp = temp
+            inspection.innagein = innagein
+            inspection.volumein = volumein
+            inspection.tempin = tempin
+            inspection.weightin = weightin
+            inspection.meterbefore = meterbefore
+            inspection.meterafter = meterafter
+            inspection.save()
+
+            # Replace Compartiments
+            Compartiment.objects.filter(idinspection=inspection).delete()
+            comp_objs = []
+            for c in comps_in:
+                # Base fields
+                inn = _to_float(c.get("innage"))
+                gv  = _to_float(c.get("gov"))
+                tp  = _to_float(c.get("tempcomp"))
+
+                # Default computed values
+                v_val = None
+                g_val = None
+                m_val = None
+                a_val = None
+
+                # Compute derived metrics when inputs are sufficient
+                # Uses the same logic as the legacy 'compartiment' view:
+                # d = densite15(inspection.temp, inspection.dens)
+                # v = vcf(d, tp); g = gsv(v, gv); m = mtv(g, d); a = mta(g, d)
+                if inspection.dens is not None and inspection.temp is not None and tp is not None and gv is not None:
+                    try:
+                        d15 = densite15(inspection.temp, inspection.dens)
+                        v_val = vcf(d15, tp)
+                        g_val = gsv(v_val, gv)
+                        m_val = mtv(g_val, d15)
+                        a_val = mta(g_val, d15)
+                    except Exception:
+                        # Keep computed fields as None if any calc fails
+                        v_val = g_val = m_val = a_val = None
+
+                comp_objs.append(
+                    Compartiment(
+                        idinspection=inspection,
+                        compart=str(c.get("compart", "")).strip(),
+                        sealNumber=str(c.get("sealNumber", "")).strip() or None,
+                        sealstate=_sealstate_from_frontend(c.get("sealstate")),  # <- frontend label
+                        innage=inn,
+                        gov=gv,
+                        tempcomp=tp,
+                        vcf=v_val,
+                        gsv=g_val,
+                        mtv=m_val,
+                        mta=a_val,
+                    )
+                )
+            if comp_objs:
+                # Ensure no None sealstate slipped in
+                if any(o.sealstate is None for o in comp_objs):
+                    return _json_error("État du sceau manquant pour un compartiment.")
+                Compartiment.objects.bulk_create(comp_objs)
+
+            # Replace Seals (FK to Cargaison)
+            InspectionSeal.objects.filter(idcargaison=cargo).delete()
+            seal_objs = []
+            for s in seals_in:
+                seal_objs.append(
+                    InspectionSeal(
+                        idcargaison=cargo,
+                        manifoldnumber=str(s.get("manifoldnumber", "")).strip(),
+                        sealstate=_sealstate_from_frontend(s.get("sealstate")),  # <- frontend label
+                    )
+                )
+            if seal_objs:
+                if any(o.sealstate is None for o in seal_objs):
+                    return _json_error("État du sceau manquant pour un manifold.")
+                InspectionSeal.objects.bulk_create(seal_objs)
+
+            # Mark cargo as “in inspection”
+            if hasattr(cargo, "etatInspection") and not cargo.etatInspection:
+                cargo.etatInspection = True
+                cargo.save(update_fields=["etatInspection"])
+
+    except Exception as e:
+        return _json_error(str(e))
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "id": cargo.pk,
+            "inspection_id": inspection.idinspection,
+            "redirect": _reverse_inspection_start(cargo.pk),
+        }
+    )
+
+
+
+
+
+
+
+
+@login_required
+@require_POST
+def inspection_wizard_finalize(request, pk: int):
+    """
+    New endpoint for the modal: saves Inspection, InspectionSeal and Compartiment
+    (with calculations for compartments) and returns JSON only. No redirects.
+
+    Response: { ok: true, id: <cargaison id>, inspection_id: <inspection pk> }
+    """
+    try:
+        payload: Dict[str, Any] = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return _json_error("Invalid JSON body.")
+
+    cargo = get_object_or_404(Cargaison, pk=pk)
+
+    body_id = str(payload.get("idcargaison", "")).strip()
+    if body_id and body_id != str(pk):
+        return _json_error("Payload cargo id does not match URL.")
+
+    seals_in = payload.get("seals") or []
+    comps_in = payload.get("compartiments") or []
+
+    ti = payload.get("tankerInspection") or {}
+    dens = _to_float(ti.get("dens"))
+    temp = _to_float(ti.get("temp"))
+    innagein = (ti.get("innagein") or "").strip() or None
+    volumein = (ti.get("volumein") or "").strip() or None
+    tempin = (ti.get("tempin") or "").strip() or None
+    weightin = (ti.get("weightin") or "").strip() or None
+
+    meterbefore = _to_float(payload.get("meterbefore"))
+    meterafter = _to_float(payload.get("meterafter"))
+
+    # Minimal validation
+    if not seals_in:
+        return _json_error("Au moins un manifold/seal est requis.")
+    for s in seals_in:
+        if not str(s.get("manifoldnumber", "")).strip():
+            return _json_error("Chaque manifold doit avoir un numéro.")
+        if not str(s.get("sealstate", "")).strip():
+            return _json_error("Chaque manifold doit avoir un état du sceau.")
+
+    if not comps_in:
+        return _json_error("Au moins un compartiment est requis.")
+    for c in comps_in:
+        if not str(c.get("compart", "")).strip():
+            return _json_error("Chaque compartiment doit avoir une dénomination.")
+        if not str(c.get("sealstate", "")).strip():
+            return _json_error("Chaque compartiment doit avoir un état du sceau.")
+
+    try:
+        with transaction.atomic():
+            inspection, _created = Inspection.objects.select_for_update().get_or_create(
+                idcargaison=cargo,
+                defaults={}
+            )
+
+            if isinstance(getattr(cargo, "produit", None), Produit):
+                inspection.produit = cargo.produit
+
+            inspection.dens = dens
+            inspection.temp = temp
+            inspection.innagein = innagein
+            inspection.volumein = volumein
+            inspection.tempin = tempin
+            inspection.weightin = weightin
+            inspection.meterbefore = meterbefore
+            inspection.meterafter = meterafter
+            inspection.save()
+
+            # Compartiments: replace and compute derived values
+            Compartiment.objects.filter(idinspection=inspection).delete()
+            comp_objs = []
+            for c in comps_in:
+                inn = _to_float(c.get("innage"))
+                gv  = _to_float(c.get("gov"))
+                tp  = _to_float(c.get("tempcomp"))
+
+                v_val = g_val = m_val = a_val = None
+                if inspection.dens is not None and inspection.temp is not None and tp is not None and gv is not None:
+                    try:
+                        d15 = densite15(inspection.temp, inspection.dens)
+                        v_val = vcf(d15, tp)
+                        g_val = gsv(v_val, gv)
+                        m_val = mtv(g_val, d15)
+                        a_val = mta(g_val, d15)
+                    except Exception:
+                        v_val = g_val = m_val = a_val = None
+
+                comp_objs.append(
+                    Compartiment(
+                        idinspection=inspection,
+                        compart=str(c.get("compart", "")).strip(),
+                        sealNumber=str(c.get("sealNumber", "")).strip() or None,
+                        sealstate=_sealstate_from_frontend(c.get("sealstate")),
+                        innage=inn,
+                        gov=gv,
+                        tempcomp=tp,
+                        vcf=v_val,
+                        gsv=g_val,
+                        mtv=m_val,
+                        mta=a_val,
+                    )
+                )
+            if comp_objs:
+                if any(o.sealstate is None for o in comp_objs):
+                    return _json_error("État du sceau manquant pour un compartiment.")
+                Compartiment.objects.bulk_create(comp_objs)
+
+            # Seals: replace
+            InspectionSeal.objects.filter(idcargaison=cargo).delete()
+            seal_objs = []
+            for s in seals_in:
+                seal_objs.append(
+                    InspectionSeal(
+                        idcargaison=cargo,
+                        manifoldnumber=str(s.get("manifoldnumber", "")).strip(),
+                        sealstate=_sealstate_from_frontend(s.get("sealstate")),
+                    )
+                )
+            if seal_objs:
+                if any(o.sealstate is None for o in seal_objs):
+                    return _json_error("État du sceau manquant pour un manifold.")
+                InspectionSeal.objects.bulk_create(seal_objs)
+
+            # Flag cargo as in-inspection when applicable
+            if hasattr(cargo, "etatInspection") and not cargo.etatInspection:
+                cargo.etatInspection = True
+                cargo.save(update_fields=["etatInspection"])
+
+    except Exception as e:
+        return _json_error(str(e))
+
+    return JsonResponse({
+        "ok": True,
+        "id": cargo.pk,
+        "inspection_id": inspection.idinspection,
+    })

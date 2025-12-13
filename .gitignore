@@ -13,3 +13,5 @@ docs
 /vol/
 /assets/
 
+/k8s/
+/kube-state-metrics/

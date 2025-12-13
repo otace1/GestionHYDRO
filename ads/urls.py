@@ -72,13 +72,24 @@ urlpatterns = [
     path('response/brut/attenteReception/', views.rapportAttenteReception, name='rapportAttenteReception'),
     path('response/brut/attenteReception/rsp/', views.responseRapportattenteReception, name='responseRapportattenteReception'),
 
-
     path('response/latest/', views.lastRecords, name='lastRecords'),
     path('response/products/', views.productCount, name='productCount'),
     path('response/topImporters/', views.topImporters, name='topImporters'),
 
-
     path('document/getDocuments/', views.getDocuments, name='getDocuments'),
+
+
+    #Duplicate and merge
+    path('document/file_merge/', views.data_duplicate_and_merge, name='data_duplicate_and_merge'),
+
+    path('document/dgda_file_sanitizing/', views.data_duplicate_and_merge, name='dgda_file_sanitizing'),
+
+
+    path("rapports/", views.generate_report, name="rapports_generer"),
+
+
+
+
 
 
 

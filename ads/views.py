@@ -8,20 +8,25 @@ import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.db.models import Q, Count, FloatField
-from django.db.models import Sum, Case, When, F, DecimalField
-from django.db.models.functions import Round
-from django.http import JsonResponse
+from django.db.models import Q, Count, FloatField, Sum, Case, When, F, DecimalField, Value as V, Avg, Max
+from django.db.models.functions import Round, Coalesce
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
+from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
 from django_tables2 import RequestConfig
 from django_tables2.export.export import TableExport
 from django_tables2.paginators import LazyPaginator
 from openpyxl import Workbook
+from django.utils import timezone
+
 
 from enreg.models import Entrepot, Produit, Ville, Importateur, Cargaison, Paiement, Dechargement, Liquidation, \
     Compartiment, Entrepot_echantillon, ImpressionResultat
 from hydrocarbures.celery import app
+from hydrocarbures.helpers import _safe_int, _parse_date, TZ, _status_q, _write_csv_response, \
+    _filename, _write_xlsx_response, _write_pdf_response, _parse_date_yyyymmdd, _fmt_dt
 from labo.utils import render_to_pdf
 from .forms import EntrepotForm, EntrepotEditForm, ImportateurForm, ImportateurEditForm, VilleForm, ProduitForm, \
     ProduitEditForm, RechercheStat
@@ -33,69 +38,124 @@ from .tables import EntrepotTable, ImportateurTable, VilleTable, ProduitTable, S
 @login_required(login_url='login')
 # Fonction pour affichage page dashboard
 class Dashboard():
-    @login_required(login_url='login')
     def chartjs(request):
-        user = request.user
-        role = user.role_id
-        if role == 1 or role == 'st' or role == 7 or role == 8:
-            # Get the current year
-            current_year = date.today().year
-            template = 'admin.html'
-
-            form = RechercheStat()
-
-            # Nouveau Rapport Global
-            j = Cargaison.objects.filter(etat="En attente requisition").count()
-            k = Cargaison.objects.filter(etat="En attente d'echantillonage").count()
-            l = Cargaison.objects.filter(etat="Analyse Labo en cours").count()
-            m = Cargaison.objects.filter(etatInspection=1).count()
-            i = Cargaison.objects.filter(etat="Echantillonner").count()
-            d = Cargaison.objects.filter(etat="Conforme aux exigences").count()
-
-            # Nouveau Produtc list
-            totalVolume = Cargaison.objects.aggregate(totalVolume=Sum('volume'))['totalVolume']
-            totalVolume = round(totalVolume) if totalVolume is not None else 0
-
-            gasoilVolume = Cargaison.objects.filter(produit=2).aggregate(gasoilVolume=Sum('volume'))['gasoilVolume']
-            gasoilVolume = round(gasoilVolume) if gasoilVolume is not None else 0
-
-            mogasVolume = Cargaison.objects.filter(produit=1).aggregate(mogasVolume=Sum('volume'))['mogasVolume']
-            mogasVolume = round(mogasVolume) if mogasVolume is not None else 0
-
-            jetVolume = Cargaison.objects.filter(produit=3).aggregate(jetVolume=Sum('volume'))['jetVolume']
-            jetVolume = round(jetVolume) if jetVolume is not None else 0
-
-            petroleVolume = Cargaison.objects.filter(produit=4).aggregate(petroleVolume=Sum('volume'))['petroleVolume']
-            petroleVolume = round(petroleVolume) if petroleVolume is not None else 0
-
-            # Pourcentage
-            gasoilPercentage = round(((gasoilVolume / totalVolume) * 100 if totalVolume else 0))
-            mogasPercentage = round(((mogasVolume / totalVolume) * 100 if totalVolume else 0))
-            jetPercentage = round(((jetVolume / totalVolume) * 100 if totalVolume else 0))
-            petrolePercentage = round(((petroleVolume / totalVolume) * 100 if totalVolume else 0))
-
-            context = {
-                "j": j,
-                "i": i,
-                "k": k,
-                "l": l,
-                "m": m,
-                "d": d,
-                'form': form,
-                'gasoilVolume': gasoilVolume,
-                'mogasVolume': mogasVolume,
-                'jetVolume': jetVolume,
-                'petroleVolume': petroleVolume,
-                'totalVolume': totalVolume,
-                'gasoilPercentage': gasoilPercentage,
-                'mogasPercentage': mogasPercentage,
-                'jetPercentage': jetPercentage,
-                'petrolePercentage': petrolePercentage,
-                'current_year': current_year,
-            }
-            return render(request, template, context)
-        else:
+        # Authorize
+        role = getattr(request.user, 'role_id', None)
+        if not (role in (1, 7, 8) or role == 'st'):
             return redirect('logout')
+
+        template = 'admin.html'
+        current_year = timezone.now().year
+        form = RechercheStat()
+
+        # ---- 1) Single aggregate for all "boxes" counts (1 DB round-trip)
+        boxes_counts = Cargaison.objects.aggregate(
+            waiting_req=Count('idcargaison', filter=Q(etat="En attente requisition")),
+            waiting_sampling=Count('idcargaison', filter=Q(etat="En attente d\'echantillonage")),
+            lab_in_progress=Count('idcargaison', filter=Q(etat="Analyse Labo en cours")),
+            waiting_inspection=Count('idcargaison', filter=Q(etatInspection=True)),
+            waiting_reception=Count('idcargaison', filter=Q(etat="Echantillonner")),
+            waiting_unload=Count('idcargaison', filter=Q(etat="Conforme aux exigences")),
+        )
+
+        boxes = [
+            {
+                "title": "En attente de réquisition",
+                "icon": "far fa-file",
+                "color": "info",
+                "url": reverse("rapportBrutJournalier"),
+                "count": boxes_counts["waiting_req"],
+            },
+            {
+                "title": "En attente d'échantillonnage",
+                "icon": "far fa-thumbs-up",
+                "color": "success",
+                "url": reverse("rapportBrutEchantillonnage"),
+                "count": boxes_counts["waiting_sampling"],
+            },
+            {
+                "title": "En attente de réception Labo",
+                "icon": "far fa-file-alt",
+                "color": "warning",
+                "url": reverse("rapportAttenteReception"),
+                "count": boxes_counts["waiting_reception"],
+            },
+            {
+                "title": "En attente de résultat d'analyse",
+                "icon": "fas fa-vials",
+                "color": "warning",
+                "url": reverse("rapportBrutAnalyse"),
+                "count": boxes_counts["lab_in_progress"],
+            },
+            {
+                "title": "En attente d'inspection",
+                "icon": "fas fa-search",
+                "color": "danger",
+                "url": reverse("rapportBrutInspection"),
+                "count": boxes_counts["waiting_inspection"],
+            },
+            {
+                "title": "En attente de déchargement",
+                "icon": "fas fa-truck-loading",
+                "color": "danger",
+                "url": reverse("rapportBrutDechargement"),
+                "count": boxes_counts["waiting_unload"],
+            },
+        ]
+
+        # ---- 2) Latest trucks (uses DB-side projection; 1 DB round-trip)
+        latest_trucks = (
+            Cargaison.objects
+            .filter(etat="En attente requisition")
+            .order_by('-dateheurecargaison')
+            .values(
+                plate_number=Coalesce('immatriculation', V('—')),
+                brand=Coalesce(F('produit__nomproduit'), V('—')),
+                driver_name=Coalesce(F('importateur__nomimportateur'), V('—')),
+                created_at=F('dateheurecargaison'),
+            )[:5]
+        )
+
+        # ---- 3) Single aggregate for all volumes (1 DB round-trip)
+        # NOTE: replace produit_id values (1,2,3,4) if they differ in your DB
+        volumes = Cargaison.objects.aggregate(
+            total=Coalesce(Sum('volume'), V(0.0)),
+            mogas=Coalesce(Sum('volume', filter=Q(produit_id=1)), V(0.0)),
+            gasoil=Coalesce(Sum('volume', filter=Q(produit_id=2)), V(0.0)),
+            jet=Coalesce(Sum('volume', filter=Q(produit_id=3)), V(0.0)),
+            petrole=Coalesce(Sum('volume', filter=Q(produit_id=4)), V(0.0)),
+        )
+
+        totalVolume = round(volumes['total']) if volumes['total'] else 0
+        gasoilVolume = round(volumes['gasoil']) if volumes['gasoil'] else 0
+        mogasVolume = round(volumes['mogas']) if volumes['mogas'] else 0
+        jetVolume = round(volumes['jet']) if volumes['jet'] else 0
+        petroleVolume = round(volumes['petrole']) if volumes['petrole'] else 0
+
+        def pct(part, whole):
+            return round((float(part) / float(whole) * 100)) if whole else 0
+
+        gasoilPercentage = pct(gasoilVolume, totalVolume)
+        mogasPercentage = pct(mogasVolume, totalVolume)
+        jetPercentage = pct(jetVolume, totalVolume)
+        petrolePercentage = pct(petroleVolume, totalVolume)
+
+        context = {
+            'form': form,
+            'gasoilVolume': gasoilVolume,
+            'mogasVolume': mogasVolume,
+            'jetVolume': jetVolume,
+            'petroleVolume': petroleVolume,
+            'totalVolume': totalVolume,
+            'gasoilPercentage': gasoilPercentage,
+            'mogasPercentage': mogasPercentage,
+            'jetPercentage': jetPercentage,
+            'petrolePercentage': petrolePercentage,
+            'current_year': current_year,
+            'boxes': boxes,
+            'latest_trucks': list(latest_trucks),
+        }
+        return render(request, template, context)
 
 
 @login_required(login_url='login')
@@ -12430,7 +12490,8 @@ def synthese_encaissement(request):
 
 @login_required(login_url='login')
 def rapportBrut(request):
-    form = RechercheStat()
+    # Limit Ville choices in the filter modal to the user's assigned cities
+    form = RechercheStat(user=request.user)
     template = "rapportBrutesA.html"
     date = datetime.date
     date = date.today()
@@ -12442,7 +12503,11 @@ def rapportBrut(request):
     request.session['date_d'] = ''
     request.session['date_f'] = ''
 
-    qs = Cargaison.objects.filter(dateheurecargaison__date=date).annotate(
+    # Restrict report data to cargaisons in the user's assigned cities
+    qs = Cargaison.objects.filter(
+        dateheurecargaison__date=date,
+        entrepot__ville__affectationville__username_id=request.user.id
+    ).annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
         mtaTotal=Sum('inspection__compartiment__mta'),
@@ -12472,7 +12537,10 @@ def rapportBrut(request):
 @login_required(login_url='login')
 def rapportFiltres(request):
     template = "rapportBrutesA.html"
-    qs = Cargaison.objects.annotate(
+    # Base queryset restricted to user's assigned cities
+    qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=request.user.id
+    ).annotate(
         volJauge=Round(Sum('inspection__compartiment__gov'), 3),
         gsvJauge=Round(Sum('inspection__compartiment__gsv'), 3),
         govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'), 3),
@@ -12531,7 +12599,7 @@ def rapportFiltres(request):
                            entrepot_id=entrepot,
                            dateheurecargaison__range=[date_d, date_f])
             table = RapportBrut(qs)
-            form = RechercheStat()
+            form = RechercheStat(user=request.user)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                              "per_page": 15}).configure(table)
 
@@ -12550,7 +12618,7 @@ def rapportFiltres(request):
                 dateheurecargaison__date=date_d,
             )
             table = RapportBrut(qs)
-            form = RechercheStat()
+            form = RechercheStat(user=request.user)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                              "per_page": 15}).configure(table)
 
@@ -12569,7 +12637,7 @@ def rapportFiltres(request):
                 dateheurecargaison__date=date_f,
             )
             table = RapportBrut(qs)
-            form = RechercheStat()
+            form = RechercheStat(user=request.user)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                              "per_page": 15}).configure(table)
 
@@ -12587,7 +12655,7 @@ def rapportFiltres(request):
                 entrepot_id=entrepot,
             )
             table = RapportBrut(qs)
-            form = RechercheStat()
+            form = RechercheStat(user=request.user)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                              "per_page": 15}).configure(table)
 
@@ -12605,7 +12673,7 @@ def rapportFiltres(request):
                 dateheurecargaison__range=[date_d, date_f],
             )
             table = RapportBrut(qs)
-            form = RechercheStat()
+            form = RechercheStat(user=request.user)
             RequestConfig(request, paginate={"paginator_class": LazyPaginator,
                                              "per_page": 15}).configure(table)
 
@@ -19910,94 +19978,187 @@ def rapportBrutJournalier(request):
 
 @login_required(login_url='login')
 def responseBrutJournalier(request):
-    # today = date.today()
     etat = "En attente requisition"
 
-    # Add an explicit ordering to the QuerySet
-    qs = Cargaison.objects.filter(etat=etat).values(
-        'dateheurecargaison__date',
-        'frontiere__nomville',
-        'declaration',
-        'importateur__nomimportateur',
-        'entrepot__nomentrepot',
-        'immatriculation',
-        'produit__nomproduit',
-        'volume',
-    ).order_by('-dateheurecargaison', 'frontiere__nomville')
+    # ----------------------------
+    # Filters / query parameters
+    # ----------------------------
+    # Generic API (recommended by your new Tailwind UI)
+    q            = request.GET.get('q') or request.GET.get('search') or ''
+    page         = _safe_int(request.GET.get('page'), 1)
+    page_size    = _safe_int(request.GET.get('page_size'), 25)
+    date_from    = _parse_date(request.GET.get('date_from'))
+    date_to      = _parse_date(request.GET.get('date_to'))
+    ordering     = (request.GET.get('ordering') or '-date').strip()
 
-    # Number of items to show per page
-    items_per_page = 16
+    # DataTables (still supported)
+    draw         = _safe_int(request.GET.get('draw'), 0)
+    start        = request.GET.get('start')
+    length       = request.GET.get('length')
 
-    # Initialize the Paginator with the QuerySet and the number of items per page
-    paginator = Paginator(qs, items_per_page)
+    # If DataTables-style pagination is provided, convert to page/page_size
+    if start is not None or length is not None:
+        start_i     = _safe_int(start, 0)
+        length_i    = _safe_int(length, page_size or 25)
+        page        = (start_i // max(1, length_i)) + 1
+        page_size   = length_i
 
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+    # ------------------------------------
+    # Base queryset (single JOINed select)
+    # ------------------------------------
+    qs = (
+        Cargaison.objects
+        .filter(etat=etat)
+        .values(
+            'dateheurecargaison__date',
+            'frontiere__nomville',
+            'declaration',
+            'importateur__nomimportateur',
+            'entrepot__nomentrepot',
+            'immatriculation',
+            'produit__nomproduit',
+            'volume',
+        )
+    )
 
-    # Calculate the current page number based on start and length
-    current_page = (start // length) + 1
+    # ----------------------------
+    # Optional date range filter
+    # ----------------------------
+    if date_from and date_to:
+        qs = qs.filter(dateheurecargaison__date__range=(date_from, date_to))
+    elif date_from:
+        qs = qs.filter(dateheurecargaison__date__gte=date_from)
+    elif date_to:
+        qs = qs.filter(dateheurecargaison__date__lte=date_to)
 
-    try:
-        # Get the current page from the Paginator
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
-        page = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+    # ----------------------------
+    # Optional full-text search
+    # ----------------------------
+    if q:
+        qq = q.strip()
+        qs = qs.filter(
+            Q(declaration__icontains=qq) |
+            Q(frontiere__nomville__icontains=qq) |
+            Q(importateur__nomimportateur__icontains=qq) |
+            Q(entrepot__nomentrepot__icontains=qq) |
+            Q(immatriculation__icontains=qq) |
+            Q(produit__nomproduit__icontains=qq)
+        )
 
-    # Convert the page object to a list of dictionaries
-    data = list(page)
+    # ----------------------------
+    # Ordering
+    # ----------------------------
+    # Map clean aliases to real field paths
+    ordering_map = {
+        'date':                'dateheurecargaison__date',
+        '-date':               '-dateheurecargaison__date',
+        'frontiere':           'frontiere__nomville',
+        '-frontiere':          '-frontiere__nomville',
+        'declaration':         'declaration',
+        '-declaration':        '-declaration',
+        'importateur':         'importateur__nomimportateur',
+        '-importateur':        '-importateur__nomimportateur',
+        'entrepot':            'entrepot__nomentrepot',
+        '-entrepot':           '-entrepot__nomentrepot',
+        'immatriculation':     'immatriculation',
+        '-immatriculation':    '-immatriculation',
+        'produit':             'produit__nomproduit',
+        '-produit':            '-produit__nomproduit',
+        'volume':              'volume',
+        '-volume':             '-volume',
+    }
+    order_field = ordering_map.get(ordering, '-dateheurecargaison__date')
+    # Secondary tie-breaker for deterministic order
+    qs = qs.order_by(order_field, 'frontiere__nomville')
 
-    # Check if it's an AJAX request and if the export flag is set
-    export = request.GET.get('export', None)
-    if export == 'excel':
-        # Retrieve all data (no lazy pagination) and store it in a list
+    # ----------------------------
+    # Excel export (respects filters!)
+    # ----------------------------
+    if request.GET.get('export') == 'excel':
         data = list(qs)
-
-        # Create a new Excel workbook
-        workbook = Workbook()
-        sheet = workbook.active
-
-        # Write headers to the Excel file
-        header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume']
-        sheet.append(header_row)
-
-        # Write data rows to the Excel file
+        wb = Workbook()
+        sheet = wb.active
+        headers = ['Date/Heure', 'Frontière', 'Déclaration', 'Importateur',
+                   'Entrepôt', 'Immatriculation', 'Produit', 'Volume']
+        sheet.append(headers)
         for row in data:
             sheet.append([
-                row['dateheurecargaison__date'],
-                row['frontiere__nomville'],
-                row['declaration'],
-                row['importateur__nomimportateur'],
-                row['entrepot__nomentrepot'],
-                row['immatriculation'],
-                row['produit__nomproduit'],
-                row['volume'],
+                row.get('dateheurecargaison__date'),
+                row.get('frontiere__nomville'),
+                row.get('declaration'),
+                row.get('importateur__nomimportateur'),
+                row.get('entrepot__nomentrepot'),
+                row.get('immatriculation'),
+                row.get('produit__nomproduit'),
+                row.get('volume'),
             ])
+        buff = BytesIO()
+        wb.save(buff)
+        buff.seek(0)
+        resp = HttpResponse(
+            buff,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        resp['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
+        return resp
 
-        # Create an in-memory stream to hold the Excel file data
-        excel_stream = BytesIO()
-        workbook.save(excel_stream)
-        excel_stream.seek(0)
+    # ----------------------------
+    # Server pagination
+    # ----------------------------
+    # Hard safety caps
+    page_size = max(1, min(page_size, 500))
 
-        # Prepare the response to return the Excel file
-        response = HttpResponse(excel_stream,
-                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-        return response
+    paginator = Paginator(qs, page_size)
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page = 1
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        # Return empty but valid shape
+        payload = {
+            'data': [],
+            'page': page,
+            'page_size': page_size,
+            'total': paginator.count,
+            'pages': paginator.num_pages,
+        }
+        # If DataTables compatibility is needed:
+        if draw:
+            payload.update({
+                'draw': draw,
+                'recordsTotal': paginator.count,
+                'recordsFiltered': paginator.count,
+            })
+        return JsonResponse(payload)
 
-    # Return JSON response with the data
-    return JsonResponse({
+    data = list(page_obj)  # list of dicts from .values()
+
+    # ----------------------------
+    # Response shape
+    # ----------------------------
+    payload = {
         'data': data,
-        'draw': draw,
-        'recordsTotal': paginator.count,
-        'recordsFiltered': paginator.count,
-    })
+        'page': page_obj.number,
+        'page_size': page_size,
+        'total': paginator.count,
+        'pages': paginator.num_pages,
+        # (optional) echo some filters back for client state
+        'ordering': ordering,
+        'q': q,
+        'date_from': date_from.isoformat() if date_from else None,
+        'date_to': date_to.isoformat() if date_to else None,
+    }
+
+    # DataTables compatibility fields (harmless for your new UI)
+    if draw:
+        payload.update({
+            'draw': draw,
+            'recordsTotal': paginator.count,
+            'recordsFiltered': paginator.count,
+        })
+
+    return JsonResponse(payload, safe=False)
 
 
 @login_required(login_url='login')
@@ -20008,95 +20169,165 @@ def rapportBrutEchantillonnage(request):
 
 @login_required(login_url='login')
 def responseRapportBrutEchantillonnage(request):
-    # template = "rapportBrutes.html"
-    # today = date.today()
+    """
+    Supports Tailwind-only table (vanilla JS) AND DataTables-style clients.
+
+    Accepted query params:
+      - Paging:
+          page (1-based), page_size
+        OR start (0-based), length
+      - Search:
+          q
+        OR search[value]
+      - Sort:
+          sort = one of: date, frontiere, declaration, importateur, entrepot, immatriculation, produit, volume, requisition
+          dir  = asc|desc
+        OR order[0][column] (0..8), order[0][dir]
+      - Export:
+          export=excel  (respects current search & order)
+    """
+    # ---- Base queryset ----
     filtres = "En attente d'echantillonage"
-    # Add an explicit ordering to the QuerySet
-    qs = Cargaison.objects.filter(etat=filtres).values(
-        'dateheurecargaison__date',
-        'frontiere__nomville',
-        'declaration',
-        'importateur__nomimportateur',
-        'entrepot__nomentrepot',
-        'immatriculation',
-        'produit__nomproduit',
-        'volume',
-        'requisitiondackdate'
-    ).order_by('-dateheurecargaison', 'frontiere__nomville')
+    base_qs = Cargaison.objects.filter(etat=filtres)
 
-    # Number of items to show per page
-    items_per_page = 16
+    # Field map (index and human keys -> ORM paths)
+    index_to_field = {
+        0: 'dateheurecargaison__date',
+        1: 'frontiere__nomville',
+        2: 'declaration',
+        3: 'importateur__nomimportateur',
+        4: 'entrepot__nomentrepot',
+        5: 'immatriculation',
+        6: 'produit__nomproduit',
+        7: 'volume',
+        8: 'requisitiondackdate',
+    }
+    key_to_field = {
+        'date':         'dateheurecargaison__date',
+        'frontiere':    'frontiere__nomville',
+        'declaration':  'declaration',
+        'importateur':  'importateur__nomimportateur',
+        'entrepot':     'entrepot__nomentrepot',
+        'immatriculation':'immatriculation',
+        'produit':      'produit__nomproduit',
+        'volume':       'volume',
+        'requisition':  'requisitiondackdate',
+    }
+    values_fields = list(index_to_field.values())
 
-    # Initialize the Paginator with the QuerySet and the number of items per page
-    paginator = Paginator(qs, items_per_page)
+    # ---- Helpers ----
+    def to_int(v, default):
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return default
 
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+    # ---- Read params (support both styles) ----
+    # Paging
+    page_param      = to_int(request.GET.get('page'), None)         # 1-based
+    page_size_param = to_int(request.GET.get('page_size'), None)
+    start_param     = to_int(request.GET.get('start'), None)        # 0-based
+    length_param    = to_int(request.GET.get('length'), None)
+    # Effective paging
+    page_size = page_size_param or length_param or 16
+    if page_param is not None:
+        page = max(1, page_param)
+        start = (page - 1) * page_size
+    else:
+        start = max(0, start_param or 0)
+        page  = (start // page_size) + 1
 
-    # Calculate the current page number based on start and length
-    current_page = (start // length) + 1
+    # Search
+    search_value = (request.GET.get('q')
+                    or request.GET.get('search[value]')
+                    or '').strip()
 
-    try:
-        # Get the current page from the Paginator
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
-        page = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+    # Sorting
+    dir_param = (request.GET.get('dir') or request.GET.get('order[0][dir]') or 'desc').lower()
+    dir_param = 'asc' if dir_param == 'asc' else 'desc'
 
-    # Convert the page object to a list of dictionaries
-    data = list(page)
+    sort_param = request.GET.get('sort')  # human key
+    if sort_param in key_to_field:
+        sort_field = key_to_field[sort_param]
+    else:
+        order_col_index = request.GET.get('order[0][column]')
+        if order_col_index is not None:
+            sort_field = index_to_field.get(to_int(order_col_index, 0), index_to_field[0])
+        else:
+            sort_field = index_to_field[0]  # default date
 
-    # Check if it's an AJAX request and if the export flag is set
-    export = request.GET.get('export', None)
-    if export == 'excel':
-        # Retrieve all data (no lazy pagination) and store it in a list
-        data = list(qs)
+    order_field = f"-{sort_field}" if dir_param == 'desc' else sort_field
 
-        # Create a new Excel workbook
-        workbook = Workbook()
-        sheet = workbook.active
+    # ---- Filter & count ----
+    qs = base_qs
+    if search_value:
+        qs = qs.filter(
+            Q(frontiere__nomville__icontains=search_value) |
+            Q(declaration__icontains=search_value) |
+            Q(importateur__nomimportateur__icontains=search_value) |
+            Q(entrepot__nommentrepot__icontains=search_value) |
+            Q(immatriculation__icontains=search_value) |
+            Q(produit__nomproduit__icontains=search_value)
+        )
 
-        # Write headers to the Excel file
-        header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume', 'Date requisition']
-        sheet.append(header_row)
+    records_total = base_qs.count()
+    records_filtered = qs.count()
 
-        # Write data rows to the Excel file
-        for row in data:
-            sheet.append([
-                row['dateheurecargaison__date'],
-                row['frontiere__nomville'],
-                row['declaration'],
-                row['importateur__nomimportateur'],
-                row['entrepot__nomentrepot'],
-                row['immatriculation'],
-                row['produit__nomproduit'],
-                row['volume'],
-                row['requisitiondackdate'],
+    # ---- Order ----
+    qs = qs.order_by(order_field)
+
+    # ---- Excel export ----
+    if request.GET.get('export') == 'excel':
+        data_for_export = list(qs.values(*values_fields))
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Rapport brut — journalier"
+        ws.append([
+            'Date/Heure', 'Frontière', 'Déclaration', 'Importateur', 'Entrepôt',
+            'Immatriculation', 'Produit', 'Volume', 'Date réquisition'
+        ])
+        for row in data_for_export:
+            ws.append([
+                row.get('dateheurecargaison__date'),
+                row.get('frontiere__nomville'),
+                row.get('declaration'),
+                row.get('importateur__nomimportateur'),
+                row.get('entrepot__nomentrepot'),
+                row.get('immatriculation'),
+                row.get('produit__nomproduit'),
+                row.get('volume'),
+                row.get('requisitiondackdate'),
             ])
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        filename = f'rapport_brut_journalier_{now().date().isoformat()}.xlsx'
+        resp = HttpResponse(
+            bio.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return resp
 
-        # Create an in-memory stream to hold the Excel file data
-        excel_stream = BytesIO()
-        workbook.save(excel_stream)
-        excel_stream.seek(0)
+    # ---- Page slice ----
+    end = start + page_size
+    page_qs = qs.values(*values_fields)[start:end]
+    data = list(page_qs)
 
-        # Prepare the response to return the Excel file
-        response = HttpResponse(excel_stream,
-                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-        return response
+    # ---- Extra meta for Tailwind table ----
+    total_pages = max(1, (records_filtered + page_size - 1) // page_size)
 
-    # Return JSON response with the data
     return JsonResponse({
+        # Original DataTables-style keys (your JS uses these)
+        'recordsTotal': records_total,
+        'recordsFiltered': records_filtered,
         'data': data,
-        'draw': draw,
-        'recordsTotal': paginator.count,
-        'recordsFiltered': paginator.count,
+        # Helpful extras for your Tailwind-only UI
+        'page': page,
+        'pageSize': page_size,
+        'totalPages': total_pages,
+        'order': {'column': sort_field, 'dir': dir_param},
+        'search': search_value,
     })
 
 
@@ -20350,38 +20581,60 @@ def lastRecords(request):
 
 @login_required(login_url='login')
 def productCount(request):
-    gasoilCount = Cargaison.objects.filter(produit=2).count()
-    mogasCount = Cargaison.objects.filter(produit=1).count()
-    jetCount = Cargaison.objects.filter(produit=3).count()
-    petroleCount = Cargaison.objects.filter(produit=4).count()
+    # Group cargaisons by product and count them
+    product_counts = (
+        Cargaison.objects
+        .values("produit__nomproduit")         # group by product name
+        .annotate(count=Count("idcargaison"))  # count per product
+        .order_by("-count")[:5]                # top 5 products
+    )
 
-    data = {
-        'gasoilCount': gasoilCount,
-        'mogasCount': mogasCount,
-        'jetCount': jetCount,
-        'petroleCount': petroleCount,
-    }
+    # Transform into a clean list of dicts
+    data = [
+        {
+            "product": item["produit__nomproduit"] or "—",
+            "count": item["count"],
+        }
+        for item in product_counts
+    ]
 
-    # Return JSON response with the data
-    return JsonResponse({
-        'data': data
-    })
+    return JsonResponse({"data": data})
 
 
 @login_required(login_url='login')
 def topImporters(request):
-    # Get the sum of volume for each product type
-    top_importers = Cargaison.objects.values('importateur__nomimportateur').annotate(
-        total_volume=Round(Sum('volume'), 2)
-    ).order_by('-total_volume')[:10]
+    """
+    Returns the top 10 importers by total volume with percent share.
+    JSON shape:
+      {
+        "data": [
+          {"name": "ACME Oil", "volume": 12345.67, "percent": 42.1},
+          ...
+        ]
+      }
+    """
+    # Aggregate by importer name (fallback to '—' if missing)
+    base_qs = (
+        Cargaison.objects
+        .values(name=Coalesce(F('importateur__nomimportateur'), V('—')))
+        .annotate(total_volume=Coalesce(Sum('volume'), V(0.0)))
+        .order_by('-total_volume')[:10]
+    )
 
-    # Serialize the queryset as a list of dictionaries
-    data = list(top_importers)
+    rows = list(base_qs)  # materialize once
+    total = sum((row["total_volume"] or 0) for row in rows) or 0
 
-    # Return JSON response with the data
-    return JsonResponse({
-        'data': data
-    })
+    data = []
+    for row in rows:
+        vol = float(row["total_volume"] or 0)
+        pct = round((vol / total * 100), 1) if total else 0.0
+        data.append({
+            "name": row["name"],
+            "volume": round(vol, 2),   # m³
+            "percent": pct,
+        })
+
+    return JsonResponse({"data": data})
 
 
 @login_required(login_url='login')
@@ -21494,6 +21747,10 @@ def getRi(request):
 
 @login_required(login_url='login')
 def responseRapportBrutDechargement(request):
+    """
+    Etat = 'Conforme aux exigences'. Returns JSON (DataTables-style) and supports Excel export.
+    Includes analysis date from: Cargaison -> Entrepot_echantillon -> LaboReception -> Resultat.dateanalyse
+    """
     qs = Cargaison.objects.filter(etat="Conforme aux exigences").values(
         'dateheurecargaison__date',
         'frontiere__nomville',
@@ -21506,80 +21763,355 @@ def responseRapportBrutDechargement(request):
         'requisitiondackdate',
         'entrepot_echantillon__dateechantillonage__date',
         'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'entrepot_echantillon__laboreception__resultat__dateanalyse',  # analysis date (datetime)
     ).order_by('-dateheurecargaison', 'frontiere__nomville')
 
     items_per_page = 16
-
-    # Initialize the Paginator with the QuerySet and the number of items per page
     paginator = Paginator(qs, items_per_page)
 
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-    # Calculate the current page number based on start and length
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', items_per_page))
     current_page = (start // length) + 1
 
     try:
-        # Get the current page from the Paginator
         page = paginator.page(current_page)
     except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
         page = paginator.page(1)
     except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
         return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
 
-    # Convert the page object to a list of dictionaries
     data = list(page)
 
-    # Check if it's an AJAX request and if the export flag is set
-    export = request.GET.get('export', None)
-    if export == 'excel':
-        # Retrieve all data (no lazy pagination) and store it in a list
-        data = list(qs)
+    # Excel export (full queryset, no pagination)
+    if request.GET.get('export') == 'excel':
+        all_rows = list(qs)
 
-        # Create a new Excel workbook
-        workbook = Workbook()
-        sheet = workbook.active
-
-        # Write headers to the Excel file
-        header_row = ['Date/Heure', 'Frontiere', 'Declaration', 'Importateur', 'Entrepot', 'Immatriculation', 'Produit',
-                      'Volume', 'Date requisition', 'Date Echantillonnage', 'Date Reception Labo']
-        sheet.append(header_row)
-
-        # Write data rows to the Excel file
-        for row in data:
-            sheet.append([
-                row['dateheurecargaison__date'],
-                row['frontiere__nomville'],
-                row['declaration'],
-                row['importateur__nomimportateur'],
-                row['entrepot__nomentrepot'],
-                row['immatriculation'],
-                row['produit__nomproduit'],
-                row['volume'],
-                row['requisitiondackdate'],
-                row['entrepot_echantillon__dateechantillonage'],
-                row['entrepot_echantillon__laboreception__datereceptionlabo'],
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Rapport déchargement"
+        ws.append([
+            'Date/Heure', 'Frontière', 'Déclaration', 'Importateur', 'Entrepôt',
+            'Immatriculation', 'Produit', 'Volume', 'Date réquisition',
+            'Date échantillonnage', 'Date réception labo', 'Date analyse'
+        ])
+        for row in all_rows:
+            ws.append([
+                row.get('dateheurecargaison__date'),
+                row.get('frontiere__nomville'),
+                row.get('declaration'),
+                row.get('importateur__nomimportateur'),
+                row.get('entrepot__nomentrepot'),
+                row.get('immatriculation'),
+                row.get('produit__nomproduit'),
+                row.get('volume'),
+                row.get('requisitiondackdate'),
+                row.get('entrepot_echantillon__dateechantillonage__date'),
+                row.get('entrepot_echantillon__laboreception__datereceptionlabo__date'),
+                row.get('entrepot_echantillon__laboreception__resultat__dateanalyse'),
             ])
 
-        # Create an in-memory stream to hold the Excel file data
-        excel_stream = BytesIO()
-        workbook.save(excel_stream)
-        excel_stream.seek(0)
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        resp = HttpResponse(
+            bio.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        resp['Content-Disposition'] = 'attachment; filename="rapport_dechargement.xlsx"'
+        return resp
 
-        # Prepare the response to return the Excel file
-        response = HttpResponse(excel_stream,
-                                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="rapport_brut_journalier.xlsx"'
-        return response
-
-    # Return JSON response with the data
     return JsonResponse({
         'data': data,
         'draw': draw,
         'recordsTotal': paginator.count,
         'recordsFiltered': paginator.count,
     })
+
+
+@login_required(login_url='login')
+@csrf_exempt
+def data_duplicate_and_merge(request):
+    if request.method == 'POST' and request.FILES.get('file1') and request.FILES.get('file2'):
+        file1 = request.FILES['file1']
+        file2 = request.FILES['file2']
+
+        df1 = pd.read_excel(file1)
+        df2 = pd.read_excel(file2)
+
+        df1.columns = df1.columns.str.strip()
+        df2.columns = df2.columns.str.strip()
+
+        try:
+            # df1 columns
+            entry_date_col = df1.columns[1]  # Column 2
+            decl_col_1 = df1.columns[3]  # Column 4
+            immatriculation_col_1 = df1.columns[6]  # Column 7
+            date_req_col = df1.columns[8]  # Column 9
+
+            # df2 columns
+            moyen_transport_col = df2.columns[12]  # Column 13
+            ref_enreg_col = df2.columns[14]  # Column 15
+
+            # columns to append from df2
+            selected_cols = [
+                df2.columns[6],  # NIF_IMPORTATEUR
+                df2.columns[22],  # N_LIQ
+                df2.columns[23],  # DATE_LIQ
+                df2.columns[24],  # NUM_QUIT
+                df2.columns[25],  # DATE_QUIT
+                df2.columns[35],  # MONTANT_TOT_LIQ
+                df2.columns[37],  # MONTANT_TOT_A_PAYE_OU_PAYE
+                df2.columns[62],  # P_BRUT
+                df2.columns[65],  # QTE_STAT
+                df2.columns[70],  # TAUX_DEVISE
+            ]
+        except IndexError:
+            return HttpResponse("Missing expected columns in one of the files.", status=400)
+
+        # Step 1: Remove duplicates from df1
+        df1['Duplicate'] = df1.duplicated(
+            subset=[entry_date_col, decl_col_1, immatriculation_col_1],
+            keep=False
+        )
+        duplicates_removed = df1[(df1['Duplicate']) & (df1[date_req_col].isna())]
+        df1_cleaned = df1.drop(duplicates_removed.index).drop(columns=['Duplicate'])
+
+        # Step 2: Cast match keys to string
+        df1_cleaned[decl_col_1] = df1_cleaned[decl_col_1].astype(str).str.strip()
+        df1_cleaned[immatriculation_col_1] = df1_cleaned[immatriculation_col_1].astype(str).str.strip()
+        df2[ref_enreg_col] = df2[ref_enreg_col].astype(str).str.strip()
+        df2[moyen_transport_col] = df2[moyen_transport_col].astype(str).str.strip()
+
+        # Step 3: First match on #DECL.
+        df2_decl_lookup = df2.groupby(ref_enreg_col)[selected_cols].first().reset_index()
+        decl_dict = df2_decl_lookup.set_index(ref_enreg_col).to_dict(orient='index')
+
+        matched_decl_rows = []
+        still_unmatched_rows = []
+
+        for i, row in df1_cleaned.iterrows():
+            decl_key = row[decl_col_1]
+            if decl_key in decl_dict:
+                new_row = row.copy()
+                for col in selected_cols:
+                    new_row[col] = decl_dict[decl_key][col]
+                matched_decl_rows.append(new_row)
+            else:
+                still_unmatched_rows.append(row)
+
+        matched_decl_df = pd.DataFrame(matched_decl_rows)
+        unmatched_after_decl_df = pd.DataFrame(still_unmatched_rows)
+
+        # Step 4: Second match on IMMATRICULATION
+        df2_imm_lookup = df2.groupby(moyen_transport_col)[selected_cols].first().reset_index()
+        imm_dict = df2_imm_lookup.set_index(moyen_transport_col).to_dict(orient='index')
+
+        matched_imm_rows = []
+        final_unmatched_rows = []
+
+        for i, row in unmatched_after_decl_df.iterrows():
+            imm_key = row[immatriculation_col_1]
+            if imm_key in imm_dict:
+                new_row = row.copy()
+                for col in selected_cols:
+                    new_row[col] = imm_dict[imm_key][col]
+                matched_imm_rows.append(new_row)
+            else:
+                final_unmatched_rows.append(row)
+
+        matched_imm_df = pd.DataFrame(matched_imm_rows)
+        final_unmatched_df = pd.DataFrame(final_unmatched_rows)
+
+        # Step 5: Export to Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            matched_decl_df.to_excel(writer, index=False, sheet_name='Matched Records')
+            matched_imm_df.to_excel(writer, index=False, sheet_name='Matching_IMM')
+            final_unmatched_df.to_excel(writer, index=False, sheet_name='Unmatched Records')
+            duplicates_removed.to_excel(writer, index=False, sheet_name='Removed Duplicates')
+
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=multi_stage_matching.xlsx'
+        return response
+
+    return render(request, 'data_sanitizing.html')
+
+
+
+@login_required(login_url='login')
+@csrf_exempt
+def dgda_file_sanitizing(request):
+    pass
+
+
+@login_required(login_url='login')
+def generate_report(request):
+    """
+    GET endpoint to download a report based on the modal filters.
+    """
+    # 1) filters
+    date_from = _parse_date_yyyymmdd(request.GET.get("from"), end_of_day=False)
+    date_to   = _parse_date_yyyymmdd(request.GET.get("to"),   end_of_day=True)
+    if not date_from or not date_to:
+        return HttpResponseBadRequest("Both 'from' and 'to' (YYYY-MM-DD) are required.")
+
+    ville_id    = request.GET.get("department") or ""
+    product_id  = request.GET.get("product") or ""
+    importer_id = request.GET.get("importer") or ""
+    status      = request.GET.get("status") or ""
+    out_format  = (request.GET.get("format") or "csv").lower()
+
+    group_by_product  = request.GET.get("group_by_product") is not None
+    group_by_importer = request.GET.get("group_by_importer") is not None
+
+    # 2) base queryset + prefetch/annotate
+    qs = (
+        Cargaison.objects.select_related(
+            "produit",
+            "importateur",
+            "frontiere",
+            "entrepot",
+            "inspection",
+            "entrepot_echantillon",
+            "entrepot_echantillon__laboreception",
+            "entrepot_echantillon__laboreception__resultat",
+        )
+        # totals from related Compartiment (many)
+        .annotate(
+            mta_total=Sum("inspection__compartiment__mta"),
+            mtv_total=Sum("inspection__compartiment__mtv"),
+            gsv_total=Sum("inspection__compartiment__gsv"),
+            gov_total=Sum("inspection__compartiment__gov"),
+            # temperature: average of tempcomp across compartiments (optional)
+            temp_avg=Avg("inspection__compartiment__tempcomp"),
+            # densité source: Inspection.dens (since Compartiment has no densite field)
+            densite_val=Max("inspection__dens"),
+        )
+        .filter(dateheurecargaison__range=(date_from, date_to))
+    )
+
+    if ville_id:
+        qs = qs.filter(frontiere__idville=ville_id)
+    if product_id:
+        qs = qs.filter(produit__idproduit=product_id)
+    if importer_id:
+        qs = qs.filter(importateur__idimportateur=importer_id)
+    if status:
+        qs = qs.filter(_status_q(status))
+
+    filename_base = "rapport_cargaisons"
+
+    # 3) grouped vs detailed
+    if group_by_product or group_by_importer:
+        # GROUPED EXPORT — add GSV aggregation
+        if group_by_product and group_by_importer:
+            agg = qs.values(
+                "produit__idproduit", "produit__nomproduit",
+                "importateur__idimportateur", "importateur__nomimportateur",
+            )
+        elif group_by_product:
+            agg = qs.values("produit__idproduit", "produit__nomproduit")
+        else:
+            agg = qs.values("importateur__idimportateur", "importateur__nomimportateur")
+
+        # NOTE: aggregate GSV directly from the relation (safe even though qs already annotated)
+        agg = agg.annotate(
+            volume_total=Sum("volume"),
+            gsv_total=Sum("inspection__compartiment__gsv"),
+            cargaisons=Count("idcargaison"),
+        ).order_by()
+
+        headers = []
+        if group_by_product:
+            headers.append("Produit")
+        if group_by_importer:
+            headers.append("Importateur")
+        headers += ["# Cargaisons", "Volume total (m³)", "GSV total (m³)"]
+
+        def _iter():
+            for row in agg:
+                out = []
+                if group_by_product:
+                    out.append(row.get("produit__nomproduit") or "")
+                if group_by_importer:
+                    out.append(row.get("importateur__nomimportateur") or "")
+                out.append(row.get("cargaisons") or 0)
+                out.append(float(row.get("volume_total") or 0))
+                out.append(float(row.get("gsv_total") or 0))
+                yield out
+
+        rows_iter = _iter()
+        filename_base += "_grouped"
+
+    else:
+        # Detailed export including summed compartiment values per cargaison
+        headers = [
+            "Date entrée",
+            "Ville (Frontière)",
+            "Importateur",
+            "Produit",
+            "Entrepôt",
+            "Immatriculation",
+            "Volume (m³)",
+            "Conformité",
+            "Déclaration",
+            "Numéro Dossier",
+            "Date réquisition",
+            "Date échantillonnage",
+            "Date réception labo",
+            "Date analyse",
+            "Date inspection",
+            "Densité",        # from Inspection.dens
+            "Température",    # average tempcomp across Compartiment
+            "MTA (Σ)",
+            "MTV (Σ)",
+            "GOV (Σ)",
+            "GSV (Σ)",
+        ]
+
+        def _iter():
+            for c in qs.order_by("-dateheurecargaison"):
+                echant = getattr(c, "entrepot_echantillon", None)
+                labo   = getattr(echant, "laboreception", None) if echant else None
+                res    = getattr(labo, "resultat", None) if labo else None
+                insp   = getattr(c, "inspection", None)
+
+                yield [
+                    _fmt_dt(c.dateheurecargaison),
+                    f"{c.frontiere.nomville} ({c.frontiere.province})" if c.frontiere else "",
+                    c.importateur.nomimportateur if c.importateur else "",
+                    c.produit.nomproduit if c.produit else "",
+                    c.entrepot.nomentrepot if c.entrepot else "",
+                    c.immatriculation or "",
+                    float(c.volume or 0),
+                    c.conformite or "",
+                    c.declaration or "",
+                    c.numdossier or "",
+                    _fmt_dt(c.requisitiondackdate),
+                    _fmt_dt(echant.dateechantillonage) if echant else "",
+                    _fmt_dt(labo.datereceptionlabo) if labo else "",
+                    _fmt_dt(res.dateanalyse) if res else "",
+                    _fmt_dt(insp.dateinspection) if insp else "",
+                    c.densite_val if c.densite_val is not None else "",
+                    c.temp_avg if c.temp_avg is not None else "",
+                    float(c.mta_total or 0),
+                    float(c.mtv_total or 0),
+                    float(c.gov_total or 0),
+                    float(c.gsv_total or 0),
+                ]
+
+        rows_iter = _iter()
+
+    # 4) output
+    if out_format == "csv":
+        return _write_csv_response(_filename(filename_base, "csv"), headers, rows_iter)
+    if out_format == "xlsx":
+        return _write_xlsx_response(_filename(filename_base, "xlsx"), headers, rows_iter, title="Cargaisons")
+    if out_format == "pdf":
+        return _write_pdf_response(_filename(filename_base, "pdf"), headers, rows_iter, title="Rapport des cargaisons")
+    return HttpResponseBadRequest("Unsupported format. Use one of: csv, xlsx, pdf.")

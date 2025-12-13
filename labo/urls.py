@@ -48,6 +48,10 @@ urlpatterns = [
     # Liens des validations Labo
     path('validation1/', views.GestionValidation.affichagetableauvalidation1, name='validation1'),
     path('validation1Response/', views.affichagetableauvalidation1Response, name='affichagetableauvalidation1Response'), #Ajax Request
+    # Alias required by frontend: provides the same JSON as validation1Response under the name 'affichagetableauvalidation1'
+    path('validation1/response/', views.affichagetableauvalidation1Response, name='affichagetableauvalidation1'),
+    # Filter endpoint for Validation 1 (POST/GET with pagination + filters)
+    path('validation1/filters/', views.affichagetableauvalidation1Filtres, name='affichagetableauvalidation1Filtres'),
 
     path('echantillonRecus/', views.echantillonRecus, name='echantillonRecus'),
     path('echantillonRecus/response/', views.echantillonRecusResponse, name='echantillonRecusResponse'),
@@ -69,6 +73,7 @@ urlpatterns = [
     # Dashboard Laboratoire
     path('labdash/', views.labdashboard, name='labodashboard'),
     path('labdashrap/', views.labdashboardrapport, name='labodashboardrapport'),
+    path('labdashrap/synthese/', views.labdashboardrapport_synthese, name='labodashboardrapport_synthese'),
     path('echantCount/', views.echantCount, name='echantCount'),
     path('echantAnalyse/', views.echantAnalyse, name='echantAnalyse'),
 

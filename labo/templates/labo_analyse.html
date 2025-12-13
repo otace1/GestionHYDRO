@@ -1,344 +1,1025 @@
-{% extends 'base_lab_encodage.html' %}
-{% load render_table from django_tables2 %}
-{% load querystring from django_tables2 %}
+{% extends 'base/base_template.html' %}
+{% load static %}
 {% load crispy_forms_tags %}
 
+{% block main_content %}
 
+<!-- =================== Styles (unified with the new design) =================== -->
+<style>
+  .glass        { background: rgba(255,255,255,.04); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .shadow-glass { box-shadow: 0 10px 30px rgba(3, 8, 20, .35), inset 0 1px 0 rgba(255,255,255,.06); }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin{ to { transform: rotate(360deg);} }
 
-{% block content %}
-        <div id="data-table-wrapper" style="position: relative;">
-  <div class="loading-spinner"></div>
-  <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-    <thead>
-      <tr>
-        <th>DATE RECEP.</th>
-        <th>CODE LABO</th>
-        <th>NUM.RE</th>
-        <th>NUM. DOSSIER</th>
-        <th>IMMATRICULATION</th>
-        <th>PRODUIT</th>
-        <th>ACTION(s)</th>
-      </tr>
-    </thead>
-  </table>
-</div>
+  /* ===== Scrollable modal helpers ===== */
+  .modal-panel{
+    display:flex; flex-direction:column;
+    max-height: calc(100vh - 1.5rem);
+  }
+  @media (min-width:640px){
+    .modal-panel{ max-height: min(90vh, 860px); }
+  }
+  .modal-body{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
+  /* ===== Table base ===== */
+  .data-grid { width:100%; border-collapse: separate !important; border-spacing: 0 10px !important; }
+  .data-grid thead tr { border-bottom: 1px solid rgba(255,255,255,.08); }
+  .data-grid thead th { padding:.7rem .9rem; font-weight:700; letter-spacing:.03em; border-bottom:1px solid rgba(255,255,255,.10); user-select:none; white-space:nowrap; }
+  .data-grid .tbody tr {
+    background: rgba(255,255,255,.04);
+    box-shadow: 0 1px 0 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(3,8,20,.25);
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .data-grid .tbody tr:hover { background: rgba(255,255,255,.06); transform: translateY(-1px); box-shadow: 0 1px 0 0 rgba(255,255,255,.08) inset, 0 10px 24px rgba(3,8,20,.32); }
+  .data-grid .tbody td { padding:.7rem .9rem; vertical-align:top; border-top:1px solid rgba(255,255,255,.06); }
+  .data-grid .tbody tr td + td { border-left: 1px solid rgba(255,255,255,.03); }
+  .data-grid .tbody tr td:first-child { border-top-left-radius: 12px; }
+  .data-grid .tbody tr td:last-child  { border-top-right-radius: 12px; }
+  .data-grid .tbody tr td:first-child,
+  .data-grid .tbody tr td:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
 
-    <div class="modal fade" id="correctionModal" tabindex="-1" role="dialog" aria-labelledby="correctionModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <!-- Add your modal content here -->
-      <div class="modal-header">
-        <h5 class="modal-title" id="correctionModalLabel">CORRECTION NATURE PRODUIT</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
+  /* ===== Chips ===== */
+  .chip{
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.125rem .55rem; border-radius:.55rem;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+    font-size:.85em;
+  }
+  .chip--immat{
+    font-weight:700; letter-spacing:.02em; color:#e8fbff;
+    background: linear-gradient(135deg, rgba(56,189,248,.16), rgba(20,184,166,.16));
+    border-color: rgba(255,255,255,.18);
+    text-shadow: 0 1px 0 rgba(0,0,0,.18);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  }
+
+  /* ===== Buttons ===== */
+  .actions{ display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap; }
+  .btn{
+    display:inline-flex; align-items:center; gap:.45rem;
+    padding:.45rem .7rem; border-radius:.6rem; font-size:.8125rem; line-height:1;
+    border:1px solid transparent;
+    transition: transform .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    will-change: transform;
+  }
+  .btn--ghost{ background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); color:#fff; }
+  .btn--ghost:hover{ background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.16); transform: translateY(-1px); }
+  .btn--primary{
+    background-image: linear-gradient(to right, var(--color-primary, #6ee7f9), var(--color-primary2, #22d3ee));
+    color:#0b1223; font-weight:600; border:1px solid transparent;
+  }
+
+  /* ===== Pagination buttons ===== */
+  .pg-btn{ padding:.35rem .5rem; border-radius:.5rem; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#fff; }
+  .pg-btn:hover{ background:rgba(255,255,255,.12); }
+  .pg-btn.is-disabled{ opacity:.45; cursor:not-allowed; }
+
+  /* ===== Refaire table specific background ===== */
+  /* Applique une teinte rouge au tableau "Liste des échantillons à refaire" uniquement */
+  #refairePanel .data-grid thead tr { background: rgba(239,68,68,0.10); }
+  #refairePanel .data-grid thead th { border-bottom-color: rgba(239,68,68,0.25); }
+  #refairePanel .data-grid .tbody tr { background: rgba(239,68,68,0.12); }
+  #refairePanel .data-grid .tbody tr:hover { background: rgba(239,68,68,0.18); }
+  #refairePanel .data-grid .tbody tr td { border-top-color: rgba(239,68,68,0.20); }
+  #refairePanel .data-grid .tbody tr td + td { border-left-color: rgba(239,68,68,0.12); }
+</style>
+
+<!-- =================== Header =================== -->
+<section class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur shadow-glass mb-5 px-4 sm:px-5 py-4">
+  <div class="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-gradient-to-tr from-primary/30 to-primary2/30 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-14 -left-10 h-36 w-36 rounded-full bg-gradient-to-tr from-primary2/20 to-primary/20 blur-3xl"></div>
+
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="grid h-10 w-10 place-items-center rounded-xl bg-cyan-500/20 ring-1 ring-cyan-400/30 text-cyan-300">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M10 3.8h4M12 3.8v5.2" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M8.2 14.6a3.8 3.8 0 003.8 3.8h0a3.8 3.8 0 003.8-3.8c0-.9-.3-1.8-.9-2.5l-1.1-1.3H10.2l-1.1 1.3c-.6.7-.9 1.6-.9 2.5z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <div>
+        <h2 class="text-lg sm:text-xl font-semibold tracking-tight text-white">Encodage laboratoire — Réceptions & Saisie</h2>
+        <p class="text-xs sm:text-sm text-white/60">Tableau unifié (design “data-grid”), actions “Correction” & “Saisie”.</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button id="btnRefresh" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/15">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4v6h6M20 20v-6h-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 8a8 8 0 10-7.9 10" stroke-width="2" stroke-linecap="round"/></svg>
+        Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert A refaire -->
+  <div id="refaireAlert" class="hidden mt-4 rounded-xl border border-red-400/40 bg-red-500/10 p-3 sm:p-4 text-red-200 shadow-lg">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="grid h-9 w-9 place-items-center rounded-lg bg-red-400/20 ring-1 ring-red-400/30 text-red-200">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 9v4m0 4h.01" stroke-width="2" stroke-linecap="round"/>
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-width="1.6"/>
+          </svg>
+        </span>
+        <div>
+          <p class="font-semibold">A refaire détecté</p>
+          <p class="text-sm text-red-100/80">Il y a <span id="refaireCount" class="font-bold">0</span> échantillon(s) à refaire.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnToggleRefaire" class="btn btn--primary">Afficher la liste</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== Panel: A refaire list =================== -->
+<section id="refairePanel" class="hidden glass rounded-2xl shadow-glass border border-red-400/30 overflow-hidden mb-4">
+  <div class="px-4 sm:px-5 py-3 border-b border-white/10 flex items-center justify-between">
+    <div class="text-sm text-white/80">Liste des échantillons à refaire</div>
+    <button id="btnCloseRefaire" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Masquer</button>
+  </div>
+  <!-- Controls for the refaire panel -->
+  <div class="px-4 sm:px-5 py-3 border-b border-white/10">
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+      <div class="flex-1 min-w-[260px]">
+        <label for="refaireQ" class="block text-xs text-white/60 mb-1">Rechercher (Code labo)</label>
+        <input id="refaireQ" type="search" placeholder="Code labo"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               data-gramm="false" data-ms-editor="false" data-lpignore="true"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-white placeholder-white/50">
+      </div>
+
+      <div>
+        <label class="block text-xs text-white/60 mb-1">Lignes par page</label>
+        <select id="refairePerPage" class="rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-white">
+          <option>10</option><option>15</option><option>20</option><option>30</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="refaireBtnSearch" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Filtrer</button>
+        <button id="refaireBtnReset"  class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Réinitialiser</button>
+      </div>
+    </div>
+  </div>
+  <div class="relative overflow-x-auto">
+    <table class="data-grid min-w-full text-sm text-left">
+      <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+        <tr>
+          <th class="px-3 py-2">Date recep.</th>
+          <th class="px-3 py-2">Code labo</th>
+          <th class="px-3 py-2">Num. RE</th>
+          <th class="px-3 py-2">Num. dossier</th>
+          <th class="px-3 py-2">Immatriculation</th>
+          <th class="px-3 py-2">Produit</th>
+          <th class="px-3 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="refaireBody" class="tbody divide-y-0"></tbody>
+    </table>
+    <div id="refaireEmpty" class="hidden py-6 text-center text-white/70 text-sm">Aucun élément à afficher.</div>
+  </div>
+  <!-- Pagination footer for refaire panel -->
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 flex items-center justify-between">
+    <div id="refairePgInfo" class="text-xs text-white/70">—</div>
+    <div class="flex items-center gap-1">
+      <button data-refaire-dir="first" class="pg-btn text-xs">«</button>
+      <button data-refaire-dir="prev"  class="pg-btn text-xs">‹</button>
+      <span id="refairePgPage" class="text-xs text-white/80 px-2">Page 1</span>
+      <button data-refaire-dir="next"  class="pg-btn text-xs">›</button>
+      <button data-refaire-dir="last"  class="pg-btn text-xs" disabled>»</button>
+    </div>
+  </footer>
+</section>
+
+<!-- =================== Controls =================== -->
+<section class="glass rounded-2xl shadow-glass border border-white/10 overflow-hidden mb-4">
+  <div class="px-4 sm:px-5 py-3 border-b border-white/10">
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+      <div class="flex-1 min-w-[260px]">
+        <label for="q" class="block text-xs text-white/60 mb-1">Rechercher</label>
+        <input id="q" type="search" placeholder="Code labo"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               data-gramm="false" data-ms-editor="false" data-lpignore="true"
+               class="w-full rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-white placeholder-white/50">
+      </div>
+
+      <div>
+        <label class="block text-xs text-white/60 mb-1">Lignes par page</label>
+        <select id="perPage" class="rounded-lg bg-white/10 border border-white/10 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/50 text-white">
+          <option>10</option><option>15</option><option>20</option><option>30</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btnSearch" class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Filtrer</button>
+        <button id="btnReset"  class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-sm">Réinitialiser</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- =================== Table =================== -->
+  <!-- Titre du tableau principal -->
+  <div class="px-4 sm:px-5 py-3 border-t border-b border-white/10 bg-white/[0.02]">
+    <div class="text-sm text-white/80 font-medium">Échantillons en attente d’encodage des résultats</div>
+  </div>
+  <div class="relative overflow-x-auto" id="tableWrap">
+    <div id="mainSpinner" class="hidden absolute inset-0 grid place-items-center bg-black/30 backdrop-blur-sm">
+      <svg class="h-8 w-8 spin text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="9" stroke-opacity=".2"></circle>
+        <path d="M21 12a9 9 0 0 0-9-9" stroke-width="2"></path>
+      </svg>
+    </div>
+
+    <table class="data-grid min-w-full text-sm text-left">
+      <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+        <tr>
+          <th class="px-3 py-2">Date recep.</th>
+          <th class="px-3 py-2">Code labo</th>
+          <th class="px-3 py-2">Num. RE</th>
+          <th class="px-3 py-2">Num. dossier</th>
+          <th class="px-3 py-2">Immatriculation</th>
+          <th class="px-3 py-2">Produit</th>
+          <th class="px-3 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody" class="tbody divide-y-0"></tbody>
+    </table>
+
+    <div id="empty" class="hidden py-8 text-center text-white/70 text-sm">Aucun enregistrement.</div>
+  </div>
+
+  <!-- =================== Pagination footer (styled like normal) =================== -->
+  <footer class="px-4 sm:px-5 py-3 border-t border-white/10 flex items-center justify-between">
+    <div id="pgInfo" class="text-xs text-white/70">—</div>
+    <div class="flex items-center gap-1">
+      <button data-dir="first" class="pg-btn text-xs">«</button>
+      <button data-dir="prev"  class="pg-btn text-xs">‹</button>
+      <span id="pgPage" class="text-xs text-white/80 px-2">Page 1</span>
+      <button data-dir="next"  class="pg-btn text-xs">›</button>
+      <button data-dir="last"  class="pg-btn text-xs" disabled>»</button>
+    </div>
+  </footer>
+</section>
+
+<!-- =================== Modal: Correction produit (SCROLLABLE) =================== -->
+<div id="correctionModal" class="hidden fixed inset-0 z-[90]">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="corr"></div>
+  <div class="absolute inset-0 grid place-items-center p-3">
+    <div id="corrPanel"
+         class="modal-panel w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-slate-900/90 shadow-2xl modal-enter">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <h3 class="text-base sm:text-lg font-semibold text-white">Correction nature produit</h3>
+        <button class="w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" data-close="corr" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
-      <div class="modal-body">
+      <div class="p-5 modal-body" style="max-height: calc(90vh - 10.5rem);">
         {% crispy form %}
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary validation-correction-btn" data-dismiss="modal">VALIDER</button>
+      <div class="px-5 pb-5 flex justify-end gap-2">
+        <button class="btn btn--ghost" data-close="corr">Annuler</button>
+        <button id="corrSubmit" class="btn btn--primary">Valider</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- =================== Modal: Saisie résultats (SCROLLABLE) =================== -->
+<div id="saisieModal" class="hidden fixed inset-0 z-[88]">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="saisie"></div>
+  <div class="absolute inset-0 grid place-items-center p-3">
+    <div id="saisiePanel"
+         class="modal-panel w-full max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900/90 shadow-2xl modal-enter">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <h4 class="text-base sm:text-lg font-semibold text-white">
+          Saisie de(s) résultat(s)
+          <span class="ml-3 text-sm font-normal text-white/70">Code labo:
+            <span id="saisieCodeLabo" class="font-semibold text-cyan-200">—</span>
+          </span>
+        </h4>
+        <button class="w-9 h-9 grid place-items-center rounded-lg hover:bg-white/10" data-close="saisie" aria-label="Fermer">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="relative modal-body" style="max-height: calc(90vh - 10.5rem);">
+        <div id="dynSpinner" class="hidden absolute inset-0 grid place-items-center bg-black/20">
+          <svg class="h-7 w-7 spin text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="9" stroke-opacity=".2"></circle>
+            <path d="M21 12a9 9 0 0 0-9-9" stroke-width="2"></path>
+          </svg>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="data-grid min-w-full text-sm text-left">
+            <thead class="sticky top-0 z-10 text-[11px] sm:text-xs uppercase tracking-wide text-white/80 backdrop-blur bg-white/5">
+              <tr>
+                <th class="px-3 py-2">Produit</th>
+                <th class="px-3 py-2">Paramètre</th>
+                <th class="px-3 py-2">Valeur num.</th>
+                <th class="px-3 py-2">Valeur alph.</th>
+                <th class="px-3 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dynBody" class="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="px-5 py-4 border-t border-white/10 flex justify-end gap-2">
+        <button class="btn btn--ghost" data-close="saisie">Fermer</button>
+        <button id="saveChanges" class="btn btn--primary">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Light Modals: Save result =================== -->
+<div id="saveSuccessModal" class="hidden fixed inset-0 z-[100]">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="save-success"></div>
+  <div class="absolute inset-0 grid place-items-center p-3">
+    <div class="w-full max-w-sm overflow-hidden rounded-2xl border border-green-400/25 bg-slate-900/95 shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center gap-3 text-green-200">
+        <span class="grid h-9 w-9 place-items-center rounded-lg bg-green-400/20 ring-1 ring-green-400/30">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <h5 class="text-base font-semibold">Résultats enregistrés</h5>
+      </div>
+      <div class="p-5 text-sm text-white/80">Les résultats ont été enregistrés avec succès.</div>
+      <div class="px-5 pb-5 flex justify-end">
+        <button class="btn btn--primary" data-close="save-success">OK</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<div id="saveErrorModal" class="hidden fixed inset-0 z-[100]">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-close="save-error"></div>
+  <div class="absolute inset-0 grid place-items-center p-3">
+    <div class="w-full max-w-sm overflow-hidden rounded-2xl border border-red-400/25 bg-slate-900/95 shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center gap-3 text-red-200">
+        <span class="grid h-9 w-9 place-items-center rounded-lg bg-red-400/20 ring-1 ring-red-400/30">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4m0 4h.01" stroke-width="2" stroke-linecap="round"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-width="1.6"/></svg>
+        </span>
+        <h5 class="text-base font-semibold">Échec de l'enregistrement</h5>
+      </div>
+      <div id="saveErrorMsg" class="p-5 text-sm text-white/80">Une erreur est survenue lors de l'enregistrement des résultats. Veuillez réessayer.</div>
+      <div class="px-5 pb-5 flex justify-end">
+        <button class="btn btn--ghost" data-close="save-error">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== Script =================== -->
 <script>
-const csrfToken = '{{ csrf_token }}';
+/* ========= Helpers ========= */
+const $  = (s, r=document)=> r.querySelector(s);
+const $$ = (s, r=document)=> Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function getCookie(name){
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? m.pop() : '';
+}
+const CSRF = getCookie('csrftoken');
 
-let dynamicDataTable;
-let idcargaison;
-let dataTable;
+/* Base64-url (no padding) for the synthetic first-cursor */
+function b64urlEncode(obj){
+  const json = JSON.stringify(obj);
+  const b64  = btoa(unescape(encodeURIComponent(json)));
+  return b64.replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
+}
 
-$(document).ready(function () {
-        dataTable = $('#data-table').DataTable({
-        lengthChange: false, // Display the length change dropdown
-        processing: true,
-        serverSide: true,
-        responsive: true,
-        ajax: {
-            url: '{% url 'responseAffichageanalyse' %}',
-            type: 'GET',
-            beforeSend: function() {
-              $('#data-table-wrapper .loading-spinner').show();
-            },
-            // Hide the loading spinner after DataTable processing
-            complete: function() {
-              $('#data-table-wrapper .loading-spinner').hide();
-            }
-        },
-        columns: [
-            { data: 'entrepot_echantillon__laboreception__datereceptionlabo__date' }, // Use array index to access 'dateheurecargaison__date'
-            { data: 'entrepot_echantillon__laboreception__codelabo' }, // Use array index to access 'frontiere__nomville'
-            { data: 'entrepot_echantillon__numrappechauto' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'numdos' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'immatriculation' }, // Use array index to access 'importateur__nomimportateur'
-            { data: 'produit__nomproduit' }, // Use array index to access 'entrepot__nomentrepot'
-            { // New column configuration
-                data: 'idcargaison',
-                render: function (data, type, row) {
-                    const correctionProduit = '<button class="btn btn-info correction-btn" data-toggle="modal" data-target="#correctionModal" data-row-id="' + data + '">CORRECTION PRODUIT</button> ';
-                    const submitSaisie = '<button class="btn btn-success saisie-btn" data-row-id="' + data + '">SAISIE</button> ';
-                    return correctionProduit+submitSaisie;
-                }
-            }// Use array index to access 'immatriculation'
-        ],
+/* ========= State (cursor + normal footer) ========= */
+const STATE = {
+  per_page: 10,
+  q: "",
+  page: 1,
+  items: [],
+  has_more: false,
+  next_cursor: null,      // server-provided for NEXT
+  cursor_stack: [],       // cursor_stack[page] = cursor used to fetch that page
+  first_cursor: b64urlEncode({ d: "9999-12-31", id: 9223372036854775807 }),
+  idcargaison: null,
+  reqSeq: 0               // increments per request to avoid races
+};
 
-    });
+/* ========= Rendering ========= */
+function rowHTML(r){
+  return `
+    <tr>
+      <td class="px-3 py-2" data-th="Date recep.">${esc(r.entrepot_echantillon__laboreception__datereceptionlabo__date || '—')}</td>
+      <td class="px-3 py-2" data-th="Code labo">${esc(r.entrepot_echantillon__laboreception__codelabo || '—')}</td>
+      <td class="px-3 py-2" data-th="Num. RE">${esc(r.entrepot_echantillon__numrappechauto || '—')}</td>
+      <td class="px-3 py-2" data-th="Num. dossier">${esc(r.numdos || '—')}</td>
+      <td class="px-3 py-2" data-th="Immatriculation">${r.immatriculation ? `<span class="chip chip--immat">${esc(r.immatriculation)}</span>` : '—'}</td>
+      <td class="px-3 py-2" data-th="Produit">${r.produit__nomproduit ? `<span class="chip">${esc(r.produit__nomproduit)}</span>` : '—'}</td>
+      <td class="px-3 py-2 text-right" data-th="Actions">
+        <div class="actions" role="group" aria-label="Actions">
+          <button class="btn btn--ghost" data-action="corr" data-id="${esc(r.idcargaison)}">Correction</button>
+          <button class="btn btn--primary" data-action="saisie" data-id="${esc(r.idcargaison)}">Saisie</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
 
+function renderTable(){
+  const tbody = $('#tbody');
+  const empty = $('#empty');
 
-    $(document).on('click', '.correction-btn', function () {
-        idcargaison = $(this).data('row-id');
-        // Now you have the idcargaison value stored in the idcargaison variable
-        console.log('idcargaison:', idcargaison);
-        // Open the modal programmatically
-        {#$('#correctionModal').modal('show');#}
-        // ...
-    });
+  tbody.innerHTML = STATE.items.map(rowHTML).join('');
+  empty.classList.toggle('hidden', STATE.items.length>0);
 
+  $('#pgInfo').textContent = STATE.items.length ? `Page ${STATE.page} — ${STATE.items.length} lignes` : '—';
+  $('#pgPage').textContent = `Page ${STATE.page}`;
 
-    // Attach a click event handler to the "VALIDER" button
-    $(document).on('click','.validation-correction-btn', function (){
-      // Serialize the form data into a format that can be sent via AJAX
-      var formData = $("#correctionForm").serialize();
+  const dis = (dir, on)=>{
+    const b = document.querySelector(`.pg-btn[data-dir="${dir}"]`);
+    if(b){ b.disabled=on; b.classList.toggle('is-disabled', on); }
+  };
+  dis('first', STATE.page<=1);
+  dis('prev',  STATE.page<=1);
+  dis('next',  !STATE.has_more);
+  dis('last',  true); // unknown with cursor pagination
+}
 
-      formData += "&idcargaison=" + idcargaison;
+/* ========= Fetch (guards against races) ========= */
+async function fetchWithCursor(cursor){
+  $('#mainSpinner').classList.remove('hidden');
+  const seq = ++STATE.reqSeq; // capture sequence for this request
+  try{
+    const url = new URL("{% url 'responseAffichageanalyse' %}", window.location.origin);
+    url.searchParams.set('length', String(STATE.per_page));
+    url.searchParams.set('search[value]', STATE.q || '');
+    url.searchParams.set('cursor', cursor || STATE.first_cursor);
 
-      console.log(formData);
-      // Perform the AJAX request
-      $.ajax({
-        type: "POST", // Adjust the HTTP method as needed
-        url: "{% url 'correctionNature' %}", // Replace with the actual URL for your AJAX endpoint
-        data: formData,
-        headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-        success: function(response) {
-          // Handle the success response here, e.g., show a success message
-          console.log("Form submitted successfully", response);
-          alert('Changement effectué');
-          // Close the modal if needed
-          $("#correctionModal").modal("hide");
-          dataTable.ajax.reload();
-        },
-        error: function(error) {
-          // Handle errors here, e.g., show an error message
-            alert('Erreur');
-          console.error("Error submitting form", error);
-          dataTable.ajax.reload();
-        }
-      });
-    });
+    const res = await fetch(url.toString(), { headers:{ 'Accept':'application/json' }});
+    // Handle non-OK quietly (avoid throwing to keep console clean)
+    if(!res.ok){
+      if(seq !== STATE.reqSeq) return;
+      console.warn('fetchWithCursor: HTTP', res.status);
+      STATE.items = [];
+      STATE.has_more = false;
+      STATE.next_cursor = null;
+      renderTable();
+      return;
+    }
+    const data = await res.json();
 
+    // If a newer request finished after this one, ignore this response
+    if(seq !== STATE.reqSeq) return;
 
+    const rows = Array.isArray(data?.items) ? data.items : [];
+    STATE.items       = rows;
+    STATE.has_more    = !!data?.has_more;
+    STATE.next_cursor = data?.next_cursor || null;
 
-    // Add a click event listener for the 'SAISIE' buttons with class 'saisie-btn'
-    $(document).on('click', '.saisie-btn', function() {
-        idcargaison = $(this).data('row-id');
+    renderTable();
+  }catch(e){
+    if(seq !== STATE.reqSeq) return;
+    console.warn('fetchWithCursor failed:', e && (e.message || e));
+    STATE.items = [];
+    STATE.has_more = false;
+    STATE.next_cursor = null;
+    renderTable();
+  }finally{
+    if(seq === STATE.reqSeq) $('#mainSpinner').classList.add('hidden');
+  }
+}
 
-        console.log(idcargaison);
+/* ========= Pagination actions ========= */
+async function go(dir){
+  if(dir==='first'){
+    STATE.page = 1;
+    await fetchWithCursor(STATE.cursor_stack[1] || STATE.first_cursor);
+    return;
+  }
+  if(dir==='prev'){
+    if(STATE.page <= 1) return;
+    STATE.page -= 1;
+    await fetchWithCursor(STATE.cursor_stack[STATE.page] || STATE.first_cursor);
+    return;
+  }
+  if(dir==='next'){
+    if(!STATE.has_more || !STATE.next_cursor) return;
+    STATE.page += 1;
+    STATE.cursor_stack[STATE.page] = STATE.next_cursor;
+    await fetchWithCursor(STATE.next_cursor);
+    return;
+  }
+  /* 'last' unsupported with cursor pagination */
+}
 
-        // Show the AJAX input form wrapper
-        $('#ajax-form-wrapper').show();
-        $('#modal-xl').modal('show');
+/* ========= Search wiring (works with lazy) ========= */
+function resetAndSearch(){
+  STATE.page = 1;
+  STATE.cursor_stack = [];
+  STATE.cursor_stack[1] = STATE.first_cursor;
+  fetchWithCursor(STATE.first_cursor);
+}
 
-        // Create a new DataTable instance for the dynamic table
-            dynamicDataTable = $('#dynamic-data-table').DataTable({
-            destroy: true,
-            lengthChange: false,
-            responsive: true,
-            searching: false, // Remove search field
-            paging: false, // Remove pagination display
-            info: false, // Remove information display
-            ordering: false, // Remove column sorting
-            ajax: {
-                url: '{% url "saisieResultatAjax" %}', // Replace with your dynamic data URL
-                type: 'GET',
-                data: { idcargaison: idcargaison }, // Send additional data if neededn`
-            },
-            columns: [
-                // Define your columns for the dynamic DataTable
-                // Example:
-                { data: 'nomproduit' },
-                { data: 'nomParametre' },
-                { data: 'valeurResultat' },
-                { data: 'valeurResultatChar' },
-                { // New column configuration
-                    data: 'idParametre',
-                    render: function (data, type, row) {
-                        // 'data' contains the value of 'idcargaison' for this row
-                        // Here, we'll create a JSON input field and a button to submit the data
-                       // Create an input field for each row
-                        const inputField = `<input type="text" class="json-input" id="input-${data}" data-row-id="${data}">`;
-                        const clearButton = `<button class="btn btn-danger clear-btn" data-row-id="${data}">Effacer</button>`;
-                        return inputField+'&nbsp;'+clearButton;
-                    }
-                }
-                // Use array index to access 'immatriculation'
-                // ...
-            ],
-        });
-    });
+/* Debounced live search (300ms) */
+let searchTimer = null;
+function handleLiveSearch(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>{
+    const newQ = $('#q').value.trim();
+    if(newQ === STATE.q) return;  // no change
+    STATE.q = newQ;
+    resetAndSearch();
+  }, 300);
+}
 
-    // Attach a click event handler to the clear button
-    $('#dynamic-data-table').on('click', '.clear-btn', function() {
-        const rowId = $(this).data('row-id');
-
-        // Make an AJAX request here to clear data associated with the rowId
-        $.ajax({
-            url: "{% url 'clearSaisie' %}", // Replace with your clear data endpoint URL
-            type: 'POST', // or 'GET' depending on your server-side handling
-            data: {
-                rowId: rowId,
-                idcargaison: idcargaison,
-                    }, // Pass any data you need to clear the data
-            headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-            success: function(response) {
-                // Handle success response
-                console.log('Data cleared successfully:', response);
-                alert('Data cleared successfully:\n' + response.status);
-                dynamicDataTable.ajax.reload();
-                // Optionally, update the DataTable or perform any other actions here
-            },
-            error: function(error) {
-                // Handle error response
-                console.error('Error clearing data:', error);
-                alert('Error clearing data:\n' + error.statusText);
-                dynamicDataTable.ajax.reload();
-            }
-        });
-    });
-
-
-     // Add a keypress event listener for the input fields
-    $(document).on('keypress', '.json-input', function (event) {
-        if (event.which === 13) { // Enter key
-            // Get the typed value from the input field within the same row
-            const rowId = $(this).data('row-id');
-            const inputValue = $(this).val();
-
-            console.log(inputValue);
-            console.log(rowId);
-            console.log(idcargaison);
-
-            // Make an AJAX request to save the data
-            $.ajax({
-                type: 'POST', // or 'GET' depending on your server-side implementation
-                url: '{% url "saisieResultatParametreAjax" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-                data: {
-                    idcargaison: idcargaison,
-                    idParametre: rowId,
-                    inputValue: inputValue
-                },
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the AJAX response here if needed
-                    console.log('Data saved successfully');
-                    dynamicDataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
-                }
-            });
-        }
-    });
-
-
-    $(document).ready(function() {
-        $('#saveChanges').on('click', function() {
-            console.log('BUTTON PRESSED');
-
-            // Disable the button
-            $(this).prop('disabled', true);
-            // Simulate some asynchronous action
-            setTimeout(function() {
-                // Re-enable the button after some time
-                $('#saveChanges').prop('disabled', false);
-            }, 2000); // Enable after 2000 milliseconds (2 seconds)
-
-            // Make an AJAX request to save the data
-            $.ajax({
-                type: 'POST', // or 'GET' depending on your server-side implementation
-                url: '{% url "validationResulat" %}', // Replace 'your_ajax_url' with the actual URL for the AJAX request
-                data: {
-                    idcargaison: idcargaison,
-                },
-                headers: {
-                    'X-CSRFToken': csrfToken, // Set the CSRF token as a request header
-                },
-                success: function (response) {
-                    // Handle the AJAX response here if needed
-                    console.log('Data saved successfully');
-                    alert('Data saved successfully');
-                    // Show the AJAX input form wrapper
-                    $('#ajax-form-wrapper').hide();
-                    $('#modal-xl').modal('hide');
-                    // Reload the table
-                    dataTable.ajax.reload();
-                },
-                error: function (error) {
-                    // Handle errors if any
-                    console.error('AJAX request failed:', error);
-                    alert('An error occured');
-
-                }
-            });
-            // Your code here
-        });
-    });
-
-
-
+/* ========= Controls ========= */
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.pg-btn[data-dir]');
+  if(!btn) return;
+  e.preventDefault();
+  go(btn.dataset.dir);
 });
 
-</script>
-{% endblock %}
+$('#btnSearch').addEventListener('click', ()=>{
+  STATE.q = $('#q').value.trim();
+  resetAndSearch();
+});
+$('#btnReset').addEventListener('click', ()=>{
+  $('#q').value=''; STATE.q='';
+  resetAndSearch();
+});
+$('#perPage').addEventListener('change', ()=>{
+  STATE.per_page = parseInt($('#perPage').value||'10',10);
+  resetAndSearch();
+});
+$('#btnRefresh').addEventListener('click', ()=>{
+  const cur = STATE.cursor_stack[STATE.page] || STATE.first_cursor;
+  fetchWithCursor(cur);
+  // Also refresh the "A refaire" alert count on manual refresh
+  fetchRefaireCount();
+});
+$('#q').addEventListener('keydown', (ev)=>{
+  if(ev.key==='Enter'){
+    ev.preventDefault();
+    STATE.q = $('#q').value.trim();
+    resetAndSearch();
+  }
+});
+$('#q').addEventListener('input', handleLiveSearch); // live search
 
+/* ========= Modals ========= */
+function openCorrection(id){
+  STATE.idcargaison = id;
+  const panel = $('#corrPanel');
+  const modal = $('#correctionModal');
+  panel.classList.remove('modal-leave','modal-leave-active'); panel.classList.add('modal-enter');
+  modal.classList.remove('hidden');
+  requestAnimationFrame(()=> panel.classList.add('modal-enter-active'));
+}
+function closeCorrection(){
+  const panel = $('#corrPanel');
+  const modal = $('#correctionModal');
+  panel.classList.remove('modal-enter','modal-enter-active'); panel.classList.add('modal-leave');
+  requestAnimationFrame(()=>{
+    panel.classList.add('modal-leave-active');
+    setTimeout(()=> modal.classList.add('hidden'), 160);
+  });
+}
+function openSaisie(id){
+  STATE.idcargaison = id;
+  const panel = $('#saisiePanel');
+  const modal = $('#saisieModal');
+  // reset displayed Code labo while loading
+  const codeEl = document.getElementById('saisieCodeLabo');
+  if(codeEl) codeEl.textContent = '—';
+  panel.classList.remove('modal-leave','modal-leave-active'); panel.classList.add('modal-enter');
+  modal.classList.remove('hidden');
+  requestAnimationFrame(()=> panel.classList.add('modal-enter-active'));
+  loadDyn();
+}
+function closeSaisie(){
+  const panel = $('#saisiePanel');
+  const modal = $('#saisieModal');
+  panel.classList.remove('modal-enter','modal-enter-active'); panel.classList.add('modal-leave');
+  requestAnimationFrame(()=>{
+    panel.classList.add('modal-leave-active');
+    setTimeout(()=> modal.classList.add('hidden'), 160);
+  });
+}
 
-{% block content1 %}
-    <div id="ajax-form-wrapper" style="display:none;">
-        <div id="dynamic-data-table-wrapper">
-            <div class="modal fade" id="modal-xl">
-                <div class="modal-dialog modal-xl">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h4 class="modal-title">SAISIE DE(S) RESULTAT(S)</h4>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                      </button>
-                    </div>
-                    <div class="modal-body">
-                      <table id="dynamic-data-table" class="table table-bordered display responsive" style="width:100%">
-                           <div id="data-table-wrapper" style="position: relative;">
-                      <div class="loading-spinner"></div>
-                        <thead>
-                          <tr>
-                            <th>PRODUIT</th>
-                            <th>PARAMETRE</th>
-                            <th>VALEUR RESULTAT NUM.</th>
-                            <th>VALEUR RESULTAT ALPH.</th>
-                            <th>ACTION(s)</th>
-                          </tr>
-                        </thead>
-                    </div>
-                    </table>
-                    </div>
-                    <div class="modal-footer justify-content-between">
-                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                      <button id="saveChanges" type="button" class="btn btn-primary">Save changes</button>
-                    </div>
-                  </div>
-                  <!-- /.modal-content -->
-                </div>
-                <!-- /.modal-dialog -->
-            </div>
-              <!-- /.modal -->
+/* Close via backdrop/X */
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('[data-close]');
+  if(!t) return;
+  const which = t.dataset.close;
+  if(which === 'corr'){ e.preventDefault(); closeCorrection(); }
+  if(which === 'saisie'){ e.preventDefault(); closeSaisie(); }
+  if(which === 'save-success'){
+    e.preventDefault();
+    $('#saveSuccessModal').classList.add('hidden');
+    // Requirement: refresh the whole page after dismissing the success modal
+    window.location.reload();
+  }
+  if(which === 'save-error'){
+    e.preventDefault();
+    $('#saveErrorModal').classList.add('hidden');
+    // Requirement: refresh the whole page after dismissing the error modal
+    window.location.reload();
+  }
+});
+/* Open buttons */
+document.addEventListener('click', (e)=>{
+  const b1 = e.target.closest('[data-action="corr"]');
+  if(b1){ openCorrection(b1.dataset.id); return; }
+  const b2 = e.target.closest('[data-action="saisie"]');
+  if(b2){ openSaisie(b2.dataset.id); return; }
+});
+/* Escape key */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    if(!$('#correctionModal').classList.contains('hidden')) closeCorrection();
+    if(!$('#saisieModal').classList.contains('hidden')) closeSaisie();
+    // If feedback modals are open, dismiss and reload page as per requirement
+    const succOpen = !$('#saveSuccessModal').classList.contains('hidden');
+    const errOpen  = !$('#saveErrorModal').classList.contains('hidden');
+    if(succOpen){ $('#saveSuccessModal').classList.add('hidden'); window.location.reload(); }
+    if(errOpen){  $('#saveErrorModal').classList.add('hidden');  window.location.reload(); }
+  }
+});
+
+/* ========= Dynamic rows for Saisie ========= */
+async function loadDyn(){
+  $('#dynSpinner').classList.remove('hidden');
+  try{
+    const url = new URL("{% url 'saisieResultatAjax' %}", window.location.origin);
+    url.searchParams.set('idcargaison', String(STATE.idcargaison || ''));
+    const res = await fetch(url.toString(), { headers:{ 'Accept':'application/json' }});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    // Populate the Code labo in the modal header if provided by backend
+    try{
+      const code = (data && (data.codeLabo || (data.data && data.data.codeLabo))) || null;
+      const codeEl = document.getElementById('saisieCodeLabo');
+      if(codeEl){ codeEl.textContent = code ? String(code) : '—'; }
+    }catch(_){ /* no-op */ }
+    const list = Array.isArray(data) ? data : (data?.items || data?.data || []);
+    $('#dynBody').innerHTML = list.map(r => dynRowHTML(r)).join('');
+  }catch(err){
+    console.error(err);
+    $('#dynBody').innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-white/70">Erreur de chargement.</td></tr>`;
+  }finally{
+    $('#dynSpinner').classList.add('hidden');
+  }
+}
+function dynRowHTML(r){
+  const idp = r.idParametre;
+  return `
+    <tr>
+      <td class="px-3 py-2" data-th="Produit">${esc(r.nomproduit || '—')}</td>
+      <td class="px-3 py-2" data-th="Paramètre">${esc(r.nomParametre || '—')}</td>
+      <td class="px-3 py-2" data-th="Valeur num.">${esc(r.valeurResultat ?? '—')}</td>
+      <td class="px-3 py-2" data-th="Valeur alph.">${esc(r.valeurResultatChar ?? '—')}</td>
+      <td class="px-3 py-2 text-right" data-th="Actions">
+        <div class="actions">
+          <input type="text" class="w-44 rounded bg-white/10 border border-white/10 px-2 py-1 outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                 placeholder="Entrer valeur…" data-idp="${esc(idp)}"
+                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                 data-gramm="false" data-ms-editor="false" data-lpignore="true"
+                 onkeydown="if(event.key==='Enter'){saveParam(this)}">
+          <button class="btn btn--ghost" data-clear="${esc(idp)}">Effacer</button>
         </div>
-    </div>
+      </td>
+    </tr>
+  `;
+}
+async function saveParam(inp){
+  const idParametre = inp.getAttribute('data-idp');
+  const inputValue = inp.value;
+  if(!idParametre) return;
+  try{
+    const fd = new FormData();
+    fd.set('idcargaison', String(STATE.idcargaison||''));
+    fd.set('idParametre', String(idParametre));
+    fd.set('inputValue', inputValue);
+    const res = await fetch("{% url 'saisieResultatParametreAjax' %}", {
+      method:'POST', headers:{ 'X-CSRFToken': CSRF }, body: fd, credentials:'same-origin'
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    loadDyn();
+  }catch(err){ console.error(err); }
+}
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-clear]');
+  if(!btn) return;
+  const idParametre = btn.getAttribute('data-clear');
+  try{
+    const fd = new FormData();
+    fd.set('rowId', String(idParametre));
+    fd.set('idcargaison', String(STATE.idcargaison||''));
+    const res = await fetch("{% url 'clearSaisie' %}", {
+      method:'POST', headers:{ 'X-CSRFToken': CSRF }, body: fd, credentials:'same-origin'
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    loadDyn();
+  }catch(err){
+    console.error(err);
+    alert('Erreur lors de la suppression');
+  }
+});
+
+/* ========= Bulk save (Enregistrer) ========= */
+async function bulkSaveAllInputs(){
+  // Collect all inputs in the dynamic table that currently have a value
+  const inputs = $$('input[data-idp]', $('#saisieModal'));
+  const payloads = inputs
+    .map(inp => ({ idp: inp.getAttribute('data-idp'), val: inp.value }))
+    .filter(it => it.idp && it.val !== null && it.val !== undefined && String(it.val).trim() !== '');
+
+  if(payloads.length === 0){
+    // Nothing to save – treat as success UX-wise
+    return { ok: true };
+  }
+
+  // Save sequentially to keep server load low and capture first error
+  for(const p of payloads){
+    const fd = new FormData();
+    fd.set('idcargaison', String(STATE.idcargaison||''));
+    fd.set('idParametre', String(p.idp));
+    fd.set('inputValue', String(p.val));
+    const res = await fetch("{% url 'saisieResultatParametreAjax' %}", {
+      method:'POST', headers:{ 'X-CSRFToken': CSRF }, body: fd, credentials:'same-origin'
+    });
+    if(!res.ok){
+      const txt = await res.text().catch(()=> '');
+      return { ok:false, message: 'HTTP '+res.status+' '+txt };
+    }
+    const data = await res.json().catch(()=>({status:'error'}));
+    if(!data || data.status !== 'success'){
+      return { ok:false, message: (data && (data.message||data.error)) || 'Erreur côté serveur.' };
+    }
+  }
+  return { ok:true };
+}
+
+document.getElementById('saveChanges')?.addEventListener('click', async ()=>{
+  const btn = document.getElementById('saveChanges');
+  if(!btn) return;
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  try{
+    // Trigger validation of results (new requirement)
+    const fd = new FormData();
+    fd.set('idcargaison', String(STATE.idcargaison||''));
+    const res = await fetch("{% url 'validationResulat' %}", {
+      method:'POST', headers:{ 'X-CSRFToken': CSRF, 'Accept':'application/json' }, body: fd, credentials:'same-origin'
+    });
+    let ok = false; let message = '';
+    if(res.ok){
+      try{ const data = await res.json(); ok = data && data.status === 'success'; message = (data && (data.message||'')) || '' }catch(_){ ok = true; }
+    }else{
+      message = 'HTTP '+res.status;
+    }
+    if(ok){
+      // Close Saisie; refresh happens on modal dismissal
+      closeSaisie();
+      $('#saveSuccessModal').classList.remove('hidden');
+    }else{
+      if(message){ const m = $('#saveErrorMsg'); if(m) m.textContent = String(message); }
+      $('#saveErrorModal').classList.remove('hidden');
+    }
+  }catch(err){
+    console.error(err);
+    const m = $('#saveErrorMsg'); if(m) m.textContent = 'Une erreur inattendue est survenue.';
+    $('#saveErrorModal').classList.remove('hidden');
+  }finally{
+    btn.disabled = false; btn.textContent = originalText;
+  }
+});
+
+/* ========= Refaire (alert + panel) ========= */
+async function fetchRefaireCount(){
+  try{
+    const url = new URL("{% url 'affichageAnalyseRefaireResponse' %}", window.location.origin);
+    url.searchParams.set('length','1');
+    url.searchParams.set('start','0');
+    url.searchParams.set('draw','1');
+    const res = await fetch(url.toString(), { headers:{ 'Accept':'application/json' }});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const total = Number(data?.recordsTotal ?? 0) || 0;
+    const alertBox = $('#refaireAlert');
+    const countEl  = $('#refaireCount');
+    if(countEl) countEl.textContent = String(total);
+    alertBox?.classList.toggle('hidden', total<=0);
+    return total;
+  }catch(err){ console.error(err); return 0; }
+}
+
+function refaireRowHTML(r){
+  return `
+    <tr>
+      <td class="px-3 py-2">${esc(r.entrepot_echantillon__laboreception__datereceptionlabo__date || '—')}</td>
+      <td class="px-3 py-2">${esc(r.entrepot_echantillon__laboreception__codelabo || '—')}</td>
+      <td class="px-3 py-2">${esc(r.entrepot_echantillon__numrappechauto || '—')}</td>
+      <td class="px-3 py-2">${esc(r.numdos || '—')}</td>
+      <td class="px-3 py-2">${r.immatriculation ? `<span class="chip chip--immat">${esc(r.immatriculation)}</span>` : '—'}</td>
+      <td class="px-3 py-2">${r.produit__nomproduit ? `<span class="chip">${esc(r.produit__nomproduit)}</span>` : '—'}</td>
+      <td class="px-3 py-2 text-right">
+        <div class="actions">
+          <button class="btn btn--primary" data-action="saisie" data-id="${esc(r.idcargaison)}">Saisie</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+// ======== Refaire panel state, fetch, render, pagination ========
+const REFAIRE = {
+  q: "",
+  per_page: 10,
+  page: 1,
+  total: 0,
+  filtered: 0,
+  items: [],
+  reqSeq: 0,
+};
+
+function renderRefaire(){
+  const body = $('#refaireBody');
+  const empty = $('#refaireEmpty');
+  body.innerHTML = REFAIRE.items.map(refaireRowHTML).join('');
+  empty.classList.toggle('hidden', REFAIRE.items.length>0);
+
+  // Info + current page
+  $('#refairePgInfo').textContent = REFAIRE.items.length ? `Page ${REFAIRE.page} — ${REFAIRE.items.length} lignes (sur ${REFAIRE.filtered})` : '—';
+  $('#refairePgPage').textContent = `Page ${REFAIRE.page}`;
+
+  const totalPages = Math.max(1, Math.ceil((REFAIRE.filtered||0) / (REFAIRE.per_page||10)));
+  const dis = (dir, on)=>{
+    const b = document.querySelector(`[data-refaire-dir="${dir}"]`);
+    if(b){ b.disabled=on; b.classList.toggle('is-disabled', on); }
+  };
+  dis('first', REFAIRE.page<=1);
+  dis('prev',  REFAIRE.page<=1);
+  dis('next',  REFAIRE.page>=totalPages);
+  dis('last',  REFAIRE.page>=totalPages);
+}
+
+async function fetchRefaire(){
+  const seq = ++REFAIRE.reqSeq;
+  const body = $('#refaireBody');
+  if(body){ body.innerHTML = `<tr><td colspan="7" class="px-3 py-5 text-center text-white/70">Chargement…</td></tr>`; }
+  try{
+    const url = new URL("{% url 'affichageAnalyseRefaireResponse' %}", window.location.origin);
+    const start = (REFAIRE.page - 1) * (REFAIRE.per_page || 10);
+    url.searchParams.set('length', String(REFAIRE.per_page||10));
+    url.searchParams.set('start', String(start));
+    url.searchParams.set('draw', '1');
+    url.searchParams.set('search[value]', REFAIRE.q || '');
+
+    const res = await fetch(url.toString(), { headers:{ 'Accept':'application/json' }});
+    if(!res.ok){ throw new Error('HTTP '+res.status); }
+    const data = await res.json();
+    if(seq !== REFAIRE.reqSeq) return; // stale response
+
+    const rows = Array.isArray(data?.data) ? data.data : [];
+    REFAIRE.items = rows;
+    REFAIRE.total = Number(data?.recordsTotal || 0);
+    REFAIRE.filtered = Number(data?.recordsFiltered || rows.length);
+    renderRefaire();
+  }catch(err){
+    if(seq !== REFAIRE.reqSeq) return;
+    console.warn('refaire fetch failed', err && (err.message||err));
+    REFAIRE.items = [];
+    renderRefaire();
+  }
+}
+
+function refaireResetAndSearch(){
+  REFAIRE.page = 1;
+  return fetchRefaire();
+}
+
+async function refaireGo(dir){
+  const totalPages = Math.max(1, Math.ceil((REFAIRE.filtered||0) / (REFAIRE.per_page||10)));
+  if(dir==='first'){ REFAIRE.page = 1; return fetchRefaire(); }
+  if(dir==='prev'){ if(REFAIRE.page>1){ REFAIRE.page -= 1; return fetchRefaire(); } return; }
+  if(dir==='next'){ if(REFAIRE.page<totalPages){ REFAIRE.page += 1; return fetchRefaire(); } return; }
+  if(dir==='last'){ REFAIRE.page = totalPages; return fetchRefaire(); }
+}
+
+async function loadRefaireList(){
+  // Backward compat placeholder. Real loader now uses paginated function below.
+  await refaireResetAndSearch();
+}
+
+function toggleRefairePanel(show){
+  const panel = $('#refairePanel');
+  if(!panel) return;
+  const willShow = typeof show==='boolean' ? show : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !willShow);
+  if(willShow){
+    // Initialize controls and load first page
+    try{ $('#refairePerPage').value = String(REFAIRE.per_page); }catch(_){}
+    refaireResetAndSearch();
+  }
+}
+
+/* ========= Init ========= */
+window.addEventListener('load', ()=>{
+  // Harden fields against intrusive autocomplete/editor extensions that cause JS errors in content scripts
+  function hardenFields(root=document){
+    const fields = root.querySelectorAll('input[type="text"], input[type="search"], textarea');
+    fields.forEach(el=>{
+      el.setAttribute('autocomplete','off');
+      el.setAttribute('autocorrect','off');
+      el.setAttribute('autocapitalize','off');
+      el.setAttribute('spellcheck','false');
+      el.setAttribute('data-gramm','false');
+      el.setAttribute('data-ms-editor','false');
+      el.setAttribute('data-lpignore','true');
+    });
+  }
+
+  $('#perPage').value = String(STATE.per_page);
+  STATE.cursor_stack[1] = STATE.first_cursor;
+  fetchWithCursor(STATE.first_cursor);
+  // Refaire
+  fetchRefaireCount();
+  $('#btnToggleRefaire')?.addEventListener('click', ()=> toggleRefairePanel(true));
+  $('#btnCloseRefaire')?.addEventListener('click', ()=> toggleRefairePanel(false));
+  // Refaire controls wiring
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('[data-refaire-dir]');
+    if(!btn) return;
+    e.preventDefault();
+    refaireGo(btn.getAttribute('data-refaire-dir'));
+  });
+  $('#refaireBtnSearch')?.addEventListener('click', ()=>{
+    REFAIRE.q = ($('#refaireQ')?.value || '').trim();
+    refaireResetAndSearch();
+  });
+  $('#refaireBtnReset')?.addEventListener('click', ()=>{
+    const q = $('#refaireQ'); if(q) q.value = '';
+    REFAIRE.q = '';
+    refaireResetAndSearch();
+  });
+  $('#refairePerPage')?.addEventListener('change', ()=>{
+    const v = parseInt($('#refairePerPage').value||'10',10);
+    REFAIRE.per_page = isNaN(v) ? 10 : v;
+    refaireResetAndSearch();
+  });
+  // Live search with debounce on refaire panel
+  let refaireTimer = null;
+  $('#refaireQ')?.addEventListener('input', ()=>{
+    clearTimeout(refaireTimer);
+    refaireTimer = setTimeout(()=>{
+      const nv = ($('#refaireQ')?.value||'').trim();
+      if(nv === REFAIRE.q) return;
+      REFAIRE.q = nv;
+      refaireResetAndSearch();
+    }, 300);
+  });
+  $('#refaireQ')?.addEventListener('keydown', (ev)=>{
+    if(ev.key==='Enter'){
+      ev.preventDefault();
+      REFAIRE.q = ($('#refaireQ')?.value||'').trim();
+      refaireResetAndSearch();
+    }
+  });
+  // apply once on load
+  hardenFields(document);
+
+  // re-apply after dynamic loads
+  const origLoadDyn = loadDyn;
+  loadDyn = async function(){
+    await origLoadDyn();
+    hardenFields($('#saisieModal'));
+  };
+
+  // Guard against buggy browser extensions injecting global focus/input handlers
+  // We stop propagation for focusin/input events originating from our main containers
+  ['focusin','input','beforeinput','paste','copy','cut','compositionstart','compositionupdate','compositionend'].forEach((evt)=>{
+    document.addEventListener(evt, (e)=>{
+      const withinApp = e.target && (e.target.closest('#saisieModal') || e.target.closest('#correctionModal') || e.target.closest('#tableWrap'));
+      if(withinApp){
+        // prevent external content scripts from reacting to our fields
+        e.stopImmediatePropagation();
+      }
+    }, true); // capture phase to intercept before other listeners
+  });
+  // Special case: selectionchange fires on document; prevent extension hooks when selection is inside our UI
+  document.addEventListener('selectionchange', (e)=>{
+    try{
+      const sel = document.getSelection && document.getSelection();
+      const node = sel && sel.anchorNode;
+      const el = node && (node.nodeType === 1 ? node : node.parentElement);
+      const withinApp = el && (el.closest('#saisieModal') || el.closest('#correctionModal') || el.closest('#tableWrap'));
+      if(withinApp){
+        e.stopImmediatePropagation();
+      }
+    }catch(_){}
+  }, true);
+});
+</script>
+
 {% endblock %}

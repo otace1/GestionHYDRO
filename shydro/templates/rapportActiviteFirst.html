@@ -1,462 +1,683 @@
-{% extends 'shydro/rapportActivite.html' %}
-{% load crispy_forms_tags %}
-{% load django_tables2 %}
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
+{% extends 'base/base_template.html' %}
+
+{% block main_content %}
 
 <style>
-/* ONE GLOBAL SPINNER ONLY */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+  @keyframes spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 
-#global-spinner {
-  display: none; /* hidden by default */
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.6);
-  z-index: 9999;
-}
+  #data-table-wrapper-2 { position: relative; }
 
-#global-spinner .loading-spinner {
-  border: 4px solid rgba(0, 0, 0, 0.3);
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
+  .loading-overlay-2{
+    position:absolute; inset:0; display:none;
+    align-items:center; justify-content:center;
+    background: rgba(15,23,42,.75);
+    backdrop-filter: blur(6px);
+    z-index: 40;
+  }
+  .loading-overlay-2::before{
+    content:"";
+    border-radius: 9999px;
+    border: 3px solid rgba(148,163,184,.6);
+    border-top-color: #4f46e5;
+    width: 32px; height: 32px;
+    animation: spin .8s linear infinite;
+  }
+
+  /* =========================================================
+     RESPONSIVE + HORIZONTAL SCROLL + STICKY HEADER/COLUMNS
+     ========================================================= */
+  #data-table-wrapper-2{
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  /* wide table => enables horizontal scroll */
+  #data-table-2{
+    min-width: 1200px; /* adjust if needed */
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  #data-table-2 th,
+  #data-table-2 td{
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  /* Sticky header + sticky first and last columns on >= 641px */
+  @media (min-width: 641px){
+    #data-table-2 thead th{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(255,255,255,0.10);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Sticky first col */
+    #data-table-2 th:first-child,
+    #data-table-2 td:first-child{
+      position: sticky;
+      left: 0;
+      z-index: 6;
+      background: rgba(15,23,42,0.92);
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Sticky last col (Actions) */
+    #data-table-2 th:last-child,
+    #data-table-2 td:last-child{
+      position: sticky;
+      right: 0;
+      z-index: 6;
+      background: rgba(15,23,42,0.92);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      min-width: 110px;
+    }
+  }
+
+  /* Slightly bigger tap targets on smaller devices */
+  @media (max-width: 1024px){
+    #data-table-2 th{ padding: .65rem .75rem !important; }
+    #data-table-2 td{ padding: .70rem .75rem !important; }
+  }
+
+  /* ===== Optional stacked layout on very small screens ===== */
+  @media (max-width: 640px){
+    #data-table-2 thead { display: none; }
+    #data-table-2,
+    #data-table-2 tbody,
+    #data-table-2 tr,
+    #data-table-2 td { display:block; width:100%; }
+
+    #data-table-2{ min-width: 0; } /* stacked mode doesn't need horizontal scroll */
+    #data-table-2 tbody tr { margin-bottom: .75rem; border-radius: 12px; }
+    #data-table-2 tbody td { padding: .5rem .75rem; border: 0 !important; }
+
+    #data-table-2 tbody td::before{
+      content: attr(data-label);
+      display:block;
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(148,163,184,.9);
+      margin-bottom: .15rem;
+    }
+
+    /* disable sticky in stacked mode */
+    #data-table-2 td:first-child,
+    #data-table-2 td:last-child{
+      position: static !important;
+      background: transparent !important;
+      border: none !important;
+    }
+  }
 </style>
 
-{% block content %}
-
-<!-- GLOBAL SPINNER (MUST EXIST IN HTML) -->
-<div id="global-spinner">
-  <div class="loading-spinner"></div>
-</div>
-
-<!-- Main content -->
-<div class="row">
-  <div class="col-md-12">
-
-    <div class="card">
-      <div class="card-header" style="background-color: darkgreen">
-        <h1 class="card-title" style="color: white"><b>RAPPORT(S) D'ACTIVITE(S)</b></h1>
+{# ======================= MODAL (DETAIL / EXPORT) ======================= #}
+<div id="modal-example"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 backdrop-blur-sm">
+  <div class="w-full max-w-2xl mx-3">
+    <div class="glass bg-slate-900/90 border border-white/10 rounded-2xl shadow-glass overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+            <i class="fas fa-chart-line text-sm"></i>
+          </span>
+          <h4 class="text-base sm:text-lg font-semibold text-white mb-0">
+            Détail du rapport / Export
+          </h4>
+        </div>
+        <button type="button"
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 text-white/70"
+                data-modal-close="modal-example"
+                aria-label="Fermer">
+          <span aria-hidden="true" class="text-lg">&times;</span>
+        </button>
       </div>
-
-      <div class="card-body">
-
-        {% block modal %}
-        <!-- Filters Modal -->
-        <div class="modal fade" id="modal-default" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title"><b>Filtres avancés</b></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="container-fluid">
-                  <div class="row g-3">
-                    <div class="col-md-3">
-                      <label class="form-label">Date début</label>
-                      <input type="date" id="flt-date-from" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label">Date fin</label>
-                      <input type="date" id="flt-date-to" class="form-control" />
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Frontière</label>
-                      <select id="flt-frontiere" class="form-control">
-                        <option value="">Toutes</option>
-                        {% if frontieres %}
-                          {% for f in frontieres %}
-                            <option value="{{ f.nomville }}">{{ f.nomville }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Fournisseur</label>
-                      <select id="flt-importateur" class="form-control">
-                        <option value="">Tous</option>
-                        {% if fournisseurs %}
-                          {% for imp in fournisseurs %}
-                            <option value="{{ imp.nomimportateur }}">{{ imp.nomimportateur }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Entrepôt</label>
-                      <select id="flt-entrepot" class="form-control">
-                        <option value="">Tous</option>
-                        {% if entrepots %}
-                          {% for e in entrepots %}
-                            <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Produit</label>
-                      <select id="flt-produit" class="form-control">
-                        <option value="">Tous</option>
-                        {% if produits %}
-                          {% for p in produits %}
-                            <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Immatriculation</label>
-                      <input type="text" id="flt-immat" class="form-control" placeholder="Ex: ABC-123" />
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Déclaration</label>
-                      <input type="text" id="flt-declaration" class="form-control" placeholder="# Déclaration" />
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Dossier</label>
-                      <input type="text" id="flt-numdos" class="form-control" placeholder="# Dossier" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="btn-reset-filters">Réinitialiser</button>
-                <button type="button" class="btn btn-primary" id="btn-apply-filters" data-bs-dismiss="modal">Appliquer</button>
-              </div>
+      <div class="px-4 sm:px-5 py-4">
+        <form id="example-form" action="" method="post" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="block text-xs font-semibold text-white/80 mb-1">Libellé du rapport</label>
+            <input type="text" name="label"
+                   class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white
+                          placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                   placeholder="Ex: Rapport mensuel fournisseur X" />
+          </div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-white/80 mb-1">Format d’export</label>
+              <select name="format"
+                      class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white
+                             focus:outline-none focus:ring-2 focus:ring-primary/40">
+                <option value="pdf">PDF</option>
+                <option value="xlsx">Excel (XLSX)</option>
+                <option value="csv">CSV</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-white/80 mb-1">Période</label>
+              <input type="text" name="periode"
+                     class="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm text-white
+                            placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                     placeholder="Ex: Janvier 2025" />
             </div>
           </div>
-        </div>
-        {% endblock %}
-
-        <!-- TABLE -->
-        <div id="rapport-table-wrapper" style="position: relative; min-height: 120px;">
-          <div class="table-responsive">
-            <table id="rapport-table" class="table table-bordered table-striped" style="width:100%">
-              <thead>
-                <tr>
-                  <th>DATE ENTREE</th>
-                  <th>FRONTIERE</th>
-                  <th>FOURNISSEUR</th>
-                  <th>ENTREPOT</th>
-                  <th>PRODUIT</th>
-                  <th>VOL.DECL.</th>
-                  <th>IMMATR.</th>
-                  <th>#.DECLARATION</th>
-                  <th>#.DOSSIER</th>
-                  <th>DATE REQUISITION</th>
-                  <th>DATE ECHANTILLONNAGE</th>
-                  <th>DATE RECEPTION LABO</th>
-                  <th>DATE D'ANALYSE</th>
-                  <th>DATE D'INSPECTION</th>
-                  <th>DATE DE DECHARGEMENT</th>
-                  <th>VOL JAUGE (GOV)</th>
-                  <th>DENSITE @15</th>
-                  <th>TEMPERATURE</th>
-                  <th>VCF</th>
-                  <th>MTA</th>
-                  <th>MTV</th>
-                  <th>GSV</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-            </table>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button"
+                    class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm"
+                    data-modal-close="modal-example">
+              Fermer
+            </button>
+            <button type="submit"
+                    class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
+              Exporter
+            </button>
           </div>
-        </div>
-
+        </form>
       </div>
     </div>
   </div>
 </div>
 
-{{ block.super }}
+{# ======================= REPORTING PAGE ======================= #}
+<section class="glass rounded-2xl shadow-glass mt-6">
+  <!-- Header -->
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-5 py-3 border-b border-white/10">
+    <div>
+      <h2 class="text-base sm:text-lg font-semibold flex items-center gap-2">
+        <svg class="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M3 5h18M3 12h18M3 19h18"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Tableau de bord • Reporting
+      </h2>
+      <p class="text-xs sm:text-sm text-white/70">
+        Vue synthétique des données : indicateurs clés, filtrage, recherche et export de rapports.
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button"
+              data-modal-open="modal-example"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                     bg-gradient-to-r from-primary to-primary2 text-slate-900 hover:shadow-glassHover transition">
+        <i class="fas fa-file-export text-xs"></i>
+        Exporter un rapport
+      </button>
+    </div>
+  </header>
+
+  {# ===== KPIs ===== #}
+  <div class="px-4 sm:px-5 pt-4 pb-3">
+    <div class="grid gap-3 sm:grid-cols-3">
+      <div class="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 px-4 py-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] uppercase tracking-wide text-white/60">Total lignes</span>
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <i class="fas fa-database text-[11px]"></i>
+          </span>
+        </div>
+        <div class="text-2xl font-semibold text-white" id="metric-total-rows">0</div>
+        <p class="mt-1 text-[11px] text-white/60">
+          Nombre total d’enregistrements retournés par les filtres.
+        </p>
+      </div>
+
+      <div class="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 px-4 py-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] uppercase tracking-wide text-white/60">Pagination</span>
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
+            <i class="fas fa-layer-group text-[11px]"></i>
+          </span>
+        </div>
+        <div class="text-2xl font-semibold text-white" id="metric-total-pages">1</div>
+        <p class="mt-1 text-[11px] text-white/60">
+          Nombre de pages calculé sur la base de 15 lignes par page.
+        </p>
+      </div>
+
+      <div class="relative overflow-hidden rounded-2xl bg-white/5 border border-white/10 px-4 py-3 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] uppercase tracking-wide text-white/60">Dernière actualisation</span>
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-400/15 text-sky-300">
+            <i class="fas fa-clock text-[11px]"></i>
+          </span>
+        </div>
+        <div class="text-sm font-semibold text-white" id="metric-last-refresh">—</div>
+        <p class="mt-1 text-[11px] text-white/60">
+          Mise à jour à chaque rechargement du tableau.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {# ===== Filters ===== #}
+  <div class="px-3 sm:px-4 pt-1">
+    <div class="mb-3 flex flex-col lg:flex-row gap-3 lg:items-end lg:justify-between">
+      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 w-full lg:max-w-3xl">
+        <div>
+          <label class="block text-[11px] font-semibold text-white/70 mb-1">Période (date début)</label>
+          <input id="f2-start-date" type="date"
+                 class="w-full px-3 py-1.5 rounded-lg bg-white/10 border border-white/10
+                        text-xs sm:text-sm text-white placeholder-white/40
+                        focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-white/70 mb-1">Période (date fin)</label>
+          <input id="f2-end-date" type="date"
+                 class="w-full px-3 py-1.5 rounded-lg bg-white/10 border border-white/10
+                        text-xs sm:text-sm text-white placeholder-white/40
+                        focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-white/70 mb-1">Recherche globale</label>
+          <input id="f2-q" type="text" placeholder="Fournisseur, entrepôt, code, etc."
+                 class="w-full px-3 py-1.5 rounded-lg bg-white/10 border border-white/10
+                        text-xs sm:text-sm text-white placeholder-white/40
+                        focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+      </div>
+      <div class="flex gap-2 justify-end">
+        <button id="btn2-search" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                       bg-primary/80 hover:bg-primary text-slate-900 transition">
+          <i class="fas fa-search text-[11px]"></i> Appliquer
+        </button>
+        <button id="btn2-reset" type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold
+                       bg-white/10 hover:bg-white/15 text-white transition">
+          <i class="fas fa-undo text-[11px]"></i> Réinitialiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <p class="px-3 sm:px-4 pb-1 text-[11px] text-white/60 sm:hidden">
+    Astuce : faites défiler horizontalement le tableau pour voir toutes les colonnes.
+  </p>
+
+  <!-- TABLE WRAPPER -->
+  <div class="px-3 sm:px-4 pb-4">
+    <div id="data-table-wrapper-2"
+         class="relative rounded-xl bg-white/5 ring-1 ring-white/10 overflow-x-auto"
+         style="-webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;">
+      <div class="loading-overlay-2"></div>
+
+      <div class="inline-block min-w-max align-middle">
+        <table id="data-table-2" class="w-full text-sm text-left text-white/80">
+          <thead class="bg-white/10 text-[11px] uppercase tracking-wide text-white/70">
+            <tr>
+              <th class="px-3 py-2 whitespace-nowrap">#.DOS</th>
+              <th class="px-3 py-2 whitespace-nowrap">#.DECL.(T1E)</th>
+              <th class="px-3 py-2 whitespace-nowrap">FOURNISSEUR</th>
+              <th class="px-3 py-2 whitespace-nowrap">FRONTIERE</th>
+              <th class="px-3 py-2 whitespace-nowrap">ENTREPOT</th>
+              <th class="px-3 py-2 whitespace-nowrap">PRODUIT</th>
+              <th class="px-3 py-2 whitespace-nowrap">IMMAT.</th>
+              <th class="px-3 py-2 whitespace-nowrap">DATE D'ENT.</th>
+              <th class="px-3 py-2 whitespace-nowrap">DATE REQ.</th>
+              <th class="px-3 py-2 whitespace-nowrap">DATE ECHANT.</th>
+              <th class="px-3 py-2 whitespace-nowrap">DATE REC.LABO</th>
+              <th class="px-3 py-2 whitespace-nowrap">DATE D'ANALYSE</th>
+              <th class="px-3 py-2 whitespace-nowrap">DATE D'INSPECTION</th>
+              <th class="px-3 py-2 whitespace-nowrap">VOL.DECL</th>
+              <th class="px-3 py-2 whitespace-nowrap">DENS.15</th>
+              <th class="px-3 py-2 whitespace-nowrap">TEMP.ATA</th>
+              <th class="px-3 py-2 whitespace-nowrap">MTA</th>
+              <th class="px-3 py-2 whitespace-nowrap">MTV</th>
+              <th class="px-3 py-2 whitespace-nowrap">GOV</th>
+              <th class="px-3 py-2 whitespace-nowrap">GSV</th>
+              <th class="px-3 py-2 whitespace-nowrap text-center">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="data-table-body-2" class="divide-y divide-white/5">
+            {# rows filled by JS #}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div id="table-pagination-2"
+           class="flex items-center justify-between px-3 py-2 border-t border-white/10 text-xs sm:text-sm text-white/70">
+        <div class="hidden sm:block">Affiche 15 enregistrements par page</div>
+        <div class="flex items-center gap-2">
+          <button id="btn2-first" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Première page">«</button>
+          <button id="btn2-prev" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Page précédente">‹</button>
+          <span id="page2-info" class="mx-2 select-none">Page 1 / 1</span>
+          <button id="btn2-next" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Page suivante">›</button>
+          <button id="btn2-last" type="button"
+                  class="px-2 py-1 rounded bg-white/10 hover:bg-white/15 disabled:opacity-40"
+                  aria-label="Dernière page">»</button>
+        </div>
+      </div>
+
+      <div id="data-table-empty-2" class="hidden text-xs sm:text-sm text-white/60 text-center py-4">
+        Aucune donnée à afficher pour les filtres sélectionnés.
+      </div>
+
+      <div id="data-table-error-2" class="hidden text-xs sm:text-sm text-rose-300 text-center py-4">
+        Une erreur est survenue lors du chargement des données.
+      </div>
+    </div>
+  </div>
+</section>
 
 <script>
-const csrfToken = '{{ csrf_token }}';
+  function qs(sel, root){ return (root || document).querySelector(sel); }
+  function qsa(sel, root){ return Array.from((root || document).querySelectorAll(sel)); }
 
-// SHOW / HIDE GLOBAL SPINNER
-function showSpinner() {
-  const el = document.getElementById("global-spinner");
-  if (el) el.style.display = "block";
-}
-function hideSpinner() {
-  const el = document.getElementById("global-spinner");
-  if (el) el.style.display = "none";
-}
-
-// -------------------------
-// DATATABLE INIT (SAFE - no reinit)
-// -------------------------
-document.addEventListener('DOMContentLoaded', function () {
-  if (!window.jQuery || !$.fn.DataTable) return;
-
-  // ✅ Prevent warning: Cannot reinitialise DataTable
-  if ($.fn.DataTable.isDataTable('#rapport-table')) {
-    const existing = $('#rapport-table').DataTable();
-    existing.clear().destroy();
-
-    // Remove DT-generated wrappers/classes
-    $('#rapport-table').removeClass('dataTable no-footer').removeAttr('role aria-describedby');
-
-    // Rebuild header to be safe
-    $('#rapport-table').html(`
-      <thead>
-        <tr>
-          <th>DATE ENTREE</th>
-          <th>FRONTIERE</th>
-          <th>FOURNISSEUR</th>
-          <th>ENTREPOT</th>
-          <th>PRODUIT</th>
-          <th>VOL.DECL.</th>
-          <th>IMMATR.</th>
-          <th>#.DECLARATION</th>
-          <th>#.DOSSIER</th>
-          <th>DATE REQUISITION</th>
-          <th>DATE ECHANTILLONNAGE</th>
-          <th>DATE RECEPTION LABO</th>
-          <th>DATE D'ANALYSE</th>
-          <th>DATE D'INSPECTION</th>
-          <th>DATE DE DECHARGEMENT</th>
-          <th>VOL JAUGE (GOV)</th>
-          <th>DENSITE @15</th>
-          <th>TEMPERATURE</th>
-          <th>VCF</th>
-          <th>MTA</th>
-          <th>MTV</th>
-          <th>GSV</th>
-          <th>ACTIONS</th>
-        </tr>
-      </thead>
-    `);
-  }
-
-  const dt = $('#rapport-table').DataTable({
-    serverSide: true,
-    processing: true,
-    deferRender: true,
-    pageLength: 20,
-    lengthMenu: [10, 20],
-    searchDelay: 500,
-    order: [[0, 'desc']],
-    ajax: {
-      url: "{% url 'responseAffichageTableau' %}",
-      type: "GET",
-      data: function (d) {
-        d.flt_date_from = document.getElementById('flt-date-from')?.value || '';
-        d.flt_date_to = document.getElementById('flt-date-to')?.value || '';
-        d.flt_frontiere = document.getElementById('flt-frontiere')?.value || '';
-        d.flt_importateur = document.getElementById('flt-importateur')?.value || '';
-        d.flt_entrepot = document.getElementById('flt-entrepot')?.value || '';
-        d.flt_produit = document.getElementById('flt-produit')?.value || '';
-        d.flt_immat = document.getElementById('flt-immat')?.value || '';
-        d.flt_declaration = document.getElementById('flt-declaration')?.value || '';
-        d.flt_numdos = document.getElementById('flt-numdos')?.value || '';
-      },
-      beforeSend: showSpinner,
-      complete: hideSpinner,
-      error: hideSpinner
-    },
-    columns: [
-      { data: 'date_entree_display', defaultContent: '' },
-      { data: 'frontiere__nomville', defaultContent: '' },
-      { data: 'importateur__nomimportateur', defaultContent: '' },
-      { data: 'entrepot__nomentrepot', defaultContent: '' },
-      { data: 'produit__nomproduit', defaultContent: '' },
-      { data: 'volume', defaultContent: '' },
-      { data: 'immatriculation', defaultContent: '' },
-      { data: 'declaration', defaultContent: '' },
-      { data: 'numreq', defaultContent: '' },
-      { data: 'date_requisition_display', defaultContent: '' },
-      { data: 'date_echantillonnage_display', defaultContent: '' },
-      { data: 'date_reception_labo_display', defaultContent: '' },
-      { data: 'date_analyse_display', defaultContent: '' },
-      { data: 'date_inspection_display', defaultContent: '' },
-      { data: 'date_dechargement_display', defaultContent: '' },
-      { data: 'vol_jauge_gov', defaultContent: '' },
-      { data: 'densite_15', defaultContent: '' },
-      { data: 'temperature', defaultContent: '' },
-      { data: 'vcf', defaultContent: '' },
-      { data: 'mta', defaultContent: '' },
-      { data: 'mtv', defaultContent: '' },
-      { data: 'gsv', defaultContent: '' },
-      {
-        data: null,
-        orderable: false,
-        searchable: false,
-        render: function (data, type, row) {
-          const id = row.idcargaison || '';
-          return `
-            <div class="btn-group btn-group-sm" role="group">
-              <button class="btn btn-warning" onclick="return confirmAction('${id}')">Réinspecter</button>
-              <button class="btn btn-primary" onclick="return printRappEchantillonnage('${id}')">Rapp. Éch.</button>
-              <button class="btn btn-info" onclick="return printRappInspection('${id}')">Rapp. Insp.</button>
-              <button class="btn btn-secondary" onclick="return printDossimport('${id}')">Dossier</button>
-            </div>
-          `;
-        }
-      }
-    ],
-    drawCallback: function () { hideSpinner(); }
-  });
-
-  // ✅ Avoid binding handlers multiple times
-  const btnApply = document.getElementById('btn-apply-filters');
-  if (btnApply && !btnApply.dataset.bound) {
-    btnApply.dataset.bound = "1";
-    btnApply.addEventListener('click', function () {
-      dt.ajax.reload(null, true);
-    });
-  }
-
-  const btnReset = document.getElementById('btn-reset-filters');
-  if (btnReset && !btnReset.dataset.bound) {
-    btnReset.dataset.bound = "1";
-    btnReset.addEventListener('click', function () {
-      const ids = [
-        'flt-date-from','flt-date-to','flt-frontiere','flt-importateur','flt-entrepot','flt-produit',
-        'flt-immat','flt-declaration','flt-numdos'
-      ];
-      ids.forEach(i => {
-        const el = document.getElementById(i);
-        if (!el) return;
-        el.value = '';
+  function getCSRFToken() {
+      let csrfToken = null;
+      document.cookie.split(';').forEach(function (cookie) {
+          cookie = cookie.trim();
+          if (cookie.startsWith('csrftoken=')) csrfToken = cookie.substring('csrftoken='.length);
       });
-      dt.ajax.reload(null, true);
+      return csrfToken;
+  }
+
+  function debounce(fn, delay){
+    let timer = null;
+    return function(...args){
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  function openModal(id) {
+    const modal = typeof id === 'string' ? document.getElementById(id.replace('#','')) : id;
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+  }
+  function closeModal(id) {
+    const modal = typeof id === 'string' ? document.getElementById(id.replace('#','')) : id;
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  let currentPage2  = 1;
+  const pageSize2   = 15;
+  let totalPages2   = 1;
+  let totalRecords2 = 0;
+  let currentRowId2 = null;
+
+  function showOverlay2(){ const ov = qs('#data-table-wrapper-2 .loading-overlay-2'); if (ov) ov.style.display = 'flex'; }
+  function hideOverlay2(){ const ov = qs('#data-table-wrapper-2 .loading-overlay-2'); if (ov) ov.style.display = 'none'; }
+
+  function showEmpty2(msg){
+    const el = qs('#data-table-empty-2');
+    if (!el) return;
+    el.textContent = msg || 'Aucune donnée à afficher.';
+    el.classList.remove('hidden');
+  }
+  function hideEmpty2(){ qs('#data-table-empty-2')?.classList.add('hidden'); }
+
+  function showError2(msg){
+    const el = qs('#data-table-error-2');
+    if (!el) return;
+    if (msg) el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+  function hideError2(){ qs('#data-table-error-2')?.classList.add('hidden'); }
+
+  function updatePaginationUI2() {
+    totalPages2 = Math.max(1, totalPages2);
+    currentPage2 = Math.min(Math.max(1, currentPage2), totalPages2);
+
+    const pageInfo = qs('#page2-info');
+    if (pageInfo) pageInfo.textContent = `Page ${currentPage2} / ${totalPages2}`;
+
+    const atStart = currentPage2 <= 1;
+    const atEnd   = currentPage2 >= totalPages2;
+
+    qs('#btn2-first') && (qs('#btn2-first').disabled = atStart);
+    qs('#btn2-prev')  && (qs('#btn2-prev').disabled  = atStart);
+    qs('#btn2-next')  && (qs('#btn2-next').disabled  = atEnd);
+    qs('#btn2-last')  && (qs('#btn2-last').disabled  = atEnd);
+  }
+
+  function updateMetrics2() {
+    qs('#metric-total-rows') && (qs('#metric-total-rows').textContent = totalRecords2.toLocaleString('fr-FR'));
+    qs('#metric-total-pages') && (qs('#metric-total-pages').textContent = totalPages2.toLocaleString('fr-FR'));
+    qs('#metric-last-refresh') && (qs('#metric-last-refresh').textContent = new Date().toLocaleString('fr-FR'));
+  }
+
+  function renderRows2(rows) {
+    const tbody = qs('#data-table-body-2');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!rows || rows.length === 0) { showEmpty2(); return; }
+    hideEmpty2();
+
+    function fmt(v){
+      if (v === null || v === undefined || v === '') return '—';
+      if (typeof v === 'number') return v.toLocaleString('fr-FR');
+      return String(v);
+    }
+
+    rows.forEach(row => {
+      const id = row.idcargaison || row.id || row.pk || row.id_record;
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/5 transition';
+
+      tr.innerHTML = `
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="#.DOS">${fmt(row.numdos)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="#.DECL.(T1E)">${fmt(row.declaration)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="FOURNISSEUR">${fmt(row.importateur__nomimportateur)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="FRONTIERE">${fmt(row.frontiere__nomville)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="ENTREPOT">${fmt(row.entrepot__nomentrepot)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="PRODUIT">${fmt(row.produit__nomproduit)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="IMMAT.">${fmt(row.immatriculation)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DATE D'ENT.">${fmt(row.dateheurecargaison__date)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DATE REQ.">${fmt(row.requisitiondackdate__date)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DATE ECHANT.">${fmt(row.entrepot_echantillon__dateechantillonage__date)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DATE REC.LABO">${fmt(row.entrepot_echantillon__laboreception__datereceptionlabo__date)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DATE D'ANALYSE">${fmt(row.impressionresultat__printDate)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DATE D'INSPECTION">${fmt(row.inspection__dateinspection)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="VOL.DECL">${fmt(row.volume)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="DENS.15">${fmt(row.inspection__dens)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="TEMP.ATA">${fmt(row.inspection__temp)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="MTA">${fmt(row.mtaTotal)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="MTV">${fmt(row.mtvTotal)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="GOV">${fmt(row.volConst)}</td>
+        <td class="px-3 py-2 text-xs sm:text-sm" data-label="GSV">${fmt(row.gsvT)}</td>
+        <td class="px-3 py-2 text-center text-xs sm:text-sm" data-label="Actions">
+          <div class="flex flex-wrap gap-1 justify-center">
+            <!-- View details -->
+            <button class="action2-btn btn2-details inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-sky-500/90 hover:bg-sky-400 text-slate-900 font-semibold shadow-sm hover:shadow-md transition"
+                    title="Détails" data-row-id="${id}" type="button">
+              <i class="fas fa-eye text-[10px]"></i>
+            </button>
+
+            <!-- Re‑inspect -->
+            <button class="action2-btn btn2-reinspect inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-amber-500/20 border border-amber-400/70 hover:bg-amber-500/30 text-amber-100 shadow-sm hover:shadow-md transition"
+                    title="Ré‑inspecter" data-row-id="${id}" type="button">
+              <i class="fas fa-rotate-left text-[10px]"></i>
+            </button>
+
+            <!-- Print: Rapport Echantillon -->
+            <button class="action2-btn btn2-print-re inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-emerald-500/20 border border-emerald-400/60 hover:bg-emerald-500/30 text-emerald-100 shadow-sm hover:shadow-md transition"
+                    title="Imprimer (Echantillon)" data-row-id="${id}" type="button">
+              <i class="fas fa-file-pdf text-[10px]"></i>
+            </button>
+
+            <!-- Print: Rapport Inspection -->
+            <button class="action2-btn btn2-print-is inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px]
+                           bg-purple-500/20 border border-purple-400/60 hover:bg-purple-500/30 text-purple-100 shadow-sm hover:shadow-md transition"
+                    title="Imprimer (Inspection)" data-row-id="${id}" type="button">
+              <i class="fas fa-print text-[10px]"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
     });
   }
-});
 
-// -------------------------
-// ACTIONS
-// -------------------------
-function confirmAction(rowId) {
-  if (!confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?')) return false;
+  async function loadTable2(page) {
+    page = page || 1;
+    hideError2(); hideEmpty2(); showOverlay2();
 
-  showSpinner();
-  fetch('{% url "reInspecter" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(response => {
-    hideSpinner();
-    if (response.ok) {
-      alert('Cargaison renvoyée en inspection');
-      if ($.fn.DataTable.isDataTable('#rapport-table')) {
-        $('#rapport-table').DataTable().ajax.reload(null, false);
-      }
-    } else {
-      alert('Erreur lors de la réinspection.');
+    const start  = (page - 1) * pageSize2;
+    const length = pageSize2;
+
+    const params = new URLSearchParams();
+    params.set('start',  String(start));
+    params.set('length', String(length));
+    params.set('draw',   '1');
+
+    const q = (qs('#f2-q')?.value || '').trim();
+    if (q) {
+      params.set('search[value]', q);
+      params.set('search[regex]', 'false');
     }
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-  });
 
-  return false;
-}
+    const sd = qs('#f2-start-date')?.value || '';
+    const ed = qs('#f2-end-date')?.value || '';
+    if (sd) params.set('start_date', sd);
+    if (ed) params.set('end_date', ed);
 
-function printRappEchantillonnage(rowId) {
-  if (!confirm("Afficher le rapport d'Echantillonnage?")) return false;
+    try {
+      const res = await fetch(`{% url 'reporting_rapport_activite_list' %}?${params.toString()}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
 
-  showSpinner();
-  fetch('{% url "impressionRappEch" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(r => r.json())
-  .then(data => {
-    hideSpinner();
-    if (data.status === 'success') {
-      const byteChars = atob(data.pdf_base64);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
-      window.open(URL.createObjectURL(blob), '_blank');
-    } else {
-      alert("Éléments du rapport manquants.");
+      const rows = json.data || [];
+      totalRecords2 = json.recordsFiltered || json.recordsTotal || rows.length;
+      totalPages2   = Math.max(1, Math.ceil(totalRecords2 / pageSize2));
+      currentPage2  = page;
+
+      renderRows2(rows);
+      updatePaginationUI2();
+      updateMetrics2();
+    } catch (err) {
+      console.error(err);
+      showError2("Erreur de chargement des données.");
+    } finally {
+      hideOverlay2();
     }
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-  });
+  }
 
-  return false;
-}
+  // URL helpers for actions
+  const URL_DETAILS_TEMPLATE = "{% url 'details' 0 %}"; // will replace trailing /0 with /<id>
+  const URL_RAPP_RE_TEMPLATE = "{% url 'rapportRe' 0 %}";
+  const URL_RAPP_IS_TEMPLATE = "{% url 'rapportIs' 0 %}";
+  const URL_REINSPECTER      = "{% url 'reInspecter' %}";
 
-function printRappInspection(rowId) {
-  if (!confirm("Afficher le rapport d'Inspection?")) return false;
+  function urlWithId(template, id) {
+    // Replace the last "/0" with "/<id>"
+    return template.replace(/\/?0\/?$/, `/${id}`);
+  }
 
-  showSpinner();
-  fetch('{% url "impressionRappInsp" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(r => r.json())
-  .then(data => {
-    hideSpinner();
-    if (data.status === 'success') {
-      const byteChars = atob(data.pdf_base64);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
-      window.open(URL.createObjectURL(blob), '_blank');
-    } else {
-      alert("Rapport d'inspection incomplet.");
-    }
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-  });
+  document.addEventListener('DOMContentLoaded', () => {
+    // Do NOT auto-load data on first page load.
+    // Show an empty-state message until the user applies filters.
+    hideError2();
+    hideOverlay2();
+    showEmpty2("Utilisez les filtres puis cliquez sur ‘Appliquer’ pour charger les données.");
+    // Initialize UI state (pagination/metrics) without triggering any data fetch
+    updatePaginationUI2();
+    updateMetrics2();
 
-  return false;
-}
+    qs('#btn2-first')?.addEventListener('click', () => { if (currentPage2 !== 1) loadTable2(1); });
+    qs('#btn2-prev') ?.addEventListener('click', () => { if (currentPage2 > 1) loadTable2(currentPage2 - 1); });
+    qs('#btn2-next') ?.addEventListener('click', () => { if (currentPage2 < totalPages2) loadTable2(currentPage2 + 1); });
+    qs('#btn2-last') ?.addEventListener('click', () => { if (currentPage2 !== totalPages2) loadTable2(totalPages2); });
 
-function printDossimport(rowId) {
-  if (!confirm("Afficher les éléments du dossier?")) return false;
+    qsa('[data-modal-open]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = btn.getAttribute('data-modal-open');
+      if (target) openModal(target);
+    }));
+    qsa('[data-modal-close]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = btn.getAttribute('data-modal-close');
+      if (target) closeModal(target);
+    }));
 
-  showSpinner();
-  fetch('{% url "afficherDossImport" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(r => r.blob())
-  .then(blob => {
-    hideSpinner();
-    const url = URL.createObjectURL(blob);
-    const link = Object.assign(document.createElement('a'), {
-      href: url,
-      download: "file.pdf"
+    const exampleModal = qs('#modal-example');
+    if (exampleModal) exampleModal.addEventListener('click', (e) => { if (e.target === exampleModal) closeModal(exampleModal); });
+
+    qs('#btn2-search')?.addEventListener('click', () => loadTable2(1));
+    qs('#btn2-reset') ?.addEventListener('click', () => {
+      if (qs('#f2-start-date')) qs('#f2-start-date').value = '';
+      if (qs('#f2-end-date'))   qs('#f2-end-date').value = '';
+      if (qs('#f2-q'))          qs('#f2-q').value = '';
+      // After reset, do not auto-load. Just clear the table and show empty state.
+      const tbody = qs('#data-table-body-2');
+      if (tbody) tbody.innerHTML = '';
+      totalRecords2 = 0;
+      totalPages2 = 1;
+      currentPage2 = 1;
+      updatePaginationUI2();
+      updateMetrics2();
+      hideError2();
+      showEmpty2("Filtres réinitialisés. Cliquez sur ‘Appliquer’ pour charger les données.");
     });
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-    alert("Erreur lors du téléchargement.");
-  });
 
-  return false;
-}
+    // Do not auto-fetch while typing; require explicit Apply click
+    // qs('#f2-q')?.addEventListener('input', debounce(() => loadTable2(1), 600));
+
+    qs('#data-table-body-2')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.action2-btn');
+      if (!btn) return;
+
+      currentRowId2 = btn.getAttribute('data-row-id');
+
+      if (btn.classList.contains('btn2-details')) {
+        // Navigate to details/<pk>
+        const url = urlWithId(URL_DETAILS_TEMPLATE, currentRowId2);
+        window.location.href = url;
+      } else if (btn.classList.contains('btn2-reinspect')) {
+        // POST JSON to reInspecter with { rowId: pk }
+        fetch(URL_REINSPECTER, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ rowId: currentRowId2 })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          // The backend redirects; just refresh the table to reflect status
+          alert('Ré‑inspection demandée.');
+          // Optionally reload current page or re-fetch current page of table
+          loadTable2(currentPage2);
+        })
+        .catch(() => alert('Erreur lors de la demande de ré‑inspection.'));
+      } else if (btn.classList.contains('btn2-print-re')) {
+        const url = urlWithId(URL_RAPP_RE_TEMPLATE, currentRowId2);
+        window.open(url, '_blank');
+      } else if (btn.classList.contains('btn2-print-is')) {
+        const url = urlWithId(URL_RAPP_IS_TEMPLATE, currentRowId2);
+        window.open(url, '_blank');
+      }
+    });
+  });
 </script>
 
 {% endblock %}

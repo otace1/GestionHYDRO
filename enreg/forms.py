@@ -5,50 +5,6 @@ from django import forms
 from enreg.models import *
 
 
-# class AjoutCargaison(forms.ModelForm):
-#     class Meta:
-#         model = Cargaison
-#         fields = ('voie', 'frontiere', 'typeunitetransport', 'immatriculation', 'provenance', 'produit', 'declaration',
-#                   'entrepot','transitaire',
-#                   'importateur', 'entrepot', 'produit', 'volume', 'volume15', 'volume20', 'tonnagevide', 'tonnageair')
-#
-#         def __init__(self, *args, **kwargs):
-#             super(AjoutCargaison, self).__init__(*args, **kwargs)
-#             self.helper = FormHelper()
-#             self.helper.layout = Layout(
-#                 Row(
-#                     Column('voie', css_class='form-group col-md-4 mb-0'),
-#                     Column('frontiere', css_class='form-group col-md-4 mb-0'),
-#                     Column('typeunitetransport', css_class='form-group col-md-4 mb-0'),
-#                     css_class='form-row'
-#                 ),
-#                 Row(
-#                     Column('immatriculation', css_class='form-group col-md-3 mb-0'),
-#                     Column('transitaire', css_class='form-group col-md-3 mb-0'),
-#                     Column('provenance', label='PROVENANCE', css_class='form-group col-md-3 mb-0'),
-#                     Column('importateur', css_class='form-group col-md-3 mb-0'),
-#                     css_class='form-row'
-#                 ),
-#                 Row(
-#                     Column('declaration', css_class='form-group col-md-4 mb-0'),
-#                     Column('entrepot', css_class='form-group col-md-4 mb-0'),
-#                     Column('produit', css_class='form-group col-md-4 mb-0'),
-#                     css_class='form-row'
-#                 ),
-#                 Row(
-#                     Column('volume', css_class='form-group col-md-4 mb-0'),
-#                     Column('volume15', css_class='form-group col-md-4 mb-0'),
-#                     Column('volume20', css_class='form-group col-md-4 mb-0'),
-#                     css_class='form-row'
-#
-#                 ),
-#                 Row(
-#                     Column('tonnagevide', css_class='form-group col-md-6 mb-0'),
-#                     Column('tonnageair', css_class='form-group col-md-6 mb-0'),
-#                     css_class='form-row'
-#
-#                 ),
-#             )
 
 
 class Ajoutcargaison(forms.Form):

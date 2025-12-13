@@ -10,11 +10,15 @@ from django.db.models import Q, Value, CharField, When, Case
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_str
-from django_countries.data import COUNTRIES
+from django.utils.translation import override
+from django.views.decorators.http import require_GET
+# from django_countries.data import COUNTRIES
+from django_countries import countries as COUNTRIES
 from rest_framework import status, viewsets, exceptions
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, APIView, permission_classes
+from rest_framework.decorators import api_view, APIView, permission_classes, action
 from rest_framework.generics import GenericAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -1426,4 +1430,147 @@ def appurement_vol_api(request):
 
     # Return a JSON response indicating success
     return JsonResponse({"status": "success", "message": "Données enregistrées"})
+
+
+@require_GET
+def api_villes(request):
+    qs = Ville.objects.order_by("nomville").values("idville", "nomville", "province")
+    data = [{"id": v["idville"], "label": f'{v["nomville"]} — {v["province"]}'.strip(" — ")} for v in qs]
+    return JsonResponse({"results": data})
+
+@require_GET
+def api_produits(request):
+    qs = Produit.objects.order_by("nomproduit").values("idproduit", "nomproduit")
+    data = [{"id": p["idproduit"], "label": p["nomproduit"]} for p in qs]
+    return JsonResponse({"results": data})
+
+@require_GET
+def api_importateurs(request):
+    qs = Importateur.objects.order_by("nomimportateur").values("idimportateur", "nomimportateur")
+    data = [{"id": i["idimportateur"], "label": i["nomimportateur"]} for i in qs]
+    return JsonResponse({"results": data})
+
+@require_GET
+def api_statuts(request):
+    """
+    If you want to compute what's available in DB, you can map from your data.
+    For now we expose the 4 canonical statuses you already use on the report.
+    """
+    data = [
+        {"id": "declared",  "label": "Déclaré"},
+        {"id": "certified", "label": "Certifié"},
+        {"id": "pending",   "label": "En attente"},
+        {"id": "rejected",  "label": "Rejeté"},
+    ]
+    return JsonResponse({"results": data})
+
+
+
+# ---------- Generic small helper to build {results:[{id,label}]} ----------
+def opts_response(items):
+    return Response({"results": items})
+
+
+# ---------- Option endpoints ----------
+class OptionsViewSet(viewsets.ViewSet):
+    # permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def voies(self, request):
+        q = request.query_params.get('q', '').strip()
+        qs = Voie.objects.all()
+        if q:
+            qs = qs.filter(nomvoie__icontains=q)
+        data = [{"id": v.idvoie, "label": v.nomvoie} for v in qs.order_by('nomvoie')[:200]]
+        return Response({"results": data})
+
+    @action(detail=False, methods=['get'])
+    def villes(self, request):
+        q = request.query_params.get('q', '').strip()
+        qs = Ville.objects.all()
+        if q:
+            qs = qs.filter(Q(nomville__icontains=q) | Q(province__icontains=q))
+        data = [{"id": v.idville, "label": f"{v.nomville} ({v.province})"} for v in qs.order_by('nomville')[:200]]
+        return opts_response(data)
+
+    @action(detail=False, methods=['get'])
+    def type_unites(self, request):
+        q = request.query_params.get('q', '').strip()
+        qs = TypeUniteTransport.objects.all()
+        if q: qs = qs.filter(unitetransport__icontains=q)
+        data = [{"id": u.idunite, "label": u.unitetransport} for u in qs.order_by('unitetransport')[:200]]
+        return opts_response(data)
+
+    @action(detail=False, methods=['get'])
+    def importateurs(self, request):
+        q = request.query_params.get('q', '').strip()
+        qs = Importateur.objects.all()
+        if q:
+            qs = qs.filter(Q(nomimportateur__icontains=q) | Q(nifimportateur__icontains=q))
+        data = [{"id": i.idimportateur, "label": i.nomimportateur} for i in qs.order_by('nomimportateur')[:300]]
+        return opts_response(data)
+
+    @action(detail=False, methods=['get'])
+    def entrepots(self, request):
+        q = request.query_params.get('q', '').strip()
+        ville_id = request.query_params.get('ville')
+        qs = Entrepot.objects.select_related('ville').all()
+        if ville_id: qs = qs.filter(ville_id=ville_id)
+        if q:
+            qs = qs.filter(Q(nomentrepot__icontains=q) | Q(adresseentrepot__icontains=q) |
+                           Q(ville__nomville__icontains=q))
+        data = [{"id": e.identrepot, "label": f"{e.nomentrepot} – {e.ville.nomville}"} for e in qs.order_by('nomentrepot')[:300]]
+        return opts_response(data)
+
+    @action(detail=False, methods=['get'])
+    def produits(self, request):
+        q = request.query_params.get('q', '').strip()
+        qs = Produit.objects.all()
+        if q: qs = qs.filter(nomproduit__icontains=q)
+        data = [{"id": p.idproduit, "label": p.nomproduit} for p in qs.order_by('nomproduit')[:300]]
+        return opts_response(data)
+
+    @action(detail=False, methods=['get'])
+    def pays(self, request):
+        q = request.query_params.get('q', '').strip().lower()
+        data = []
+        # Force French locale while retrieving labels
+        with override('fr'):
+            for code, name in COUNTRIES:
+                country_name = str(name)
+                if not q or q in country_name.lower() or q in code.lower():
+                    data.append({"label": country_name})
+        return opts_response(data[:300])
+
+
+# ---------- CRUD viewsets ----------
+class VoieViewSet(viewsets.ModelViewSet):
+    queryset = Voie.objects.all().order_by('nomvoie')
+    serializer_class = VoieSerializer
+    permission_classes = [IsAuthenticated]
+
+class VilleViewSet(viewsets.ModelViewSet):
+    queryset = Ville.objects.all().order_by('nomville')
+    serializer_class = VilleSerializer
+    permission_classes = [IsAuthenticated]
+
+class TypeUniteTransportViewSet(viewsets.ModelViewSet):
+    queryset = TypeUniteTransport.objects.all().order_by('unitetransport')
+    serializer_class = TypeUniteTransportSerializer
+    permission_classes = [IsAuthenticated]
+
+class ImportateurViewSet(viewsets.ModelViewSet):
+    queryset = Importateur.objects.all().order_by('nomimportateur')
+    serializer_class = ImportateurSerializer
+    permission_classes = [IsAuthenticated]
+
+class EntrepotViewSet(viewsets.ModelViewSet):
+    queryset = Entrepot.objects.select_related('ville').all().order_by('nomentrepot')
+    serializer_class = EntrepotSerializer
+    permission_classes = [IsAuthenticated]
+
+class ProduitViewSet(viewsets.ModelViewSet):
+    queryset = Produit.objects.all().order_by('nomproduit')
+    serializer_class = ProduitSerializer
+    permission_classes = [IsAuthenticated]
 
