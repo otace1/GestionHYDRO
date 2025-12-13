@@ -108,6 +108,9 @@ urlpatterns = [
     # Alias with a clearer name for template usage
     path('second/rapport-activite/json/', views.reporting_rapport_activite_list, name='reporting_rapport_activite_list'),
 
+    # Export enqueue endpoint for Rapport Activité (Celery)
+    # Note: The export view is not implemented. Route removed to avoid import-time errors.
+
 
 
 

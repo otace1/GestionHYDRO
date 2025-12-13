@@ -12,7 +12,9 @@ from django.core.management.utils import get_random_secret_key
 from django.contrib.messages import constants as messages
 from datetime import timedelta
 
-import api.authentication
+# Avoid importing application modules at settings import time.
+# This can pull optional dependencies (e.g., firebase_admin) too early and
+# break management commands if those deps are not installed in the current env.
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

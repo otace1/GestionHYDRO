@@ -564,7 +564,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    loadTable2(1);
+    // Do NOT auto-load data on first page load.
+    // Show an empty-state message until the user applies filters.
+    hideError2();
+    hideOverlay2();
+    showEmpty2("Utilisez les filtres puis cliquez sur ‘Appliquer’ pour charger les données.");
+    // Initialize UI state (pagination/metrics) without triggering any data fetch
+    updatePaginationUI2();
+    updateMetrics2();
 
     qs('#btn2-first')?.addEventListener('click', () => { if (currentPage2 !== 1) loadTable2(1); });
     qs('#btn2-prev') ?.addEventListener('click', () => { if (currentPage2 > 1) loadTable2(currentPage2 - 1); });
@@ -590,10 +597,20 @@
       if (qs('#f2-start-date')) qs('#f2-start-date').value = '';
       if (qs('#f2-end-date'))   qs('#f2-end-date').value = '';
       if (qs('#f2-q'))          qs('#f2-q').value = '';
-      loadTable2(1);
+      // After reset, do not auto-load. Just clear the table and show empty state.
+      const tbody = qs('#data-table-body-2');
+      if (tbody) tbody.innerHTML = '';
+      totalRecords2 = 0;
+      totalPages2 = 1;
+      currentPage2 = 1;
+      updatePaginationUI2();
+      updateMetrics2();
+      hideError2();
+      showEmpty2("Filtres réinitialisés. Cliquez sur ‘Appliquer’ pour charger les données.");
     });
 
-    qs('#f2-q')?.addEventListener('input', debounce(() => loadTable2(1), 600));
+    // Do not auto-fetch while typing; require explicit Apply click
+    // qs('#f2-q')?.addEventListener('input', debounce(() => loadTable2(1), 600));
 
     qs('#data-table-body-2')?.addEventListener('click', (e) => {
       const btn = e.target.closest('.action2-btn');
