@@ -1410,12 +1410,99 @@ def regularisation(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def regularisation_response(request):
+    """
+    POST-only JSON response for Regularisation DataTable.
+    Accepts DataTables payload in request.POST and optional advanced filters (all optional):
+      - flt_date_from, flt_date_to (YYYY-MM-DD)
+      - flt_frontiere, flt_importateur, flt_entrepot, flt_produit
+      - flt_immat, flt_declaration, flt_numdos
+    """
     user = request.user.id
-    qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user).filter(
+
+    # Base queryset (restricted to user + specific etat values)
+    base_qs = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user
+    ).filter(
         Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
-    ).order_by('-dateheurecargaison').values(
+    )
+
+    # Advanced filters (optional)
+    flt_date_from = (request.POST.get('flt_date_from') or '').strip()
+    flt_date_to = (request.POST.get('flt_date_to') or '').strip()
+    flt_frontiere = (request.POST.get('flt_frontiere') or '').strip()
+    flt_importateur = (request.POST.get('flt_importateur') or '').strip()
+    flt_entrepot = (request.POST.get('flt_entrepot') or '').strip()
+    flt_produit = (request.POST.get('flt_produit') or '').strip()
+    flt_immat = (request.POST.get('flt_immat') or '').strip()
+    flt_declaration = (request.POST.get('flt_declaration') or '').strip()
+    flt_numdos = (request.POST.get('flt_numdos') or '').strip()
+
+    if flt_date_from:
+        try:
+            dt = datetime.datetime.strptime(flt_date_from, '%Y-%m-%d').date()
+            base_qs = base_qs.filter(dateheurecargaison__date__gte=dt)
+        except Exception:
+            pass
+    if flt_date_to:
+        try:
+            dt = datetime.datetime.strptime(flt_date_to, '%Y-%m-%d').date()
+            base_qs = base_qs.filter(dateheurecargaison__date__lte=dt)
+        except Exception:
+            pass
+    if flt_frontiere:
+        base_qs = base_qs.filter(frontiere__nomville__icontains=flt_frontiere)
+    if flt_importateur:
+        base_qs = base_qs.filter(importateur__nomimportateur__icontains=flt_importateur)
+    if flt_entrepot:
+        base_qs = base_qs.filter(entrepot__nomentrepot__icontains=flt_entrepot)
+    if flt_produit:
+        base_qs = base_qs.filter(produit__nomproduit__icontains=flt_produit)
+    if flt_immat:
+        base_qs = base_qs.filter(immatriculation__icontains=flt_immat)
+    if flt_declaration:
+        base_qs = base_qs.filter(declaration__icontains=flt_declaration)
+    if flt_numdos:
+        base_qs = base_qs.filter(numdos__icontains=flt_numdos)
+
+    # recordsTotal = after domain filters (but before global search)
+    records_total = base_qs.count()
+
+    # Global search (DataTables)
+    search_value = (request.POST.get('search[value]') or '').strip()
+    if search_value:
+        base_qs = base_qs.filter(
+            Q(immatriculation__icontains=search_value) |
+            Q(declaration__icontains=search_value) |
+            Q(importateur__nomimportateur__icontains=search_value) |
+            Q(entrepot__nomentrepot__icontains=search_value)
+        )
+
+    # recordsFiltered
+    records_filtered = base_qs.count()
+
+    # Ordering (keep most recent first if none provided)
+    qs_ordered = base_qs.order_by('-dateheurecargaison')
+
+    # Paging
+    draw = int(request.POST.get('draw', 1) or 1)
+    start = int(request.POST.get('start', 0) or 0)
+    length = int(request.POST.get('length', 15) or 15)
+
+    paginator = Paginator(qs_ordered, max(length, 1))
+    current_page = (start // max(length, 1)) + 1
+
+    try:
+        page = paginator.page(current_page)
+    except PageNotAnInteger:
+        page = paginator.page(1)
+    except EmptyPage:
+        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': records_total, 'recordsFiltered': records_filtered})
+
+    # Build response rows (values + formatted date)
+    rows = []
+    for c in page.object_list.values(
         'dateheurecargaison__date',
         'importateur__nomimportateur',
         'entrepot__nomentrepot',
@@ -1424,52 +1511,22 @@ def regularisation_response(request):
         'immatriculation',
         'declaration',
         'idcargaison'
-    )
+    ):
+        d = dict(c)
+        try:
+            dt = d.get('dateheurecargaison__date')
+            d['date_entree_display'] = dt.strftime('%d/%m/%Y') if dt else ''
+        except Exception:
+            d['date_entree_display'] = ''
+        rows.append(d)
 
-    # Get the search value from the request's GET parameters
-    search_value = request.GET.get('search[value]', '')
-
-    # Apply search filter to the QuerySet
-    if search_value:
-        qs = qs.filter(Q(immatriculation__icontains=search_value) |
-                       Q(declaration__icontains=search_value) |
-                       Q(importateur__nomimportateur__icontains=search_value) |
-                       Q(entrepot__nomentrepot__icontains=search_value))
-
-    # Number of items to show per page
-    items_per_page = 15
-
-    # Initialize the Paginator with the QuerySet and the number of items per page
-    paginator = Paginator(qs, items_per_page)
-
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-    # Calculate the current page number based on start and length
-    current_page = (start // length) + 1
-
-    try:
-        # Get the current page from the Paginator
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
-        page = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
-
-    # Convert the page object to a list of dictionaries
-    data = list(page)
-
-    # Return JSON response with the data
     return JsonResponse({
-        'data': data,
+        'data': rows,
         'draw': draw,
-        'recordsTotal': paginator.count,
-        'recordsFiltered': paginator.count,
+        'recordsTotal': records_total,
+        'recordsFiltered': records_filtered,
     })
+
 
 
 @login_required(login_url='login')

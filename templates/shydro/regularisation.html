@@ -431,7 +431,48 @@
                             <div class="card-body">
                                 {% block content %}
                                 {% endblock %}
-                                <!-- /.box-header -->
+                                
+                                <!-- TOOLBAR -->
+                                <div class="mb-3 d-flex justify-content-between">
+                                    <div>
+                                        <button class="btn btn-primary" id="btn-open-filters" data-toggle="modal" data-target="#filtersModal">
+                                            <i class="fas fa-filter"></i> Filtres
+                                        </button>
+                                        <button class="btn btn-outline-secondary" id="btn-clear" type="button">
+                                            <i class="fas fa-undo"></i> Effacer
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- ACTIVE FILTERS -->
+                                <div id="active-filters" class="filters-bar" style="display:none"></div>
+
+                                <!-- EMPTY STATE -->
+                                <div id="empty-state" class="empty-card">
+                                    <h6 class="mb-1">Aucune donnée chargée</h6>
+                                    <p class="text-muted mb-0">
+                                        Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
+                                    </p>
+                                </div>
+
+                                <!-- TABLE -->
+                                <div id="data-table-wrapper" class="table-scroll mt-2">
+                                    <div class="loading-spinner"></div>
+                                    <table id="data-table" class="table table-bordered" style="display:none;width:100%">
+                                        <thead>
+                                        <tr>
+                                            <th>Date entrée</th>
+                                            <th>Fournisseur</th>
+                                            <th>Entrepôt</th>
+                                            <th>Produit</th>
+                                            <th>Volume</th>
+                                            <th>Immatriculation</th>
+                                            <th>Déclaration</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -463,6 +504,72 @@
 
 
 <script>
+    /* ===== Styles for filters and table UI ===== */
+    // injected via CSS at top, ensure classes exist
+</script>
+
+<!-- FILTER MODAL (Bootstrap 4 compatible) -->
+<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Filtres avancés</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-3">
+            <label class="form-label">Date début</label>
+            <input type="date" id="flt_date_from" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Date fin</label>
+            <input type="date" id="flt_date_to" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Frontière</label>
+            <input id="flt_frontiere" class="form-control" placeholder="Nom de la frontière">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label">Fournisseur</label>
+            <input id="flt_importateur" class="form-control" placeholder="Fournisseur">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label">Entrepôt</label>
+            <input id="flt_entrepot" class="form-control" placeholder="Entrepôt">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label">Produit</label>
+            <input id="flt_produit" class="form-control" placeholder="Produit">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label">Immatriculation</label>
+            <input id="flt_immat" class="form-control">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label">Déclaration</label>
+            <input id="flt_declaration" class="form-control">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label">Dossier</label>
+            <input id="flt_numdos" class="form-control">
+          </div>
+          <div class="col-12 mt-3">
+            <small class="text-muted">⚠️ Au moins un filtre est requis pour charger les données.</small>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-reset">Réinitialiser</button>
+        <button type="button" class="btn btn-primary" id="btn-apply">Appliquer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
     var Id;
     var rowId;
 
@@ -480,6 +587,181 @@
 
         {% block javascript %}
         {% endblock %}
+
+        // ===== Regularisation table (POST-only) =====
+        const STORAGE_KEY = 'regularisation_filters_v1';
+        const csrfToken = '{{ csrf_token }}';
+        let table = null;
+
+        function showSpinner(){ $('#data-table-wrapper .loading-spinner').show(); }
+        function hideSpinner(){ $('#data-table-wrapper .loading-spinner').hide(); }
+
+        function filters(){
+          return {
+            flt_date_from: ($('#flt_date_from').val() || '').trim(),
+            flt_date_to: ($('#flt_date_to').val() || '').trim(),
+            flt_frontiere: ($('#flt_frontiere').val() || '').trim(),
+            flt_importateur: ($('#flt_importateur').val() || '').trim(),
+            flt_entrepot: ($('#flt_entrepot').val() || '').trim(),
+            flt_produit: ($('#flt_produit').val() || '').trim(),
+            flt_immat: ($('#flt_immat').val() || '').trim(),
+            flt_declaration: ($('#flt_declaration').val() || '').trim(),
+            flt_numdos: ($('#flt_numdos').val() || '').trim()
+          };
+        }
+
+        function hasFilters(f){ return Object.values(f).some(v => String(v||'').trim() !== ''); }
+
+        function humanLabel(k){
+          const map = { flt_date_from:'Date début', flt_date_to:'Date fin', flt_frontiere:'Frontière', flt_importateur:'Fournisseur', flt_entrepot:'Entrepôt', flt_produit:'Produit', flt_immat:'Immatriculation', flt_declaration:'Déclaration', flt_numdos:'Dossier' };
+          return map[k] || k;
+        }
+
+        function applyFiltersToUI(f){
+          $('#flt_date_from').val(f.flt_date_from||'');
+          $('#flt_date_to').val(f.flt_date_to||'');
+          $('#flt_frontiere').val(f.flt_frontiere||'');
+          $('#flt_importateur').val(f.flt_importateur||'');
+          $('#flt_entrepot').val(f.flt_entrepot||'');
+          $('#flt_produit').val(f.flt_produit||'');
+          $('#flt_immat').val(f.flt_immat||'');
+          $('#flt_declaration').val(f.flt_declaration||'');
+          $('#flt_numdos').val(f.flt_numdos||'');
+        }
+
+        function renderActiveFilters(f){
+          const box = document.getElementById('active-filters');
+          box.innerHTML = '';
+          const entries = Object.entries(f).filter(([k,v]) => String(v||'').trim() !== '');
+          if(entries.length === 0){ box.style.display = 'none'; return; }
+          entries.forEach(([k,v]) => {
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.innerHTML = `${humanLabel(k)} : <b>${String(v)}</b>`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', ()=>{
+              const current = filters();
+              current[k] = '';
+              applyFiltersToUI(current);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+              renderActiveFilters(current);
+              if(!hasFilters(current)){
+                destroyTableAndShowEmpty();
+              }else{
+                if(table) table.ajax.reload(null, true);
+              }
+            });
+            chip.appendChild(btn);
+            box.appendChild(chip);
+          });
+          box.style.display = 'flex';
+        }
+
+        function destroyTableAndShowEmpty(){
+          if(table){ table.destroy(true); table = null; }
+          $('#data-table').hide();
+          $('#empty-state').show();
+        }
+
+        function initTable(){
+          if(table) return table;
+          $('#empty-state').hide();
+          $('#data-table').show();
+
+          table = $('#data-table').DataTable({
+            serverSide: true,
+            processing: true,
+            pageLength: 15,
+            lengthMenu: [15, 30, 50],
+            searchDelay: 350,
+            rowId: 'idcargaison',
+            ajax: function(d, cb){
+              const f = filters();
+              const globalSearch = (d.search && String(d.search.value || '').trim()) || '';
+
+              if(!hasFilters(f) && !globalSearch){
+                cb({ data: [], draw: d.draw || 1, recordsTotal: 0, recordsFiltered: 0 });
+                return;
+              }
+
+              showSpinner();
+              $.ajax({
+                url: '{% url "regularisation_response" %}',
+                type: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                data: Object.assign({}, d, f)
+              })
+              .done(resp => cb(resp))
+              .fail(() => cb({ data: [], draw: d.draw || 1, recordsTotal: 0, recordsFiltered: 0 }))
+              .always(() => hideSpinner());
+            },
+            columns: [
+              { data: 'date_entree_display', defaultContent: '' },
+              { data: 'importateur__nomimportateur', defaultContent: '' },
+              { data: 'entrepot__nomentrepot', defaultContent: '' },
+              { data: 'produit__nomproduit', defaultContent: '' },
+              { data: 'volume', defaultContent: '' },
+              { data: 'immatriculation', defaultContent: '' },
+              { data: 'declaration', defaultContent: '' },
+              {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(){
+                  return `
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-dest">RE-ROUTAGE</button>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-trans">TRANSBOR.</button>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-fourn">IMPORT.</button>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-nat">PRODUIT</button>
+                      <a href="#" class="btn btn-danger" onclick="return confirmAction();">SUPPR.</a>
+                    </div>`;
+                }
+              }
+            ],
+            order: [[0,'desc']]
+          });
+
+          return table;
+        }
+
+        // Restore saved filters
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if(raw){ const f = JSON.parse(raw); if(f && typeof f === 'object'){ applyFiltersToUI(f); renderActiveFilters(f); } }
+        }catch(e){}
+
+        // Apply
+        $('#btn-apply').on('click', function(){
+          const f = filters();
+          if(!hasFilters(f)){
+            alert('Veuillez appliquer au moins un filtre.');
+            return;
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
+          renderActiveFilters(f);
+          if(!table) initTable();
+          table.ajax.reload(null, true);
+          $('#filtersModal').modal('hide');
+          $('#filtersModal').one('hidden.bs.modal', function(){
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right','');
+          });
+        });
+
+        // Reset UI-only
+        $('#btn-reset').on('click', function(){
+          applyFiltersToUI({ flt_date_from:'', flt_date_to:'', flt_frontiere:'', flt_importateur:'', flt_entrepot:'', flt_produit:'', flt_immat:'', flt_declaration:'', flt_numdos:'' });
+        });
+
+        // Clear all
+        $('#btn-clear').on('click', function(){
+          localStorage.removeItem(STORAGE_KEY);
+          applyFiltersToUI({ flt_date_from:'', flt_date_to:'', flt_frontiere:'', flt_importateur:'', flt_entrepot:'', flt_produit:'', flt_immat:'', flt_declaration:'', flt_numdos:'' });
+          window.location.reload();
+        });
     })
 
     function confirmAction() {

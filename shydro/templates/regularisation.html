@@ -1,532 +1,721 @@
-{% extends 'shydro/regularisation.html' %}
+{# templates/shydro/regularisation.html (FULL CODE - redesigned, same functionality) #}
+{% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
-{% load django_tables2 %}
-
-
-{% block modal %}
-
-    <div class="modal fade" id="modal-dest" style="display: none;">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">RE-ORIENTATION</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% crispy form %}
-                </div>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal-trans">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">TRANSBORDEMENT</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% crispy form1 %}
-                </div>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal-nat">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">CORRECTION NATURE PRODUIT</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    {% crispy form2 %}
-                </div>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-    <div class="modal fade" id="modal-delete">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">CODE DE CONFIRMATION</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Please input your secret code for deleting this record ... </p>
-                    {% crispy form2 %}
-                </div>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal-imp">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">AJOUT IMPORTATEUR</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{% url 'regularisationImportateur' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        {% crispy form3 %}
-                    </div>
-                </form>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-
-    <div class="modal fade" id="modal-entrepot">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">AJOUT ENTREPOT</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{% url 'regularisationEntrepot' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        {% crispy form4 %}
-                    </div>
-                </form>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-
-
-    <div class="modal fade" id="modal-enreg">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">AJOUT CARGAISON</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{% url 'regularisationCargaison' %}" method="post">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        {% crispy form5 %}
-                    </div>
-                </form>
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-    <!-- /.modal -->
-
-
-
-    <div class="modal fade" id="modal-fourn">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">CORRECTION FOURNISSEUR</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                {#              <form action="{% url 'changementImportateur' %}" method="post">#}
-                {% csrf_token %}
-                <div class="modal-body">
-                    {% crispy form6 %}
-                </div>
-                {#                  </form>#}
-            </div>
-            <!-- /.modal-content -->
-        </div>
-        <!-- /.modal-dialog -->
-    </div>
-    <!-- /.modal -->
-
-
-
-
-{% endblock %}
 
 {% block content %}
-    {#    {% render_table table %}#}
-    <div id="data-table-wrapper" style="position: relative;">
-        <div class="loading-spinner"></div>
-        <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-            <thead>
-            <tr>
-                <th>DATE ENTREE</th>
-                <th>FOURNISSEUR</th>
-                <th>ENTREPOT</th>
-                <th>PRODUIT</th>
-                <th>VOL.DECL.</th>
-                <th>IMMATRICULATION</th>
-                <th>#.T1E/DECL.</th>
-                <th>ACTIONS</th>
-            </tr>
-            </thead>
-        </table>
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark page-title font-weight-bold">RÉGULARISATION(S)</h1>
+          <div class="text-muted small">Contrôle des Hydrocarbures</div>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right mb-0">
+            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+            <li class="breadcrumb-item active">Régularisation des cargaisons</li>
+          </ol>
+        </div>
+      </div>
     </div>
+  </div>
 
-{% endblock %}
+  <section class="content">
+    <div class="container-fluid">
 
-
-
-
-<script>
-    {% block javascript %}
-        // Get CSRF token from the cookie
-        function getCSRFToken() {
-            var csrfToken = null;
-            document.cookie.split(';').forEach(function (cookie) {
-                if (cookie.trim().startsWith('csrftoken=')) {
-                    csrfToken = cookie.trim().substring('csrftoken='.length);
-                }
-            });
-            return csrfToken;
+      <style>
+        .page-card{
+          border: 1px solid rgba(0,0,0,.08);
+          border-radius: .9rem;
+          box-shadow: 0 10px 30px rgba(0,0,0,.06);
+          overflow: hidden;
+          background:#fff;
+        }
+        .page-card .card-header{
+          background: linear-gradient(135deg, #0f172a, #111827);
+          color:#fff;
+          border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+        .page-card .card-header h5{
+          margin:0;
+          font-weight:900;
+          letter-spacing:.2px;
+          display:flex;
+          align-items:center;
+          gap:.5rem;
+        }
+        .toolbar{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:.75rem;
+          flex-wrap:wrap;
+        }
+        .hint{
+          color:#6b7280;
+          font-size:.9rem;
         }
 
-        var idCargaison;
-        var dataTable;
+        /* Table */
+        .table-wrap{ overflow-x:auto; }
+        #data-table{ width:100% !important; }
 
-        // Function to reload the DataTable
+        /* Action buttons */
+        .btn-icon{
+          width:36px;
+          height:32px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          padding:0;
+        }
+        .btn-icon i{ font-size: .95rem; }
+
+        /* Modern modals */
+        .modal-content.modal-modern{
+          border:0;
+          border-radius: 16px;
+          overflow:hidden;
+          box-shadow: 0 18px 60px rgba(0,0,0,.22);
+        }
+        .modal-modern .modal-header{
+          border:0;
+          padding: 16px 18px;
+          background:#fff;
+        }
+        .modal-modern .modal-title{
+          font-weight:900;
+          letter-spacing:.2px;
+          color:#111827;
+        }
+        .modal-modern .modal-body{ padding: 18px; }
+        .modal-modern .modal-footer{
+          border:0;
+          padding: 12px 18px 18px 18px;
+          background:#fff;
+        }
+        .modal-modern__badge{
+          display:inline-flex;
+          align-items:center;
+          gap:.5rem;
+          padding:.35rem .6rem;
+          border-radius: 999px;
+          border:1px solid rgba(0,0,0,.08);
+          background: rgba(15, 23, 42, .04);
+          color:#111827;
+          font-size:.82rem;
+          font-weight:700;
+        }
+      </style>
+
+        <div class="row">
+                    <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-enreg">
+                        <span class="badge bg-purple"></span>
+                        <i class="fas fa-trailer"></i> N.Enreg.
+                    </a>
+                    <a class="btn btn-app bg-yellow" data-toggle="modal" data-target="#modal-imp">
+                        <span class="badge bg-purple"></span>
+                        <i class="fas fa-user"></i> N.Import.
+                    </a>
+                    <a class="btn btn-app bg-gradient-danger" data-toggle="modal" data-target="#modal-entrepot">
+                        <span class="badge bg-purple"></span>
+                        <i class="fas fa-warehouse"></i> N.Entrep.
+                    </a>
+                </div>
+
+      <div class="page-card card">
+        <div class="card-header">
+          <div class="toolbar">
+            <h5><i class="fas fa-shield-alt"></i> Régularisation des cargaisons</h5>
+            <div class="hint">
+              Cliquez sur les actions pour corriger la cargaison (destination, transbordement, fournisseur, nature, suppression).
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="table-wrap">
+            <table id="data-table" class="table table-bordered table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>DATE ENTREE</th>
+                  <th>FOURNISSEUR</th>
+                  <th>ENTREPOT</th>
+                  <th>PRODUIT</th>
+                  <th>VOL.DECL.</th>
+                  <th>IMMATRICULATION</th>
+                  <th>#.T1E/DECL.</th>
+                  <th style="min-width:220px;">ACTIONS</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {# ===================== MODALS (Bootstrap 4) ===================== #}
+
+      <!-- DESTINATION -->
+      <div class="modal fade" id="modal-dest" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-map-marker-alt"></i> Ré-orientation</div>
+                <h5 class="modal-title mt-2">RE-ORIENTATION</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              {# Your crispy form should render with id="destination-form" and submit button id="submit-id-valider" #}
+              {% crispy form %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRANSBORDEMENT -->
+      <div class="modal fade" id="modal-trans" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-exchange-alt"></i> Transbordement</div>
+                <h5 class="modal-title mt-2">TRANSBORDEMENT</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              {# Your crispy form should render with id="transbordement-form" and a submit button you control (see JS) #}
+              {% crispy form1 %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NATURE PRODUIT -->
+      <div class="modal fade" id="modal-nat" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-tag"></i> Correction</div>
+                <h5 class="modal-title mt-2">CORRECTION NATURE PRODUIT</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              {# Should render id="nature-form" #}
+              {% crispy form2 %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMPORTATEUR / FOURNISSEUR -->
+      <div class="modal fade" id="modal-fourn" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-user"></i> Correction</div>
+                <h5 class="modal-title mt-2">CORRECTION FOURNISSEUR</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              {# Should render id="importateur-form" #}
+              {% crispy form6 %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AJOUT IMPORTATEUR -->
+      <div class="modal fade" id="modal-imp" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-user-plus"></i> Ajout</div>
+                <h5 class="modal-title mt-2">AJOUT IMPORTATEUR</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+
+            <form action="{% url 'regularisationImportateur' %}" method="post">
+              {% csrf_token %}
+              <div class="modal-body">
+                {% crispy form3 %}
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- AJOUT ENTREPOT -->
+      <div class="modal fade" id="modal-entrepot" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-warehouse"></i> Ajout</div>
+                <h5 class="modal-title mt-2">AJOUT ENTREPOT</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+
+            <form action="{% url 'regularisationEntrepot' %}" method="post">
+              {% csrf_token %}
+              <div class="modal-body">
+                {% crispy form4 %}
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- AJOUT CARGAISON -->
+      <div class="modal fade" id="modal-enreg" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <div>
+                <div class="modal-modern__badge"><i class="fas fa-plus-circle"></i> Ajout</div>
+                <h5 class="modal-title mt-2">AJOUT CARGAISON</h5>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+
+            <form action="{% url 'regularisationCargaison' %}" method="post">
+              {% csrf_token %}
+              <div class="modal-body">
+                {% crispy form5 %}
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT MODAL (Modern - Bootstrap 4, centered) -->
+      <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <h5 class="modal-title" id="result-modal-title">Information</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body" id="result-modal-body"></div>
+            <div class="modal-footer" id="result-modal-footer">
+              <button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIRM MODAL (Modern - Bootstrap 4, centered) -->
+      <div class="modal fade" id="confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content modal-modern">
+            <div class="modal-header">
+              <h5 class="modal-title" id="confirm-modal-title">Confirmation</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body" id="confirm-modal-body"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" id="confirm-cancel" data-dismiss="modal">Annuler</button>
+              <button type="button" class="btn btn-primary" id="confirm-ok">Confirmer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        // ===================== Helpers =====================
+        function getCSRFTokenFromCookie() {
+          let csrfToken = null;
+          document.cookie.split(';').forEach(function (cookie) {
+            const c = cookie.trim();
+            if (c.startsWith('csrftoken=')) csrfToken = c.substring('csrftoken='.length);
+          });
+          return csrfToken;
+        }
+
+        function escapeHtml(str){
+          return String(str ?? '')
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+        }
+
+        function showResultModal(title, htmlBody){
+          const $m = $('#result-modal');
+          $('#result-modal-title').text((title || 'Information'));
+          $('#result-modal-body').html(htmlBody || '');
+          $('#result-modal-footer').html('<button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>');
+          $m.modal('show');
+        }
+
+        function showConfirmModal(title, message, confirmText, cancelText){
+          return new Promise((resolve) => {
+            const $m = $('#confirm-modal');
+            $('#confirm-modal-title').text(title || 'Confirmation');
+            $('#confirm-modal-body').html(message || 'Êtes-vous sûr ?');
+            const $ok = $('#confirm-ok');
+            const $cancel = $('#confirm-cancel');
+            if(confirmText) $ok.text(confirmText);
+            if(cancelText) $cancel.text(cancelText);
+
+            const cleanup = () => { $ok.off('click'); $cancel.off('click'); $m.off('hidden.bs.modal'); };
+            $ok.on('click', function(){ cleanup(); $m.modal('hide'); resolve(true); });
+            $cancel.on('click', function(){ cleanup(); /* modal hides automatically */ resolve(false); });
+            $m.on('hidden.bs.modal', function(){ cleanup(); resolve(false); });
+            $m.modal('show');
+          });
+        }
+
+        function safeAlertFromXhr(prefix, xhr){
+          const status = xhr && xhr.status;
+          const txt = (xhr && xhr.responseText) ? String(xhr.responseText) : '';
+          console.error(prefix, status, txt);
+          const html = `<p class="mb-1">${escapeHtml(prefix)}</p>` + (txt ? `<small class="text-muted">${escapeHtml(txt).slice(0,800)}</small>` : '');
+          showResultModal('Erreur', html);
+        }
+
+        let idCargaison = null;
+        let dataTable = null;
+
         function reloadDataTable() {
-            dataTable.ajax.reload(null, false);  // Reloads the DataTable with new data without resetting the page
+          if (dataTable) dataTable.ajax.reload(null, false);
         }
 
-
+        // ===================== DataTable =====================
         $(document).ready(function () {
-            dataTable = $('#data-table').DataTable({
-                lengthChange: false, // Display the length change dropdown
-                processing: false,
-                serverSide: true,
-                responsive: true,
-                ajax: {
-                    url: '{% url 'regularisation_response' %}',
-                    type: 'GET',
-                    // Show the loading spinner during DataTable processing
-                    // Show the loading spinner during DataTable processing
-                    beforeSend: function () {
-                        $('#data-table-wrapper .loading-spinner').show();
-                    },
-                    // Hide the loading spinner after DataTable processing
-                    complete: function () {
-                        $('#data-table-wrapper .loading-spinner').hide();
-                    },
-                },
-                columns: [
-                    {data: 'dateheurecargaison__date'},
-                    {data: 'importateur__nomimportateur'},
-                    {data: 'entrepot__nomentrepot'},
-                    {data: 'produit__nomproduit'},
-                    {data: 'volume'},
-                    {data: 'immatriculation'},
-                    {data: 'declaration'},
-                    { // New column configuration
-                        data: 'idcargaison',
-                        render: function (data, type, row) {
-                            {#console.log("Rendering ID Cargaison:", data);#}
-                            return `
-                                <button class="btn btn-success action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-map-marker-alt"></i> <!-- Destination Icon -->
-                                </button>
-                                <button class="btn btn-outline-success action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-exchange-alt"></i> <!-- Transbordement Icon -->
-                                </button>
-                                <button class="btn btn-outline-danger action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-user"></i> <!-- Importateur Icon -->
-                                </button>
-                                <button class="btn btn-outline-primary action-btn" data-row-id="${data}" style="margin-right: 5px;">
-                                    <i class="fas fa-tag"></i> <!-- Nature Icon -->
-                                </button>
-                                <button class="btn btn-danger action-btn" data-row-id="${data}">
-                                    <i class="fas fa-trash-alt"></i> <!-- Delete Icon -->
-                                </button>
-                            `;
-                        }
-                    }
-                ],
-            })
+          dataTable = $('#data-table').DataTable({
+            lengthChange: false,
+            processing: false,     // ✅ remove spinning animation
+            serverSide: true,
+            responsive: true,
+            searchDelay: 350,
 
-            // Handle button clicks using event delegation
-            $('#data-table tbody').on('click', '.action-btn', function () {
-                idCargaison = $(this).data('row-id'); // Get the ID of the clicked row
-                {#console.log('Clicked ID Cargaison:', idCargaison);#}
+            ajax: {
+              url: '{% url "regularisation_response" %}',
+              type: 'POST',
+              headers: { 'X-CSRFToken': getCSRFTokenFromCookie() },
+              error: function(xhr){
+                safeAlertFromXhr("Erreur chargement tableau", xhr);
+              }
+            },
 
-                // If the clicked button is the 'DESTINATION' button
-                if ($(this).hasClass('btn-success')) {
-                    // Open the modal
-                    $('#modal-dest').modal('show');
-                    $('#modal-dest').removeAttr('inert');
-                    {#submitData(idCargaison);#}
+            columns: [
+              { data: 'dateheurecargaison__date', defaultContent: '' },
+              { data: 'importateur__nomimportateur', defaultContent: '' },
+              { data: 'entrepot__nomentrepot', defaultContent: '' },
+              { data: 'produit__nomproduit', defaultContent: '' },
+              { data: 'volume', defaultContent: '' },
+              { data: 'immatriculation', defaultContent: '' },
+              { data: 'declaration', defaultContent: '' },
+              {
+                data: 'idcargaison',
+                orderable: false,
+                searchable: false,
+                render: function (data) {
+                  return `
+                    <div class="d-flex" style="gap:.4rem; flex-wrap:wrap;">
+                      <button type="button" class="btn btn-success btn-icon action-btn action-dest" data-row-id="${data}" title="Destination">
+                        <i class="fas fa-map-marker-alt"></i>
+                      </button>
+
+                      <button type="button" class="btn btn-outline-success btn-icon action-btn action-trans" data-row-id="${data}" title="Transbordement">
+                        <i class="fas fa-exchange-alt"></i>
+                      </button>
+
+                      <button type="button" class="btn btn-outline-danger btn-icon action-btn action-imp" data-row-id="${data}" title="Fournisseur">
+                        <i class="fas fa-user"></i>
+                      </button>
+
+                      <button type="button" class="btn btn-outline-primary btn-icon action-btn action-nat" data-row-id="${data}" title="Nature produit">
+                        <i class="fas fa-tag"></i>
+                      </button>
+
+                      <button type="button" class="btn btn-danger btn-icon action-btn action-del" data-row-id="${data}" title="Supprimer">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  `;
                 }
-                if ($(this).hasClass('btn-outline-success')) {
-                    {#console.log('Transbordement')#}
-                    // Open the modal
-                    $('#modal-trans').modal('show');
-                }
-                if ($(this).hasClass('btn-outline-danger')) {
-                    {#console.log('Importateur')#}
-                    $('#modal-fourn').modal('show');
-                }
-                if ($(this).hasClass('btn-outline-primary')) {
-                    {#console.log('Nature')#}
-                    $('#modal-nat').modal('show');
-                }
-                if ($(this).hasClass('btn-danger')) {
-                    console.log('DELETE');
-                    console.log(idCargaison);
-                    var APIurl = '/shydro/del_record/';
-                    var $input = $('<input type="hidden" name="pk">').val(idCargaison);
-                    var SerializedData = $input.serialize();
-                    console.log(SerializedData);
-                    var csrfToken = getCSRFToken();
-                    $.ajax({
-                        url: APIurl,
-                        type: "POST",
-                        data: SerializedData,
-                        dataType: 'json',
-                        headers: {
-                            'X-CSRFToken': csrfToken // Include CSRF token in the header
-                        },
-                        success: function () {
-                            alert("Donnée supprimée");
-                            reloadDataTable();
-                        },
+              }
+            ],
+            order: [[0, 'desc']]
+          });
 
-                        error: function () {
-                            {#console.log('Erreur');#}
-                            alert("Erreur lors de la suppression");
-                            reloadDataTable();
-                        }
-                    })
+          // ===================== Open modals (ONLY) =====================
+          $('#data-table tbody').on('click', '.action-btn', async function () {
+            idCargaison = $(this).data('row-id');
 
-                }
+            if ($(this).hasClass('action-dest')) {
+              $('#modal-dest').modal('show');
+              return;
+            }
+            if ($(this).hasClass('action-trans')) {
+              $('#modal-trans').modal('show');
+              return;
+            }
+            if ($(this).hasClass('action-imp')) {
+              $('#modal-fourn').modal('show');
+              return;
+            }
+            if ($(this).hasClass('action-nat')) {
+              $('#modal-nat').modal('show');
+              return;
+            }
+            if ($(this).hasClass('action-del')) {
+              // ✅ Confirm delete via modal
+              const ok = await showConfirmModal('Confirmation', 'Confirmer la suppression de cet enregistrement ?', 'Supprimer', 'Annuler');
+              if (!ok) return;
 
-            });
-        });
+              const csrfToken = getCSRFTokenFromCookie();
+              const APIurl = '/shydro/del_record/';
 
-
-        //Regularisation Destination Cargaison
-        $('#submit-id-valider').click(function (e) {
-            e.preventDefault();
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/regularisationDestination/';
-            var $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            var confirmInput = $('<input type="hidden" name="confirm">');
-            $('#destination-form').append($input);
-            var SerializedData = $("#destination-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
+              // Send pk only (same as your original)
+              $.ajax({
                 url: APIurl,
                 type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function (response) {
-                    if (response.status === 'warning') {
-                        // Show warning alert if regions don't match
-                        var confirmation = confirm(response.message);
-                        if (confirmation) {
-                            // If user confirms, set confirm to true
-                            confirmInput.val('true');
-                            $('#destination-form').append(confirmInput); // Append the confirmation to form
-                            // Now submit the form with the confirm value
-                            $.ajax({
-                                url: APIurl,
-                                type: "POST",
-                                data: $("#destination-form").serialize(),
-                                dataType: 'json',
-                                headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-                                success: function () {
-                                    alert("Données sauvegardées");
-                                    $('#modal-dest').modal('hide');
-                                    $('#destination-form')[0].reset();
-                                    $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
-                                    reloadDataTable();
-                                },
-                                error: function () {
-                                    {#console.log('Erreur');#}
-                                    alert("An error occurred");
-                                    $('#modal-dest').modal('hide');
-                                    $('#destination-form')[0].reset();
-                                    $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
-                                    reloadDataTable();
-                                }
-                            });
-                        } else {
-                            alert("Operation canceled");
-                            $('#modal-dest').modal('hide');
-                            $('#destination-form')[0].reset();
-                        }
-                    } else {
-                        // Normal success case
-                        alert("Données sauvegardées");
-                        $('#modal-dest').modal('hide');
-                        $('#destination-form')[0].reset();
-                        $('#destination-form input[type="hidden"]').remove(); // Remove hidden inputs like pk and confirm
-                        reloadDataTable();
-                    }
+                data: $.param({ pk: idCargaison }),
+                headers: { 'X-CSRFToken': csrfToken },
+                // ❌ do NOT force JSON (prevents Unexpected token '<' crash)
+                success: function () {
+                  showResultModal('Succès', '<p class="mb-0">Donnée supprimée.</p>');
+                  reloadDataTable();
                 },
+                error: function (xhr) {
+                  safeAlertFromXhr("Erreur lors de la suppression", xhr);
+                  reloadDataTable();
+                }
+              });
+            }
+          });
 
-                error: function (response) {
-                    {#console.log('Erreur');#}
-                    alert("An error occured");
+          // ===================== SUBMIT: Destination =====================
+          // Your crispy form must include:
+          // - form id="destination-form"
+          // - button id="submit-id-valider"
+          $('#submit-id-valider').off('click').on('click', async function (e) {
+            e.preventDefault();
+
+            const formEl = document.getElementById('destination-form');
+            if (!formEl) { showResultModal('Erreur', "Formulaire destination introuvable (id=destination-form)."); return; }
+
+            const csrfToken = getCSRFTokenFromCookie();
+            const APIurl = '/shydro/regularisationDestination/';
+
+            // Ensure pk is attached once
+            $(formEl).find('input[name="pk"]').remove();
+            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+
+            $.ajax({
+              url: APIurl,
+              type: "POST",
+              data: $(formEl).serialize(),
+              headers: { 'X-CSRFToken': csrfToken },
+              success: async function (response) {
+                // if backend returns warning json
+                if (response && response.status === 'warning') {
+                  const confirmation = await showConfirmModal('Attention', (response.message || 'Les régions ne correspondent pas. Continuer ?'), 'Continuer', 'Annuler');
+                  if (!confirmation) {
                     $('#modal-dest').modal('hide');
-                    $('#destination-form')[0].reset();
-                    reloadDataTable();
+                    formEl.reset();
+                    return;
+                  }
+
+                  $(formEl).find('input[name="confirm"]').remove();
+                  $(formEl).append($('<input type="hidden" name="confirm">').val('true'));
+
+                  $.ajax({
+                    url: APIurl,
+                    type: "POST",
+                    data: $(formEl).serialize(),
+                    headers: { 'X-CSRFToken': csrfToken },
+                    success: function () {
+                      showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
+                      $('#modal-dest').modal('hide');
+                      formEl.reset();
+                      $(formEl).find('input[type="hidden"]').remove();
+                      reloadDataTable();
+                    },
+                    error: function (xhr) {
+                      safeAlertFromXhr("Erreur sauvegarde destination", xhr);
+                      $('#modal-dest').modal('hide');
+                      formEl.reset();
+                      $(formEl).find('input[type="hidden"]').remove();
+                      reloadDataTable();
+                    }
+                  });
+
+                  return;
                 }
+
+                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
+                $('#modal-dest').modal('hide');
+                formEl.reset();
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              },
+              error: function (xhr) {
+                safeAlertFromXhr("Erreur sauvegarde destination", xhr);
+                $('#modal-dest').modal('hide');
+                formEl.reset();
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              }
             });
+          });
 
-        })
-
-        //Regularisation Immatriculation & Volume
-        $('.btn.btn-outline-success').click(function (e) {
-            e.preventDefault()
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/transbordement/';
-            $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            $('#transbordement-form').append($input);
-            var SerializedData = $("#transbordement-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                 headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function () {
-                    alert("Données sauvegardées");
-                    $('#modal-trans').modal('hide');
-                    $('#transbordement-form')[0].reset();
-                    reloadDataTable();
-                },
-
-                error: function () {
-                    {#console.log('Erreur');#}
-                    alert("An error occured");
-                    $('#modal-trans').modal('hide');
-                    $('#transbordement-form')[0].reset();
-                    reloadDataTable();
-                }
-            });
-        })
-
-        // Correction product nature
-        $('.btn.btn-outline-primary').click(function (e) {
-            e.preventDefault()
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/changementNature/';
-            $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            $('#nature-form').append($input);
-            var SerializedData = $("#nature-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
-            $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                 headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function () {
-                    alert("Données sauvegardées");
-                    $('#modal-nat').modal('hide');
-                    $('#nature-form')[0].reset();
-                    reloadDataTable();
-                },
-
-                error: function () {
-                    {#console.log('Erreur');#}
-                    alert("An error occured");
-                    $('#modal-nat').modal('hide');
-                    $('#nature-form')[0].reset();
-                    reloadDataTable();
-                }
-            });
-        })
-
-        // Change Importateur
-        $('.btn.btn-outline-danger').click(function (e) {
+          // ===================== SUBMIT: Transbordement =====================
+          // IMPORTANT: your crispy form should have id="transbordement-form"
+          // and a submit button with id="btn-submit-transbordement"
+          $('#btn-submit-transbordement').off('click').on('click', function(e){
             e.preventDefault();
-            {#console.log('Submitting Data for ID:', idCargaison);#}
-            var APIurl = '/shydro/changementImportateur/';
 
-            // Create a hidden input field with the name "pk" and the value of pk
-            $input = $('<input type="hidden" name="pk">').val(idCargaison);
-            $('#importateur-form').append($input);
+            const formEl = document.getElementById('transbordement-form');
+            if (!formEl) { showResultModal('Erreur', "Formulaire transbordement introuvable (id=transbordement-form)."); return; }
 
-            // Serialize the form data including the added "pk" input
-            var SerializedData = $("#importateur-form").serialize();
-            var csrfToken = getCSRFToken();  // Get CSRF token from the cookie
-            {#console.log(SerializedData);#}
+            const csrfToken = getCSRFTokenFromCookie();
+            const APIurl = '/shydro/transbordement/';
+
+            $(formEl).find('input[name="pk"]').remove();
+            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+
             $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: SerializedData,
-                dataType: 'json',
-                 headers: {
-            'X-CSRFToken': csrfToken // Include CSRF token in the header
-        },
-
-                success: function () {
-                    alert("Données sauvegardées");
-                    $('#modal-fourn').modal('hide');
-                    {#$('#importateur-form')[0].reset();#}
-                    reloadDataTable();
-                },
-
-                error: function () {
-                    {#console.log('Erreur');#}
-                    alert("An error occurred");
-                    $('#modal-fourn').modal('hide');
-                    {#$('#importateur-form')[0].reset();#}
-                    reloadDataTable();
-                }
+              url: APIurl,
+              type: "POST",
+              data: $(formEl).serialize(),
+              headers: { 'X-CSRFToken': csrfToken },
+              success: function () {
+                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
+                $('#modal-trans').modal('hide');
+                formEl.reset();
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              },
+              error: function (xhr) {
+                safeAlertFromXhr("Erreur sauvegarde transbordement", xhr);
+                $('#modal-trans').modal('hide');
+                formEl.reset();
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              }
             });
+          });
+
+          // ===================== SUBMIT: Nature =====================
+          // crispy form should have id="nature-form" and button id="btn-submit-nature"
+          $('#btn-submit-nature').off('click').on('click', function(e){
+            e.preventDefault();
+
+            const formEl = document.getElementById('nature-form');
+            if (!formEl) { showResultModal('Erreur', "Formulaire nature introuvable (id=nature-form)."); return; }
+
+            const csrfToken = getCSRFTokenFromCookie();
+            const APIurl = '/shydro/changementNature/';
+
+            $(formEl).find('input[name="pk"]').remove();
+            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+
+            $.ajax({
+              url: APIurl,
+              type: "POST",
+              data: $(formEl).serialize(),
+              headers: { 'X-CSRFToken': csrfToken },
+              success: function () {
+                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
+                $('#modal-nat').modal('hide');
+                formEl.reset();
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              },
+              error: function (xhr) {
+                safeAlertFromXhr("Erreur sauvegarde nature", xhr);
+                $('#modal-nat').modal('hide');
+                formEl.reset();
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              }
+            });
+          });
+
+          // ===================== SUBMIT: Importateur =====================
+          // crispy form should have id="importateur-form" and button id="btn-submit-importateur"
+          $('#btn-submit-importateur').off('click').on('click', function(e){
+            e.preventDefault();
+
+            const formEl = document.getElementById('importateur-form');
+            if (!formEl) { showResultModal('Erreur', "Formulaire importateur introuvable (id=importateur-form)."); return; }
+
+            const csrfToken = getCSRFTokenFromCookie();
+            const APIurl = '/shydro/changementImportateur/';
+
+            $(formEl).find('input[name="pk"]').remove();
+            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+
+            $.ajax({
+              url: APIurl,
+              type: "POST",
+              data: $(formEl).serialize(),
+              headers: { 'X-CSRFToken': csrfToken },
+              success: function () {
+                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
+                $('#modal-fourn').modal('hide');
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              },
+              error: function (xhr) {
+                safeAlertFromXhr("Erreur sauvegarde fournisseur", xhr);
+                $('#modal-fourn').modal('hide');
+                $(formEl).find('input[type="hidden"]').remove();
+                reloadDataTable();
+              }
+            });
+          });
+
+          // ===================== Safety cleanup for stuck backdrops =====================
+          $('#modal-dest, #modal-trans, #modal-nat, #modal-fourn, #modal-imp, #modal-entrepot, #modal-enreg')
+            .on('hidden.bs.modal', function(){
+              $('.modal-backdrop').remove();
+              $('body').removeClass('modal-open').css('padding-right','');
+              // if focus remained inside a hidden modal, blur to avoid aria-hidden warnings
+              if (document.activeElement && $(document.activeElement).closest('.modal').length) {
+                try { document.activeElement.blur(); } catch(e) {}
+              }
+            });
+
         });
+      </script>
 
-
-    {% endblock %}
-</script>
+    </div>
+  </section>
+{% endblock %}
