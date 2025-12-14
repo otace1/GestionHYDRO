@@ -62,8 +62,8 @@ def export_report_task(export_format, queryset_data, request=None):
 
 
 
-@app.task
-def export_rapport_activites_task(params: dict, user_id: int):
+@app.task(bind=True)
+def export_rapport_activites_task(self, params: dict, user_id: int):
     """
     Build the Rapport d'activités Excel asynchronously using server-side filters/order.
     Saves the file to the default storage and returns a public URL and filename.
@@ -233,6 +233,29 @@ def export_rapport_activites_task(params: dict, user_id: int):
         except Exception:
             return None
 
+    # Excel row limit (excluding header row): 1,048,575 rows
+    EXCEL_MAX_DATA_ROWS = 1048576 - 1
+
+    total = qs.count()
+    if total > EXCEL_MAX_DATA_ROWS:
+        raise Exception("Le résultat dépasse la limite d’Excel (1 048 576 lignes). Affinez vos filtres et réessayez.")
+
+    done = 0
+
+    def _fmt_dt(val):
+        try:
+            if val is None:
+                return None
+            if isinstance(val, datetime.datetime):
+                if timezone.is_aware(val):
+                    val = timezone.localtime(val)
+                return val.strftime('%d/%m/%Y %H:%M')
+            if isinstance(val, datetime.date):
+                return val.strftime('%d/%m/%Y')
+        except Exception:
+            return None
+        return str(val)
+
     for row in qs.iterator(chunk_size=1000):
         dens = _to_float(row.get('inspection__dens'))
         temp = _to_float(row.get('inspection__temp'))
@@ -260,7 +283,7 @@ def export_rapport_activites_task(params: dict, user_id: int):
                 return v
 
         ws.append([
-            row.get('dateheurecargaison__date'),
+            _fmt_dt(row.get('dateheurecargaison__date')),
             row.get('frontiere__nomville'),
             row.get('importateur__nomimportateur'),
             row.get('entrepot__nomentrepot'),
@@ -269,12 +292,12 @@ def export_rapport_activites_task(params: dict, user_id: int):
             row.get('immatriculation'),
             row.get('declaration'),
             row.get('numdos'),
-            row.get('requisitiondackdate__date'),
-            row.get('entrepot_echantillon__dateechantillonage__date'),
-            row.get('entrepot_echantillon__laboreception__datereceptionlabo__date'),
-            row.get('impressionresultat__printDate'),
-            row.get('inspection__dateinspection'),
-            row.get('dateDechargement'),
+            _fmt_dt(row.get('requisitiondackdate__date')),
+            _fmt_dt(row.get('entrepot_echantillon__dateechantillonage__date')),
+            _fmt_dt(row.get('entrepot_echantillon__laboreception__datereceptionlabo__date')),
+            _fmt_dt(row.get('impressionresultat__printDate')),
+            _fmt_dt(row.get('inspection__dateinspection')),
+            _fmt_dt(row.get('dateDechargement')),
             row.get('volConst'),
             d15,
             temp,
@@ -284,10 +307,21 @@ def export_rapport_activites_task(params: dict, user_id: int):
             r3(row.get('gsvT')),
         ])
 
+        done += 1
+        # Periodic progress update
+        if done % 1000 == 0 or done == total:
+            percent = round((done / max(total, 1)) * 100, 2)
+            try:
+                self.update_state(state='PROGRESS', meta={'total': total, 'done': done, 'percent': percent})
+            except Exception:
+                pass
+
     # Save to storage
-    now = timezone.now().strftime('%Y%m%d%H%M%S')
+    now_dt = timezone.now()
+    now = now_dt.strftime('%Y%m%d%H%M%S')
+    # Store under dated path
     file_name = f"rapport_activites_{now}.xlsx"
-    file_path = f"xlsx/{user_id}/{file_name}"
+    file_path = f"xlsx/{now_dt.strftime('%Y')}/{now_dt.strftime('%m')}/{file_name}"
     # Ensure folder prefix exists (default_storage handles folders implicitly)
     content = io.BytesIO()
     wb.save(content)
@@ -298,7 +332,53 @@ def export_rapport_activites_task(params: dict, user_id: int):
     return {
         'file_url': file_url,
         'file_name': file_name,
+        'expires_in_hours': 24,
     }
+
+
+
+
+# --- Cleanup task: delete exported files older than 24 hours ---
+@app.task(bind=True)
+def cleanup_old_exports(self):
+    """
+    Delete files under xlsx/ older than 24 hours using storage's modified_time.
+    Works with FileSystemStorage and S3Boto3Storage.
+    """
+    cutoff = timezone.now() - datetime.timedelta(hours=24)
+
+    from django.core.files.storage import default_storage
+
+    def list_recursive(prefix):
+        try:
+            dirs, files = default_storage.listdir(prefix)
+        except Exception:
+            return []
+        paths = [f"{prefix.rstrip('/')}/{f}" for f in files]
+        for d in dirs:
+            sub_prefix = f"{prefix.rstrip('/')}/{d}"
+            paths.extend(list_recursive(sub_prefix))
+        return paths
+
+    base_prefix = 'xlsx'
+    to_check = list_recursive(base_prefix)
+    deleted = 0
+    checked = 0
+    for name in to_check:
+        checked += 1
+        try:
+            mtime = default_storage.modified_time(name)
+            # Some backends return naive datetimes
+            if timezone.is_naive(mtime):
+                mtime = timezone.make_aware(mtime, timezone.get_current_timezone())
+            if mtime < cutoff:
+                default_storage.delete(name)
+                deleted += 1
+        except Exception:
+            # ignore errors per file
+            continue
+
+    return {'checked': checked, 'deleted': deleted}
 
 
 

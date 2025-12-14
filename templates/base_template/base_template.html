@@ -276,33 +276,7 @@
 
   <!-- Content -->
   <div class="content-wrapper">
-
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark page-title">
-              {% block page_title %}RAPPORT D'ACTIVITÉS{% endblock %}
-            </h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              {% block breadcrumbs %}
-                <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
-                <li class="breadcrumb-item active">Rapport d'activités</li>
-              {% endblock %}
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <section class="content">
-      <div class="container-fluid">
-        {% block content %}{% endblock %}
-      </div>
-    </section>
+   {% block content %}{% endblock %}
   </div>
 
   <!-- Footer -->

@@ -1,149 +1,228 @@
-{% extends 'shydro/rapportActivite.html' %}
+{# templates/shydro/rapportActivite.html #}
+{% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
 {% load django_tables2 %}
 {% load bootstrap4 %}
 {% bootstrap_css %}
 {% bootstrap_javascript jquery='full' %}
 
-<style>
-/* ONE GLOBAL SPINNER ONLY */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-#global-spinner {
-  display: none; /* hidden by default */
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.6);
-  z-index: 9999;
-}
-
-#global-spinner .loading-spinner {
-  border: 4px solid rgba(0, 0, 0, 0.3);
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-</style>
-
 {% block content %}
-
-<!-- GLOBAL SPINNER (MUST EXIST IN HTML) -->
-<div id="global-spinner">
-  <div class="loading-spinner"></div>
-</div>
-
-<!-- Main content -->
-<div class="row">
-  <div class="col-md-12">
-
-    <div class="card">
-      <div class="card-header" style="background-color: darkgreen">
-        <h1 class="card-title" style="color: white"><b>RAPPORT(S) D'ACTIVITE(S)</b></h1>
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark page-title font-weight-bold">RAPPORT D'ACTIVITÉS</h1>
+          <div class="text-muted small">Contrôle des Hydrocarbures</div>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right mb-0">
+            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+            <li class="breadcrumb-item active">Rapport d'activités</li>
+          </ol>
+        </div>
       </div>
+    </div>
+  </div>
 
-      <div class="card-body">
+  <section class="content">
+    <div class="container-fluid">
 
-        {% block modal %}
-        <!-- Filters Modal -->
-        <div class="modal fade" id="modal-default" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title"><b>Filtres avancés</b></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      {# ===== DataTables (Bootstrap 4) + Buttons CSS (we keep but do NOT use client-side excel for large datasets) ===== #}
+      <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+      <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap4.min.css">
+
+      {# ===== DataTables JS ===== #}
+      <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+      <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap4.min.js"></script>
+
+      {# Buttons deps (optional toolbar; export is async via Celery) #}
+      <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+      <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap4.min.js"></script>
+
+      <style>
+        .page-card{
+          border: 1px solid rgba(0,0,0,.08);
+          border-radius: .75rem;
+          box-shadow: 0 6px 20px rgba(0,0,0,.06);
+          overflow: hidden;
+          background:#fff;
+        }
+        .page-card .card-header{ background:#0b5e2a; color:#fff; }
+        .page-card .card-header h5{ margin:0; font-weight:900; letter-spacing:.2px; }
+
+        .filters-bar{
+          display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;
+          padding:.6rem .75rem;border:1px solid rgba(0,0,0,.08);
+          border-radius:.6rem;background:#fff;
+          margin-top:10px;
+        }
+        .chip{
+          display:inline-flex;align-items:center;gap:.35rem;
+          padding:.25rem .55rem;border-radius:999px;
+          background:rgba(40,167,69,.10);color:#1b5e20;
+          font-size:.82rem;border:1px solid rgba(40,167,69,.22);
+          white-space:nowrap;
+        }
+        .chip button{border:0;background:transparent;cursor:pointer;color:#1b5e20;font-weight:900;line-height:1}
+
+        .empty-card{
+          border:1px dashed rgba(0,0,0,.2);
+          border-radius:.75rem;
+          padding:1rem;
+          background:#fff;
+          margin-top:12px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #global-spinner{
+          display:none;
+          position:fixed; inset:0;
+          background:rgba(255,255,255,.65);
+          z-index:9999;
+        }
+        #global-spinner .loading-spinner{
+          width:46px;height:46px;border-radius:50%;
+          border:4px solid rgba(0,0,0,.15);
+          border-top-color:#28a745;
+          animation: spin .9s linear infinite;
+          position:absolute;top:50%;left:50%;
+          transform:translate(-50%,-50%);
+        }
+        .table-responsive{ overflow-x:auto; }
+
+        /* DataTables buttons spacing */
+        .dt-buttons .btn{ margin-right:.35rem; }
+
+        /* ===== Export corner alert (bottom-right) ===== */
+        .export-toast {
+          position: fixed;
+          right: 18px;
+          bottom: 18px;
+          z-index: 1060; /* above AdminLTE */
+          min-width: 320px;
+          max-width: 420px;
+          box-shadow: 0 10px 30px rgba(0,0,0,.18);
+          border-radius: .75rem;
+          overflow: hidden;
+          display: none;
+        }
+        .export-toast .alert {
+          margin: 0;
+          border: 0;
+          border-radius: 0;
+        }
+        .export-toast .export-row {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:.75rem;
+        }
+        .export-toast .export-left {
+          display:flex;
+          align-items:center;
+          gap:.6rem;
+          min-width: 0;
+        }
+        .export-toast .export-title {
+          font-weight: 800;
+          line-height: 1.1;
+        }
+        .export-toast .export-sub {
+          font-size: .85rem;
+          opacity: .9;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .export-toast .export-actions {
+          display:flex;
+          align-items:center;
+          gap:.35rem;
+        }
+        .export-toast .spinner-border {
+          width: 1.15rem;
+          height: 1.15rem;
+        }
+      </style>
+
+      <!-- GLOBAL SPINNER (for table reload only) -->
+      <div id="global-spinner"><div class="loading-spinner"></div></div>
+
+      <!-- ✅ Export Corner Alert -->
+      <div id="export-toast" class="export-toast">
+        <div id="export-toast-body" class="alert alert-info">
+          <div class="export-row">
+            <div class="export-left">
+              <span id="export-toast-icon" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <div style="min-width:0">
+                <div id="export-toast-title" class="export-title">Export en cours…</div>
+                <div id="export-toast-sub" class="export-sub">Préparation : <span id="export-toast-pct">0</span>%</div>
               </div>
-              <div class="modal-body">
-                <div class="container-fluid">
-                  <div class="row g-3">
-                    <div class="col-md-3">
-                      <label class="form-label">Date début</label>
-                      <input type="date" id="flt-date-from" class="form-control" />
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label">Date fin</label>
-                      <input type="date" id="flt-date-to" class="form-control" />
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Frontière</label>
-                      <select id="flt-frontiere" class="form-control">
-                        <option value="">Toutes</option>
-                        {% if frontieres %}
-                          {% for f in frontieres %}
-                            <option value="{{ f.nomville }}">{{ f.nomville }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Fournisseur</label>
-                      <select id="flt-importateur" class="form-control">
-                        <option value="">Tous</option>
-                        {% if fournisseurs %}
-                          {% for imp in fournisseurs %}
-                            <option value="{{ imp.nomimportateur }}">{{ imp.nomimportateur }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Entrepôt</label>
-                      <select id="flt-entrepot" class="form-control">
-                        <option value="">Tous</option>
-                        {% if entrepots %}
-                          {% for e in entrepots %}
-                            <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Produit</label>
-                      <select id="flt-produit" class="form-control">
-                        <option value="">Tous</option>
-                        {% if produits %}
-                          {% for p in produits %}
-                            <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
-                          {% endfor %}
-                        {% endif %}
-                      </select>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Immatriculation</label>
-                      <input type="text" id="flt-immat" class="form-control" placeholder="Ex: ABC-123" />
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Déclaration</label>
-                      <input type="text" id="flt-declaration" class="form-control" placeholder="# Déclaration" />
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Dossier</label>
-                      <input type="text" id="flt-numdos" class="form-control" placeholder="# Dossier" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="btn-reset-filters">Réinitialiser</button>
-                <button type="button" class="btn btn-primary" id="btn-apply-filters" data-bs-dismiss="modal">Appliquer</button>
-              </div>
+            </div>
+
+            <div class="export-actions">
+              <a id="export-toast-download" class="btn btn-sm btn-success" href="#" target="_blank" rel="noopener" style="display:none;">
+                <i class="fa fa-download"></i>
+              </a>
+              <button type="button" class="btn btn-sm btn-light" id="export-toast-close" title="Fermer">
+                <i class="fa fa-times"></i>
+              </button>
             </div>
           </div>
         </div>
-        {% endblock %}
+      </div>
 
-        <!-- TABLE -->
-        <div id="rapport-table-wrapper" style="position: relative; min-height: 120px;">
-          <div class="table-responsive">
-            <table id="rapport-table" class="table table-bordered table-striped" style="width:100%">
+      <div class="page-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5><i class="fas fa-clipboard-list mr-2"></i> RAPPORT D'ACTIVITÉS</h5>
+
+          <div class="d-flex" style="gap:.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-default">
+              <i class="fas fa-filter"></i> Filtres
+            </button>
+
+            <button type="button" class="btn btn-outline-light btn-sm" id="btn-clear-all">
+              <i class="fas fa-undo"></i> Effacer
+            </button>
+
+            {# ✅ Export Excel (asynchrone via Celery) - exporte TOUTES les lignes filtrées #}
+            <button type="button" class="btn btn-success btn-sm" id="btn-export-excel" disabled>
+              <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+          </div>
+        </div>
+
+        <div class="card-body">
+
+          <!-- ACTIVE FILTERS -->
+          <div class="filters-bar" id="active-filters-bar" style="display:none;">
+            <strong style="margin-right:.25rem;">Filtres actifs :</strong>
+            <div id="chips-container" class="d-flex" style="gap:.4rem; flex-wrap:wrap;"></div>
+            <span class="text-muted small">Cliquez sur ✕ pour retirer un filtre.</span>
+          </div>
+
+          <!-- EMPTY -->
+          <div id="empty-state" class="empty-card" style="display:block;">
+            <div class="d-flex align-items-start" style="gap:.75rem;">
+              <div style="font-size:1.5rem;line-height:1;">📊</div>
+              <div>
+                <div style="font-weight:800;">Aucune donnée chargée</div>
+                <div class="text-muted small">
+                  Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
+                </div>
+                <div class="mt-2">
+                  <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-default">
+                    Ouvrir les filtres
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLE -->
+          <div class="table-responsive mt-3">
+            <table id="rapport-table" class="table table-bordered table-striped" style="width:100%; display:none;">
               <thead>
                 <tr>
                   <th>DATE ENTREE</th>
@@ -173,290 +252,555 @@
               </thead>
             </table>
           </div>
+
         </div>
-
       </div>
-    </div>
-  </div>
-</div>
 
-{{ block.super }}
+      <!-- FILTER MODAL (Bootstrap 4) -->
+      <div class="modal fade" id="modal-default" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
 
-<script>
-const csrfToken = '{{ csrf_token }}';
-
-// SHOW / HIDE GLOBAL SPINNER
-function showSpinner() {
-  const el = document.getElementById("global-spinner");
-  if (el) el.style.display = "block";
-}
-function hideSpinner() {
-  const el = document.getElementById("global-spinner");
-  if (el) el.style.display = "none";
-}
-
-// -------------------------
-// DATATABLE INIT (SAFE - no reinit)
-// -------------------------
-document.addEventListener('DOMContentLoaded', function () {
-  if (!window.jQuery || !$.fn.DataTable) return;
-
-  // ✅ Prevent warning: Cannot reinitialise DataTable
-  if ($.fn.DataTable.isDataTable('#rapport-table')) {
-    const existing = $('#rapport-table').DataTable();
-    existing.clear().destroy();
-
-    // Remove DT-generated wrappers/classes
-    $('#rapport-table').removeClass('dataTable no-footer').removeAttr('role aria-describedby');
-
-    // Rebuild header to be safe
-    $('#rapport-table').html(`
-      <thead>
-        <tr>
-          <th>DATE ENTREE</th>
-          <th>FRONTIERE</th>
-          <th>FOURNISSEUR</th>
-          <th>ENTREPOT</th>
-          <th>PRODUIT</th>
-          <th>VOL.DECL.</th>
-          <th>IMMATR.</th>
-          <th>#.DECLARATION</th>
-          <th>#.DOSSIER</th>
-          <th>DATE REQUISITION</th>
-          <th>DATE ECHANTILLONNAGE</th>
-          <th>DATE RECEPTION LABO</th>
-          <th>DATE D'ANALYSE</th>
-          <th>DATE D'INSPECTION</th>
-          <th>DATE DE DECHARGEMENT</th>
-          <th>VOL JAUGE (GOV)</th>
-          <th>DENSITE @15</th>
-          <th>TEMPERATURE</th>
-          <th>VCF</th>
-          <th>MTA</th>
-          <th>MTV</th>
-          <th>GSV</th>
-          <th>ACTIONS</th>
-        </tr>
-      </thead>
-    `);
-  }
-
-  const dt = $('#rapport-table').DataTable({
-    serverSide: true,
-    processing: true,
-    deferRender: true,
-    pageLength: 20,
-    lengthMenu: [10, 20],
-    searchDelay: 500,
-    order: [[0, 'desc']],
-    ajax: {
-      url: "{% url 'responseAffichageTableau' %}",
-      type: "GET",
-      data: function (d) {
-        d.flt_date_from = document.getElementById('flt-date-from')?.value || '';
-        d.flt_date_to = document.getElementById('flt-date-to')?.value || '';
-        d.flt_frontiere = document.getElementById('flt-frontiere')?.value || '';
-        d.flt_importateur = document.getElementById('flt-importateur')?.value || '';
-        d.flt_entrepot = document.getElementById('flt-entrepot')?.value || '';
-        d.flt_produit = document.getElementById('flt-produit')?.value || '';
-        d.flt_immat = document.getElementById('flt-immat')?.value || '';
-        d.flt_declaration = document.getElementById('flt-declaration')?.value || '';
-        d.flt_numdos = document.getElementById('flt-numdos')?.value || '';
-      },
-      beforeSend: showSpinner,
-      complete: hideSpinner,
-      error: hideSpinner
-    },
-    columns: [
-      { data: 'date_entree_display', defaultContent: '' },
-      { data: 'frontiere__nomville', defaultContent: '' },
-      { data: 'importateur__nomimportateur', defaultContent: '' },
-      { data: 'entrepot__nomentrepot', defaultContent: '' },
-      { data: 'produit__nomproduit', defaultContent: '' },
-      { data: 'volume', defaultContent: '' },
-      { data: 'immatriculation', defaultContent: '' },
-      { data: 'declaration', defaultContent: '' },
-      { data: 'numreq', defaultContent: '' },
-      { data: 'date_requisition_display', defaultContent: '' },
-      { data: 'date_echantillonnage_display', defaultContent: '' },
-      { data: 'date_reception_labo_display', defaultContent: '' },
-      { data: 'date_analyse_display', defaultContent: '' },
-      { data: 'date_inspection_display', defaultContent: '' },
-      { data: 'date_dechargement_display', defaultContent: '' },
-      { data: 'vol_jauge_gov', defaultContent: '' },
-      { data: 'densite_15', defaultContent: '' },
-      { data: 'temperature', defaultContent: '' },
-      { data: 'vcf', defaultContent: '' },
-      { data: 'mta', defaultContent: '' },
-      { data: 'mtv', defaultContent: '' },
-      { data: 'gsv', defaultContent: '' },
-      {
-        data: null,
-        orderable: false,
-        searchable: false,
-        render: function (data, type, row) {
-          const id = row.idcargaison || '';
-          return `
-            <div class="btn-group btn-group-sm" role="group">
-              <button class="btn btn-warning" onclick="return confirmAction('${id}')">Réinspecter</button>
-              <button class="btn btn-primary" onclick="return printRappEchantillonnage('${id}')">Rapp. Éch.</button>
-              <button class="btn btn-info" onclick="return printRappInspection('${id}')">Rapp. Insp.</button>
-              <button class="btn btn-secondary" onclick="return printDossimport('${id}')">Dossier</button>
+            <div class="modal-header">
+              <h5 class="modal-title"><b>Filtres avancés</b></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-          `;
+
+            <div class="modal-body">
+              <div class="container-fluid">
+                <div class="row">
+
+                  <div class="col-md-3">
+                    <label>Date début</label>
+                    <input type="date" id="flt-date-from" class="form-control">
+                  </div>
+
+                  <div class="col-md-3">
+                    <label>Date fin</label>
+                    <input type="date" id="flt-date-to" class="form-control">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label>Frontière</label>
+                    <select id="flt-frontiere" class="form-control">
+                      <option value="">Toutes</option>
+                      {% if frontieres %}
+                        {% for f in frontieres %}
+                          <option value="{{ f.nomville }}">{{ f.nomville }}</option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-6 mt-2">
+                    <label>Fournisseur</label>
+                    <select id="flt-importateur" class="form-control">
+                      <option value="">Tous</option>
+                      {% if fournisseurs %}
+                        {% for imp in fournisseurs %}
+                          <option value="{{ imp.nomimportateur }}">{{ imp.nomimportateur }}</option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-6 mt-2">
+                    <label>Entrepôt</label>
+                    <select id="flt-entrepot" class="form-control">
+                      <option value="">Tous</option>
+                      {% if entrepots %}
+                        {% for e in entrepots %}
+                          <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-6 mt-2">
+                    <label>Produit</label>
+                    <select id="flt-produit" class="form-control">
+                      <option value="">Tous</option>
+                      {% if produits %}
+                        {% for p in produits %}
+                          <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-6 mt-2">
+                    <label>Immatriculation</label>
+                    <input type="text" id="flt-immat" class="form-control" placeholder="Ex: ABC-123">
+                  </div>
+
+                  <div class="col-md-6 mt-2">
+                    <label>Déclaration</label>
+                    <input type="text" id="flt-declaration" class="form-control" placeholder="# Déclaration">
+                  </div>
+
+                  <div class="col-md-6 mt-2">
+                    <label>Dossier</label>
+                    <input type="text" id="flt-numdos" class="form-control" placeholder="# Dossier">
+                  </div>
+
+                  <div class="col-12 mt-3">
+                    <small class="text-muted">⚠️ Appliquez au moins un filtre pour charger les données.</small>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="btn-reset-filters">Réinitialiser</button>
+              <button type="button" class="btn btn-primary" id="btn-apply-filters">Appliquer</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const csrfToken = '{{ csrf_token }}';
+        const STORAGE_KEY = 'rapport_activite_filters_v2';
+
+        function showSpinner(){ $('#global-spinner').show(); }
+        function hideSpinner(){ $('#global-spinner').hide(); }
+
+        function getFilters(){
+          return {
+            date_from: ($('#flt-date-from').val() || '').trim(),
+            date_to: ($('#flt-date-to').val() || '').trim(),
+            frontiere: ($('#flt-frontiere').val() || '').trim(),
+            importateur: ($('#flt-importateur').val() || '').trim(),
+            entrepot: ($('#flt-entrepot').val() || '').trim(),
+            produit: ($('#flt-produit').val() || '').trim(),
+            immatriculation: ($('#flt-immat').val() || '').trim(),
+            declaration: ($('#flt-declaration').val() || '').trim(),
+            numdos: ($('#flt-numdos').val() || '').trim()
+          };
         }
-      }
-    ],
-    drawCallback: function () { hideSpinner(); }
-  });
 
-  // ✅ Avoid binding handlers multiple times
-  const btnApply = document.getElementById('btn-apply-filters');
-  if (btnApply && !btnApply.dataset.bound) {
-    btnApply.dataset.bound = "1";
-    btnApply.addEventListener('click', function () {
-      dt.ajax.reload(null, true);
-    });
-  }
+        function setFilters(f){
+          $('#flt-date-from').val(f.date_from || '');
+          $('#flt-date-to').val(f.date_to || '');
+          $('#flt-frontiere').val(f.frontiere || '');
+          $('#flt-importateur').val(f.importateur || '');
+          $('#flt-entrepot').val(f.entrepot || '');
+          $('#flt-produit').val(f.produit || '');
+          $('#flt-immat').val(f.immatriculation || '');
+          $('#flt-declaration').val(f.declaration || '');
+          $('#flt-numdos').val(f.numdos || '');
+        }
 
-  const btnReset = document.getElementById('btn-reset-filters');
-  if (btnReset && !btnReset.dataset.bound) {
-    btnReset.dataset.bound = "1";
-    btnReset.addEventListener('click', function () {
-      const ids = [
-        'flt-date-from','flt-date-to','flt-frontiere','flt-importateur','flt-entrepot','flt-produit',
-        'flt-immat','flt-declaration','flt-numdos'
-      ];
-      ids.forEach(i => {
-        const el = document.getElementById(i);
-        if (!el) return;
-        el.value = '';
-      });
-      dt.ajax.reload(null, true);
-    });
-  }
-});
+        function hasFilters(f){
+          return Object.values(f).some(v => String(v||'').trim() !== '');
+        }
 
-// -------------------------
-// ACTIONS
-// -------------------------
-function confirmAction(rowId) {
-  if (!confirm('Êtes-vous sûr de vouloir réinspecter cette cargaison?')) return false;
+        function saveFilters(f){ localStorage.setItem(STORAGE_KEY, JSON.stringify(f)); }
+        function loadFilters(){
+          try{
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if(!raw) return null;
+            const obj = JSON.parse(raw);
+            return obj && typeof obj === 'object' ? obj : null;
+          }catch(e){ return null; }
+        }
+        function clearSavedFilters(){ localStorage.removeItem(STORAGE_KEY); }
 
-  showSpinner();
-  fetch('{% url "reInspecter" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(response => {
-    hideSpinner();
-    if (response.ok) {
-      alert('Cargaison renvoyée en inspection');
-      if ($.fn.DataTable.isDataTable('#rapport-table')) {
-        $('#rapport-table').DataTable().ajax.reload(null, false);
-      }
-    } else {
-      alert('Erreur lors de la réinspection.');
-    }
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-  });
+        function humanLabel(k){
+          const map = {
+            date_from:'Date début',
+            date_to:'Date fin',
+            frontiere:'Frontière',
+            importateur:'Fournisseur',
+            entrepot:'Entrepôt',
+            produit:'Produit',
+            immatriculation:'Immatriculation',
+            declaration:'Déclaration',
+            numdos:'Dossier'
+          };
+          return map[k] || k;
+        }
 
-  return false;
-}
+        function renderChips(f){
+          const bar = document.getElementById('active-filters-bar');
+          const box = document.getElementById('chips-container');
+          box.innerHTML = '';
 
-function printRappEchantillonnage(rowId) {
-  if (!confirm("Afficher le rapport d'Echantillonnage?")) return false;
+          const entries = Object.entries(f).filter(([k,v]) => String(v||'').trim() !== '');
+          if(entries.length === 0){
+            bar.style.display = 'none';
+            return;
+          }
 
-  showSpinner();
-  fetch('{% url "impressionRappEch" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(r => r.json())
-  .then(data => {
-    hideSpinner();
-    if (data.status === 'success') {
-      const byteChars = atob(data.pdf_base64);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
-      window.open(URL.createObjectURL(blob), '_blank');
-    } else {
-      alert("Éléments du rapport manquants.");
-    }
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-  });
+          entries.forEach(([k,v])=>{
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.innerHTML = `${humanLabel(k)} : <strong>${String(v)}</strong>`;
 
-  return false;
-}
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', ()=>{
+              const current = getFilters();
+              current[k] = '';
+              setFilters(current);
+              saveFilters(current);
+              renderChips(current);
 
-function printRappInspection(rowId) {
-  if (!confirm("Afficher le rapport d'Inspection?")) return false;
+              if(!hasFilters(current)){
+                destroyTableAndShowEmpty();
+              }else{
+                if ($.fn.DataTable.isDataTable('#rapport-table')) {
+                  $('#rapport-table').DataTable().ajax.reload(null, true);
+                }
+              }
+            });
 
-  showSpinner();
-  fetch('{% url "impressionRappInsp" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(r => r.json())
-  .then(data => {
-    hideSpinner();
-    if (data.status === 'success') {
-      const byteChars = atob(data.pdf_base64);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'application/pdf' });
-      window.open(URL.createObjectURL(blob), '_blank');
-    } else {
-      alert("Rapport d'inspection incomplet.");
-    }
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-  });
+            chip.appendChild(btn);
+            box.appendChild(chip);
+          });
 
-  return false;
-}
+          bar.style.display = 'flex';
+        }
 
-function printDossimport(rowId) {
-  if (!confirm("Afficher les éléments du dossier?")) return false;
+        function showTable(){
+          $('#empty-state').hide();
+          $('#rapport-table').show();
+          $('#btn-export-excel').prop('disabled', false);
+        }
 
-  showSpinner();
-  fetch('{% url "afficherDossImport" %}', {
-    method: 'POST',
-    body: JSON.stringify({ rowId }),
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-  })
-  .then(r => r.blob())
-  .then(blob => {
-    hideSpinner();
-    const url = URL.createObjectURL(blob);
-    const link = Object.assign(document.createElement('a'), {
-      href: url,
-      download: "file.pdf"
-    });
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  })
-  .catch(error => {
-    hideSpinner();
-    console.error(error);
-    alert("Erreur lors du téléchargement.");
-  });
+        function hideTableShowEmpty(){
+          $('#rapport-table').hide();
+          $('#empty-state').show();
+          $('#btn-export-excel').prop('disabled', true);
+        }
 
-  return false;
-}
-</script>
+        function destroyTableAndShowEmpty(){
+          if($.fn.DataTable.isDataTable('#rapport-table')){
+            $('#rapport-table').DataTable().clear().destroy();
+          }
+          hideTableShowEmpty();
+        }
 
+        function initTable(){
+          if($.fn.DataTable.isDataTable('#rapport-table')){
+            return $('#rapport-table').DataTable();
+          }
+
+          showTable();
+
+          const dt = $('#rapport-table').DataTable({
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            searchDelay: 350,
+            pageLength: 20,
+            lengthMenu: [20, 50, 100],
+            ordering: true,
+            order: [[0,'desc']],
+            rowId: 'idcargaison',
+
+            ajax: {
+              url: "{% url 'responseRapportActivite' %}",
+              type: "POST",
+              headers: { "X-CSRFToken": csrfToken },
+              data: function(d){
+                const f = getFilters();
+                return Object.assign({}, d, f);
+              },
+              beforeSend: function(){ showSpinner(); },
+              complete: function(){ hideSpinner(); },
+              dataSrc: function(json){
+                if(!json || typeof json !== 'object') return [];
+                if(!Array.isArray(json.data)) return [];
+                return json.data;
+              },
+              error: function(xhr){
+                console.error('AJAX error:', xhr.status, xhr.responseText);
+              }
+            },
+
+            columns: [
+              { data: 'date_entree_display', defaultContent: '' },
+              { data: 'frontiere__nomville', defaultContent: '' },
+              { data: 'importateur__nomimportateur', defaultContent: '' },
+              { data: 'entrepot__nomentrepot', defaultContent: '' },
+              { data: 'produit__nomproduit', defaultContent: '' },
+              { data: 'volume', defaultContent: '' },
+              { data: 'immatriculation', defaultContent: '' },
+              { data: 'declaration', defaultContent: '' },
+              { data: 'numdos', defaultContent: '' },
+              { data: 'date_requisition_display', defaultContent: '' },
+              { data: 'date_echant_display', defaultContent: '' },
+              { data: 'date_recep_labo_display', defaultContent: '' },
+              { data: 'date_analyse_display', defaultContent: '' },
+              { data: 'date_inspection_display', defaultContent: '' },
+              { data: 'date_dechargement_display', defaultContent: '' },
+              { data: 'vol_jauge', defaultContent: '' },
+              { data: 'densite15', defaultContent: '' },
+              { data: 'inspection__temp', defaultContent: '' },
+              { data: 'vcf', defaultContent: '' },
+              { data: 'mta', defaultContent: '' },
+              { data: 'mtv', defaultContent: '' },
+              { data: 'gsv', defaultContent: '' },
+              {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(_d,_t,row){
+                  return `
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-warning" onclick="return confirmAction(event)"><i class="fa fa-rotate-left"></i></button>
+                      <button type="button" class="btn btn-info" onclick="return printRappEchantillonnage(event)"><i class="fa fa-file-lines"></i></button>
+                      <button type="button" class="btn btn-primary" onclick="return printRappInspection(event)"><i class="fa fa-file-signature"></i></button>
+                    </div>
+                  `;
+                }
+              }
+            ],
+
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' },
+
+            dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+                 "<'row'<'col-sm-12'tr>>" +
+                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [] // we export via Celery, not via DataTables html5
+          });
+
+          return dt;
+        }
+
+        $(document).ready(function(){
+          // Restore saved filters but DO NOT auto-load table
+          const saved = loadFilters();
+          if(saved){
+            setFilters(saved);
+            renderChips(saved);
+          }else{
+            renderChips({});
+          }
+
+          // ✅ Apply filters: load table + close modal
+          $('#btn-apply-filters').on('click', function () {
+            const f = getFilters();
+
+            if (!hasFilters(f)) {
+              alert('Veuillez appliquer au moins un filtre.');
+              return;
+            }
+
+            saveFilters(f);
+            renderChips(f);
+
+            const dt = initTable();
+            dt.ajax.reload(null, true);
+
+            // ✅ Close modal (Bootstrap 4)
+            $('#modal-default').modal('hide');
+          });
+
+          // ========= Export corner alert helpers =========
+          const $toast = $('#export-toast');
+          const $toastBody = $('#export-toast-body');
+          const $toastIcon = $('#export-toast-icon');
+          const $toastTitle = $('#export-toast-title');
+          const $toastSub = $('#export-toast-sub');
+          const $toastDownload = $('#export-toast-download');
+
+          function showToast(){ $toast.fadeIn(120); }
+          function hideToast(){ $toast.fadeOut(120); }
+          function setToastType(type){
+            $toastBody.removeClass('alert-info alert-secondary alert-success alert-danger alert-warning')
+                      .addClass('alert-' + type);
+          }
+          function setProgress(pct){
+            const v = (pct == null || isNaN(pct)) ? null : Math.max(0, Math.min(100, parseInt(pct, 10)));
+            if (v == null) {
+              $toastSub.text('Export en cours…');
+            } else {
+              $toastSub.html('Préparation : <span id="export-toast-pct">' + v + '</span>%');
+            }
+          }
+          function setRunningUI(){
+            setToastType('info');
+            $toastIcon.removeClass().addClass('spinner-border spinner-border-sm');
+            $toastTitle.text('Export en cours…');
+            setProgress(0);
+            $toastDownload.hide().attr('href','#');
+            showToast();
+          }
+          function setQueuedUI(){
+            setToastType('secondary');
+            $toastIcon.removeClass().addClass('spinner-border spinner-border-sm');
+            $toastTitle.text('Export en file d’attente…');
+            $toastSub.text('Votre export va démarrer.');
+            $toastDownload.hide().attr('href','#');
+            showToast();
+          }
+          function setSuccessUI(fileUrl, fileName){
+            setToastType('success');
+            $toastIcon.removeClass().addClass('fa fa-check-circle');
+            $toastTitle.text('Export prêt');
+            $toastSub.text(fileName ? fileName : 'Cliquez sur télécharger.');
+            if (fileUrl) $toastDownload.attr('href', fileUrl).show();
+            else $toastDownload.hide();
+            showToast();
+          }
+          function setFailUI(msg){
+            setToastType('danger');
+            $toastIcon.removeClass().addClass('fa fa-triangle-exclamation');
+            $toastTitle.text('Échec de l’export');
+            $toastSub.text(msg || 'Erreur inconnue');
+            $toastDownload.hide().attr('href','#');
+            showToast();
+          }
+
+          $('#export-toast-close').on('click', function(){ hideToast(); });
+
+          // ✅ Export asynchrone (toutes les lignes filtrées) + corner alert progress
+          $('#btn-export-excel').on('click', function () {
+            if (!$.fn.DataTable.isDataTable('#rapport-table')) return;
+
+            const dt = $('#rapport-table').DataTable();
+            const f = getFilters();
+
+            // Include current global search + ordering
+            const searchValue = (dt.search() || '').trim();
+            const order = dt.order() || [];
+            const orderPayload = order.map(it => ({ column: it[0], dir: it[1] }));
+
+            const payload = Object.assign({}, f, {
+              search: { value: searchValue },
+              order: orderPayload
+            });
+
+            const $btn = $(this);
+
+            // Prevent double click
+            if ($btn.data('busy')) return;
+            $btn.data('busy', true).prop('disabled', true).addClass('disabled');
+
+            setRunningUI();
+
+            fetch("{% url 'startRapportActiviteExport' %}", {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+              },
+              body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(json => {
+              if (!json || !json.task_id) {
+                throw new Error((json && (json.error || json.detail)) || 'Échec du démarrage de la tâche');
+              }
+
+              const taskId = json.task_id;
+              let stopped = false;
+              const pollEvery = 1500;
+              const maxWaitMs = 10 * 60 * 1000; // 10 min
+              const startedAt = Date.now();
+
+              function poll() {
+                if (stopped) return;
+
+                if (Date.now() - startedAt > maxWaitMs) {
+                  stopped = true;
+                  setFailUI('Délai dépassé. Réessayez plus tard.');
+                  $btn.data('busy', false).prop('disabled', false).removeClass('disabled');
+                  return;
+                }
+
+                fetch("{% url 'checkExportTaskStatus' task_id='__TASK__' %}".replace('__TASK__', taskId))
+                  .then(r => r.json())
+                  .then(st => {
+                    const state = (st && st.state) || 'PENDING';
+
+                    if (state === 'PENDING') {
+                      setQueuedUI();
+                      setTimeout(poll, pollEvery);
+                      return;
+                    }
+
+                    if (state === 'PROGRESS') {
+                      const pct =
+                        (st.progress != null ? st.progress : null) ??
+                        (st.meta && st.meta.percent != null ? st.meta.percent : null);
+
+                      setToastType('info');
+                      $toastTitle.text('Export en cours…');
+                      setProgress(pct);
+                      setTimeout(poll, pollEvery);
+                      return;
+                    }
+
+                    if (state === 'SUCCESS') {
+                      stopped = true;
+                      const res = st.result || {};
+                      const fileUrl = res.file_url || '';
+                      const fileName = res.file_name || 'export.xlsx';
+
+                      setSuccessUI(fileUrl, fileName);
+
+                      // optional auto-open:
+                      if (fileUrl) window.open(fileUrl, '_blank');
+
+                      $btn.data('busy', false).prop('disabled', false).removeClass('disabled');
+                      return;
+                    }
+
+                    if (state === 'FAILURE') {
+                      stopped = true;
+                      const err = (st && (st.error || st.message)) ? (st.error || st.message) : 'Erreur inconnue';
+                      setFailUI(err);
+                      $btn.data('busy', false).prop('disabled', false).removeClass('disabled');
+                      return;
+                    }
+
+                    setTimeout(poll, pollEvery);
+                  })
+                  .catch(e => {
+                    stopped = true;
+                    setFailUI('Erreur de suivi : ' + e.message);
+                    $btn.data('busy', false).prop('disabled', false).removeClass('disabled');
+                  });
+              }
+
+              poll();
+            })
+            .catch(err => {
+              setFailUI(err.message);
+              $btn.data('busy', false).prop('disabled', false).removeClass('disabled');
+            });
+          });
+
+          $('#btn-reset-filters').on('click', function(){
+            setFilters({ date_from:'', date_to:'', frontiere:'', importateur:'', entrepot:'', produit:'', immatriculation:'', declaration:'', numdos:'' });
+            clearSavedFilters();
+            renderChips({});
+            destroyTableAndShowEmpty();
+          });
+
+          $('#btn-clear-all').on('click', function(){
+            setFilters({ date_from:'', date_to:'', frontiere:'', importateur:'', entrepot:'', produit:'', immatriculation:'', declaration:'', numdos:'' });
+            clearSavedFilters();
+            renderChips({});
+            destroyTableAndShowEmpty();
+          });
+
+          // Safety: if the modal backdrop ever sticks, clean it after hide
+          $('#modal-default').on('hidden.bs.modal', function(){
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right','');
+          });
+        });
+      </script>
+
+    </div>
+  </section>
 {% endblock %}

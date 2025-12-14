@@ -5,8 +5,8 @@ from . import views
 
 urlpatterns = [
 
-    path('', views.GestionCodification.affichageTableau, name='codification'),
-    path('response/responseAffichageTableau/', views.GestionCodification.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
+    path('', views.affichageTableau, name='codification'),
+    path('response/responseAffichageTableau/', views.responseAffichageTableau, name='responseAffichageTableau'), #Json Response
     path('details/<int:pk>', views.linedetails, name='details'),
     path('update/<int:pk>', views.lineupdate, name='update'),
     #
