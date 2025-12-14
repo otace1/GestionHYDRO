@@ -1,593 +1,801 @@
-{% extends 'shydro/shydro_layout.html' %}
-
-{% load static %}
+{# templates/shydro/gestionRequisitions.html (FULL CODE) #}
+{% extends 'base_template/base_template.html' %}
 
 {% block content %}
-
-<style>
-  #data-table-wrapper { position: relative; }
-  .loading-spinner{
-    display:none;
-    width:34px;height:34px;border-radius:50%;
-    border:4px solid rgba(0,0,0,.15);
-    border-top-color:#3498db;
-    animation:spin .9s linear infinite;
-    position:absolute;top:50%;left:50%;
-    margin:-17px 0 0 -17px;z-index:10;
-  }
-  @keyframes spin { to{transform:rotate(360deg)} }
-  .table-scroll{overflow-x:auto}
-
-  .empty-card{border:1px dashed #ccc;border-radius:8px;padding:16px;background:#fff}
-  .filters-bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:12px}
-  .chip{background:#e8f2fb;border:1px solid #b6d8f2;border-radius:20px;padding:4px 10px;font-size:.85rem}
-  .chip button{border:0;background:none;font-weight:bold;margin-left:6px}
-
-  /* Success modal polish */
-  .modal-header.bg-success {
-    background-color: #198754 !important;
-    border-bottom-color: rgba(255,255,255,.25) !important;
-  }
-</style>
-
-<!-- TOOLBAR -->
-<div class="mb-3 d-flex justify-content-between">
-  <div>
-    <button class="btn btn-primary" id="btn-open-filters"
-            data-bs-toggle="modal" data-bs-target="#filtersModal">
-      <i class="fas fa-filter"></i> Filtres
-    </button>
-
-    <button class="btn btn-outline-secondary" id="btn-clear">
-      <i class="fas fa-undo"></i> Effacer
-    </button>
-  </div>
-</div>
-
-<!-- ACTIVE FILTERS -->
-<div id="active-filters" class="filters-bar" style="display:none"></div>
-
-<!-- EMPTY STATE -->
-<div id="empty-state" class="empty-card">
-  <h6>Aucune donnée chargée</h6>
-  <p class="text-muted mb-0">
-    Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
-    <br>Le tableau ne charge jamais toutes les données (performance optimale).
-  </p>
-</div>
-
-<!-- TABLE -->
-<div id="data-table-wrapper" class="table-scroll">
-  <div class="loading-spinner"></div>
-
-  <table id="data-table" class="table table-bordered" style="display:none;width:100%">
-    <thead>
-      <tr>
-        <th>Date entrée</th>
-        <th>Fournisseur</th>
-        <th>Entrepôt</th>
-        <th>Produit</th>
-        <th>Volume</th>
-        <th>Immatriculation</th>
-        <th>Déclaration</th>
-        <th>Réquisition</th>
-      </tr>
-    </thead>
-  </table>
-</div>
-
-<!-- RESULT MODAL (BS5) -->
-<div class="modal fade" id="result-modal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title">Information</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark page-title font-weight-bold">GESTION DES RÉQUISITIONS</h1>
+          <div class="text-muted small">Contrôle des Hydrocarbures</div>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right mb-0">
+            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+            <li class="breadcrumb-item active">Gestion des réquisitions</li>
+          </ol>
+        </div>
       </div>
-
-      <div class="modal-body" id="result-modal-body"></div>
-
-      <div class="modal-footer" id="result-modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-      </div>
-
     </div>
   </div>
-</div>
 
-<!-- FILTER MODAL (BS5) -->
-<div class="modal fade" id="filtersModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
+  <section class="content">
+    <div class="container-fluid">
 
-      <div class="modal-header">
-        <h5 class="modal-title">Filtres avancés</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="row g-2">
-          <div class="col-md-3">
-            <label class="form-label">Date début</label>
-            <input type="date" id="flt_date_from" class="form-control">
+      <div class="row">
+        <div class="col-md-2 col-sm-2 col-12">
+          <div class="info-box bg-info">
+            <span class="info-box-icon"><i class="far fa-file"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">En attente d'échantillonnage</span>
+              <span class="info-box-number">{{ e }}</span>
+              <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Date fin</label>
-            <input type="date" id="flt_date_to" class="form-control">
-          </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Frontière</label>
-            <select id="flt_frontiere" class="form-control">
-              <option value="">Toutes</option>
-              {% for f in frontieres %}
-                <option value="{{ f.nomville }}">{{ f.nomville }}</option>
-              {% endfor %}
-            </select>
+        <div class="col-md-2 col-sm-2 col-12">
+          <div class="info-box bg-success">
+            <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">En attente de réception Labo</span>
+              <span class="info-box-number">{{ p }}</span>
+              <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Fournisseur</label>
-            <select id="flt_importateur" class="form-control">
-              <option value="">Tous</option>
-              {% for f in fournisseurs %}
-                <option value="{{ f.nomimportateur }}">{{ f.nomimportateur }}</option>
-              {% endfor %}
-            </select>
+        <div class="col-md-2 col-sm-2 col-12">
+          <div class="info-box bg-warning">
+            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">En attente des résultats</span>
+              <span class="info-box-number">{{ l }}</span>
+              <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Entrepôt</label>
-            <select id="flt_entrepot" class="form-control">
-              <option value="">Tous</option>
-              {% for e in entrepots %}
-                <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
-              {% endfor %}
-            </select>
+        <div class="col-md-2 col-sm-2 col-12">
+          <div class="info-box bg-danger">
+            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">En attente d'inspection</span>
+              <span class="info-box-number">{{ i }}</span>
+              <a href="{% url 'enAttenteInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Produit</label>
-            <select id="flt_produit" class="form-control">
-              <option value="">Tous</option>
-              {% for p in produits %}
-                <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
-              {% endfor %}
-            </select>
+        <div class="col-md-2 col-sm-2 col-12">
+          <div class="info-box bg-danger">
+            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">En attente de déchargement</span>
+              <span class="info-box-number">{{ d }}</span>
+              <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
           </div>
+        </div>
 
-          <div class="col-md-6">
-            <label class="form-label">Immatriculation</label>
-            <input id="flt_immat" class="form-control">
+        <div class="col-md-2 col-sm-2 col-12">
+          <div class="info-box bg-danger">
+            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
+            <div class="info-box-content">
+              <span class="info-box-text">Total des cargaisons</span>
+              <span class="info-box-number">{{ c }}</span>
+              <a href="#" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
           </div>
+        </div>
+      </div><!-- /.row -->
 
-          <div class="col-md-6">
-            <label class="form-label">Déclaration</label>
-            <input id="flt_declaration" class="form-control">
-          </div>
+      <style>
+        #data-table-wrapper { position: relative; }
 
-          <div class="col-md-6">
-            <label class="form-label">Dossier</label>
-            <input id="flt_numdos" class="form-control">
-          </div>
+        .loading-spinner {
+          display:none;
+          width:34px;height:34px;border-radius:50%;
+          border:4px solid rgba(0,0,0,.15);
+          border-top-color:#3498db;
+          animation: spin .9s linear infinite;
+          position:absolute; top:50%; left:50%;
+          margin:-17px 0 0 -17px;
+          z-index:10;
+        }
+        @keyframes spin { to { transform: rotate(360deg) } }
 
-          <div class="col-12 mt-2">
-            <small class="text-muted">⚠️ Au moins un filtre est requis pour charger les données.</small>
-          </div>
+        .table-scroll { overflow-x:auto; }
+        .empty-card { border:1px dashed #ccc; border-radius:12px; padding:16px; background:#fff; }
+
+        .filters-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:12px; }
+        .chip {
+          background:#e8f2fb;
+          border:1px solid #b6d8f2;
+          border-radius:20px;
+          padding:4px 10px;
+          font-size:.85rem;
+          display:inline-flex;
+          align-items:center;
+        }
+        .chip button { border:0; background:none; font-weight:900; margin-left:8px; cursor:pointer; }
+
+        /* ===== Modern Result Modal ===== */
+        .result-modal{
+          border:0;
+          border-radius:16px;
+          overflow:hidden;
+          box-shadow: 0 18px 60px rgba(0,0,0,.22);
+        }
+        .result-modal__header{
+          border:0;
+          padding:18px 18px 12px 18px;
+          display:flex;
+          align-items:flex-start;
+          gap:14px;
+          background:#fff;
+        }
+        .result-modal__icon{
+          width:44px;height:44px;
+          border-radius:14px;
+          display:flex;align-items:center;justify-content:center;
+          background: rgba(0,123,255,.10);
+          color:#0b5ed7;
+          flex:0 0 auto;
+        }
+        .result-modal__icon i{ font-size:20px; }
+        .result-modal__titles{ flex:1; min-width:0; }
+        .result-modal__titles .modal-title{
+          font-weight:900;
+          letter-spacing:.2px;
+          color:#111827;
+          line-height:1.1;
+        }
+        .result-modal__subtitle{
+          margin-top:4px;
+          color:#6b7280;
+          font-size:.9rem;
+        }
+        .result-modal__close{ margin:-2px -2px 0 auto; opacity:.7; }
+        .result-modal__close:hover{ opacity:1; }
+        .result-modal__footer{ border:0; padding:12px 18px 18px 18px; background:#fff; }
+
+        .success-card{
+          border:1px solid rgba(25,135,84,.18);
+          background: rgba(25,135,84,.06);
+          border-radius:14px;
+          padding:14px;
+        }
+        .success-card__title{ font-weight:800; color:#0f5132; margin-bottom:6px; }
+        .success-card__text{ color:#1f2937; margin:0; }
+
+        .dossier-box{
+          margin-top:12px;
+          border-radius:14px;
+          border:1px solid rgba(25,135,84,.22);
+          background:#fff;
+          padding:12px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          flex-wrap:wrap;
+        }
+        .dossier-label{ font-size:.78rem; color:#6b7280; margin-bottom:4px; }
+        .dossier-badge{
+          display:inline-block;
+          padding:.45rem .7rem;
+          border-radius:999px;
+          background: rgba(25,135,84,.10);
+          border: 1px solid rgba(25,135,84,.22);
+          color:#0f5132;
+          font-weight:900;
+          letter-spacing:.3px;
+          font-size:.95rem;
+        }
+
+        .rm-success .result-modal__icon{ background: rgba(25,135,84,.12); color:#198754; }
+        .rm-danger  .result-modal__icon{ background: rgba(220,53,69,.12); color:#dc3545; }
+        .rm-warning .result-modal__icon{ background: rgba(255,193,7,.18); color:#b45309; }
+      </style>
+
+      <!-- TOOLBAR -->
+      <div class="mb-3 d-flex justify-content-between">
+        <div>
+          {# ✅ IMPORTANT: Bootstrap 4 uses data-toggle/data-target (NOT data-bs-*) #}
+          <button class="btn btn-primary" id="btn-open-filters" data-toggle="modal" data-target="#filtersModal">
+            <i class="fas fa-filter"></i> Filtres
+          </button>
+
+          <button class="btn btn-outline-secondary" id="btn-clear" type="button">
+            <i class="fas fa-undo"></i> Effacer
+          </button>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="btn-reset">Réinitialiser</button>
-        <button type="button" class="btn btn-primary" id="btn-apply">Appliquer</button>
+      <!-- ACTIVE FILTERS -->
+      <div id="active-filters" class="filters-bar" style="display:none"></div>
+
+      <!-- EMPTY STATE -->
+      <div id="empty-state" class="empty-card">
+        <h6 class="mb-1">Aucune donnée chargée</h6>
+        <p class="text-muted mb-0">
+          Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
+          <br>Le tableau ne charge jamais toutes les données (performance optimale).
+        </p>
       </div>
 
-    </div>
-  </div>
-</div>
-
-<script>
-const STORAGE_KEY = 'carg_filters_v1';
-const csrfToken = '{{ csrf_token }}';
-let table = null;
-
-function showSpinner(){ $('#data-table-wrapper .loading-spinner').show(); }
-function hideSpinner(){ $('#data-table-wrapper .loading-spinner').hide(); }
-
-function filters(){
-  return {
-    flt_date_from: ($('#flt_date_from').val() || '').trim(),
-    flt_date_to: ($('#flt_date_to').val() || '').trim(),
-    flt_frontiere: ($('#flt_frontiere').val() || '').trim(),
-    flt_importateur: ($('#flt_importateur').val() || '').trim(),
-    flt_entrepot: ($('#flt_entrepot').val() || '').trim(),
-    flt_produit: ($('#flt_produit').val() || '').trim(),
-    flt_immat: ($('#flt_immat').val() || '').trim(),
-    flt_declaration: ($('#flt_declaration').val() || '').trim(),
-    flt_numdos: ($('#flt_numdos').val() || '').trim()
-  };
-}
-
-function hasFilters(f){
-  return Object.values(f).some(v => String(v || '').trim() !== '');
-}
-
-function humanLabel(k){
-  const map = {
-    flt_date_from:'Date début',
-    flt_date_to:'Date fin',
-    flt_frontiere:'Frontière',
-    flt_importateur:'Fournisseur',
-    flt_entrepot:'Entrepôt',
-    flt_produit:'Produit',
-    flt_immat:'Immatriculation',
-    flt_declaration:'Déclaration',
-    flt_numdos:'Dossier'
-  };
-  return map[k] || k;
-}
-
-function applyFiltersToUI(f){
-  $('#flt_date_from').val(f.flt_date_from || '');
-  $('#flt_date_to').val(f.flt_date_to || '');
-  $('#flt_frontiere').val(f.flt_frontiere || '');
-  $('#flt_importateur').val(f.flt_importateur || '');
-  $('#flt_entrepot').val(f.flt_entrepot || '');
-  $('#flt_produit').val(f.flt_produit || '');
-  $('#flt_immat').val(f.flt_immat || '');
-  $('#flt_declaration').val(f.flt_declaration || '');
-  $('#flt_numdos').val(f.flt_numdos || '');
-}
-
-function renderActiveFilters(f){
-  const box = document.getElementById('active-filters');
-  box.innerHTML = '';
-  const entries = Object.entries(f).filter(([k,v]) => String(v||'').trim() !== '');
-
-  if(entries.length === 0){
-    box.style.display = 'none';
-    return;
-  }
-
-  entries.forEach(([k,v])=>{
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.innerHTML = `${humanLabel(k)} : <b>${String(v)}</b>`;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.innerHTML = '&times;';
-    btn.addEventListener('click', ()=>{
-      const current = filters();
-      current[k] = '';
-      applyFiltersToUI(current);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
-      renderActiveFilters(current);
-
-      if(!hasFilters(current)){
-        destroyTableAndShowEmpty();
-      }else{
-        initTable().ajax.reload(null, true);
-      }
-    });
-
-    chip.appendChild(btn);
-    box.appendChild(chip);
-  });
-
-  box.style.display = 'flex';
-}
-
-function hideModal(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  try { document.activeElement?.blur?.(); } catch(e){}
-  const inst = bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
-  if(inst) inst.hide();
-}
-
-/* ========= SUCCESS MODAL REDESIGN ========= */
-function escapeHtml(str){
-  return String(str ?? '')
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
-}
-
-function showResultModal(title, htmlBody){
-  const el = document.getElementById('result-modal');
-  const titleEl = el.querySelector('.modal-title');
-  const bodyEl  = document.getElementById('result-modal-body');
-  const footerEl = document.getElementById('result-modal-footer');
-  const headerEl = el.querySelector('.modal-header');
-
-  const t = (title || 'Information').trim();
-  if(titleEl) titleEl.textContent = t;
-
-  const isSuccess = t.toLowerCase().includes('succ');
-
-  // Reset header and footer each time
-  headerEl.classList.remove('bg-success','text-white','border-success');
-  footerEl.innerHTML = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>`;
-
-  if(isSuccess){
-    headerEl.classList.add('bg-success','text-white','border-success');
-
-    // Extract dossier number from the htmlBody: "Numéro de dossier: <b>XYZ</b>"
-    let dossier = '';
-    try{
-      const m = String(htmlBody || '').match(/Num[ée]ro\s+de\s+dossier\s*:\s*<b>\s*([^<]+)\s*<\/b>/i);
-      dossier = m ? m[1].trim() : '';
-    }catch(e){ dossier = ''; }
-
-    // Remove dossier line from generic body; we render it as a badge box
-    const cleanedBody = String(htmlBody || '')
-      .replace(/<p>\s*Num[ée]ro\s+de\s+dossier\s*:\s*<b>[^<]*<\/b>\s*<\/p>/i, '')
-      .trim();
-
-    bodyEl.innerHTML = `
-      <div class="p-2">
-        <div class="d-flex align-items-start" style="gap:.75rem;">
-          <div class="rounded-circle d-flex align-items-center justify-content-center"
-               style="width:44px;height:44px;background:rgba(25,135,84,.15);flex:0 0 auto;">
-            <i class="fas fa-check" style="color:#198754;font-size:20px;"></i>
-          </div>
-
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:1.05rem;color:#0f5132;margin-bottom:.25rem;">
-              Enregistrement réussi
+      <!-- TABLE -->
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header bg-gradient-dark">
+              <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
             </div>
 
-            <div class="text-muted" style="line-height:1.35;">
-              ${cleanedBody || `<p class="mb-0">La réquisition a été enregistrée.</p>`}
-            </div>
+            <div class="card-body">
+              <div id="data-table-wrapper" class="table-scroll">
+                <div class="loading-spinner"></div>
 
-            ${dossier ? `
-              <div class="mt-3 p-3 rounded"
-                   style="border:1px solid rgba(25,135,84,.35); background:rgba(25,135,84,.08);">
-                <div class="text-muted small" style="margin-bottom:.25rem;">Numéro de dossier</div>
-                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-                  <span class="badge bg-success" style="font-size:1rem;padding:.55rem .8rem;letter-spacing:.3px;">
-                    ${escapeHtml(dossier)}
-                  </span>
-                  <button type="button" class="btn btn-sm btn-outline-success" id="btn-copy-dossier">
-                    <i class="fas fa-copy"></i> Copier
-                  </button>
-                </div>
+                <table id="data-table" class="table table-bordered" style="display:none;width:100%">
+                  <thead>
+                    <tr>
+                      <th>Date entrée</th>
+                      <th>Fournisseur</th>
+                      <th>Entrepôt</th>
+                      <th>Produit</th>
+                      <th>Volume</th>
+                      <th>Immatriculation</th>
+                      <th>Déclaration</th>
+                      <th>Réquisition</th>
+                    </tr>
+                  </thead>
+                </table>
               </div>
-            ` : ''}
+            </div>
+
           </div>
         </div>
       </div>
-    `;
 
-    // Replace footer button with a green OK
-    footerEl.innerHTML = `
-      <button type="button" class="btn btn-success" data-bs-dismiss="modal">
-        <i class="fas fa-check"></i> OK
-      </button>
-    `;
+      <!-- RESULT MODAL (Modern - Bootstrap 4, centered) -->
+      <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content result-modal">
 
-    // Wire copy (after DOM injection)
-    if(dossier){
-      const copyBtn = document.getElementById('btn-copy-dossier');
-      if(copyBtn){
-        copyBtn.addEventListener('click', async ()=>{
+            <div class="modal-header result-modal__header">
+              <div class="result-modal__icon">
+                <i id="result-modal-icon" class="fas fa-info-circle"></i>
+              </div>
+
+              <div class="result-modal__titles">
+                <h5 class="modal-title mb-0" id="result-modal-title">Information</h5>
+                <div class="result-modal__subtitle" id="result-modal-subtitle">Message</div>
+              </div>
+
+              <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+
+            <div class="modal-body" id="result-modal-body"></div>
+
+            <div class="modal-footer result-modal__footer" id="result-modal-footer">
+              <button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER MODAL (Bootstrap 4) -->
+      <div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h5 class="modal-title">Filtres avancés</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <div class="row">
+
+                <div class="col-md-3">
+                  <label class="form-label">Date début</label>
+                  <input type="date" id="flt_date_from" class="form-control">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Date fin</label>
+                  <input type="date" id="flt_date_to" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Frontière</label>
+                  <select id="flt_frontiere" class="form-control">
+                    <option value="">Toutes</option>
+                    {% for f in frontieres %}
+                      <option value="{{ f.nomville }}">{{ f.nomville }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-md-6 mt-2">
+                  <label class="form-label">Fournisseur</label>
+                  <select id="flt_importateur" class="form-control">
+                    <option value="">Tous</option>
+                    {% for f in fournisseurs %}
+                      <option value="{{ f.nomimportateur }}">{{ f.nomimportateur }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-md-6 mt-2">
+                  <label class="form-label">Entrepôt</label>
+                  <select id="flt_entrepot" class="form-control">
+                    <option value="">Tous</option>
+                    {% for e in entrepots %}
+                      <option value="{{ e.nomentrepot }}">{{ e.nomentrepot }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-md-6 mt-2">
+                  <label class="form-label">Produit</label>
+                  <select id="flt_produit" class="form-control">
+                    <option value="">Tous</option>
+                    {% for p in produits %}
+                      <option value="{{ p.nomproduit }}">{{ p.nomproduit }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-md-6 mt-2">
+                  <label class="form-label">Immatriculation</label>
+                  <input id="flt_immat" class="form-control">
+                </div>
+
+                <div class="col-md-6 mt-2">
+                  <label class="form-label">Déclaration</label>
+                  <input id="flt_declaration" class="form-control">
+                </div>
+
+                <div class="col-md-6 mt-2">
+                  <label class="form-label">Dossier</label>
+                  <input id="flt_numdos" class="form-control">
+                </div>
+
+                <div class="col-12 mt-3">
+                  <small class="text-muted">⚠️ Au moins un filtre est requis pour charger les données.</small>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" id="btn-reset">Réinitialiser</button>
+              <button type="button" class="btn btn-primary" id="btn-apply">Appliquer</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const STORAGE_KEY = 'carg_filters_v1';
+        const csrfToken = '{{ csrf_token }}';
+        let table = null;
+
+        function showSpinner(){ $('#data-table-wrapper .loading-spinner').show(); }
+        function hideSpinner(){ $('#data-table-wrapper .loading-spinner').hide(); }
+
+        function filters(){
+          return {
+            flt_date_from: ($('#flt_date_from').val() || '').trim(),
+            flt_date_to: ($('#flt_date_to').val() || '').trim(),
+            flt_frontiere: ($('#flt_frontiere').val() || '').trim(),
+            flt_importateur: ($('#flt_importateur').val() || '').trim(),
+            flt_entrepot: ($('#flt_entrepot').val() || '').trim(),
+            flt_produit: ($('#flt_produit').val() || '').trim(),
+            flt_immat: ($('#flt_immat').val() || '').trim(),
+            flt_declaration: ($('#flt_declaration').val() || '').trim(),
+            flt_numdos: ($('#flt_numdos').val() || '').trim()
+          };
+        }
+
+        function hasFilters(f){
+          return Object.values(f).some(v => String(v || '').trim() !== '');
+        }
+
+        function humanLabel(k){
+          const map = {
+            flt_date_from: 'Date début',
+            flt_date_to: 'Date fin',
+            flt_frontiere: 'Frontière',
+            flt_importateur: 'Fournisseur',
+            flt_entrepot: 'Entrepôt',
+            flt_produit: 'Produit',
+            flt_immat: 'Immatriculation',
+            flt_declaration: 'Déclaration',
+            flt_numdos: 'Dossier'
+          };
+          return map[k] || k;
+        }
+
+        function applyFiltersToUI(f){
+          $('#flt_date_from').val(f.flt_date_from || '');
+          $('#flt_date_to').val(f.flt_date_to || '');
+          $('#flt_frontiere').val(f.flt_frontiere || '');
+          $('#flt_importateur').val(f.flt_importateur || '');
+          $('#flt_entrepot').val(f.flt_entrepot || '');
+          $('#flt_produit').val(f.flt_produit || '');
+          $('#flt_immat').val(f.flt_immat || '');
+          $('#flt_declaration').val(f.flt_declaration || '');
+          $('#flt_numdos').val(f.flt_numdos || '');
+        }
+
+        function renderActiveFilters(f){
+          const box = document.getElementById('active-filters');
+          box.innerHTML = '';
+          const entries = Object.entries(f).filter(([k,v]) => String(v || '').trim() !== '');
+          if(entries.length === 0){ box.style.display = 'none'; return; }
+
+          entries.forEach(([k,v])=>{
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.innerHTML = `${humanLabel(k)} : <b>${String(v)}</b>`;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', ()=>{
+              const current = filters();
+              current[k] = '';
+              applyFiltersToUI(current);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+              renderActiveFilters(current);
+
+              if(!hasFilters(current)){
+                destroyTableAndShowEmpty();
+              }else{
+                initTable().ajax.reload(null, true);
+              }
+            });
+
+            chip.appendChild(btn);
+            box.appendChild(chip);
+          });
+
+          box.style.display = 'flex';
+        }
+
+        // Bootstrap 4 modal hide helper
+        function hideModal(id){
+          $('#' + id).modal('hide');
+        }
+
+        function destroyTableAndShowEmpty(){
+          if(table){
+            table.destroy(true);
+            table = null;
+          }
+          $('#data-table').hide();
+          $('#empty-state').show();
+        }
+
+        function initTable(){
+          if(table) return table;
+
+          $('#empty-state').hide();
+          $('#data-table').show();
+
+          table = $('#data-table').DataTable({
+            serverSide: true,
+            processing: true,
+            pageLength: 20,
+            lengthMenu: [20],
+            searchDelay: 350,
+
+            ajax: function(d, cb){
+              const f = filters();
+              const globalSearch = (d.search && String(d.search.value || '').trim()) || '';
+
+              if(!hasFilters(f) && !globalSearch){
+                cb({ data: [], draw: d.draw || 1, recordsTotal: 0, recordsFiltered: 0 });
+                return;
+              }
+
+              showSpinner();
+              $.ajax({
+                url: '{% url "responseAffichageTableau" %}',
+                type: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                data: Object.assign({}, d, f),
+              })
+              .done(resp => cb(resp))
+              .fail(() => cb({ data: [], draw: d.draw || 1, recordsTotal: 0, recordsFiltered: 0 }))
+              .always(() => hideSpinner());
+            },
+
+            columns: [
+              { data: 'date_entree_display', defaultContent: '' },
+              { data: 'importateur__nomimportateur', defaultContent: '' },
+              { data: 'entrepot__nomentrepot', defaultContent: '' },
+              { data: 'produit__nomproduit', defaultContent: '' },
+              { data: 'volume', defaultContent: '' },
+              { data: 'immatriculation', defaultContent: '' },
+              { data: 'declaration', defaultContent: '' },
+              {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(_data, _type, row){
+                  const id = row.idcargaison || '';
+                  const existing = (row.numreq || '').trim();
+
+                  if(existing){
+                    return `<span class="badge badge-success">${existing}</span>`;
+                  }
+
+                  const inputId = `req-${id}`;
+                  return `
+                    <div class="input-group input-group-sm" style="min-width:260px">
+                      <input type="text" id="${inputId}" class="form-control"
+                             placeholder="Référence"
+                             oninput="this.value=this.value.toUpperCase()" />
+                      <div class="input-group-append">
+                        <button class="btn btn-primary" type="button"
+                                onclick="envoyerNumreq('${id}','${inputId}',this)">Envoyer</button>
+                      </div>
+                    </div>
+                  `;
+                }
+              }
+            ],
+            order: [[0,'desc']]
+          });
+
+          return table;
+        }
+
+        // ===== Modern professional result modal =====
+        function escapeHtml(str){
+          return String(str ?? '')
+            .replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll("'","&#039;");
+        }
+
+        function showResultModal(title, htmlBody){
+          const $m = $('#result-modal');
+          const $content = $m.find('.modal-content');
+          const $icon = $('#result-modal-icon');
+          const $title = $('#result-modal-title');
+          const $sub = $('#result-modal-subtitle');
+          const $body = $('#result-modal-body');
+          const $footer = $('#result-modal-footer');
+
+          const t = (title || 'Information').trim();
+          $title.text(t);
+
+          $content.removeClass('rm-success rm-danger rm-warning');
+
+          const lower = t.toLowerCase();
+          const isSuccess = lower.includes('succ') || lower.includes('réussi') || lower.includes('reussi');
+          const isError = lower.includes('erreur') || lower.includes('fail') || lower.includes('échec') || lower.includes('echec');
+          const isWarn = lower.includes('validation') || lower.includes('attention') || lower.includes('warning');
+
+          let dossier = '';
           try{
-            await navigator.clipboard.writeText(dossier);
-            copyBtn.innerHTML = `<i class="fas fa-check"></i> Copié`;
-            copyBtn.classList.remove('btn-outline-success');
-            copyBtn.classList.add('btn-success');
-            setTimeout(()=>{
-              copyBtn.innerHTML = `<i class="fas fa-copy"></i> Copier`;
-              copyBtn.classList.add('btn-outline-success');
-              copyBtn.classList.remove('btn-success');
-            }, 1200);
-          }catch(e){}
-        });
-      }
-    }
-  } else {
-    bodyEl.innerHTML = htmlBody || '';
-  }
+            const m = String(htmlBody || '').match(/Num[ée]ro\s+de\s+dossier\s*:\s*<b>\s*([^<]+)\s*<\/b>/i);
+            dossier = m ? m[1].trim() : '';
+          }catch(e){ dossier = ''; }
 
-  bootstrap.Modal.getOrCreateInstance(el).show();
-}
-/* ========= END SUCCESS MODAL REDESIGN ========= */
+          const cleanedBody = String(htmlBody || '')
+            .replace(/<p>\s*Num[ée]ro\s+de\s+dossier\s*:\s*<b>[^<]*<\/b>\s*<\/p>/i, '')
+            .trim();
 
-function destroyTableAndShowEmpty(){
-  if(table){
-    table.destroy(true);
-    table = null;
-  }
-  $('#data-table').hide();
-  $('#empty-state').show();
-}
+          if(isSuccess){
+            $content.addClass('rm-success');
+            $icon.attr('class','fas fa-check');
+            $sub.text("L'opération a été effectuée avec succès.");
 
-function initTable(){
-  if(table) return table;
+            $body.html(`
+              <div class="success-card">
+                <div class="success-card__title">Enregistrement réussi</div>
+                <div class="success-card__text">
+                  ${cleanedBody || `<p class="mb-0">La réquisition a été enregistrée.</p>`}
+                </div>
 
-  $('#empty-state').hide();
-  $('#data-table').show();
+                ${dossier ? `
+                  <div class="dossier-box">
+                    <div>
+                      <div class="dossier-label">Numéro de dossier</div>
+                      <span class="dossier-badge" id="dossier-value">${escapeHtml(dossier)}</span>
+                    </div>
+                    <div class="d-flex" style="gap:.4rem;">
+                      <button type="button" class="btn btn-outline-success btn-sm" id="btn-copy-dossier">
+                        <i class="fas fa-copy"></i> Copier
+                      </button>
+                      <button type="button" class="btn btn-success btn-sm" data-dismiss="modal">
+                        <i class="fas fa-check"></i> OK
+                      </button>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            `);
 
-  table = $('#data-table').DataTable({
-    serverSide:true,
-    processing:true,
-    pageLength:20,
-    lengthMenu:[20],
-    searchDelay:350,
+            if(dossier){
+              $footer.html(`<button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>`);
+              setTimeout(() => {
+                const btn = document.getElementById('btn-copy-dossier');
+                if(btn){
+                  btn.addEventListener('click', async () => {
+                    try{
+                      await navigator.clipboard.writeText(dossier);
+                      btn.classList.remove('btn-outline-success');
+                      btn.classList.add('btn-success');
+                      btn.innerHTML = `<i class="fas fa-check"></i> Copié`;
+                      setTimeout(() => {
+                        btn.classList.add('btn-outline-success');
+                        btn.classList.remove('btn-success');
+                        btn.innerHTML = `<i class="fas fa-copy"></i> Copier`;
+                      }, 1200);
+                    }catch(e){}
+                  });
+                }
+              }, 0);
+            }else{
+              $footer.html(`
+                <button type="button" class="btn btn-success" data-dismiss="modal">
+                  <i class="fas fa-check"></i> OK
+                </button>
+              `);
+            }
 
-    ajax: function(d, cb){
-      const f = filters();
-      const globalSearch = (d.search && String(d.search.value||'').trim()) || '';
+          } else if(isError){
+            $content.addClass('rm-danger');
+            $icon.attr('class','fas fa-triangle-exclamation');
+            $sub.text("Une erreur est survenue. Veuillez vérifier et réessayer.");
+            $body.html(cleanedBody || htmlBody || '');
+            $footer.html(`<button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>`);
 
-      if(!hasFilters(f) && !globalSearch){
-        cb({data:[], draw:d.draw||1, recordsTotal:0, recordsFiltered:0});
-        return;
-      }
+          } else if(isWarn){
+            $content.addClass('rm-warning');
+            $icon.attr('class','fas fa-circle-exclamation');
+            $sub.text("Action requise avant de continuer.");
+            $body.html(cleanedBody || htmlBody || '');
+            $footer.html(`<button type="button" class="btn btn-warning" data-dismiss="modal">OK</button>`);
 
-      showSpinner();
-      $.ajax({
-        url: '{% url "responseAffichageTableau" %}',
-        type:'POST',
-        headers:{ 'X-CSRFToken': csrfToken },
-        data: Object.assign({}, d, f),
-      })
-      .done(resp => cb(resp))
-      .fail(()=> cb({data:[], draw:d.draw||1, recordsTotal:0, recordsFiltered:0}))
-      .always(()=> hideSpinner());
-    },
-
-    columns:[
-      {data:'date_entree_display', defaultContent:''},
-      {data:'importateur__nomimportateur', defaultContent:''},
-      {data:'entrepot__nomentrepot', defaultContent:''},
-      {data:'produit__nomproduit', defaultContent:''},
-      {data:'volume', defaultContent:''},
-      {data:'immatriculation', defaultContent:''},
-      {data:'declaration', defaultContent:''},
-      {
-        data:null,
-        orderable:false,
-        searchable:false,
-        render:function(_data,_type,row){
-          const id = row.idcargaison || '';
-          const existing = (row.numreq || '').trim();
-
-          if(existing){
-            return `<span class="badge bg-success">${existing}</span>`;
+          } else {
+            $icon.attr('class','fas fa-info-circle');
+            $sub.text("Information");
+            $body.html(cleanedBody || htmlBody || '');
+            $footer.html(`<button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>`);
           }
 
-          const inputId = `req-${id}`;
-          return `
-            <div class="input-group input-group-sm" style="min-width:260px">
-              <input type="text" id="${inputId}" class="form-control"
-                     placeholder="Référence"
-                     oninput="this.value=this.value.toUpperCase()" />
-              <button class="btn btn-primary" type="button"
-                      onclick="envoyerNumreq('${id}','${inputId}',this)">Envoyer</button>
-            </div>
-          `;
+          $m.modal('show');
         }
-      }
-    ],
-    order:[[0,'desc']]
-  });
 
-  return table;
-}
+        // APPLY (must close modal)
+        $('#btn-apply').on('click', function () {
+    const f = filters();
 
-// APPLY
-$('#btn-apply').on('click', ()=>{
-  const f = filters();
-  if(!hasFilters(f)){
-    alert('Veuillez appliquer au moins un filtre.');
-    return;
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
-  renderActiveFilters(f);
-
-  if(!table){
-    initTable();
-  }
-  table.ajax.reload(null, true);
-
-  hideModal('filtersModal');
-});
-
-// Reset filters (only UI)
-$('#btn-reset').on('click', ()=>{
-  applyFiltersToUI({
-    flt_date_from:'', flt_date_to:'', flt_frontiere:'',
-    flt_importateur:'', flt_entrepot:'', flt_produit:'',
-    flt_immat:'', flt_declaration:'', flt_numdos:''
-  });
-});
-
-// ✅ Effacer: refresh page + reset all filters
-$('#btn-clear').on('click', ()=>{
-  localStorage.removeItem(STORAGE_KEY);
-  // also clear form values to avoid browser auto-fill confusion
-  applyFiltersToUI({
-    flt_date_from:'', flt_date_to:'', flt_frontiere:'',
-    flt_importateur:'', flt_entrepot:'', flt_produit:'',
-    flt_immat:'', flt_declaration:'', flt_numdos:''
-  });
-  window.location.reload();
-});
-
-async function envoyerNumreq(rowId, inputId, btn){
-  const input = document.getElementById(inputId);
-  if(!input){
-    showResultModal('Erreur', "Champ introuvable.");
-    return;
-  }
-
-  let value = String(input.value || '').trim();
-  if(!value){
-    showResultModal('Validation', "Veuillez saisir la référence de réquisition.");
-    return;
-  }
-  value = value.toUpperCase();
-  input.value = value;
-
-  const prevText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '...';
-
-  try{
-    const resp = await fetch('{% url "numreq" %}',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'X-CSRFToken': csrfToken
-      },
-      body: JSON.stringify({ jsonData: value, idcargaison: rowId })
-    });
-
-    if(!resp.ok){
-      const txt = await resp.text();
-      showResultModal('Erreur', `Echec de l'envoi.<br><small>${txt}</small>`);
+    if (!hasFilters(f)) {
+      alert('Veuillez appliquer au moins un filtre.');
       return;
     }
 
-    const data = await resp.json();
-    const num = data && (data.num || data.numero || data.dossier);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
+    renderActiveFilters(f);
 
-    let html = `<p class="mb-1">La réquisition <b>${value}</b> a été enregistrée.</p>`;
-    if(num) html += `<p class="mb-0">Numéro de dossier: <b>${num}</b></p>`;
+    if (!table) initTable();
+    table.ajax.reload(null, true);
 
-    showResultModal('Succès', html);
-    if(table) table.ajax.reload(null, false);
+    // ✅ Dismiss modal (Bootstrap 4)
+    $('#filtersModal').modal('hide');
 
-  }catch(e){
-    console.error(e);
-    showResultModal('Erreur', "Une erreur est survenue. Veuillez réessayer.");
-  }finally{
-    btn.disabled = false;
-    btn.textContent = prevText;
-  }
-}
+    // ✅ Safety cleanup (sometimes backdrop sticks)
+    $('#filtersModal').one('hidden.bs.modal', function () {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open').css('padding-right', '');
+    });
+  });
 
-$(document).ready(function(){
-  // Restore saved filters (but NO auto-load)
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const f = JSON.parse(raw);
-      if(f && typeof f === 'object'){
-        applyFiltersToUI(f);
-        renderActiveFilters(f);
-        // optional auto-load:
-        // if(hasFilters(f)) { initTable(); table.ajax.reload(null,true); }
-      }
-    }
-  }catch(e){}
-});
-</script>
+        // Reset filters (UI only)
+        $('#btn-reset').on('click', function(){
+          applyFiltersToUI({
+            flt_date_from:'', flt_date_to:'', flt_frontiere:'',
+            flt_importateur:'', flt_entrepot:'', flt_produit:'',
+            flt_immat:'', flt_declaration:'', flt_numdos:''
+          });
+        });
 
+        // Clear
+        $('#btn-clear').on('click', function(){
+          localStorage.removeItem(STORAGE_KEY);
+          applyFiltersToUI({
+            flt_date_from:'', flt_date_to:'', flt_frontiere:'',
+            flt_importateur:'', flt_entrepot:'', flt_produit:'',
+            flt_immat:'', flt_declaration:'', flt_numdos:''
+          });
+          window.location.reload();
+        });
+
+        async function envoyerNumreq(rowId, inputId, btn){
+          const input = document.getElementById(inputId);
+          if(!input){
+            showResultModal('Erreur', "Champ introuvable.");
+            return;
+          }
+
+          let value = String(input.value || '').trim();
+          if(!value){
+            showResultModal('Validation', "Veuillez saisir la référence de réquisition.");
+            return;
+          }
+          value = value.toUpperCase();
+          input.value = value;
+
+          const prevHtml = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+          try{
+            const resp = await fetch('{% url "numreq" %}', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+              },
+              body: JSON.stringify({ jsonData: value, idcargaison: rowId })
+            });
+
+            if(!resp.ok){
+              const txt = await resp.text();
+              showResultModal('Erreur', `Echec de l'envoi.<br><small>${escapeHtml(txt)}</small>`);
+              return;
+            }
+
+            const data = await resp.json();
+            const num = data && (data.num || data.numero || data.dossier);
+
+            let html = `<p class="mb-1">La réquisition <b>${escapeHtml(value)}</b> a été enregistrée.</p>`;
+            if(num) html += `<p class="mb-0">Numéro de dossier: <b>${escapeHtml(num)}</b></p>`;
+
+            showResultModal('Succès', html);
+            if(table) table.ajax.reload(null, false);
+
+          }catch(e){
+            console.error(e);
+            showResultModal('Erreur', "Une erreur est survenue. Veuillez réessayer.");
+          }finally{
+            btn.disabled = false;
+            btn.innerHTML = prevHtml;
+          }
+        }
+
+        $(document).ready(function(){
+          // Restore saved filters (no auto-load)
+          try{
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if(raw){
+              const f = JSON.parse(raw);
+              if(f && typeof f === 'object'){
+                applyFiltersToUI(f);
+                renderActiveFilters(f);
+              }
+            }
+          }catch(e){}
+        });
+      </script>
+
+    </div>
+  </section>
 {% endblock %}

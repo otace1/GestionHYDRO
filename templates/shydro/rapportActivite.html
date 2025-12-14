@@ -336,6 +336,119 @@
 
 {# Keep your page specific JS hook #}
 <script>
+  // Provide default implementations for action handlers used by table buttons
+  // so that pages extending this layout do not fail with ReferenceError
+  const csrfToken = '{{ csrf_token }}';
+
+  // Helper to get current row id from a clicked element
+  function __getRowIdFromEvent(ev){
+    try{
+      const e = ev || window.event;
+      const row = (e.target || e.srcElement).closest('tr');
+      return row ? row.getAttribute('id') : null;
+    }catch(err){
+      return null;
+    }
+  }
+
+  // Re-Inspecter action
+  function confirmAction(event){
+    if(event) event.preventDefault();
+
+    const rowId = __getRowIdFromEvent(event);
+    if(!rowId){ return false; }
+
+    const confirmed = window.confirm("Êtes-vous sûr de vouloir réinspecter cette cargaison?");
+    if(!confirmed){ return false; }
+
+    fetch('{% url "reInspecter" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rowId: rowId })
+    })
+    .then(resp => {
+      if(resp.ok){
+        alert('Cargaison renvoyée en inspection');
+        window.location.reload();
+      }else{
+        alert("Une erreur s'est produite lors de la réinspection.");
+      }
+    })
+    .catch(() => {
+      alert("Une erreur s'est produite lors de la réinspection.");
+    });
+
+    return false;
+  }
+
+  // Impression Rapport d'Echantillonnage
+  function printRappEchantillonnage(event){
+    if(event) event.preventDefault();
+
+    const rowId = __getRowIdFromEvent(event);
+    if(!rowId){ return false; }
+
+    const confirmed = window.confirm("Afficher le rapport d'Echantillonnage?");
+    if(!confirmed){ return false; }
+
+    fetch('{% url "impressionRappEch" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rowId: rowId })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data && data.status === 'success' && data.pdf_base64){
+        const byteChars = atob(data.pdf_base64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {type:'application/pdf'});
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+      } else {
+        alert("Un ou plusieurs éléments du rapport d'echantillannage sont manquants.");
+      }
+    })
+    .catch(() => alert("Erreur lors de la génération du rapport."));
+
+    return false;
+  }
+
+  // Impression Rapport d'Inspection
+  function printRappInspection(event){
+    if(event) event.preventDefault();
+
+    const rowId = __getRowIdFromEvent(event);
+    if(!rowId){ return false; }
+
+    const confirmed = window.confirm("Afficher le rapport d'Inspection?");
+    if(!confirmed){ return false; }
+
+    fetch('{% url "impressionRappInsp" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rowId: rowId })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data && data.status === 'success' && data.pdf_base64){
+        const byteChars = atob(data.pdf_base64);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {type:'application/pdf'});
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+      } else {
+        alert("Un ou plusieurs éléments du rapport d'inspection sont manquants.");
+      }
+    })
+    .catch(() => alert("Erreur lors de la génération du rapport."));
+
+    return false;
+  }
+
   $(document).ready(function(){
     {% block javascript %}{% endblock %}
   });

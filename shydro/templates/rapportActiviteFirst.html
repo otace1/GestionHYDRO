@@ -1,10 +1,5 @@
 {# templates/shydro/rapportActivite.html #}
 {% extends 'base_template/base_template.html' %}
-{% load crispy_forms_tags %}
-{% load django_tables2 %}
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
 
 {% block content %}
   <div class="content-header">
@@ -28,7 +23,7 @@
   <section class="content">
     <div class="container-fluid">
 
-      {# ===== DataTables (Bootstrap 4) + Buttons CSS (we keep but do NOT use client-side excel for large datasets) ===== #}
+      {# ===== DataTables (Bootstrap 4) + Buttons CSS ===== #}
       <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
       <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap4.min.css">
 
@@ -74,21 +69,7 @@
           margin-top:12px;
         }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #global-spinner{
-          display:none;
-          position:fixed; inset:0;
-          background:rgba(255,255,255,.65);
-          z-index:9999;
-        }
-        #global-spinner .loading-spinner{
-          width:46px;height:46px;border-radius:50%;
-          border:4px solid rgba(0,0,0,.15);
-          border-top-color:#28a745;
-          animation: spin .9s linear infinite;
-          position:absolute;top:50%;left:50%;
-          transform:translate(-50%,-50%);
-        }
+
         .table-responsive{ overflow-x:auto; }
 
         /* DataTables buttons spacing */
@@ -107,11 +88,7 @@
           overflow: hidden;
           display: none;
         }
-        .export-toast .alert {
-          margin: 0;
-          border: 0;
-          border-radius: 0;
-        }
+        .export-toast .alert { margin: 0; border: 0; border-radius: 0; }
         .export-toast .export-row {
           display:flex;
           align-items:center;
@@ -124,10 +101,7 @@
           gap:.6rem;
           min-width: 0;
         }
-        .export-toast .export-title {
-          font-weight: 800;
-          line-height: 1.1;
-        }
+        .export-toast .export-title { font-weight: 800; line-height: 1.1; }
         .export-toast .export-sub {
           font-size: .85rem;
           opacity: .9;
@@ -135,19 +109,90 @@
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .export-toast .export-actions {
+        .export-toast .export-actions { display:flex; align-items:center; gap:.35rem; }
+        .export-toast .spinner-border { width: 1.15rem; height: 1.15rem; }
+
+        /* ===== Modern Result Modal (same as gestionRequisitions.html) ===== */
+        .result-modal{
+          border:0;
+          border-radius:16px;
+          overflow:hidden;
+          box-shadow: 0 18px 60px rgba(0,0,0,.22);
+        }
+        .result-modal__header{
+          border:0;
+          padding:18px 18px 12px 18px;
+          display:flex;
+          align-items:flex-start;
+          gap:14px;
+          background:#fff;
+        }
+        .result-modal__icon{
+          width:44px;height:44px;
+          border-radius:14px;
+          display:flex;align-items:center;justify-content:center;
+          background: rgba(0,123,255,.10);
+          color:#0b5ed7;
+          flex:0 0 auto;
+        }
+        .result-modal__icon i{ font-size:20px; }
+        .result-modal__titles{ flex:1; min-width:0; }
+        .result-modal__titles .modal-title{
+          font-weight:900;
+          letter-spacing:.2px;
+          color:#111827;
+          line-height:1.1;
+        }
+        .result-modal__subtitle{
+          margin-top:4px;
+          color:#6b7280;
+          font-size:.9rem;
+        }
+        .result-modal__close{ margin:-2px -2px 0 auto; opacity:.7; }
+        .result-modal__close:hover{ opacity:1; }
+        .result-modal__footer{ border:0; padding:12px 18px 18px 18px; background:#fff; }
+
+        .success-card{
+          border:1px solid rgba(25,135,84,.18);
+          background: rgba(25,135,84,.06);
+          border-radius:14px;
+          padding:14px;
+        }
+        .success-card__title{ font-weight:800; color:#0f5132; margin-bottom:6px; }
+        .success-card__text{ color:#1f2937; margin:0; }
+
+        .dossier-box{
+          margin-top:12px;
+          border-radius:14px;
+          border:1px solid rgba(25,135,84,.22);
+          background:#fff;
+          padding:12px;
           display:flex;
           align-items:center;
-          gap:.35rem;
+          justify-content:space-between;
+          gap:10px;
+          flex-wrap:wrap;
         }
-        .export-toast .spinner-border {
-          width: 1.15rem;
-          height: 1.15rem;
+        .dossier-label{ font-size:.78rem; color:#6b7280; margin-bottom:4px; }
+        .dossier-badge{
+          display:inline-block;
+          padding:.45rem .7rem;
+          border-radius:999px;
+          background: rgba(25,135,84,.10);
+          border: 1px solid rgba(25,135,84,.22);
+          color:#0f5132;
+          font-weight:900;
+          letter-spacing:.3px;
+          font-size:.95rem;
         }
+
+        .rm-success .result-modal__icon{ background: rgba(25,135,84,.12); color:#198754; }
+        .rm-danger  .result-modal__icon{ background: rgba(220,53,69,.12); color:#dc3545; }
+        .rm-warning .result-modal__icon{ background: rgba(255,193,7,.18); color:#b45309; }
       </style>
 
       <!-- GLOBAL SPINNER (for table reload only) -->
-      <div id="global-spinner"><div class="loading-spinner"></div></div>
+
 
       <!-- ✅ Export Corner Alert -->
       <div id="export-toast" class="export-toast">
@@ -186,7 +231,6 @@
               <i class="fas fa-undo"></i> Effacer
             </button>
 
-            {# ✅ Export Excel (asynchrone via Celery) - exporte TOUTES les lignes filtrées #}
             <button type="button" class="btn btn-success btn-sm" id="btn-export-excel" disabled>
               <i class="fas fa-file-excel"></i> Export Excel
             </button>
@@ -253,6 +297,61 @@
             </table>
           </div>
 
+        </div>
+      </div>
+
+      <!-- RESULT MODAL (Modern - Bootstrap 4, centered) -->
+      <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content result-modal">
+
+            <div class="modal-header result-modal__header">
+              <div class="result-modal__icon">
+                <i id="result-modal-icon" class="fas fa-info-circle"></i>
+              </div>
+
+              <div class="result-modal__titles">
+                <h5 class="modal-title mb-0" id="result-modal-title">Information</h5>
+                <div class="result-modal__subtitle" id="result-modal-subtitle">Message</div>
+              </div>
+
+              <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+
+            <div class="modal-body" id="result-modal-body"></div>
+
+            <div class="modal-footer result-modal__footer" id="result-modal-footer">
+              <button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIRM MODAL (Modern - Bootstrap 4, centered) -->
+      <div class="modal fade" id="confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content result-modal">
+            <div class="modal-header result-modal__header">
+              <div class="result-modal__icon">
+                <i class="fas fa-question-circle"></i>
+              </div>
+              <div class="result-modal__titles">
+                <h5 class="modal-title mb-0" id="confirm-modal-title">Confirmation</h5>
+                <div class="result-modal__subtitle" id="confirm-modal-subtitle">Veuillez confirmer l'action</div>
+              </div>
+              <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body" id="confirm-modal-body"></div>
+            <div class="modal-footer result-modal__footer">
+              <button type="button" class="btn btn-light" id="confirm-cancel" data-dismiss="modal">Annuler</button>
+              <button type="button" class="btn btn-primary" id="confirm-ok">Confirmer</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -366,8 +465,110 @@
         const csrfToken = '{{ csrf_token }}';
         const STORAGE_KEY = 'rapport_activite_filters_v2';
 
-        function showSpinner(){ $('#global-spinner').show(); }
-        function hideSpinner(){ $('#global-spinner').hide(); }
+        {#function showSpinner(){ $('#global-spinner').show(); }#}
+        {#function hideSpinner(){ $('#global-spinner').hide(); }#}
+
+        function showSpinner(){ /* spinner removed */ }
+        function hideSpinner(){ /* spinner removed */ }
+
+        // ===== Provide global handlers used by action buttons (avoid ReferenceError) =====
+        function __getRowIdFromEvent(ev){
+          try{
+            const e = ev || window.event;
+            const row = (e.target || e.srcElement).closest('tr');
+            return row ? row.getAttribute('id') : null;
+          }catch(err){ return null; }
+        }
+
+        async function confirmAction(event){
+          if(event) event.preventDefault();
+          const rowId = __getRowIdFromEvent(event);
+          if(!rowId) return false;
+
+          const ok = await showConfirmModal("Confirmation", "Êtes-vous sûr de vouloir réinspecter cette cargaison?", "Oui, réinspecter", "Annuler");
+          if(!ok) return false;
+
+          fetch('{% url "reInspecter" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rowId })
+          })
+          .then(resp => {
+            if(resp.ok){
+              showResultModal('Succès', '<p class="mb-0">Cargaison renvoyée en inspection.</p>');
+              setTimeout(()=>window.location.reload(), 800);
+            } else {
+              showResultModal('Erreur', "Une erreur s'est produite lors de la réinspection.");
+            }
+          })
+          .catch(() => showResultModal('Erreur', "Une erreur s'est produite lors de la réinspection."));
+
+          return false;
+        }
+
+        async function printRappEchantillonnage(event){
+          if(event) event.preventDefault();
+          const rowId = __getRowIdFromEvent(event);
+          if(!rowId) return false;
+
+          const ok = await showConfirmModal('Confirmation', "Afficher le rapport d'Echantillonnage?", 'Oui, afficher', 'Annuler');
+          if(!ok) return false;
+
+          fetch('{% url "impressionRappEch" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rowId })
+          })
+          .then(r => r.json())
+          .then(data => {
+            if(data && data.status === 'success' && data.pdf_base64){
+              const byteChars = atob(data.pdf_base64);
+              const byteNumbers = new Array(byteChars.length);
+              for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'application/pdf' });
+              const url = URL.createObjectURL(blob);
+              window.open(url);
+            } else {
+              showResultModal('Erreur', "Un ou plusieurs éléments du rapport d'echantillannage sont manquants.");
+            }
+          })
+          .catch(() => showResultModal('Erreur', 'Erreur lors de la génération du rapport.'));
+
+          return false;
+        }
+
+        async function printRappInspection(event){
+          if(event) event.preventDefault();
+          const rowId = __getRowIdFromEvent(event);
+          if(!rowId) return false;
+
+          const ok = await showConfirmModal('Confirmation', "Afficher le rapport d'Inspection?", 'Oui, afficher', 'Annuler');
+          if(!ok) return false;
+
+          fetch('{% url "impressionRappInsp" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rowId })
+          })
+          .then(r => r.json())
+          .then(data => {
+            if(data && data.status === 'success' && data.pdf_base64){
+              const byteChars = atob(data.pdf_base64);
+              const byteNumbers = new Array(byteChars.length);
+              for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'application/pdf' });
+              const url = URL.createObjectURL(blob);
+              window.open(url);
+            } else {
+              showResultModal('Erreur', "Un ou plusieurs éléments du rapport d'inspection sont manquants.");
+            }
+          })
+          .catch(() => showResultModal('Erreur', 'Erreur lors de la génération du rapport.'));
+
+          return false;
+        }
 
         function getFilters(){
           return {
@@ -512,15 +713,14 @@
                 const f = getFilters();
                 return Object.assign({}, d, f);
               },
-              beforeSend: function(){ showSpinner(); },
-              complete: function(){ hideSpinner(); },
               dataSrc: function(json){
                 if(!json || typeof json !== 'object') return [];
                 if(!Array.isArray(json.data)) return [];
                 return json.data;
               },
               error: function(xhr){
-                console.error('AJAX error:', xhr.status, xhr.responseText);
+                const msg = (xhr && xhr.responseText) ? xhr.responseText : '';
+                showResultModal('Erreur', `<p class="mb-0">Erreur lors du chargement des données.</p>${msg ? `<small class="text-muted">${escapeHtml(msg).slice(0,800)}</small>` : ''}`);
               }
             },
 
@@ -568,10 +768,107 @@
             dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
                  "<'row'<'col-sm-12'tr>>" +
                  "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-            buttons: [] // we export via Celery, not via DataTables html5
+            buttons: []
           });
 
           return dt;
+        }
+
+        // ===== Modern professional result modal (same design/behavior) =====
+        function escapeHtml(str){
+          return String(str ?? '')
+            .replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll("'","&#039;");
+        }
+
+        function showResultModal(title, htmlBody){
+          const $m = $('#result-modal');
+          const $content = $m.find('.modal-content');
+          const $icon = $('#result-modal-icon');
+          const $title = $('#result-modal-title');
+          const $sub = $('#result-modal-subtitle');
+          const $body = $('#result-modal-body');
+          const $footer = $('#result-modal-footer');
+
+          const t = (title || 'Information').trim();
+          $title.text(t);
+
+          $content.removeClass('rm-success rm-danger rm-warning');
+
+          const lower = t.toLowerCase();
+          const isSuccess = lower.includes('succ') || lower.includes('réussi') || lower.includes('reussi');
+          const isError = lower.includes('erreur') || lower.includes('fail') || lower.includes('échec') || lower.includes('echec');
+          const isWarn = lower.includes('validation') || lower.includes('attention') || lower.includes('warning');
+
+          if(isSuccess){
+            $content.addClass('rm-success');
+            $icon.attr('class','fas fa-check');
+            $sub.text("L'opération a été effectuée avec succès.");
+            $body.html(`
+              <div class="success-card">
+                <div class="success-card__title">Succès</div>
+                <div class="success-card__text">
+                  ${htmlBody || `<p class="mb-0">Opération réussie.</p>`}
+                </div>
+              </div>
+            `);
+            $footer.html(`
+              <button type="button" class="btn btn-success" data-dismiss="modal">
+                <i class="fas fa-check"></i> OK
+              </button>
+            `);
+
+          } else if(isError){
+            $content.addClass('rm-danger');
+            $icon.attr('class','fas fa-triangle-exclamation');
+            $sub.text("Une erreur est survenue. Veuillez vérifier et réessayer.");
+            $body.html(htmlBody || '');
+            $footer.html(`<button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>`);
+
+          } else if(isWarn){
+            $content.addClass('rm-warning');
+            $icon.attr('class','fas fa-circle-exclamation');
+            $sub.text("Action requise avant de continuer.");
+            $body.html(htmlBody || '');
+            $footer.html(`<button type="button" class="btn btn-warning" data-dismiss="modal">OK</button>`);
+
+          } else {
+            $icon.attr('class','fas fa-info-circle');
+            $sub.text("Information");
+            $body.html(htmlBody || '');
+            $footer.html(`<button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>`);
+          }
+
+          $m.modal('show');
+        }
+
+        // Reusable confirm modal returning a Promise<boolean>
+        function showConfirmModal(title, message, confirmText, cancelText){
+          return new Promise((resolve) => {
+            const $m = $('#confirm-modal');
+            $('#confirm-modal-title').text((title||'Confirmation'));
+            $('#confirm-modal-subtitle').text('');
+            $('#confirm-modal-body').html(message || 'Êtes-vous sûr ?');
+            const $ok = $('#confirm-ok');
+            const $cancel = $('#confirm-cancel');
+            $ok.text(confirmText || 'Confirmer');
+            $cancel.text(cancelText || 'Annuler');
+
+            const cleanup = () => {
+              $ok.off('click');
+              $cancel.off('click');
+              $m.off('hidden.bs.modal');
+            };
+
+            $ok.on('click', function(){ cleanup(); $m.modal('hide'); resolve(true); });
+            $cancel.on('click', function(){ cleanup(); /* hide triggers too */ resolve(false); });
+            $m.on('hidden.bs.modal', function(){ cleanup(); resolve(false); });
+
+            $m.modal('show');
+          });
         }
 
         $(document).ready(function(){
@@ -589,7 +886,7 @@
             const f = getFilters();
 
             if (!hasFilters(f)) {
-              alert('Veuillez appliquer au moins un filtre.');
+              showResultModal('Validation', 'Veuillez appliquer au moins un filtre.');
               return;
             }
 
@@ -601,9 +898,38 @@
 
             // ✅ Close modal (Bootstrap 4)
             $('#modal-default').modal('hide');
+
+            // ✅ Safety cleanup (sometimes backdrop sticks)
+            $('#modal-default').one('hidden.bs.modal', function () {
+              $('.modal-backdrop').remove();
+              $('body').removeClass('modal-open').css('padding-right', '');
+            });
           });
 
-          // ========= Export corner alert helpers =========
+          $('#btn-reset-filters').on('click', function(){
+            setFilters({ date_from:'', date_to:'', frontiere:'', importateur:'', entrepot:'', produit:'', immatriculation:'', declaration:'', numdos:'' });
+            clearSavedFilters();
+            renderChips({});
+            destroyTableAndShowEmpty();
+          });
+
+          $('#btn-clear-all').on('click', function(){
+            setFilters({ date_from:'', date_to:'', frontiere:'', importateur:'', entrepot:'', produit:'', immatriculation:'', declaration:'', numdos:'' });
+            clearSavedFilters();
+            renderChips({});
+            destroyTableAndShowEmpty();
+          });
+
+          // Safety: if the modal backdrop ever sticks, clean it after hide
+          $('#modal-default').on('hidden.bs.modal', function(){
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right','');
+          });
+
+          // ========= Export toast close =========
+          $('#export-toast-close').on('click', function(){ $('#export-toast').fadeOut(120); });
+
+          // ========= Export toast helpers (unchanged) =========
           const $toast = $('#export-toast');
           const $toastBody = $('#export-toast-body');
           const $toastIcon = $('#export-toast-icon');
@@ -612,18 +938,14 @@
           const $toastDownload = $('#export-toast-download');
 
           function showToast(){ $toast.fadeIn(120); }
-          function hideToast(){ $toast.fadeOut(120); }
           function setToastType(type){
             $toastBody.removeClass('alert-info alert-secondary alert-success alert-danger alert-warning')
                       .addClass('alert-' + type);
           }
           function setProgress(pct){
             const v = (pct == null || isNaN(pct)) ? null : Math.max(0, Math.min(100, parseInt(pct, 10)));
-            if (v == null) {
-              $toastSub.text('Export en cours…');
-            } else {
-              $toastSub.html('Préparation : <span id="export-toast-pct">' + v + '</span>%');
-            }
+            if (v == null) $toastSub.text('Export en cours…');
+            else $toastSub.html('Préparation : <span id="export-toast-pct">' + v + '</span>%');
           }
           function setRunningUI(){
             setToastType('info');
@@ -659,28 +981,20 @@
             showToast();
           }
 
-          $('#export-toast-close').on('click', function(){ hideToast(); });
-
-          // ✅ Export asynchrone (toutes les lignes filtrées) + corner alert progress
+          // ✅ Export asynchrone (unchanged)
           $('#btn-export-excel').on('click', function () {
             if (!$.fn.DataTable.isDataTable('#rapport-table')) return;
 
             const dt = $('#rapport-table').DataTable();
             const f = getFilters();
 
-            // Include current global search + ordering
             const searchValue = (dt.search() || '').trim();
             const order = dt.order() || [];
             const orderPayload = order.map(it => ({ column: it[0], dir: it[1] }));
 
-            const payload = Object.assign({}, f, {
-              search: { value: searchValue },
-              order: orderPayload
-            });
+            const payload = Object.assign({}, f, { search: { value: searchValue }, order: orderPayload });
 
             const $btn = $(this);
-
-            // Prevent double click
             if ($btn.data('busy')) return;
             $btn.data('busy', true).prop('disabled', true).addClass('disabled');
 
@@ -688,22 +1002,17 @@
 
             fetch("{% url 'startRapportActiviteExport' %}", {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-              },
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
               body: JSON.stringify(payload)
             })
             .then(r => r.json())
             .then(json => {
-              if (!json || !json.task_id) {
-                throw new Error((json && (json.error || json.detail)) || 'Échec du démarrage de la tâche');
-              }
+              if (!json || !json.task_id) throw new Error((json && (json.error || json.detail)) || 'Échec du démarrage de la tâche');
 
               const taskId = json.task_id;
               let stopped = false;
               const pollEvery = 1500;
-              const maxWaitMs = 10 * 60 * 1000; // 10 min
+              const maxWaitMs = 10 * 60 * 1000;
               const startedAt = Date.now();
 
               function poll() {
@@ -721,11 +1030,7 @@
                   .then(st => {
                     const state = (st && st.state) || 'PENDING';
 
-                    if (state === 'PENDING') {
-                      setQueuedUI();
-                      setTimeout(poll, pollEvery);
-                      return;
-                    }
+                    if (state === 'PENDING') { setQueuedUI(); setTimeout(poll, pollEvery); return; }
 
                     if (state === 'PROGRESS') {
                       const pct =
@@ -746,8 +1051,6 @@
                       const fileName = res.file_name || 'export.xlsx';
 
                       setSuccessUI(fileUrl, fileName);
-
-                      // optional auto-open:
                       if (fileUrl) window.open(fileUrl, '_blank');
 
                       $btn.data('busy', false).prop('disabled', false).removeClass('disabled');
@@ -779,25 +1082,6 @@
             });
           });
 
-          $('#btn-reset-filters').on('click', function(){
-            setFilters({ date_from:'', date_to:'', frontiere:'', importateur:'', entrepot:'', produit:'', immatriculation:'', declaration:'', numdos:'' });
-            clearSavedFilters();
-            renderChips({});
-            destroyTableAndShowEmpty();
-          });
-
-          $('#btn-clear-all').on('click', function(){
-            setFilters({ date_from:'', date_to:'', frontiere:'', importateur:'', entrepot:'', produit:'', immatriculation:'', declaration:'', numdos:'' });
-            clearSavedFilters();
-            renderChips({});
-            destroyTableAndShowEmpty();
-          });
-
-          // Safety: if the modal backdrop ever sticks, clean it after hide
-          $('#modal-default').on('hidden.bs.modal', function(){
-            $('.modal-backdrop').remove();
-            $('body').removeClass('modal-open').css('padding-right','');
-          });
         });
       </script>
 
