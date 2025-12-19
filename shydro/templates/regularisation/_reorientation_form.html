@@ -1,0 +1,65 @@
+{# Partial: RE-ORIENTATION form body (pure Bootstrap). Keep field names/IDs expected by JS/backend #}
+<div class="form-group">
+  <label for="nouvelleDestination">Nouvelle destination (Entrepôt)</label>
+  <div class="input-group">
+    <select id="nouvelleDestination" name="nouvelleDestination" class="form-control" required>
+      <option value="">-- Sélectionner un entrepôt --</option>
+    </select>
+    <div class="input-group-append">
+      <button class="btn btn-outline-secondary" type="button" id="btn-refresh-entrepots" title="Recharger la liste">
+        <i class="fas fa-sync"></i>
+      </button>
+    </div>
+  </div>
+  <small class="form-text text-muted">Choisissez le nouvel entrepôt de destination.</small>
+  
+  <div class="invalid-feedback">Veuillez sélectionner une destination.</div>
+  <div class="valid-feedback">OK</div>
+  
+  <script>
+    // Populate options when the modal is shown (id: modal-dest)
+    (function(){
+      const $modal = $('#modal-dest');
+      if($modal.data('wired')) return; // wire once
+
+      async function loadEntrepots(force){
+        const $sel = $('#nouvelleDestination');
+        if(!force && $sel.data('loaded')) return;
+        try{
+          // show a lightweight loading state
+          const prevVal = $sel.val();
+          $sel.prop('disabled', true);
+          $sel.html('<option value="">Chargement…</option>');
+
+          const resp = await $.getJSON('{% url "regularisation_filter_options" %}', { type: 'entrepot' });
+          const items = resp && resp.items ? resp.items : [];
+          const opts = ['<option value="">-- Sélectionner un entrepôt --</option>'];
+          items.forEach(function(it){
+            opts.push('<option value="'+ it.id +'">'+ it.label +'</option>');
+          });
+          $sel.html(opts.join(''));
+
+          // restore previous selection if still present
+          if(prevVal && $sel.find('option[value="'+prevVal+'"]').length){
+            $sel.val(prevVal);
+          }
+
+          $sel.data('loaded', true).prop('disabled', false);
+        }catch(e){
+          console.error('Load entrepôts failed', e);
+          $sel.html('<option value="">(Erreur de chargement)</option>').prop('disabled', false);
+        }
+      }
+
+      $modal.on('shown.bs.modal', function(){ loadEntrepots(false); });
+      $(document).on('click', '#btn-refresh-entrepots', function(){ loadEntrepots(true); });
+
+      $modal.data('wired', true);
+    })();
+  </script>
+</div>
+
+<div class="form-group mb-0">
+  <label for="dest_remarks">Remarques (optionnel)</label>
+  <textarea id="dest_remarks" name="remarks" class="form-control" rows="2" placeholder="Votre commentaire..."></textarea>
+</div>

@@ -1,0 +1,174 @@
+{# Partial: TRANSBORDEMENT form body (pure Bootstrap) - updated to immatriculation + volume #}
+<div class="form-group">
+  <label for="trans_immat">Nouvelle immatriculation</label>
+  <input type="text" id="trans_immat" name="nouvelleImmatriculation" class="form-control" placeholder="Ex: ABC-123" required>
+  <div class="invalid-feedback">Veuillez saisir une immatriculation.</div>
+  <small class="form-text text-muted">Renseignez la nouvelle immatriculation du véhicule receveur.</small>
+</div>
+
+<div class="form-group">
+  <label for="trans_volume">Volume transféré (m³)</label>
+  <input type="number" min="0" step="0.001" id="trans_volume" name="nouveauVolume" class="form-control" placeholder="Ex: 10.500" required>
+  <div class="invalid-feedback">Veuillez indiquer un volume valide.</div>
+  <small class="form-text text-muted">Saisissez le volume à transborder.</small>
+</div>
+
+<div class="form-group mb-0">
+  <label for="trans_remarks">Remarques (optionnel)</label>
+  <textarea id="trans_remarks" name="remarks" class="form-control" rows="2" placeholder="Votre commentaire..."></textarea>
+</div>
+
+<script>
+  (function () {
+    const $modal = $('#modal-trans');
+    if ($modal.data('wiredSubmit')) return;
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    // ✅ Close the Transbordement modal via BS5 API (do not dispose here; wait for hidden event)
+    function hardCloseTransModal() {
+      try {
+        var el = $modal.get(0);
+        if (el) {
+          // Ensure we always work with a BS5 instance and trigger a proper hide
+          var instance = bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el, {backdrop:true, keyboard:true});
+          // If the modal is already hidden, still emit a synthetic hidden event to proceed
+          var isShown = el.classList.contains('show');
+          if (isShown) {
+            instance.hide();
+          } else {
+            // Dispatch a hidden event so the downstream sequence continues deterministically
+            try {
+              el.dispatchEvent(new Event('hidden.bs.modal'));
+            } catch(e) {}
+          }
+        }
+      } catch(e) {}
+      // Cleanup is handled on hidden event; avoid disposing immediately to let the event fire
+    }
+
+    function openResultModal(isSuccess, detailsHtml) {
+      const details = detailsHtml ? `<div class="text-muted small mt-1">${detailsHtml}</div>` : '';
+
+      if (typeof showResultModal === 'function') {
+        if (isSuccess) {
+          showResultModal(
+            'Succès',
+            `<div class="p-2">
+               <p class="mb-0 font-weight-bold">Opération effectuée avec succès.</p>
+               ${details}
+             </div>`
+          );
+        } else {
+          showResultModal(
+            'Erreur',
+            `<div class="p-2">
+               <p class="mb-0 font-weight-bold">L'opération demandée a échoué.</p>
+               ${details}
+             </div>`
+          );
+        }
+      } else {
+        alert(isSuccess ? "Opération effectuée avec succès." : "L'opération demandée a échoué.");
+      }
+    }
+
+    // ✅ Close trans modal first, then show result modal (strictly event-driven; timeout only as last resort)
+    function closeThenShowResult(isSuccess, detailsHtml) {
+      // Blur any currently focused element before transitioning to result modal
+      try { if (document.activeElement) document.activeElement.blur(); } catch(e) {}
+
+      var el = $modal.get(0);
+      var opened = false;
+      function openOnce(){ if(opened) return; opened = true; openResultModal(isSuccess, detailsHtml); }
+
+      // Prefer waiting for hidden event to ensure clean a11y state
+      if (el) {
+        var onHidden = function(){
+          try { el.removeEventListener('hidden.bs.modal', onHidden); } catch(e) {}
+          // After it is fully hidden, dispose to reset state and clean defensively
+          try {
+            var inst = bootstrap.Modal.getInstance(el);
+            if (inst) inst.dispose();
+          } catch(e) {}
+          try { $('.modal-backdrop').remove(); } catch(e) {}
+          try { $('body').removeClass('modal-open').css('padding-right',''); } catch(e) {}
+          // Open result modal immediately after hidden to enforce correct sequencing
+          setTimeout(openOnce, 0);
+        };
+        try { el.addEventListener('hidden.bs.modal', onHidden, { once: true }); } catch(e) {}
+      }
+
+      // Hide + dispose trans modal
+      hardCloseTransModal();
+
+      // Fallback in case hidden event doesn’t fire for any reason (keep but increase slightly for safety)
+      setTimeout(openOnce, 280);
+    }
+
+    $(document).on('submit', '#trans-form', async function (e) {
+      e.preventDefault();
+
+      const pk = $('#trans_pk').val();
+      const immat = ($('#trans_immat').val() || '').trim();
+      const vol = parseFloat($('#trans_volume').val());
+
+      if (!pk) { alert('Aucune cargaison sélectionnée.'); return; }
+
+      if (!immat) { $('#trans_immat').addClass('is-invalid'); return; }
+      $('#trans_immat').removeClass('is-invalid');
+
+      if (!(vol > 0)) { $('#trans_volume').addClass('is-invalid'); return; }
+      $('#trans_volume').removeClass('is-invalid');
+
+      try {
+        const resp = await $.ajax({
+          url: '{% url "transbordement" %}',
+          type: 'POST',
+          headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').first().val() },
+          data: { pk: pk, nouvelleImmatriculation: immat, nouveauVolume: vol }
+        });
+
+        if (resp && resp.status === 'success') {
+          if (typeof table !== 'undefined' && table) table.ajax.reload(null, false);
+          closeThenShowResult(true, '');
+          return;
+        }
+
+        const msg = resp && (resp.message || resp.error)
+          ? escapeHtml(resp.message || resp.error)
+          : 'Réponse inattendue du serveur.';
+
+        if (typeof table !== 'undefined' && table) table.ajax.reload(null, false);
+        closeThenShowResult(false, msg);
+
+      } catch (xhr) {
+        let msg = 'Erreur serveur.';
+        try {
+          if (xhr?.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error)) {
+            msg = escapeHtml(xhr.responseJSON.message || xhr.responseJSON.error);
+          } else if (xhr?.responseText) {
+            msg = escapeHtml(xhr.responseText);
+          }
+        } catch(e) {}
+        if (typeof table !== 'undefined' && table) table.ajax.reload(null, false);
+        closeThenShowResult(false, msg);
+      }
+    });
+
+    $modal.data('wiredSubmit', true);
+
+    // Defensive: after the trans modal is fully hidden, ensure any stray backdrops/classes are cleaned
+    $modal.on('hidden.bs.modal', function(){
+      try { $('.modal-backdrop').remove(); } catch(e) {}
+      try { $('body').removeClass('modal-open').css('padding-right',''); } catch(e) {}
+    });
+  })();
+</script>

@@ -1,0 +1,24 @@
+{# templates/regularisation/_correction_fournisseur_form.html #}
+
+<div class="form-group">
+  <label for="fourn_importateur_id" class="d-flex align-items-center justify-content-between">
+    <span>Nouveau fournisseur (Importateur)</span>
+
+    <button type="button" id="btn-load-importateurs" class="btn btn-sm btn-outline-secondary">
+      <span class="btn-text">Charger</span>
+      <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true" style="display:none"></span>
+    </button>
+  </label>
+
+  <select id="fourn_importateur_id" name="importateur_id" class="form-control" required>
+    <option value="">-- Sélectionner un fournisseur --</option>
+  </select>
+
+  <small class="form-text text-muted">Choisissez le nouveau fournisseur (importateur).</small>
+  <div class="invalid-feedback">Veuillez sélectionner un fournisseur.</div>
+</div>
+
+<div class="form-group mb-0">
+  <label for="fourn_remarks">Motif / Remarques (optionnel)</label>
+  <textarea id="fourn_remarks" name="remarks" class="form-control" rows="2" placeholder="Votre commentaire..."></textarea>
+</div>

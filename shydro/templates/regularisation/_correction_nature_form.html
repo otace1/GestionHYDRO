@@ -1,0 +1,23 @@
+{# Partial: CORRECTION NATURE PRODUIT form body (Bootstrap) #}
+
+<div class="form-group">
+  <label for="nat_produit_id" class="d-flex align-items-center justify-content-between">
+    <span>Nouveau produit</span>
+    <button type="button" id="btn-load-produits" class="btn btn-sm btn-outline-secondary">
+      <span class="btn-text">Charger</span>
+      <span class="spinner-border spinner-border-sm ml-2" role="status" aria-hidden="true" style="display:none"></span>
+    </button>
+  </label>
+
+  <select id="nat_produit_id" name="produit_id" class="form-control" required>
+    <option value="">-- Sélectionner un produit --</option>
+  </select>
+
+  <small class="form-text text-muted">Choisissez la nouvelle nature de produit.</small>
+  <div class="invalid-feedback">Veuillez sélectionner un produit.</div>
+</div>
+
+<div class="form-group mb-0">
+  <label for="nat_remarks">Motif / Remarques (optionnel)</label>
+  <textarea id="nat_remarks" name="remarks" class="form-control" rows="2" placeholder="Votre commentaire..."></textarea>
+</div>
