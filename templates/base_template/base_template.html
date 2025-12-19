@@ -306,6 +306,27 @@
 <script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
 <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
 
+{# Sentry Browser SDK (Tracing + Replay). Only initialize if DSN is provided #}
+{% if SENTRY_DSN_JS %}
+  <script src="https://browser.sentry-cdn.com/7.120.1/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
+  <script>
+    try {
+      Sentry.init({
+        dsn: "{{ SENTRY_DSN_JS }}",
+        environment: "{{ SENTRY_ENV }}",
+        release: "{{ SENTRY_RELEASE }}",
+        integrations: [new Sentry.BrowserTracing(), new Sentry.Replay()],
+        tracesSampleRate: parseFloat("{{ SENTRY_TRACES_SAMPLE_RATE|default:'1.0' }}") || 1.0,
+        replaysSessionSampleRate: 0.1,
+        replaysOnErrorSampleRate: 1.0,
+      });
+      {% if request.user.is_authenticated %}
+      Sentry.setUser({ id: "{{ request.user.id }}", username: "{{ request.user.username }}" });
+      {% endif %}
+    } catch (e) { /* no-op */ }
+  </script>
+{% endif %}
+
 {% block extra_js %}{% endblock %}
 
 {# Keep your page specific JS hook #}

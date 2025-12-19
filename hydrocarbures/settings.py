@@ -4,8 +4,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 import sentry_sdk
+import logging
 import json
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 from django.core.management.utils import get_random_secret_key
 # import mysql.connector.django as mysql
 from django.contrib.messages import constants as messages
@@ -178,6 +181,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # Expose Sentry vars to templates for browser SDK
+                "hydrocarbures.context_processors.sentry",
             ],
         },
     },
@@ -258,15 +263,52 @@ from .cdn.conf import *  # noqa
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # Sentry
+# Read config from environment to support all environments (dev/staging/prod)
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "https://0b479a1d226644afad74678a3d3779a9@o554823.ingest.sentry.io/4505436514746368")
+SENTRY_ENV = os.environ.get("SENTRY_ENV", "development")
+SENTRY_RELEASE = os.environ.get("SENTRY_RELEASE", "")
+try:
+    SENTRY_TRACES = float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
+except Exception:
+    SENTRY_TRACES = 1.0
+try:
+    SENTRY_PROFILES = float(os.environ.get("SENTRY_PROFILES_SAMPLE_RATE", "1.0"))
+except Exception:
+    SENTRY_PROFILES = 1.0
+
+sentry_logging = LoggingIntegration(
+    level=logging.INFO,        # capture breadcrumbs from INFO and up
+    event_level=logging.ERROR  # send events for ERROR and up
+)
+
 sentry_sdk.init(
-    dsn="https://0b479a1d226644afad74678a3d3779a9@o554823.ingest.sentry.io/4505436514746368",
+    dsn=SENTRY_DSN,
+    environment=SENTRY_ENV,
+    release=SENTRY_RELEASE,
     integrations=[
         DjangoIntegration(),
+        CeleryIntegration(),
+        sentry_logging,
     ],
-    traces_sample_rate=1.0,
-    profiles_sample_rate=1.0,
+    traces_sample_rate=SENTRY_TRACES,
+    profiles_sample_rate=SENTRY_PROFILES,
     send_default_pii=True,
 )
+
+# Minimal logging to ensure errors still go to console and Sentry picks up breadcrumbs
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
 CORS_ALLOW_ALL_ORIGINS = True
 
