@@ -1,721 +1,1641 @@
-{# templates/shydro/regularisation.html (FULL CODE - redesigned, same functionality) #}
+{# templates/shydro/regularisation.html (FULL CODE - TRANSBORDEMENT CLOSES THEN SHOWS RESULT MODAL) #}
 {% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
 
 {% block content %}
-  <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-6">
-          <h1 class="m-0 text-dark page-title font-weight-bold">RÉGULARISATION(S)</h1>
-          <div class="text-muted small">Contrôle des Hydrocarbures</div>
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 text-dark page-title font-weight-bold">RÉGULARISATION(S)</h1>
+                    <div class="text-muted small">Contrôle des Hydrocarbures • Régularisation des cargaisons</div>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right mb-0">
+                        <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+                        <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+                        <li class="breadcrumb-item active">Régularisation</li>
+                    </ol>
+                </div>
+            </div>
         </div>
-        <div class="col-sm-6">
-          <ol class="breadcrumb float-sm-right mb-0">
-            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
-            <li class="breadcrumb-item active">Régularisation des cargaisons</li>
-          </ol>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <section class="content">
-    <div class="container-fluid">
+    <section class="content">
+        <div class="container-fluid">
 
-      <style>
-        .page-card{
-          border: 1px solid rgba(0,0,0,.08);
-          border-radius: .9rem;
-          box-shadow: 0 10px 30px rgba(0,0,0,.06);
-          overflow: hidden;
-          background:#fff;
-        }
-        .page-card .card-header{
-          background: linear-gradient(135deg, #0f172a, #111827);
-          color:#fff;
-          border-bottom: 1px solid rgba(255,255,255,.08);
-        }
-        .page-card .card-header h5{
-          margin:0;
-          font-weight:900;
-          letter-spacing:.2px;
-          display:flex;
-          align-items:center;
-          gap:.5rem;
-        }
-        .toolbar{
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:.75rem;
-          flex-wrap:wrap;
-        }
-        .hint{
-          color:#6b7280;
-          font-size:.9rem;
-        }
+            <style>
+                #data-table-wrapper {
+                    position: relative;
+                }
 
-        /* Table */
-        .table-wrap{ overflow-x:auto; }
-        #data-table{ width:100% !important; }
+                .loading-spinner {
+                    display: none;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 50%;
+                    border: 4px solid rgba(0, 0, 0, .15);
+                    border-top-color: #3498db;
+                    animation: spin .9s linear infinite;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    margin: -17px 0 0 -17px;
+                    z-index: 10;
+                }
 
-        /* Action buttons */
-        .btn-icon{
-          width:36px;
-          height:32px;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          padding:0;
-        }
-        .btn-icon i{ font-size: .95rem; }
+                @keyframes spin {
+                    to {
+                        transform: rotate(360deg)
+                    }
+                }
 
-        /* Modern modals */
-        .modal-content.modal-modern{
-          border:0;
-          border-radius: 16px;
-          overflow:hidden;
-          box-shadow: 0 18px 60px rgba(0,0,0,.22);
-        }
-        .modal-modern .modal-header{
-          border:0;
-          padding: 16px 18px;
-          background:#fff;
-        }
-        .modal-modern .modal-title{
-          font-weight:900;
-          letter-spacing:.2px;
-          color:#111827;
-        }
-        .modal-modern .modal-body{ padding: 18px; }
-        .modal-modern .modal-footer{
-          border:0;
-          padding: 12px 18px 18px 18px;
-          background:#fff;
-        }
-        .modal-modern__badge{
-          display:inline-flex;
-          align-items:center;
-          gap:.5rem;
-          padding:.35rem .6rem;
-          border-radius: 999px;
-          border:1px solid rgba(0,0,0,.08);
-          background: rgba(15, 23, 42, .04);
-          color:#111827;
-          font-size:.82rem;
-          font-weight:700;
-        }
-      </style>
+                .table-scroll {
+                    overflow-x: auto;
+                }
 
-        <div class="row">
-                    <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-enreg">
-                        <span class="badge bg-purple"></span>
-                        <i class="fas fa-trailer"></i> N.Enreg.
-                    </a>
-                    <a class="btn btn-app bg-yellow" data-toggle="modal" data-target="#modal-imp">
-                        <span class="badge bg-purple"></span>
-                        <i class="fas fa-user"></i> N.Import.
-                    </a>
-                    <a class="btn btn-app bg-gradient-danger" data-toggle="modal" data-target="#modal-entrepot">
-                        <span class="badge bg-purple"></span>
-                        <i class="fas fa-warehouse"></i> N.Entrep.
-                    </a>
+                .empty-card {
+                    border: 1px dashed #ccc;
+                    border-radius: 12px;
+                    padding: 16px;
+                    background: #fff;
+                }
+
+                .filters-bar {
+                    display: flex;
+                    gap: .5rem;
+                    flex-wrap: wrap;
+                    margin-bottom: 12px;
+                }
+
+                .chip {
+                    background: #e8f2fb;
+                    border: 1px solid #b6d8f2;
+                    border-radius: 20px;
+                    padding: 4px 10px;
+                    font-size: .85rem;
+                    display: inline-flex;
+                    align-items: center;
+                }
+
+                .chip button {
+                    border: 0;
+                    background: none;
+                    font-weight: 900;
+                    margin-left: 8px;
+                    cursor: pointer;
+                }
+
+                .action-tiles {
+                    display: flex;
+                    gap: .6rem;
+                    flex-wrap: wrap;
+                    margin-bottom: 12px
+                }
+
+                .action-tile {
+                    border: 1px solid rgba(0, 0, 0, .08);
+                    border-radius: 12px;
+                    background: #fff;
+                    padding: 10px 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    box-shadow: 0 10px 24px rgba(0, 0, 0, .06);
+                    cursor: pointer;
+                    transition: transform .12s ease, box-shadow .12s ease;
+                    min-width: 230px;
+                }
+
+                .action-tile:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 14px 34px rgba(0, 0, 0, .10)
+                }
+
+                .action-tile .icon {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #fff;
+                    flex: 0 0 auto;
+                }
+
+                .action-tile .title {
+                    font-weight: 900;
+                    color: #111827;
+                    line-height: 1.1
+                }
+
+                .action-tile .sub {
+                    font-size: .82rem;
+                    color: #6b7280;
+                    margin-top: 2px
+                }
+
+                .bg-green {
+                    background: #16a34a
+                }
+
+                .bg-amber {
+                    background: #f59e0b
+                }
+
+                .bg-red {
+                    background: #ef4444
+                }
+
+                .bg-blue {
+                    background: #3b82f6
+                }
+
+                @media (max-width: 576px) {
+                    .action-tile {
+                        min-width: 100%
+                    }
+                }
+
+                .btn-icon {
+                    width: 38px;
+                    height: 34px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0;
+                    border-radius: 10px
+                }
+
+                .btn-icon i {
+                    font-size: .95rem
+                }
+
+                .tf-action-row {
+                    display: flex;
+                    gap: .45rem;
+                    flex-wrap: wrap
+                }
+
+                .result-modal {
+                    border: 0;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    box-shadow: 0 18px 60px rgba(0, 0, 0, .22);
+                }
+
+                .result-modal__header {
+                    border: 0;
+                    padding: 18px 18px 12px 18px;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 14px;
+                    background: #fff;
+                }
+
+                .result-modal__icon {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 14px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(0, 123, 255, .10);
+                    color: #0b5ed7;
+                    flex: 0 0 auto;
+                }
+
+                .result-modal__icon i {
+                    font-size: 20px;
+                }
+
+                .result-modal__titles {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .result-modal__titles .modal-title {
+                    font-weight: 900;
+                    letter-spacing: .2px;
+                    color: #111827;
+                    line-height: 1.1;
+                }
+
+                .result-modal__subtitle {
+                    margin-top: 4px;
+                    color: #6b7280;
+                    font-size: .9rem;
+                }
+
+                .result-modal__close {
+                    margin: -2px -2px 0 auto;
+                    opacity: .7;
+                }
+
+                .result-modal__close:hover {
+                    opacity: 1;
+                }
+
+                .result-modal__footer {
+                    border: 0;
+                    padding: 12px 18px 18px 18px;
+                    background: #fff;
+                }
+
+                .rm-success .result-modal__icon {
+                    background: rgba(25, 135, 84, .12);
+                    color: #198754;
+                }
+
+                .rm-danger .result-modal__icon {
+                    background: rgba(220, 53, 69, .12);
+                    color: #dc3545;
+                }
+
+                .rm-warning .result-modal__icon {
+                    background: rgba(255, 193, 7, .18);
+                    color: #b45309;
+                }
+
+                .filter-loading {
+                    display: none;
+                    padding: 10px 12px;
+                    border-radius: 10px;
+                    background: #f3f4f6;
+                    color: #111827;
+                    font-size: .9rem;
+                    margin-bottom: 10px;
+                }
+            </style>
+
+            {# ===== ACTIONS ===== #}
+            <div class="action-tiles">
+                <div class="action-tile" data-toggle="modal" data-target="#modal-enreg">
+                    <div class="icon bg-green"><i class="fas fa-trailer"></i></div>
+                    <div>
+                        <div class="title">Nouvelle cargaison</div>
+                        <div class="sub">Créer un enregistrement</div>
+                    </div>
                 </div>
 
-      <div class="page-card card">
-        <div class="card-header">
-          <div class="toolbar">
-            <h5><i class="fas fa-shield-alt"></i> Régularisation des cargaisons</h5>
-            <div class="hint">
-              Cliquez sur les actions pour corriger la cargaison (destination, transbordement, fournisseur, nature, suppression).
-            </div>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <div class="table-wrap">
-            <table id="data-table" class="table table-bordered table-striped table-hover">
-              <thead>
-                <tr>
-                  <th>DATE ENTREE</th>
-                  <th>FOURNISSEUR</th>
-                  <th>ENTREPOT</th>
-                  <th>PRODUIT</th>
-                  <th>VOL.DECL.</th>
-                  <th>IMMATRICULATION</th>
-                  <th>#.T1E/DECL.</th>
-                  <th style="min-width:220px;">ACTIONS</th>
-                </tr>
-              </thead>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {# ===================== MODALS (Bootstrap 4) ===================== #}
-
-      <!-- DESTINATION -->
-      <div class="modal fade" id="modal-dest" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-map-marker-alt"></i> Ré-orientation</div>
-                <h5 class="modal-title mt-2">RE-ORIENTATION</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              {# Your crispy form should render with id="destination-form" and submit button id="submit-id-valider" #}
-              {% crispy form %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TRANSBORDEMENT -->
-      <div class="modal fade" id="modal-trans" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-exchange-alt"></i> Transbordement</div>
-                <h5 class="modal-title mt-2">TRANSBORDEMENT</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              {# Your crispy form should render with id="transbordement-form" and a submit button you control (see JS) #}
-              {% crispy form1 %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- NATURE PRODUIT -->
-      <div class="modal fade" id="modal-nat" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-tag"></i> Correction</div>
-                <h5 class="modal-title mt-2">CORRECTION NATURE PRODUIT</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              {# Should render id="nature-form" #}
-              {% crispy form2 %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- IMPORTATEUR / FOURNISSEUR -->
-      <div class="modal fade" id="modal-fourn" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-user"></i> Correction</div>
-                <h5 class="modal-title mt-2">CORRECTION FOURNISSEUR</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              {# Should render id="importateur-form" #}
-              {% crispy form6 %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- AJOUT IMPORTATEUR -->
-      <div class="modal fade" id="modal-imp" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-user-plus"></i> Ajout</div>
-                <h5 class="modal-title mt-2">AJOUT IMPORTATEUR</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-
-            <form action="{% url 'regularisationImportateur' %}" method="post">
-              {% csrf_token %}
-              <div class="modal-body">
-                {% crispy form3 %}
-              </div>
-            </form>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- AJOUT ENTREPOT -->
-      <div class="modal fade" id="modal-entrepot" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-warehouse"></i> Ajout</div>
-                <h5 class="modal-title mt-2">AJOUT ENTREPOT</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-
-            <form action="{% url 'regularisationEntrepot' %}" method="post">
-              {% csrf_token %}
-              <div class="modal-body">
-                {% crispy form4 %}
-              </div>
-            </form>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- AJOUT CARGAISON -->
-      <div class="modal fade" id="modal-enreg" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <div>
-                <div class="modal-modern__badge"><i class="fas fa-plus-circle"></i> Ajout</div>
-                <h5 class="modal-title mt-2">AJOUT CARGAISON</h5>
-              </div>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-
-            <form action="{% url 'regularisationCargaison' %}" method="post">
-              {% csrf_token %}
-              <div class="modal-body">
-                {% crispy form5 %}
-              </div>
-            </form>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- RESULT MODAL (Modern - Bootstrap 4, centered) -->
-      <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <h5 class="modal-title" id="result-modal-title">Information</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body" id="result-modal-body"></div>
-            <div class="modal-footer" id="result-modal-footer">
-              <button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CONFIRM MODAL (Modern - Bootstrap 4, centered) -->
-      <div class="modal fade" id="confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content modal-modern">
-            <div class="modal-header">
-              <h5 class="modal-title" id="confirm-modal-title">Confirmation</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body" id="confirm-modal-body"></div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-light" id="confirm-cancel" data-dismiss="modal">Annuler</button>
-              <button type="button" class="btn btn-primary" id="confirm-ok">Confirmer</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <script>
-        // ===================== Helpers =====================
-        function getCSRFTokenFromCookie() {
-          let csrfToken = null;
-          document.cookie.split(';').forEach(function (cookie) {
-            const c = cookie.trim();
-            if (c.startsWith('csrftoken=')) csrfToken = c.substring('csrftoken='.length);
-          });
-          return csrfToken;
-        }
-
-        function escapeHtml(str){
-          return String(str ?? '')
-            .replace(/&/g,'&amp;')
-            .replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;')
-            .replace(/"/g,'&quot;')
-            .replace(/'/g,'&#039;');
-        }
-
-        function showResultModal(title, htmlBody){
-          const $m = $('#result-modal');
-          $('#result-modal-title').text((title || 'Information'));
-          $('#result-modal-body').html(htmlBody || '');
-          $('#result-modal-footer').html('<button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>');
-          $m.modal('show');
-        }
-
-        function showConfirmModal(title, message, confirmText, cancelText){
-          return new Promise((resolve) => {
-            const $m = $('#confirm-modal');
-            $('#confirm-modal-title').text(title || 'Confirmation');
-            $('#confirm-modal-body').html(message || 'Êtes-vous sûr ?');
-            const $ok = $('#confirm-ok');
-            const $cancel = $('#confirm-cancel');
-            if(confirmText) $ok.text(confirmText);
-            if(cancelText) $cancel.text(cancelText);
-
-            const cleanup = () => { $ok.off('click'); $cancel.off('click'); $m.off('hidden.bs.modal'); };
-            $ok.on('click', function(){ cleanup(); $m.modal('hide'); resolve(true); });
-            $cancel.on('click', function(){ cleanup(); /* modal hides automatically */ resolve(false); });
-            $m.on('hidden.bs.modal', function(){ cleanup(); resolve(false); });
-            $m.modal('show');
-          });
-        }
-
-        function safeAlertFromXhr(prefix, xhr){
-          const status = xhr && xhr.status;
-          const txt = (xhr && xhr.responseText) ? String(xhr.responseText) : '';
-          console.error(prefix, status, txt);
-          const html = `<p class="mb-1">${escapeHtml(prefix)}</p>` + (txt ? `<small class="text-muted">${escapeHtml(txt).slice(0,800)}</small>` : '');
-          showResultModal('Erreur', html);
-        }
-
-        let idCargaison = null;
-        let dataTable = null;
-
-        function reloadDataTable() {
-          if (dataTable) dataTable.ajax.reload(null, false);
-        }
-
-        // ===================== DataTable =====================
-        $(document).ready(function () {
-          dataTable = $('#data-table').DataTable({
-            lengthChange: false,
-            processing: false,     // ✅ remove spinning animation
-            serverSide: true,
-            responsive: true,
-            searchDelay: 350,
-
-            ajax: {
-              url: '{% url "regularisation_response" %}',
-              type: 'POST',
-              headers: { 'X-CSRFToken': getCSRFTokenFromCookie() },
-              error: function(xhr){
-                safeAlertFromXhr("Erreur chargement tableau", xhr);
-              }
-            },
-
-            columns: [
-              { data: 'dateheurecargaison__date', defaultContent: '' },
-              { data: 'importateur__nomimportateur', defaultContent: '' },
-              { data: 'entrepot__nomentrepot', defaultContent: '' },
-              { data: 'produit__nomproduit', defaultContent: '' },
-              { data: 'volume', defaultContent: '' },
-              { data: 'immatriculation', defaultContent: '' },
-              { data: 'declaration', defaultContent: '' },
-              {
-                data: 'idcargaison',
-                orderable: false,
-                searchable: false,
-                render: function (data) {
-                  return `
-                    <div class="d-flex" style="gap:.4rem; flex-wrap:wrap;">
-                      <button type="button" class="btn btn-success btn-icon action-btn action-dest" data-row-id="${data}" title="Destination">
-                        <i class="fas fa-map-marker-alt"></i>
-                      </button>
-
-                      <button type="button" class="btn btn-outline-success btn-icon action-btn action-trans" data-row-id="${data}" title="Transbordement">
-                        <i class="fas fa-exchange-alt"></i>
-                      </button>
-
-                      <button type="button" class="btn btn-outline-danger btn-icon action-btn action-imp" data-row-id="${data}" title="Fournisseur">
-                        <i class="fas fa-user"></i>
-                      </button>
-
-                      <button type="button" class="btn btn-outline-primary btn-icon action-btn action-nat" data-row-id="${data}" title="Nature produit">
-                        <i class="fas fa-tag"></i>
-                      </button>
-
-                      <button type="button" class="btn btn-danger btn-icon action-btn action-del" data-row-id="${data}" title="Supprimer">
-                        <i class="fas fa-trash-alt"></i>
-                      </button>
+                <div class="action-tile" data-toggle="modal" data-target="#modal-imp">
+                    <div class="icon bg-amber"><i class="fas fa-user-plus"></i></div>
+                    <div>
+                        <div class="title">Nouvel importateur</div>
+                        <div class="sub">Ajouter un fournisseur</div>
                     </div>
-                  `;
-                }
-              }
-            ],
-            order: [[0, 'desc']]
-          });
+                </div>
 
-          // ===================== Open modals (ONLY) =====================
-          $('#data-table tbody').on('click', '.action-btn', async function () {
-            idCargaison = $(this).data('row-id');
+                <div class="action-tile" data-toggle="modal" data-target="#modal-entrepot">
+                    <div class="icon bg-red"><i class="fas fa-warehouse"></i></div>
+                    <div>
+                        <div class="title">Nouvel entrepôt</div>
+                        <div class="sub">Créer un dépôt</div>
+                    </div>
+                </div>
 
-            if ($(this).hasClass('action-dest')) {
-              $('#modal-dest').modal('show');
-              return;
-            }
-            if ($(this).hasClass('action-trans')) {
-              $('#modal-trans').modal('show');
-              return;
-            }
-            if ($(this).hasClass('action-imp')) {
-              $('#modal-fourn').modal('show');
-              return;
-            }
-            if ($(this).hasClass('action-nat')) {
-              $('#modal-nat').modal('show');
-              return;
-            }
-            if ($(this).hasClass('action-del')) {
-              // ✅ Confirm delete via modal
-              const ok = await showConfirmModal('Confirmation', 'Confirmer la suppression de cet enregistrement ?', 'Supprimer', 'Annuler');
-              if (!ok) return;
+                <div class="action-tile" data-toggle="modal" data-target="#filtersModal">
+                    <div class="icon bg-blue"><i class="fas fa-filter"></i></div>
+                    <div>
+                        <div class="title">Filtres</div>
+                        <div class="sub">Afficher le tableau</div>
+                    </div>
+                </div>
+            </div>
 
-              const csrfToken = getCSRFTokenFromCookie();
-              const APIurl = '/shydro/del_record/';
+            <!-- ACTIVE FILTERS -->
+            <div id="active-filters" class="filters-bar" style="display:none"></div>
 
-              // Send pk only (same as your original)
-              $.ajax({
-                url: APIurl,
-                type: "POST",
-                data: $.param({ pk: idCargaison }),
-                headers: { 'X-CSRFToken': csrfToken },
-                // ❌ do NOT force JSON (prevents Unexpected token '<' crash)
-                success: function () {
-                  showResultModal('Succès', '<p class="mb-0">Donnée supprimée.</p>');
-                  reloadDataTable();
-                },
-                error: function (xhr) {
-                  safeAlertFromXhr("Erreur lors de la suppression", xhr);
-                  reloadDataTable();
-                }
-              });
-            }
-          });
+            <!-- EMPTY STATE -->
+            <div id="empty-state" class="empty-card">
+                <h6 class="mb-1">Aucune donnée chargée</h6>
+                <p class="text-muted mb-0">
+                    Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
+                    <br>Le tableau ne charge jamais toutes les données (performance optimale).
+                </p>
+            </div>
 
-          // ===================== SUBMIT: Destination =====================
-          // Your crispy form must include:
-          // - form id="destination-form"
-          // - button id="submit-id-valider"
-          $('#submit-id-valider').off('click').on('click', async function (e) {
-            e.preventDefault();
+            <!-- TABLE -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-gradient-dark">
+                            <h1 class="card-title"><b>RÉGULARISATION DES CARGAISONS</b></h1>
+                        </div>
 
-            const formEl = document.getElementById('destination-form');
-            if (!formEl) { showResultModal('Erreur', "Formulaire destination introuvable (id=destination-form)."); return; }
+                        <div class="card-body">
+                            <div id="data-table-wrapper" class="table-scroll">
+                                <div class="loading-spinner"></div>
 
-            const csrfToken = getCSRFTokenFromCookie();
-            const APIurl = '/shydro/regularisationDestination/';
+                                <table id="data-table" class="table table-bordered table-hover table-striped"
+                                       style="display:none;width:100%">
+                                    <thead>
+                                    <tr>
+                                        <th>Date entrée</th>
+                                        <th>Fournisseur</th>
+                                        <th>Entrepôt</th>
+                                        <th>Produit</th>
+                                        <th>Vol. décl.</th>
+                                        <th>Immatriculation</th>
+                                        <th>Déclaration</th>
+                                        <th style="min-width:240px;">Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
 
-            // Ensure pk is attached once
-            $(formEl).find('input[name="pk"]').remove();
-            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+                    </div>
+                </div>
+            </div>
 
-            $.ajax({
-              url: APIurl,
-              type: "POST",
-              data: $(formEl).serialize(),
-              headers: { 'X-CSRFToken': csrfToken },
-              success: async function (response) {
-                // if backend returns warning json
-                if (response && response.status === 'warning') {
-                  const confirmation = await showConfirmModal('Attention', (response.message || 'Les régions ne correspondent pas. Continuer ?'), 'Continuer', 'Annuler');
-                  if (!confirmation) {
-                    $('#modal-dest').modal('hide');
-                    formEl.reset();
-                    return;
-                  }
+            <!-- RESULT MODAL -->
+            <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content result-modal">
+                        <div class="modal-header result-modal__header">
+                            <div class="result-modal__icon">
+                                <i id="result-modal-icon" class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="result-modal__titles">
+                                <h5 class="modal-title mb-0" id="result-modal-title">Information</h5>
+                                <div class="result-modal__subtitle" id="result-modal-subtitle">Message</div>
+                            </div>
+                            <button type="button" class="close result-modal__close" data-dismiss="modal"
+                                    aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="result-modal-body"></div>
+                        <div class="modal-footer result-modal__footer" id="result-modal-footer">
+                            <button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                  $(formEl).find('input[name="confirm"]').remove();
-                  $(formEl).append($('<input type="hidden" name="confirm">').val('true'));
+            <!-- CONFIRM MODAL -->
+            <div class="modal fade" id="confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content result-modal">
+                        <div class="modal-header result-modal__header">
+                            <div class="result-modal__icon" style="background: rgba(220,53,69,.12); color:#dc3545;">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="result-modal__titles">
+                                <h5 class="modal-title mb-0" id="confirm-modal-title">Confirmation</h5>
+                                <div class="result-modal__subtitle" id="confirm-modal-subtitle">Êtes-vous sûr ?</div>
+                            </div>
+                            <button type="button" class="close result-modal__close" data-dismiss="modal"
+                                    aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="confirm-modal-body"></div>
+                        <div class="modal-footer result-modal__footer">
+                            <button type="button" class="btn btn-light" id="confirm-cancel" data-dismiss="modal">
+                                Annuler
+                            </button>
+                            <button type="button" class="btn btn-danger" id="confirm-ok">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                  $.ajax({
-                    url: APIurl,
-                    type: "POST",
-                    data: $(formEl).serialize(),
-                    headers: { 'X-CSRFToken': csrfToken },
-                    success: function () {
-                      showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
-                      $('#modal-dest').modal('hide');
-                      formEl.reset();
-                      $(formEl).find('input[type="hidden"]').remove();
-                      reloadDataTable();
-                    },
-                    error: function (xhr) {
-                      safeAlertFromXhr("Erreur sauvegarde destination", xhr);
-                      $('#modal-dest').modal('hide');
-                      formEl.reset();
-                      $(formEl).find('input[type="hidden"]').remove();
-                      reloadDataTable();
-                    }
-                  });
+            <!-- FILTER MODAL -->
+            <div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
 
-                  return;
-                }
+                        <div class="modal-header">
+                            <h5 class="modal-title"><b>Filtres avancés</b></h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
 
-                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
-                $('#modal-dest').modal('hide');
-                formEl.reset();
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              },
-              error: function (xhr) {
-                safeAlertFromXhr("Erreur sauvegarde destination", xhr);
-                $('#modal-dest').modal('hide');
-                formEl.reset();
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              }
-            });
-          });
+                        <div class="modal-body">
+                            <div id="filter-loading" class="filter-loading">
+                                Chargement des listes (frontières, fournisseurs, entrepôts, produits)...
+                            </div>
 
-          // ===================== SUBMIT: Transbordement =====================
-          // IMPORTANT: your crispy form should have id="transbordement-form"
-          // and a submit button with id="btn-submit-transbordement"
-          $('#btn-submit-transbordement').off('click').on('click', function(e){
-            e.preventDefault();
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label>Date début</label>
+                                    <input type="date" id="flt_date_from" class="form-control">
+                                </div>
 
-            const formEl = document.getElementById('transbordement-form');
-            if (!formEl) { showResultModal('Erreur', "Formulaire transbordement introuvable (id=transbordement-form)."); return; }
+                                <div class="col-md-3">
+                                    <label>Date fin</label>
+                                    <input type="date" id="flt_date_to" class="form-control">
+                                </div>
 
-            const csrfToken = getCSRFTokenFromCookie();
-            const APIurl = '/shydro/transbordement/';
+                                <div class="col-md-6">
+                                    <label>Frontière</label>
+                                    <select id="flt_frontiere" class="form-control">
+                                        <option value="">Toutes</option>
+                                    </select>
+                                </div>
 
-            $(formEl).find('input[name="pk"]').remove();
-            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+                                <div class="col-md-6 mt-2">
+                                    <label>Fournisseur</label>
+                                    <select id="flt_importateur" class="form-control">
+                                        <option value="">Tous</option>
+                                    </select>
+                                </div>
 
-            $.ajax({
-              url: APIurl,
-              type: "POST",
-              data: $(formEl).serialize(),
-              headers: { 'X-CSRFToken': csrfToken },
-              success: function () {
-                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
-                $('#modal-trans').modal('hide');
-                formEl.reset();
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              },
-              error: function (xhr) {
-                safeAlertFromXhr("Erreur sauvegarde transbordement", xhr);
-                $('#modal-trans').modal('hide');
-                formEl.reset();
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              }
-            });
-          });
+                                <div class="col-md-6 mt-2">
+                                    <label>Entrepôt</label>
+                                    <select id="flt_entrepot" class="form-control">
+                                        <option value="">Tous</option>
+                                    </select>
+                                </div>
 
-          // ===================== SUBMIT: Nature =====================
-          // crispy form should have id="nature-form" and button id="btn-submit-nature"
-          $('#btn-submit-nature').off('click').on('click', function(e){
-            e.preventDefault();
+                                <div class="col-md-6 mt-2">
+                                    <label>Produit</label>
+                                    <select id="flt_produit" class="form-control">
+                                        <option value="">Tous</option>
+                                    </select>
+                                </div>
 
-            const formEl = document.getElementById('nature-form');
-            if (!formEl) { showResultModal('Erreur', "Formulaire nature introuvable (id=nature-form)."); return; }
+                                <div class="col-md-6 mt-2">
+                                    <label>Immatriculation</label>
+                                    <input type="text" id="flt_immat" class="form-control" placeholder="Ex: ABC-123">
+                                </div>
 
-            const csrfToken = getCSRFTokenFromCookie();
-            const APIurl = '/shydro/changementNature/';
+                                <div class="col-md-6 mt-2">
+                                    <label>Déclaration</label>
+                                    <input type="text" id="flt_declaration" class="form-control"
+                                           placeholder="# Déclaration">
+                                </div>
 
-            $(formEl).find('input[name="pk"]').remove();
-            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+                                <div class="col-md-6 mt-2">
+                                    <label>Dossier</label>
+                                    <input type="text" id="flt_numdos" class="form-control" placeholder="# Dossier">
+                                </div>
 
-            $.ajax({
-              url: APIurl,
-              type: "POST",
-              data: $(formEl).serialize(),
-              headers: { 'X-CSRFToken': csrfToken },
-              success: function () {
-                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
-                $('#modal-nat').modal('hide');
-                formEl.reset();
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              },
-              error: function (xhr) {
-                safeAlertFromXhr("Erreur sauvegarde nature", xhr);
-                $('#modal-nat').modal('hide');
-                formEl.reset();
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              }
-            });
-          });
+                                <div class="col-12 mt-3">
+                                    <small class="text-muted">⚠️ Appliquez au moins un filtre pour charger les
+                                        données.</small>
+                                </div>
+                            </div>
+                        </div>
 
-          // ===================== SUBMIT: Importateur =====================
-          // crispy form should have id="importateur-form" and button id="btn-submit-importateur"
-          $('#btn-submit-importateur').off('click').on('click', function(e){
-            e.preventDefault();
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="btn-reset">Réinitialiser</button>
+                            <button type="button" class="btn btn-primary" id="btn-apply">Appliquer</button>
+                        </div>
 
-            const formEl = document.getElementById('importateur-form');
-            if (!formEl) { showResultModal('Erreur', "Formulaire importateur introuvable (id=importateur-form)."); return; }
+                    </div>
+                </div>
+            </div>
 
-            const csrfToken = getCSRFTokenFromCookie();
-            const APIurl = '/shydro/changementImportateur/';
+            {# ===================== MODALS ===================== #}
 
-            $(formEl).find('input[name="pk"]').remove();
-            $(formEl).append($('<input type="hidden" name="pk">').val(idCargaison));
+            <!-- DESTINATION -->
+            <div class="modal fade" id="modal-dest" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
 
-            $.ajax({
-              url: APIurl,
-              type: "POST",
-              data: $(formEl).serialize(),
-              headers: { 'X-CSRFToken': csrfToken },
-              success: function () {
-                showResultModal('Succès', '<p class="mb-0">Données sauvegardées.</p>');
-                $('#modal-fourn').modal('hide');
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              },
-              error: function (xhr) {
-                safeAlertFromXhr("Erreur sauvegarde fournisseur", xhr);
-                $('#modal-fourn').modal('hide');
-                $(formEl).find('input[type="hidden"]').remove();
-                reloadDataTable();
-              }
-            });
-          });
+                        <div class="modal-header">
+                            <h5 class="modal-title">RE-ORIENTATION</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
 
-          // ===================== Safety cleanup for stuck backdrops =====================
-          $('#modal-dest, #modal-trans, #modal-nat, #modal-fourn, #modal-imp, #modal-entrepot, #modal-enreg')
-            .on('hidden.bs.modal', function(){
-              $('.modal-backdrop').remove();
-              $('body').removeClass('modal-open').css('padding-right','');
-              // if focus remained inside a hidden modal, blur to avoid aria-hidden warnings
-              if (document.activeElement && $(document.activeElement).closest('.modal').length) {
-                try { document.activeElement.blur(); } catch(e) {}
-              }
-            });
+                        <form id="dest-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="pk" id="dest_pk" value="">
 
+                            <div class="modal-body">
+                                {% include 'regularisation/_reorientation_form.html' %}
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check"></i> Valider
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRANSBORDEMENT -->
+            <div class="modal fade" id="modal-trans" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">TRANSBORDEMENT</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <form id="trans-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="pk" id="trans_pk" value="">
+                            <div class="modal-body">
+                                {% include 'regularisation/_transbordement_form.html' %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check"></i> Valider
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NATURE (CORRECTION NATURE PRODUIT) -->
+            <div class="modal fade" id="modal-nat" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title">CORRECTION NATURE PRODUIT</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+
+                        <!-- ✅ Wrap partial in a form -->
+                        <form id="nat-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="pk" id="nat_pk" value="">
+
+                            <div class="modal-body">
+                                {% include 'regularisation/_correction_nature_form.html' %}
+                            </div>
+
+                            <!-- ✅ Only ONE cancel + ONE submit -->
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check"></i> Valider
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOURNISSEUR -->
+            <div class="modal fade" id="modal-fourn" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title">CORRECTION FOURNISSEUR</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+
+                        {# ✅ ONE form, ONE footer buttons only (no buttons inside partial) #}
+                        <form id="fourn-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="pk" id="fourn_pk" value="">
+
+                            <div class="modal-body">
+                                {% include 'regularisation/_correction_fournisseur_form.html' %}
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary">Valider</button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- AJOUT IMPORTATEUR -->
+            <div class="modal fade" id="modal-imp" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">AJOUT IMPORTATEUR</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <form action="{% url 'regularisationImportateur' %}" method="post">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                {% crispy form3 %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AJOUT ENTREPOT -->
+            <div class="modal fade" id="modal-entrepot" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">AJOUT ENTREPOT</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <form action="{% url 'regularisationEntrepot' %}" method="post">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                {% crispy form4 %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AJOUT CARGAISON -->
+            <div class="modal fade" id="modal-enreg" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">AJOUT CARGAISON</h5>
+                            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                        </div>
+                        <form action="{% url 'regularisationCargaison' %}" method="post">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                {% crispy form5 %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DELETE CODE MODAL -->
+            <div class="modal fade" id="delete-code-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content result-modal rm-danger">
+
+                        <div class="modal-header result-modal__header">
+                            <div class="result-modal__icon" style="background: rgba(220,53,69,.12); color:#dc3545;">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="result-modal__titles">
+                                <h5 class="modal-title mb-0">Confirmation suppression</h5>
+                                <div class="result-modal__subtitle">Entrez le code de confirmation pour supprimer.</div>
+                            </div>
+                            <button type="button" class="close result-modal__close" data-dismiss="modal"
+                                    aria-label="Fermer">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <form id="delete-code-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" id="delete_pk" name="pk" value="">
+
+                            <div class="modal-body">
+                                <div class="form-group mb-0">
+                                    <label for="delete_confirm_code">Code de confirmation</label>
+                                    <input
+                                            type="password"
+                                            class="form-control"
+                                            id="delete_confirm_code"
+                                            name="confirm_code"
+                                            placeholder="Ex: 1234"
+                                            required
+                                    >
+                                    <div class="invalid-feedback">Veuillez entrer le code.</div>
+                                    <small class="text-muted">Sans le bon code, la suppression sera refusée.</small>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer result-modal__footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash-alt"></i> Supprimer
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <script>
+  const STORAGE_KEY = 'regularisation_filters_v1';
+
+  // IMPORTANT: you are using this token in headers
+  const csrfToken = '{{ csrf_token }}';
+
+  let table = null;
+  let idCargaison = null;
+
+  function showSpinner() { $('#data-table-wrapper .loading-spinner').show(); }
+  function hideSpinner() { $('#data-table-wrapper .loading-spinner').hide(); }
+
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", "&#039;");
+  }
+
+  function filters() {
+    return {
+      flt_date_from: ($('#flt_date_from').val() || '').trim(),
+      flt_date_to: ($('#flt_date_to').val() || '').trim(),
+      flt_frontiere: ($('#flt_frontiere').val() || '').trim(),
+      flt_importateur: ($('#flt_importateur').val() || '').trim(),
+      flt_entrepot: ($('#flt_entrepot').val() || '').trim(),
+      flt_produit: ($('#flt_produit').val() || '').trim(),
+      flt_immat: ($('#flt_immat').val() || '').trim(),
+      flt_declaration: ($('#flt_declaration').val() || '').trim(),
+      flt_numdos: ($('#flt_numdos').val() || '').trim()
+    };
+  }
+
+  function applyFiltersToUI(f) {
+    $('#flt_date_from').val(f.flt_date_from || '');
+    $('#flt_date_to').val(f.flt_date_to || '');
+    $('#flt_frontiere').val(f.flt_frontiere || '');
+    $('#flt_importateur').val(f.flt_importateur || '');
+    $('#flt_entrepot').val(f.flt_entrepot || '');
+    $('#flt_produit').val(f.flt_produit || '');
+    $('#flt_immat').val(f.flt_immat || '');
+    $('#flt_declaration').val(f.flt_declaration || '');
+    $('#flt_numdos').val(f.flt_numdos || '');
+  }
+
+  function hasFilters(f) {
+    return Object.values(f).some(v => String(v || '').trim() !== '');
+  }
+
+  function humanLabel(k) {
+    const map = {
+      flt_date_from: 'Date début',
+      flt_date_to: 'Date fin',
+      flt_frontiere: 'Frontière',
+      flt_importateur: 'Fournisseur',
+      flt_entrepot: 'Entrepôt',
+      flt_produit: 'Produit',
+      flt_immat: 'Immatriculation',
+      flt_declaration: 'Déclaration',
+      flt_numdos: 'Dossier'
+    };
+    return map[k] || k;
+  }
+
+  function renderActiveFilters(f) {
+    const box = document.getElementById('active-filters');
+    box.innerHTML = '';
+    const entries = Object.entries(f).filter(([k, v]) => String(v || '').trim() !== '');
+    if (entries.length === 0) {
+      box.style.display = 'none';
+      return;
+    }
+
+    entries.forEach(([k, v]) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = `${humanLabel(k)} : <b>${escapeHtml(String(v))}</b>`;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.innerHTML = '&times;';
+      btn.addEventListener('click', () => {
+        const current = filters();
+        current[k] = '';
+        applyFiltersToUI(current);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+        renderActiveFilters(current);
+
+        if (!hasFilters(current)) destroyTableAndShowEmpty();
+        else initTable().ajax.reload(null, true);
+      });
+
+      chip.appendChild(btn);
+      box.appendChild(chip);
+    });
+
+    box.style.display = 'flex';
+  }
+
+  function destroyTableAndShowEmpty() {
+    if (table) {
+      table.destroy(true);
+      table = null;
+    }
+    $('#data-table').hide();
+    $('#empty-state').show();
+  }
+
+  // ✅ Result Modal helper
+  function showResultModal(title, htmlBody) {
+    const $m = $('#result-modal');
+    const $content = $m.find('.modal-content');
+    const $icon = $('#result-modal-icon');
+    const $title = $('#result-modal-title');
+    const $sub = $('#result-modal-subtitle');
+    const $body = $('#result-modal-body');
+    const $footer = $('#result-modal-footer');
+
+    const t = (title || 'Information').trim();
+    $title.text(t);
+
+    $content.removeClass('rm-success rm-danger rm-warning');
+
+    const lower = t.toLowerCase();
+    const isSuccess = lower.includes('succ') || lower.includes('réussi') || lower.includes('reussi');
+    const isError = lower.includes('erreur') || lower.includes('fail') || lower.includes('échec') || lower.includes('echec');
+    const isWarn = lower.includes('validation') || lower.includes('attention') || lower.includes('warning');
+
+    if (isSuccess) {
+      $content.addClass('rm-success');
+      $icon.attr('class', 'fas fa-check');
+      $sub.text("L'opération a été effectuée avec succès.");
+      $body.html(htmlBody || '');
+      $footer.html(`<button type="button" class="btn btn-success" data-dismiss="modal"><i class="fas fa-check"></i> OK</button>`);
+    } else if (isError) {
+      $content.addClass('rm-danger');
+      $icon.attr('class', 'fas fa-triangle-exclamation');
+      $sub.text("Une erreur est survenue. Veuillez vérifier et réessayer.");
+      $body.html(htmlBody || '');
+      $footer.html(`<button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>`);
+    } else if (isWarn) {
+      $content.addClass('rm-warning');
+      $icon.attr('class', 'fas fa-circle-exclamation');
+      $sub.text("Action requise avant de continuer.");
+      $body.html(htmlBody || '');
+      $footer.html(`<button type="button" class="btn btn-warning" data-dismiss="modal">OK</button>`);
+    } else {
+      $icon.attr('class', 'fas fa-info-circle');
+      $sub.text("Information");
+      $body.html(htmlBody || '');
+      $footer.html(`<button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>`);
+    }
+
+    $m.modal('show');
+  }
+
+  function showConfirmModal(title, message, confirmText, cancelText) {
+    return new Promise((resolve) => {
+      $('#confirm-modal-title').text(title || 'Confirmation');
+      $('#confirm-modal-body').html(message || 'Êtes-vous sûr ?');
+      $('#confirm-ok').text(confirmText || 'Confirmer');
+      $('#confirm-cancel').text(cancelText || 'Annuler');
+
+      const cleanup = () => {
+        $('#confirm-ok').off('click._c');
+        $('#confirm-cancel').off('click._c');
+        $('#confirm-modal').off('hidden.bs.modal._c');
+      };
+
+      $('#confirm-ok').on('click._c', function () {
+        cleanup();
+        $('#confirm-modal').modal('hide');
+        resolve(true);
+      });
+      $('#confirm-cancel').on('click._c', function () {
+        cleanup();
+        resolve(false);
+      });
+      $('#confirm-modal').on('hidden.bs.modal._c', function () {
+        cleanup();
+        resolve(false);
+      });
+
+      $('#confirm-modal').modal('show');
+    });
+  }
+
+  // ✅ NEW: ask confirmation code (uses same confirm-modal UI)
+  function askDeleteCode() {
+    return new Promise((resolve) => {
+      $('#confirm-modal-title').text('Code de confirmation');
+      $('#confirm-modal-subtitle').text('Saisissez le code pour confirmer la suppression.');
+
+      // Replace body with an input
+      $('#confirm-modal-body').html(`
+        <div class="form-group mb-0">
+          <label class="small text-muted">Code</label>
+          <input type="password" id="delete_confirm_code" class="form-control" placeholder="Code de suppression" autocomplete="off">
+          <div class="invalid-feedback">Code requis.</div>
+          <small class="text-muted d-block mt-2">Cette action est irréversible.</small>
+        </div>
+      `);
+
+      $('#confirm-ok').text('Valider');
+      $('#confirm-cancel').text('Annuler');
+
+      const cleanup = () => {
+        $('#confirm-ok').off('click._del');
+        $('#confirm-cancel').off('click._del');
+        $('#confirm-modal').off('hidden.bs.modal._del');
+      };
+
+      $('#confirm-ok').on('click._del', function () {
+        const code = ($('#delete_confirm_code').val() || '').trim();
+        if (!code) {
+          $('#delete_confirm_code').addClass('is-invalid').focus();
+          return;
+        }
+        cleanup();
+        $('#confirm-modal').modal('hide');
+        resolve(code);
+      });
+
+      $('#confirm-cancel').on('click._del', function () {
+        cleanup();
+        resolve(null);
+      });
+
+      $('#confirm-modal').on('hidden.bs.modal._del', function () {
+        cleanup();
+        resolve(null);
+      });
+
+      $('#confirm-modal').modal('show');
+
+      // focus after open
+      setTimeout(() => { $('#delete_confirm_code').focus(); }, 250);
+    });
+  }
+
+  // ✅ DESTINATION submit (unchanged)
+  $('#dest-form').on('submit', async function (e) {
+    e.preventDefault();
+
+    const pk = $('#dest_pk').val();
+    if (!pk) {
+      showResultModal('Erreur', '<p class="mb-0">Aucune cargaison sélectionnée.</p>');
+      return;
+    }
+
+    const nouvelleDestination = $(this).find('[name="nouvelleDestination"]').val();
+    if (!nouvelleDestination) {
+      showResultModal('Validation', '<p class="mb-0">Veuillez sélectionner une destination.</p>');
+      return;
+    }
+
+    const postOnce = (confirmFlag) => {
+      const payload = {pk, nouvelleDestination};
+      if (confirmFlag) payload.confirm = "1";
+      return $.ajax({
+        url: '{% url "regularisationDestination" %}',
+        type: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        data: payload
+      });
+    };
+
+    try {
+      const resp1 = await postOnce(false);
+
+      if (resp1 && resp1.status === 'warning') {
+        const ok = await showConfirmModal(
+          'Attention',
+          `<p class="mb-0">${escapeHtml(resp1.message || 'Confirmez-vous ?')}</p>`,
+          'Confirmer',
+          'Annuler'
+        );
+        if (!ok) return;
+
+        const resp2 = await postOnce(true);
+
+        if (resp2 && resp2.status === 'success') {
+          $('#modal-dest').modal('hide');
+          showResultModal('Succès', '<p class="mb-0">Destination mise à jour.</p>');
+          if (table) table.ajax.reload(null, false);
+          return;
+        }
+
+        showResultModal('Erreur', `<small>${escapeHtml(JSON.stringify(resp2 || {}))}</small>`);
+        if (table) table.ajax.reload(null, false);
+        return;
+      }
+
+      if (resp1 && resp1.status === 'success') {
+        $('#modal-dest').modal('hide');
+        showResultModal('Succès', '<p class="mb-0">Destination mise à jour.</p>');
+        if (table) table.ajax.reload(null, false);
+        return;
+      }
+
+      showResultModal('Erreur', `<small>${escapeHtml(JSON.stringify(resp1 || {}))}</small>`);
+      if (table) table.ajax.reload(null, false);
+
+    } catch (xhr) {
+      const msg = xhr?.responseText ? escapeHtml(xhr.responseText) : 'Erreur serveur.';
+      showResultModal('Erreur', `<small>${msg}</small>`);
+      if (table) table.ajax.reload(null, false);
+    }
+  });
+
+  function initTable() {
+    if (table) return table;
+
+    $('#empty-state').hide();
+    $('#data-table').show();
+
+    table = $('#data-table').DataTable({
+      serverSide: true,
+      processing: true,
+      pageLength: 20,
+      lengthMenu: [20],
+      searchDelay: 350,
+      order: [[0, 'desc']],
+      ajax: function (d, cb) {
+        const f = filters();
+        const globalSearch = (d.search && String(d.search.value || '').trim()) || '';
+
+        if (!hasFilters(f) && !globalSearch) {
+          cb({data: [], draw: d.draw || 1, recordsTotal: 0, recordsFiltered: 0});
+          return;
+        }
+
+        showSpinner();
+        $.ajax({
+          url: '{% url "regularisation_response" %}',
+          type: 'POST',
+          headers: {'X-CSRFToken': csrfToken},
+          data: Object.assign({}, d, f),
+        })
+          .done(resp => cb(resp))
+          .fail(() => cb({data: [], draw: d.draw || 1, recordsTotal: 0, recordsFiltered: 0}))
+          .always(() => hideSpinner());
+      },
+
+      columns: [
+        {data: 'dateheurecargaison__date', defaultContent: ''},
+        {data: 'importateur__nomimportateur', defaultContent: ''},
+        {data: 'entrepot__nomentrepot', defaultContent: ''},
+        {data: 'produit__nomproduit', defaultContent: ''},
+        {data: 'volume', defaultContent: ''},
+        {data: 'immatriculation', defaultContent: ''},
+        {data: 'declaration', defaultContent: ''},
+        {
+          data: 'idcargaison',
+          orderable: false,
+          searchable: false,
+          render: function (data) {
+            return `
+              <div class="tf-action-row">
+                <button type="button" class="btn btn-success btn-icon action-btn action-dest" data-row-id="${data}" title="Destination">
+                  <i class="fas fa-map-marker-alt"></i>
+                </button>
+                <button type="button" class="btn btn-outline-success btn-icon action-btn action-trans" data-row-id="${data}" title="Transbordement">
+                  <i class="fas fa-exchange-alt"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-icon action-btn action-imp" data-row-id="${data}" title="Fournisseur">
+                  <i class="fas fa-user"></i>
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-icon action-btn action-nat" data-row-id="${data}" title="Nature produit">
+                  <i class="fas fa-tag"></i>
+                </button>
+                <button type="button" class="btn btn-danger btn-icon action-btn action-del" data-row-id="${data}" title="Supprimer">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            `;
+          }
+        }
+      ],
+    });
+
+    // ✅ ACTION BUTTONS
+    $('#data-table tbody').on('click', '.action-btn', async function () {
+      idCargaison = $(this).data('row-id');
+
+      if ($(this).hasClass('action-dest')) {
+        $('#dest_pk').val(idCargaison);
+        return $('#modal-dest').modal('show');
+      }
+
+      if ($(this).hasClass('action-trans')) {
+        $('#trans_pk').val(idCargaison);
+        return $('#modal-trans').modal('show');
+      }
+
+      // ✅ set pk BEFORE opening fournisseur modal
+      if ($(this).hasClass('action-imp')) {
+        $('#fourn_pk').val(idCargaison);
+        return $('#modal-fourn').modal('show');
+      }
+
+      // ✅ set pk BEFORE opening nature modal
+      if ($(this).hasClass('action-nat')) {
+        $('#nat_pk').val(idCargaison);
+        return $('#modal-nat').modal('show');
+      }
+
+      // ✅✅✅ DELETE WITH CODE CONFIRMATION
+      if ($(this).hasClass('action-del')) {
+        // 1) ask code
+        const code = await askDeleteCode();
+        if (!code) return;
+
+        // 2) submit to backend
+        $.ajax({
+          url: '/shydro/del_record/',
+          type: "POST",
+          dataType: "json",
+          headers: {'X-CSRFToken': csrfToken},
+          data: {pk: idCargaison, confirm_code: code},
+
+          success: function (resp) {
+            showResultModal('Succès', '<p class="mb-0">Donnée supprimée.</p>');
+            if (table) table.ajax.reload(null, false);
+          },
+
+          error: function (xhr) {
+            const msg = escapeHtml(
+              xhr?.responseJSON?.message ||
+              xhr?.responseJSON?.detail ||
+              xhr?.responseText ||
+              'Erreur serveur.'
+            );
+            showResultModal('Erreur', `<p class="mb-1">Suppression refusée.</p><small class="text-muted">${msg}</small>`);
+            if (table) table.ajax.reload(null, false);
+          }
         });
-      </script>
+      }
+    });
 
-    </div>
-  </section>
+    return table;
+  }
+
+  $('#btn-reset').on('click', function () {
+    applyFiltersToUI({
+      flt_date_from: '', flt_date_to: '', flt_frontiere: '',
+      flt_importateur: '', flt_entrepot: '', flt_produit: '',
+      flt_immat: '', flt_declaration: '', flt_numdos: ''
+    });
+  });
+
+  $('#btn-apply').on('click', function () {
+    const f = filters();
+    if (!hasFilters(f)) {
+      alert('Veuillez appliquer au moins un filtre.');
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
+    renderActiveFilters(f);
+
+    if (!table) initTable();
+    table.ajax.reload(null, true);
+
+    $('#filtersModal').modal('hide');
+
+    $('#filtersModal').one('hidden.bs.modal', function () {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open').css('padding-right', '');
+    });
+  });
+
+  function fillSelect($sel, items, defaultLabel) {
+    const current = $sel.val() || "";
+    $sel.empty().append(`<option value="">${escapeHtml(defaultLabel)}</option>`);
+
+    (items || []).forEach(item => {
+      const label = item && item.label ? String(item.label) : '';
+      if (!label.trim()) return;
+
+      const safeLabel = escapeHtml(label);
+      $sel.append(`<option value="${safeLabel}">${safeLabel}</option>`);
+    });
+
+    $sel.val(current);
+  }
+
+  function setFilterInputsDisabled(disabled) {
+    $('#flt_frontiere, #flt_importateur, #flt_entrepot, #flt_produit').prop('disabled', disabled);
+  }
+
+  $('#filtersModal').on('show.bs.modal', function () {
+    let saved = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const f = JSON.parse(raw);
+        if (f && typeof f === 'object') saved = f;
+      }
+    } catch (e) {}
+
+    $('#filter-loading').show();
+    setFilterInputsDisabled(true);
+
+    $.ajax({
+      url: '{% url "regularisation_filter_options" %}',
+      type: 'GET',
+      cache: false
+    })
+      .done(function (resp) {
+        fillSelect($('#flt_frontiere'), resp.frontieres, 'Toutes');
+        fillSelect($('#flt_importateur'), resp.fournisseurs, 'Tous');
+        fillSelect($('#flt_entrepot'), resp.entrepots, 'Tous');
+        fillSelect($('#flt_produit'), resp.produits, 'Tous');
+
+        if (saved) {
+          applyFiltersToUI(saved);
+          renderActiveFilters(saved);
+        }
+      })
+      .fail(function (xhr) {
+        console.log("filter-options failed:", xhr.status, xhr.responseText);
+        alert("Impossible de charger les listes des filtres (voir console).");
+      })
+      .always(function () {
+        $('#filter-loading').hide();
+        setFilterInputsDisabled(false);
+      });
+  });
+
+  $(document).ready(function () {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const f = JSON.parse(raw);
+        if (f && typeof f === 'object') {
+          $('#flt_date_from').val(f.flt_date_from || '');
+          $('#flt_date_to').val(f.flt_date_to || '');
+          $('#flt_immat').val(f.flt_immat || '');
+          $('#flt_declaration').val(f.flt_declaration || '');
+          $('#flt_numdos').val(f.flt_numdos || '');
+          renderActiveFilters(f);
+        }
+      }
+    } catch (e) {}
+  });
+
+  // ✅ Global cleanup
+  $('#filtersModal, #modal-dest, #modal-trans, #modal-nat, #modal-fourn, #modal-imp, #modal-entrepot, #modal-enreg, #result-modal, #confirm-modal')
+    .on('hidden.bs.modal', function () {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open').css('padding-right', '');
+      if (document.activeElement && $(document.activeElement).closest('.modal').length) {
+        try { document.activeElement.blur(); } catch (e) {}
+      }
+    });
+
+  // ✅ FORCE-HIDE MODAL HELPER
+  function forceHideModal(modalSelector, cb) {
+    const $m = $(modalSelector);
+
+    $m.appendTo('body');
+    $('#result-modal').appendTo('body');
+
+    $m.modal('hide');
+
+    $m.one('hidden.bs.modal._force', function () {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open').css('padding-right', '');
+      if (typeof cb === 'function') cb();
+    });
+
+    setTimeout(function () {
+      if ($m.hasClass('show') || $m.is(':visible')) {
+        $m.removeClass('show').css('display', 'none').attr('aria-hidden', 'true');
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
+        if (typeof cb === 'function') cb();
+      }
+    }, 650);
+  }
+
+  // ✅✅ TRANSBORDEMENT (kept)
+  $('#trans-form').off('submit.trans').on('submit.trans', async function (e) {
+    e.preventDefault();
+    const $form = $(this);
+    if ($form.data('busy')) return;
+    $form.data('busy', true);
+
+    const pk = $('#trans_pk').val();
+    if (!pk) {
+      showResultModal('Erreur', '<p class="mb-0">Aucune cargaison sélectionnée.</p>');
+      $form.data('busy', false);
+      return;
+    }
+
+    const immat = ($('#trans_immat').val() || '').trim();
+    const vol = Number(($('#trans_volume').val() || '').trim());
+    const remarks = ($('#trans_remarks').val() || '').trim();
+
+    let hasErr = false;
+    if (!immat) { $('#trans_immat').addClass('is-invalid'); hasErr = true; }
+    else { $('#trans_immat').removeClass('is-invalid'); }
+
+    if (!(vol > 0)) { $('#trans_volume').addClass('is-invalid'); hasErr = true; }
+    else { $('#trans_volume').removeClass('is-invalid'); }
+
+    if (hasErr) { $form.data('busy', false); return; }
+
+    $('#trans-form :input').prop('disabled', true);
+
+    const closeThenShow = (title, bodyHtml) => {
+      forceHideModal('#modal-trans', function () {
+        showResultModal(title, bodyHtml);
+        if (table) table.ajax.reload(null, false);
+      });
+    };
+
+    try {
+      const resp = await $.ajax({
+        url: '{% url "transbordement" %}',
+        type: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        data: {pk, nouvelleImmatriculation: immat, nouveauVolume: vol, remarks}
+      });
+
+      const ok = resp && resp.status === 'success';
+      const msgSafe = escapeHtml(resp?.message || resp?.error || 'Réponse inattendue du serveur.');
+
+      if (ok) closeThenShow('Succès', '<p class="mb-0">Transbordement effectué avec succès.</p>');
+      else closeThenShow('Erreur', `<p class="mb-1">Transbordement échoué.</p><small class="text-muted">${msgSafe}</small>`);
+
+    } catch (xhr) {
+      const msgSafe = escapeHtml(xhr?.responseText || 'Erreur serveur.');
+      closeThenShow('Erreur', `<p class="mb-1">Transbordement échoué.</p><small class="text-muted">${msgSafe}</small>`);
+    } finally {
+      $('#trans-form :input').prop('disabled', false);
+      $form.data('busy', false);
+    }
+  });
+
+  $('#modal-trans').on('show.bs.modal', function () {
+    $('#trans_immat').removeClass('is-invalid');
+    $('#trans_volume').removeClass('is-invalid');
+  });
+
+  // =========================================================
+  // ✅✅✅ CORRECTION NATURE PRODUIT (LOAD via produit_options_all, SUBMIT -> changementNature)
+  // =========================================================
+  (function () {
+    const LOAD_URL = "{% url 'produit_options_all' %}";
+    const SUBMIT_URL = "{% url 'changementNature' %}";
+    const $modal = $('#modal-nat');
+
+    function populateProduits() {
+      const $sel = $('#nat_produit_id');
+      if (!$sel.length) return;
+
+      $sel.prop('disabled', true).html('<option value="">Chargement...</option>');
+
+      $.ajax({
+        url: LOAD_URL,
+        method: 'GET',
+        dataType: 'json',
+        cache: false
+      })
+        .done(function (resp) {
+          const items = (resp && Array.isArray(resp.items)) ? resp.items : [];
+          const opts = ['<option value="">-- Sélectionner un produit --</option>'];
+
+          items.forEach(function (it) {
+            if (it && it.id != null && String(it.label || '').trim() !== '') {
+              opts.push(`<option value="${it.id}">${escapeHtml(it.label)}</option>`);
+            }
+          });
+
+          $sel.html(opts.join(''));
+          $sel.data('loaded', true);
+        })
+        .fail(function (xhr) {
+          console.error('[PRODUITS] failed', xhr.status, xhr.statusText);
+          console.error('[PRODUITS] response:', (xhr.responseText || '').slice(0, 300));
+          $sel.html('<option value="">-- Impossible de charger la liste --</option>');
+        })
+        .always(function () {
+          $sel.prop('disabled', false);
+        });
+    }
+
+    $(document).off('click.nat_load_btn', '#btn-load-produits')
+      .on('click.nat_load_btn', '#btn-load-produits', function () {
+        const $btn = $(this);
+        if ($btn.data('busy')) return;
+        $btn.data('busy', true);
+        const $text = $btn.find('.btn-text');
+        const $spin = $btn.find('.spinner-border');
+        $text.hide(); $spin.show();
+        try {
+          $('#nat_produit_id').data('loaded', false);
+          populateProduits();
+        } finally {
+          setTimeout(function () {
+            $spin.hide(); $text.show();
+            $btn.data('busy', false);
+          }, 400);
+        }
+      });
+
+    $modal.off('shown.bs.modal.nat_autoload')
+      .on('shown.bs.modal.nat_autoload', function () {
+        const $sel = $('#nat_produit_id');
+        if ($sel.data('loaded') === true) return;
+        populateProduits();
+      });
+
+    $(document).off('submit.nat_submit', '#nat-form')
+      .on('submit.nat_submit', '#nat-form', function (e) {
+        e.preventDefault();
+
+        const $form = $(this);
+        if ($form.data('busy')) return;
+        $form.data('busy', true);
+
+        const pk = ($('#nat_pk').val() || '').trim();
+        const produitId = ($('#nat_produit_id').val() || '').trim();
+        const remarks = ($('#nat_remarks').val() || '').trim();
+
+        if (!pk) {
+          showResultModal('Erreur', '<p class="mb-0">Aucune cargaison sélectionnée.</p>');
+          $form.data('busy', false);
+          return;
+        }
+
+        if (!produitId) {
+          $('#nat_produit_id').addClass('is-invalid');
+          $form.data('busy', false);
+          return;
+        }
+        $('#nat_produit_id').removeClass('is-invalid');
+
+        const $inputs = $form.find(':input');
+        $inputs.prop('disabled', true);
+
+        $.ajax({
+          url: SUBMIT_URL,
+          type: 'POST',
+          dataType: 'json',
+          headers: {'X-CSRFToken': csrfToken},
+          data: {pk: pk, produit_id: produitId, remarks: remarks}
+        })
+          .done(function (resp) {
+            const ok = resp && resp.status === 'success';
+            const msg = escapeHtml(resp?.message || (ok ? 'Produit mis à jour.' : 'Réponse inattendue.'));
+
+            forceHideModal('#modal-nat', function () {
+              if (ok) showResultModal('Succès', `<p class="mb-0">${msg}</p>`);
+              else showResultModal('Erreur', `<p class="mb-1">Échec.</p><small class="text-muted">${msg}</small>`);
+              if (table) table.ajax.reload(null, false);
+            });
+          })
+          .fail(function (xhr) {
+            const msg = escapeHtml(
+              xhr?.responseJSON?.message ||
+              xhr?.responseJSON?.detail ||
+              xhr?.responseText ||
+              'Erreur serveur.'
+            );
+
+            forceHideModal('#modal-nat', function () {
+              showResultModal('Erreur', `<p class="mb-1">Échec.</p><small class="text-muted">${msg}</small>`);
+              if (table) table.ajax.reload(null, false);
+            });
+          })
+          .always(function () {
+            $inputs.prop('disabled', false);
+            $form.data('busy', false);
+          });
+      });
+
+    $modal.off('show.bs.modal.nat_reset')
+      .on('show.bs.modal.nat_reset', function () {
+        $('#nat_produit_id').removeClass('is-invalid');
+      });
+
+  })();
+
+  // =========================================================
+  // ✅✅✅ CORRECTION FOURNISSEUR (SUBMIT -> changementImportateur)
+  // =========================================================
+  (function () {
+    const IMPORT_URL = "{% url 'importateur_options_all' %}";
+    const SUBMIT_URL = "{% url 'changementImportateur' %}";
+    const $modal = $('#modal-fourn');
+
+    function setLoading(state) {
+      const $btn = $('#btn-load-importateurs');
+      if (!$btn.length) return;
+      $btn.prop('disabled', !!state);
+      $btn.find('.spinner-border').toggle(!!state);
+    }
+
+    function populateImportateurs() {
+      const $sel = $('#fourn_importateur_id');
+      if (!$sel.length) return;
+
+      setLoading(true);
+      $sel.prop('disabled', true).html('<option value="">Chargement...</option>');
+
+      $.ajax({
+        url: IMPORT_URL,
+        method: 'GET',
+        dataType: 'json',
+        data: {limit: 1000},
+        cache: false
+      })
+        .done(function (resp) {
+          const items = (resp && Array.isArray(resp.items)) ? resp.items : [];
+          const opts = ['<option value="">-- Sélectionner un fournisseur --</option>'];
+
+          items.forEach(function (it) {
+            if (it && it.id != null && String(it.label || '').trim() !== '') {
+              opts.push(`<option value="${it.id}">${escapeHtml(it.label)}</option>`);
+            }
+          });
+
+          $sel.html(opts.join(''));
+          $sel.data('loaded', true);
+        })
+        .fail(function (xhr) {
+          console.error('[IMPORTATEURS] failed', xhr.status, xhr.statusText);
+          console.error('[IMPORTATEURS] response:', (xhr.responseText || '').slice(0, 300));
+          $sel.html('<option value="">-- Impossible de charger la liste --</option>');
+        })
+        .always(function () {
+          setLoading(false);
+          $sel.prop('disabled', false);
+        });
+    }
+
+    $(document).off('click.fourn_load', '#btn-load-importateurs')
+      .on('click.fourn_load', '#btn-load-importateurs', function () {
+        populateImportateurs();
+      });
+
+    $modal.off('shown.bs.modal.fourn_autoload')
+      .on('shown.bs.modal.fourn_autoload', function () {
+        const $sel = $('#fourn_importateur_id');
+        if ($sel.data('loaded') === true) return;
+        populateImportateurs();
+      });
+
+    $(document).off('submit.fourn_submit', '#fourn-form')
+      .on('submit.fourn_submit', '#fourn-form', function (e) {
+        e.preventDefault();
+
+        const $form = $(this);
+        if ($form.data('busy')) return;
+        $form.data('busy', true);
+
+        const pk = ($('#fourn_pk').val() || '').trim();
+        const importateurId = ($('#fourn_importateur_id').val() || '').trim();
+        const remarks = ($('#fourn_remarks').val() || '').trim();
+
+        if (!pk) {
+          showResultModal('Erreur', '<p class="mb-0">Aucune cargaison sélectionnée.</p>');
+          $form.data('busy', false);
+          return;
+        }
+
+        if (!importateurId) {
+          $('#fourn_importateur_id').addClass('is-invalid');
+          $form.data('busy', false);
+          return;
+        }
+        $('#fourn_importateur_id').removeClass('is-invalid');
+
+        const $inputs = $form.find(':input');
+        $inputs.prop('disabled', true);
+
+        $.ajax({
+          url: SUBMIT_URL,
+          type: 'POST',
+          dataType: 'json',
+          headers: {'X-CSRFToken': csrfToken},
+          data: {pk: pk, importateur_id: importateurId, remarks: remarks}
+        })
+          .done(function (resp) {
+            const msg = escapeHtml(resp?.message || 'Fournisseur mis à jour.');
+
+            forceHideModal('#modal-fourn', function () {
+              showResultModal('Succès', `<p class="mb-0">${msg}</p>`);
+              if (table) table.ajax.reload(null, false);
+            });
+          })
+          .fail(function (xhr) {
+            const msg = escapeHtml(
+              xhr?.responseJSON?.message ||
+              xhr?.responseJSON?.detail ||
+              xhr?.responseText ||
+              'Erreur serveur.'
+            );
+
+            forceHideModal('#modal-fourn', function () {
+              showResultModal('Erreur', `<p class="mb-1">Échec.</p><small class="text-muted">${msg}</small>`);
+              if (table) table.ajax.reload(null, false);
+            });
+          })
+          .always(function () {
+            $inputs.prop('disabled', false);
+            $form.data('busy', false);
+          });
+      });
+
+    $modal.on('show.bs.modal', function () {
+      $('#fourn_importateur_id').removeClass('is-invalid');
+    });
+
+  })();
+</script>
+
+        </div>
+    </section>
 {% endblock %}

@@ -37,7 +37,9 @@ urlpatterns = [
     path('rapportActivite/', views.rapportActivite, name='rapportActivite'),
     path('responseRapportActivite/', views.responseRapportActivite, name='responseRapportActivite'), #Json response
     path('rapportActivite/filters/', views.filterOptionsRapportActivite, name='filterOptionsRapportActivite'),
+    path('rapportActivite/filters/all/', views.filterOptionsRapportActiviteAll, name='filterOptionsRapportActiviteAll'),
     path('rapportActivite/export/start/', views.startRapportActiviteExport, name='startRapportActiviteExport'),
+    path('rapportActivite/export/start/by-ville/', views.startRapportActiviteExportV2, name='startRapportActiviteExportV2'),
     path('exportResponseRapportActivite/', views.responseRapportActivite, name='exportResponseRapportActivite'), #Json response
     path('rapportActiviteExport/', views.rapportActivite, name='rapportActiviteExport'),
     path('rapportActiviteFiltre/', views.rapportActiviteFiltre, name='rapportActiviteFiltre'),
@@ -53,6 +55,11 @@ urlpatterns = [
 
     path('regularisation/', views.regularisation, name='regularisation'),
     path('regularisation_response/', views.regularisation_response, name='regularisation_response'),
+    path('regularisation/filter-options/', views.regularisation_filter_options, name='regularisation_filter_options'),
+    # Unfiltered list of all importateurs (for CORRECTION FOURNISSEUR modal)
+    path('regularisation/importateur-options/', views.importateur_options_all, name='importateur_options_all'),
+    # Unfiltered list of all produits (for CORRECTION NATURE PRODUIT modal)
+    path('regularisation/produit-options/', views.produit_options_all, name='produit_options_all'),
     path('regularisationDestination/', views.regularisationDestination, name='regularisationDestination'),
     path('changementNature/', views.changementNature, name='changementNature'),
     path('changementImportateur/', views.changementImportateur, name='changementImportateur'),
@@ -87,6 +94,12 @@ urlpatterns = [
     path('lastrecordShydro/', views.lastrecordShydro, name='lastrecordShydro'),
     path('topImportersShydro/', views.topImportersShydro, name='topImportersShydro'),
     path('productCountShydro/', views.productCountShydro, name='productCountShydro'),
+
+    # KPI details (Dashboard modal, POST-only JSON)
+    path('kpiDetailsHydro/', views.kpi_details_hydro, name='kpiDetailsHydro'),
+
+    # KPI export (start Celery task)
+    path('kpiExportHydro/start/', views.startKpiExportHydro, name='startKpiExportHydro'),
 
 
     path('afficherDossImport/', views.afficherDossImport, name='afficherDossImport'),

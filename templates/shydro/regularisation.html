@@ -1,9 +1,6 @@
 {% load django_tables2 %}
 {% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap4 %}
-{% bootstrap_css %}
-{% bootstrap_javascript jquery='full' %}
+{# Removed crispy-related and django-bootstrap form helpers; use pure Bootstrap via CDN below #}
 
 
 <html>
@@ -18,8 +15,9 @@
           type="text/css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-    <!-- Bootstrap 4 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js"></script>
+    <!-- Bootstrap 5 (CSS + Bundle JS with Popper) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
@@ -106,7 +104,7 @@
         </ul>
 
         <!-- Right navbar links -->
-        <ul class="navbar-nav ml-auto">
+        <ul class="navbar-nav ms-auto">
             <!-- Navbar Search -->
             <li class="nav-item">
                 <div class="navbar-search-block">
@@ -149,7 +147,7 @@
                                 <p>
                                     ENREGISTREMENT
                                     <i class="fas fa-save right"></i>
-                                    <span class="badge badge-info right"></span>
+                                    <span class="badge bg-info float-end"></span>
                                 </p>
                             </a>
 
@@ -181,7 +179,7 @@
                                 <i class="nav-icon fas fa-flask"></i>
                                 <p>
                                     LABORATOIRE
-                                    <i class="fas fa-angle-left right"></i>
+                                    <i class="fas fa-angle-left float-end"></i>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
@@ -241,8 +239,8 @@
                             <i class="nav-icon fas fa-building"></i>
                             <p>
                                 HYDRO
-                                <i class="fas fa-trailer right"></i>
-                                <span class="badge badge-info right"></span>
+                                <i class="fas fa-trailer float-end"></i>
+                                <span class="badge bg-info float-end"></span>
                             </p>
                         </a>
                     {% endif %}
@@ -295,8 +293,8 @@
                                 <i class="nav-icon fas fa-file-archive"></i>
                                 <p>
                                     FACTURATIONS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
+                                    <i class="fas fa-angle-left float-end"></i>
+                                    <span class="badge bg-info float-end"></span>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
@@ -323,8 +321,8 @@
                                 <i class="nav-icon fas fa-user"></i>
                                 <p>
                                     USERS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
+                                    <i class="fas fa-angle-left float-end"></i>
+                                    <span class="badge bg-info float-end"></span>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
@@ -395,15 +393,15 @@
             <div class="container-fluid">
                 
                 <div class="row">
-                    <a class="btn btn-app bg-success" data-toggle="modal" data-target="#modal-enreg">
+                    <a class="btn btn-app bg-success" data-bs-toggle="modal" data-bs-target="#modal-enreg">
                         <span class="badge bg-purple"></span>
                         <i class="fas fa-trailer"></i> N.Enreg.
                     </a>
-                    <a class="btn btn-app bg-yellow" data-toggle="modal" data-target="#modal-imp">
+                    <a class="btn btn-app bg-yellow" data-bs-toggle="modal" data-bs-target="#modal-imp">
                         <span class="badge bg-purple"></span>
                         <i class="fas fa-user"></i> N.Import.
                     </a>
-                    <a class="btn btn-app bg-gradient-danger" data-toggle="modal" data-target="#modal-entrepot">
+                    <a class="btn btn-app bg-gradient-danger" data-bs-toggle="modal" data-bs-target="#modal-entrepot">
                         <span class="badge bg-purple"></span>
                         <i class="fas fa-warehouse"></i> N.Entrep.
                     </a>
@@ -431,18 +429,31 @@
                             <div class="card-body">
                                 {% block content %}
                                 {% endblock %}
-                                
+
                                 <!-- TOOLBAR -->
                                 <div class="mb-3 d-flex justify-content-between">
                                     <div>
-                                        <button class="btn btn-primary" id="btn-open-filters" data-toggle="modal" data-target="#filtersModal">
+                                        <button class="btn btn-primary" id="btn-open-filters" data-bs-toggle="modal" data-bs-target="#filtersModal">
                                             <i class="fas fa-filter"></i> Filtres
                                         </button>
                                         <button class="btn btn-outline-secondary" id="btn-clear" type="button">
                                             <i class="fas fa-undo"></i> Effacer
                                         </button>
+                                        <!-- Action shortcuts (optional) -->
+                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-dest">
+                                            RE-ORIENTATION
+                                        </button>
+                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-trans">
+                                            TRANSBORDEMENT
+                                        </button>
+                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-fourn">
+                                            CORRECTION FOURNISSEUR
+                                        </button>
+                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-nat">
+                                            CORRECTION NATURE PRODUIT
+                                        </button>
+                                        </div>
                                     </div>
-                                </div>
 
                                 <!-- ACTIVE FILTERS -->
                                 <div id="active-filters" class="filters-bar" style="display:none"></div>
@@ -490,7 +501,7 @@
         <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
             SARL</a>.</strong>
         All rights reserved.
-        <div class="float-right d-none d-sm-inline-block">
+        <div class="float-end d-none d-sm-inline-block">
             <b>Version</b> 3.0
         </div>
     </footer>
@@ -500,7 +511,7 @@
     </aside>
     <!-- /.control-sidebar -->
 
-</div>
+  </div>
 
 
 <script>
@@ -508,15 +519,13 @@
     // injected via CSS at top, ensure classes exist
 </script>
 
-<!-- FILTER MODAL (Bootstrap 4 compatible) -->
+<!-- FILTER MODAL (Bootstrap 5) -->
 <div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Filtres avancés</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
       </div>
       <div class="modal-body">
         <div class="row">
@@ -530,19 +539,27 @@
           </div>
           <div class="col-md-6">
             <label class="form-label">Frontière</label>
-            <input id="flt_frontiere" class="form-control" placeholder="Nom de la frontière">
+            <select id="flt_frontiere" class="form-control">
+              <option value="">— Sélectionner —</option>
+            </select>
           </div>
           <div class="col-md-6 mt-2">
             <label class="form-label">Fournisseur</label>
-            <input id="flt_importateur" class="form-control" placeholder="Fournisseur">
+            <select id="flt_importateur" class="form-control">
+              <option value="">— Sélectionner —</option>
+            </select>
           </div>
           <div class="col-md-6 mt-2">
             <label class="form-label">Entrepôt</label>
-            <input id="flt_entrepot" class="form-control" placeholder="Entrepôt">
+            <select id="flt_entrepot" class="form-control">
+              <option value="">— Sélectionner —</option>
+            </select>
           </div>
           <div class="col-md-6 mt-2">
             <label class="form-label">Produit</label>
-            <input id="flt_produit" class="form-control" placeholder="Produit">
+            <select id="flt_produit" class="form-control">
+              <option value="">— Sélectionner —</option>
+            </select>
           </div>
           <div class="col-md-6 mt-2">
             <label class="form-label">Immatriculation</label>
@@ -562,12 +579,128 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" id="btn-clear-modal">
+          <i class="fas fa-eraser"></i> Effacer filtres
+        </button>
         <button type="button" class="btn btn-secondary" id="btn-reset">Réinitialiser</button>
         <button type="button" class="btn btn-primary" id="btn-apply">Appliquer</button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- RE-ORIENTATION MODAL (Bootstrap 5) -->
+<div class="modal fade" id="modal-dest" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Re-orientation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form id="destination-form">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label>Nouveau entrepôt</label>
+            <select class="form-control" id="dest_entrepot" name="entrepot_id" required>
+              <option value="">— Sélectionner —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label>Remarques (optionnel)</label>
+            <textarea class="form-control" name="remarks" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" id="btn-submit-destination" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
+
+<!-- TRANSBORDEMENT MODAL (Bootstrap 5; uses partial _transbordement_form.html) -->
+<div class="modal fade" id="modal-trans" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Transbordement</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form id="trans-form">
+        <div class="modal-body">
+          {% csrf_token %}
+          <input type="hidden" id="trans_pk" name="pk" value="">
+          {% include 'regularisation/_transbordement_form.html' %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
+
+<!-- CORRECTION FOURNISSEUR MODAL (Bootstrap 5) -->
+<div class="modal fade" id="modal-fourn" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Correction fournisseur</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form id="importateur-form">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label>Nouveau fournisseur</label>
+            <select class="form-control" id="corr_importateur" name="importateur_id" required>
+              <option value="">— Sélectionner —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label>Motif (optionnel)</label>
+            <textarea class="form-control" name="reason" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" id="btn-submit-importateur" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
+
+<!-- CORRECTION NATURE PRODUIT MODAL (Bootstrap 5) -->
+<div class="modal fade" id="modal-nat" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Correction nature produit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <form id="nature-form">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label>Nouveau produit</label>
+            <select class="form-control" id="corr_produit" name="produit_id" required>
+              <option value="">— Sélectionner —</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label>Motif (optionnel)</label>
+            <textarea class="form-control" name="reason" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" id="btn-submit-nature" class="btn btn-primary">Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  </div>
 
 <script>
     var Id;
@@ -665,6 +798,14 @@
           $('#empty-state').show();
         }
 
+        function clearAllFilters(){
+          const empty = { flt_date_from:'', flt_date_to:'', flt_frontiere:'', flt_importateur:'', flt_entrepot:'', flt_produit:'', flt_immat:'', flt_declaration:'', flt_numdos:'' };
+          localStorage.removeItem(STORAGE_KEY);
+          applyFiltersToUI(empty);
+          renderActiveFilters(empty);
+          destroyTableAndShowEmpty();
+        }
+
         function initTable(){
           if(table) return table;
           $('#empty-state').hide();
@@ -673,6 +814,7 @@
           table = $('#data-table').DataTable({
             serverSide: true,
             processing: true,
+            searching: false,
             pageLength: 15,
             lengthMenu: [15, 30, 50],
             searchDelay: 350,
@@ -712,11 +854,11 @@
                 render: function(){
                   return `
                     <div class="btn-group btn-group-sm">
-                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-dest">RE-ROUTAGE</button>
-                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-trans">TRANSBOR.</button>
-                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-fourn">IMPORT.</button>
-                      <button type="button" onclick="getRowId(this)" class="btn btn-default" data-toggle="modal" data-target="#modal-nat">PRODUIT</button>
-                      <a href="#" class="btn btn-danger" onclick="return confirmAction();">SUPPR.</a>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal-dest">RE-ROUTAGE</button>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal-trans">TRANSBOR.</button>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal-fourn">IMPORT.</button>
+                      <button type="button" onclick="getRowId(this)" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal-nat">PRODUIT</button>
+                      <a href="#" class="btn btn-danger btn-delete">SUPPR.</a>
                     </div>`;
                 }
               }
@@ -727,10 +869,103 @@
           return table;
         }
 
+        // ====== Dropdown options (DB-backed) ======
+        const OPT_URL = '{% url "regularisation_filter_options" %}';
+        const IMPORTATEURS_ALL_URL = '{% url "importateur_options_all" %}';
+
+        function populateSelectOnce($el, type){
+          // If already populated beyond the placeholder, skip
+          if($el.data('loaded') === true || ($el.find('option').length > 1)) return;
+          const selectedVal = ($el.val() || '').trim();
+          $.getJSON(OPT_URL, { type, limit: 200 })
+            .done(function(resp){
+              const items = (resp && resp.items) || [];
+              // Clear and add placeholder
+              const current = ($el.val() || '').trim();
+              $el.empty().append('<option value="">— Sélectionner —</option>');
+              items.forEach(function(it){
+                // Expect structure like rapportActiviteFirst: { id, label }
+                const val = (it && (it.id != null)) ? String(it.id) : '';
+                const lab = (it && it.label) || '';
+                const opt = $('<option></option>')
+                  .attr('value', val)
+                  .text(lab);
+                $el.append(opt);
+              });
+              // Re-apply selection if any
+              const toSelect = selectedVal || current;
+              if(toSelect){ $el.val(String(toSelect)); }
+              $el.data('loaded', true);
+            })
+            .fail(function(){ /* ignore */ });
+        }
+
+        $('#filtersModal').on('shown.bs.modal', function(){
+          populateSelectOnce($('#flt_entrepot'), 'entrepot');
+          populateSelectOnce($('#flt_importateur'), 'importateur');
+          populateSelectOnce($('#flt_produit'), 'produit');
+          populateSelectOnce($('#flt_frontiere'), 'frontiere');
+        });
+
+        // Populate action modals selects when opened
+        $('#modal-dest').on('shown.bs.modal', function(){
+          // reuse cache guard per element
+          $('#dest_entrepot').data('loaded', false);
+          populateSelectOnce($('#dest_entrepot'), 'entrepot');
+        });
+        // When opening transbordement, attach current row id and reset validation/fields
+        $('#modal-trans').on('shown.bs.modal', function(){
+          $('#trans_pk').val(rowId || '');
+          $('#trans_immat, #trans_volume').removeClass('is-invalid');
+        });
+        $('#modal-fourn').on('shown.bs.modal', function(){
+          const $el = $('#corr_importateur');
+          // lazy-load unfiltered importateurs from the dedicated endpoint
+          if ($el.data('loaded') === true) return;
+          const prev = ($el.val() || '').trim();
+          $.getJSON(IMPORTATEURS_ALL_URL, { limit: 1000 })
+            .done(function(resp){
+              const items = (resp && resp.items) || [];
+              $el.empty().append('<option value="">— Sélectionner —</option>');
+              items.forEach(function(it){
+                const val = (it && (it.id != null)) ? String(it.id) : '';
+                const lab = (it && it.label) || '';
+                const opt = $('<option></option>').attr('value', val).text(lab);
+                $el.append(opt);
+              });
+              if (prev) { $el.val(String(prev)); }
+              $el.data('loaded', true);
+            })
+            .fail(function(){ /* ignore for now */ });
+        });
+        $('#modal-nat').on('shown.bs.modal', function(){
+          $('#corr_produit').data('loaded', false);
+          populateSelectOnce($('#corr_produit'), 'produit');
+        });
+
         // Restore saved filters
         try{
           const raw = localStorage.getItem(STORAGE_KEY);
           if(raw){ const f = JSON.parse(raw); if(f && typeof f === 'object'){ applyFiltersToUI(f); renderActiveFilters(f); } }
+        }catch(e){}
+
+        // Helpers for BS5 modals
+        function bsShowModal(el){
+          if(!el) return; const m = bootstrap.Modal.getOrCreateInstance(el, { backdrop:true, keyboard:true }); m.show();
+        }
+        function bsHideModal(el){
+          if(!el) return; const m = bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el, { backdrop:true, keyboard:true }); m.hide();
+        }
+
+        // Auto-open filters modal on first visit (or when no filters are present)
+        try{
+          const current = filters();
+          if(!hasFilters(current)){
+            $('#empty-state').show();
+            setTimeout(function(){
+              bsShowModal(document.getElementById('filtersModal'));
+            }, 300);
+          }
         }catch(e){}
 
         // Apply
@@ -744,23 +979,155 @@
           renderActiveFilters(f);
           if(!table) initTable();
           table.ajax.reload(null, true);
-          $('#filtersModal').modal('hide');
+          bsHideModal(document.getElementById('filtersModal'));
           $('#filtersModal').one('hidden.bs.modal', function(){
             $('.modal-backdrop').remove();
             $('body').removeClass('modal-open').css('padding-right','');
           });
         });
 
-        // Reset UI-only
+        // Reset UI-only (keep current table state)
         $('#btn-reset').on('click', function(){
           applyFiltersToUI({ flt_date_from:'', flt_date_to:'', flt_frontiere:'', flt_importateur:'', flt_entrepot:'', flt_produit:'', flt_immat:'', flt_declaration:'', flt_numdos:'' });
         });
 
-        // Clear all
+        // Clear all (toolbar button) without full page reload
         $('#btn-clear').on('click', function(){
-          localStorage.removeItem(STORAGE_KEY);
-          applyFiltersToUI({ flt_date_from:'', flt_date_to:'', flt_frontiere:'', flt_importateur:'', flt_entrepot:'', flt_produit:'', flt_immat:'', flt_declaration:'', flt_numdos:'' });
-          window.location.reload();
+          clearAllFilters();
+        });
+
+        // Clear all from inside modal and close it
+        $('#btn-clear-modal').on('click', function(){
+          clearAllFilters();
+          bsHideModal(document.getElementById('filtersModal'));
+          $('#filtersModal').one('hidden.bs.modal', function(){
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right','');
+          });
+        });
+
+        // ===== Link action modals to their endpoints =====
+        // Helper: professional result modal API used across the page and by partials
+        window.showResultModal = function(title, bodyHtml){
+          try{
+            if(!$('#result-modal').length){
+              // If markup missing, fallback to alert
+              alert((title? (title+"\n") : '') + (bodyHtml||''));
+              return;
+            }
+            // Clear any current focus before opening a new modal to avoid aria-hidden focus issues
+            try { if (document.activeElement) document.activeElement.blur(); } catch(e) {}
+
+            $('#result-modal-title').text(title||'');
+            $('#result-modal-body').html(bodyHtml||'');
+            const rmEl = document.getElementById('result-modal');
+            const rm = bootstrap.Modal.getOrCreateInstance(rmEl, { backdrop: true, keyboard: true });
+            rm.show();
+
+            // Focus the primary action for accessibility once shown
+            rmEl.addEventListener('shown.bs.modal', function onShown(){
+              rmEl.removeEventListener('shown.bs.modal', onShown);
+              try { rmEl.querySelector('[data-bs-dismiss="modal"], .btn-primary')?.focus(); } catch(e) {}
+            });
+          }catch(e){
+            alert((title? (title+"\n") : '') + (bodyHtml||''));
+          }
+        };
+
+        // Backward-compatible wrapper used earlier in this file
+        function showResult(title, msg){
+          window.showResultModal(title, msg);
+        }
+
+        // Destination (re-routage)
+        $(document).on('click', '#btn-submit-destination', function(e){
+          e.preventDefault();
+          const formEl = document.getElementById('destination-form');
+          if(!formEl){ return showResult('Error','Destination form not found (id=destination-form).'); }
+          $(formEl).find('input[name="pk"]').remove();
+          $(formEl).append($('<input type="hidden" name="pk">').val(rowId));
+          $.ajax({
+            url: '{% url "regularisationDestination" %}',
+            type: 'POST',
+            data: $(formEl).serialize(),
+            headers: { 'X-CSRFToken': csrfToken }
+          }).done(function(){
+            try{ bsHideModal(document.getElementById('modal-dest')); }catch(e){}
+            showResult('Succès','<p class="mb-0">Données sauvegardées.</p>');
+            if(table) table.ajax.reload(null,false);
+          }).fail(function(xhr){
+            try{ bsHideModal(document.getElementById('modal-dest')); }catch(e){}
+            showResult('Erreur', `<small>${(xhr && (xhr.responseText||xhr.statusText))||'Erreur inconnue'}</small>`);
+          }).always(function(){ $(formEl).find('input[name="pk"]').remove(); });
+        });
+
+        // Transbordement: now handled inside the included partial via submit handler on #trans-form
+
+        // Changement de nature (produit)
+        $(document).on('click', '#btn-submit-nature', function(e){
+          e.preventDefault();
+          const formEl = document.getElementById('nature-form');
+          if(!formEl){ return showResult('Error','Formulaire nature introuvable (id=nature-form).'); }
+          $(formEl).find('input[name="pk"]').remove();
+          $(formEl).append($('<input type="hidden" name="pk">').val(rowId));
+          $.ajax({
+            url: '{% url "changementNature" %}',
+            type: 'POST',
+            data: $(formEl).serialize(),
+            headers: { 'X-CSRFToken': csrfToken }
+          }).done(function(){
+            try{ bsHideModal(document.getElementById('modal-nat')); }catch(e){}
+            showResult('Succès','<p class="mb-0">Données sauvegardées.</p>');
+            if(table) table.ajax.reload(null,false);
+          }).fail(function(xhr){
+            try{ bsHideModal(document.getElementById('modal-nat')); }catch(e){}
+            showResult('Erreur', `<small>${(xhr && (xhr.responseText||xhr.statusText))||'Erreur inconnue'}</small>`);
+          }).always(function(){ $(formEl).find('input[name="pk"]').remove(); });
+        });
+
+        // Changement Importateur
+        $(document).on('click', '#btn-submit-importateur', function(e){
+          e.preventDefault();
+          const formEl = document.getElementById('importateur-form');
+          if(!formEl){ return showResult('Error','Formulaire importateur introuvable (id=importateur-form).'); }
+          // Ensure both pk and idcargaison are sent
+          $(formEl).find('input[name="pk"]').remove();
+          $(formEl).find('input[name="idcargaison"]').remove();
+          $(formEl).append($('<input type="hidden" name="pk">').val(rowId));
+          $(formEl).append($('<input type="hidden" name="idcargaison">').val(rowId));
+          $.ajax({
+            url: '{% url "changementImportateur" %}',
+            type: 'POST',
+            data: $(formEl).serialize(),
+            headers: { 'X-CSRFToken': csrfToken }
+          }).done(function(){
+            try{ bsHideModal(document.getElementById('modal-fourn')); }catch(e){}
+            showResult('Succès','<p class="mb-0">Données sauvegardées.</p>');
+            if(table) table.ajax.reload(null,false);
+          }).fail(function(xhr){
+            try{ bsHideModal(document.getElementById('modal-fourn')); }catch(e){}
+            showResult('Erreur', `<small>${(xhr && (xhr.responseText||xhr.statusText))||'Erreur inconnue'}</small>`);
+          }).always(function(){
+            $(formEl).find('input[name="pk"]').remove();
+            $(formEl).find('input[name="idcargaison"]').remove();
+          });
+        });
+
+        // Suppression d'un enregistrement
+        $(document).on('click', '.btn-delete', function(e){
+          e.preventDefault();
+          if(!confirm('Cette operation est irreversible, voulez - vous continuer?')) return;
+          $.ajax({
+            url: '{% url "del_record" %}',
+            type: 'POST',
+            data: { pk: rowId },
+            headers: { 'X-CSRFToken': csrfToken }
+          }).done(function(){
+            showResult('Succès','<p class="mb-0">Enregistrement supprimé.</p>');
+            if(table) table.ajax.reload(null,false);
+          }).fail(function(xhr){
+            showResult('Erreur', `<small>${(xhr && (xhr.responseText||xhr.statusText))||'Erreur inconnue'}</small>`);
+          });
         });
     })
 
@@ -769,8 +1136,43 @@
         return confirmed;
     }
 
+    // ===== Global modal lifecycle hardening (Bootstrap 5) =====
+    // If any modal gets fully hidden, ensure there is no lingering focus inside a now aria-hidden container.
+    document.addEventListener('hidden.bs.modal', function (ev) {
+      try {
+        const hiddenModal = ev.target;
+        if (hiddenModal && hiddenModal.contains(document.activeElement)) {
+          document.activeElement.blur();
+        }
+      } catch (e) {}
+      // Defensive cleanup in case any backdrop/body lock persists
+      try { $('.modal-backdrop').remove(); } catch(e) {}
+      try { $('body').removeClass('modal-open').css('padding-right',''); } catch(e) {}
+    });
+
+    // Before showing a modal, blur the current active element to avoid transient focus in an element that will become hidden
+    document.addEventListener('show.bs.modal', function () {
+      try { if (document.activeElement) document.activeElement.blur(); } catch(e) {}
+    });
+
 
 </script>
+
+<!-- RESULT MODAL (professional feedback modal) -->
+<div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="result-modal-title">Information</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body" id="result-modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+  </div>
 
 
 </body>

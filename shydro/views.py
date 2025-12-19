@@ -9,6 +9,7 @@ import pandas as pd
 from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db import transaction
 from django.db.models import Q, Sum, Prefetch, Value, Max, OuterRef, Subquery, Count
 from django.db.models.fields import CharField
 from django.db.models.functions import Round, Coalesce, Cast
@@ -16,14 +17,20 @@ from django.forms import FloatField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django_tables2 import RequestConfig
-from django_tables2.export.export import TableExport
-from django_tables2.paginators import LazyPaginator
+from django.views.decorators.http import require_POST, require_GET
+try:
+    from django_tables2 import RequestConfig  # type: ignore
+    from django_tables2.export.export import TableExport  # type: ignore
+    from django_tables2.paginators import LazyPaginator  # type: ignore
+except Exception:  # django_tables2 may be unavailable on some workers
+    RequestConfig = None  # type: ignore
+    TableExport = None  # type: ignore
+    LazyPaginator = None  # type: ignore
 from openpyxl import Workbook
 from django.utils import timezone
 
 from accounts.models import *
+from enreg.models import Entrepot   # for per-user entrepôt scoping
 from enreg.uploadToStorage import download_file_from_space
 from entrepot.calculs import densite15, vcf, gsv, mta
 from hydrocarbures.celery import app
@@ -1305,25 +1312,63 @@ def filterOptionsRapportActivite(request):
         if cached:
             return JsonResponse(cached)
 
-        # Use 'pk' alias so this works regardless of actual PK field names
-        frontieres = [
-            {'id': v['pk'], 'label': v['nomville'], 'value': v['nomville']}
-            for v in Ville.objects.all().order_by('nomville').values('pk', 'nomville')
-        ]
-        fournisseurs = [
-            {'id': i['pk'], 'label': i['nomimportateur'], 'value': i['nomimportateur']}
-            for i in Importateur.objects.all().order_by('nomimportateur').values('pk', 'nomimportateur')
-        ]
-        entrepots = [
-            {'id': e['pk'], 'label': e['nomentrepot'], 'value': e['nomentrepot']}
-            for e in Entrepot.objects.filter(
-                ville__affectationville__username_id=user_id
-            ).order_by('nomentrepot').values('pk', 'nomentrepot')
-        ]
-        produits = [
-            {'id': p['pk'], 'label': p['nomproduit'], 'value': p['nomproduit']}
-            for p in Produit.objects.all().order_by('nomproduit').values('pk', 'nomproduit')
-        ]
+        # Scope options strictly to the current user's perimeter using Cargaison
+        from enreg.models import Cargaison
+        base = Cargaison.objects.filter(
+            entrepot__ville__affectationville__username_id=user_id
+        )
+
+        # FRONTIÈRES visibles
+        frontieres = []
+        for v in (base
+                  .exclude(frontiere__nomville__isnull=True)
+                  .values('frontiere__pk', 'frontiere__nomville')
+                  .order_by('frontiere__nomville')
+                  .distinct()):
+            frontieres.append({
+                'id': v['frontiere__pk'],
+                'label': v['frontiere__nomville'],
+                'value': v['frontiere__nomville'],
+            })
+
+        # IMPORTATEURS visibles
+        fournisseurs = []
+        for i in (base
+                  .exclude(importateur__nomimportateur__isnull=True)
+                  .values('importateur__pk', 'importateur__nomimportateur')
+                  .order_by('importateur__nomimportateur')
+                  .distinct()):
+            fournisseurs.append({
+                'id': i['importateur__pk'],
+                'label': i['importateur__nomimportateur'],
+                'value': i['importateur__nomimportateur'],
+            })
+
+        # ENTREPÔTS visibles
+        entrepots = []
+        for e in (base
+                  .exclude(entrepot__nomentrepot__isnull=True)
+                  .values('entrepot__pk', 'entrepot__nomentrepot')
+                  .order_by('entrepot__nomentrepot')
+                  .distinct()):
+            entrepots.append({
+                'id': e['entrepot__pk'],
+                'label': e['entrepot__nomentrepot'],
+                'value': e['entrepot__nomentrepot'],
+            })
+
+        # PRODUITS visibles
+        produits = []
+        for p in (base
+                  .exclude(produit__nomproduit__isnull=True)
+                  .values('produit__pk', 'produit__nomproduit')
+                  .order_by('produit__nomproduit')
+                  .distinct()):
+            produits.append({
+                'id': p['produit__pk'],
+                'label': p['produit__nomproduit'],
+                'value': p['produit__nomproduit'],
+            })
 
         payload = {
             'frontieres': frontieres,
@@ -1336,6 +1381,91 @@ def filterOptionsRapportActivite(request):
         return JsonResponse(payload)
     except Exception as exc:
         return JsonResponse({'error': 'Failed to load filter options', 'detail': str(exc)}, status=500)
+
+
+@login_required(login_url='login')
+def filterOptionsRapportActiviteAll(request):
+    """
+    JSON endpoint to populate Filters modal dropdowns for Rapport d'activités (GLOBAL scope).
+    Returns ALL available values in the database (not restricted to user's city/perimeter),
+    but still derived from existing Cargaison relations to keep only meaningful options.
+    Response schema matches the scoped endpoint: { frontieres, fournisseurs, entrepots, produits }
+    where each item is { id, label, value } and lists are sorted A–Z.
+    """
+    try:
+        from django.core.cache import cache
+        from enreg.models import Cargaison
+
+        cache_key = "rapport_activ:filters:all"
+        cached = cache.get(cache_key)
+        if cached:
+            return JsonResponse(cached)
+
+        base = Cargaison.objects.all()
+
+        # FRONTIÈRES (global)
+        frontieres = []
+        for v in (base
+                  .exclude(frontiere__nomville__isnull=True)
+                  .values('frontiere__pk', 'frontiere__nomville')
+                  .order_by('frontiere__nomville')
+                  .distinct()):
+            frontieres.append({
+                'id': v['frontiere__pk'],
+                'label': v['frontiere__nomville'],
+                'value': v['frontiere__nomville'],
+            })
+
+        # IMPORTATEURS (global)
+        fournisseurs = []
+        for i in (base
+                  .exclude(importateur__nomimportateur__isnull=True)
+                  .values('importateur__pk', 'importateur__nomimportateur')
+                  .order_by('importateur__nomimportateur')
+                  .distinct()):
+            fournisseurs.append({
+                'id': i['importateur__pk'],
+                'label': i['importateur__nomimportateur'],
+                'value': i['importateur__nomimportateur'],
+            })
+
+        # ENTREPÔTS (global)
+        entrepots = []
+        for e in (base
+                  .exclude(entrepot__nomentrepot__isnull=True)
+                  .values('entrepot__pk', 'entrepot__nomentrepot')
+                  .order_by('entrepot__nomentrepot')
+                  .distinct()):
+            entrepots.append({
+                'id': e['entrepot__pk'],
+                'label': e['entrepot__nomentrepot'],
+                'value': e['entrepot__nomentrepot'],
+            })
+
+        # PRODUITS (global)
+        produits = []
+        for p in (base
+                  .exclude(produit__nomproduit__isnull=True)
+                  .values('produit__pk', 'produit__nomproduit')
+                  .order_by('produit__nomproduit')
+                  .distinct()):
+            produits.append({
+                'id': p['produit__pk'],
+                'label': p['produit__nomproduit'],
+                'value': p['produit__nomproduit'],
+            })
+
+        payload = {
+            'frontieres': frontieres,
+            'fournisseurs': fournisseurs,
+            'entrepots': entrepots,
+            'produits': produits,
+        }
+        # Cache globally for 1 hour
+        cache.set(cache_key, payload, timeout=3600)
+        return JsonResponse(payload)
+    except Exception as exc:
+        return JsonResponse({'error': 'Failed to load global filter options', 'detail': str(exc)}, status=500)
 
 
 @login_required(login_url='login')
@@ -1379,9 +1509,74 @@ def startRapportActiviteExport(request):
 
 
 @login_required(login_url='login')
+def startRapportActiviteExportV2(request):
+    """
+    Variante qui applique automatiquement le filtre « Entrepôt dans la ville (Entité) » côté serveur.
+    Règle:
+      - Si `frontiere` (ID de ville) est fourni et qu'aucun `entrepot` n'est précisé,
+        on calcule la liste de tous les entrepôts ayant `ville_id = frontiere` et on la transmet
+        à la tâche Celery via `entrepot_ids`.
+      - Si `entrepot` est fourni, on garde ce filtre spécifique.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    from enreg.models import Entrepot
+
+    user_id = request.user.id
+    try:
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+        except Exception:
+            payload = {}
+
+        # Normaliser les paramètres (supporte également `entite` envoyé par le front)
+        frontiere_val = payload.get('frontiere') or request.POST.get('frontiere') or request.GET.get('frontiere') or ''
+        entite_val = payload.get('entite') or request.POST.get('entite') or request.GET.get('entite') or ''
+        if not frontiere_val and entite_val:
+            frontiere_val = entite_val
+
+        params = {
+            'search[value]': (payload.get('search', {}) or {}).get('value') or payload.get('search_value') or (request.POST.get('search[value]') or ''),
+            'date_from': payload.get('date_from') or request.POST.get('date_from') or request.GET.get('date_from') or '',
+            'date_to': payload.get('date_to') or request.POST.get('date_to') or request.GET.get('date_to') or '',
+            'frontiere': frontiere_val,
+            'entite': entite_val,  # transmettre explicitement l'entité (ville) à la tâche
+            'importateur': payload.get('importateur') or request.POST.get('importateur') or request.GET.get('importateur') or '',
+            'entrepot': payload.get('entrepot') or request.POST.get('entrepot') or request.GET.get('entrepot') or '',
+            'produit': payload.get('produit') or request.POST.get('produit') or request.GET.get('produit') or '',
+            'immatriculation': payload.get('immatriculation') or request.POST.get('immatriculation') or request.GET.get('immatriculation') or '',
+            'declaration': payload.get('declaration') or request.POST.get('declaration') or request.GET.get('declaration') or '',
+            'numdos': payload.get('numdos') or request.POST.get('numdos') or request.GET.get('numdos') or '',
+            'order': payload.get('order') or [],
+        }
+
+        # Si une ville est sélectionnée sans entrepôt spécifique, construire la liste des entrepôts de la ville
+        if params.get('frontiere') and not params.get('entrepot'):
+            ville = params.get('frontiere')
+            try:
+                ville_id = int(params['frontiere'])
+                # Use explicit relation to the Ville PK field
+                entrepot_ids = list(Entrepot.objects.filter(ville__idville=ville_id).values_list('identrepot', flat=True))
+                params['entrepot_ids'] = entrepot_ids
+            except Exception:
+                # Si frontiere n'est pas un entier, on laisse le filtrage générique à la tâche
+                pass
+
+        # Enqueue Celery task (même tâche, paramètres enrichis)
+        from shydro.tasks import export_rapport_activites_task
+        res = export_rapport_activites_task.delay(params, user_id)
+        return JsonResponse({'task_id': res.id})
+    except Exception as exc:
+        return JsonResponse({'error': 'Failed to start export (v2)', 'detail': str(exc)}, status=500)
+
+
+
+@login_required(login_url='login')
 def regularisation(request):
     user = request.user.id
     template = 'regularisation.html'
+    print('TEST TEST')
     form = ChangementDestination()
     form1 = Transbordement()
     form2 = ChangementNatureProduit()
@@ -1409,6 +1604,7 @@ def regularisation(request):
     return render(request, template, context)
 
 
+
 @login_required(login_url='login')
 @require_POST
 def regularisation_response(request):
@@ -1421,9 +1617,23 @@ def regularisation_response(request):
     """
     user = request.user.id
 
+    # Resolve allowed entrepôts for this user once and cache (avoids heavy joins each request)
+    cache_key_ent = f"u:{user}:allowed_entrepots"
+    allowed_entrepots = cache.get(cache_key_ent)
+    if allowed_entrepots is None:
+        try:
+            allowed_entrepots = list(
+                Entrepot.objects.filter(
+                    ville__affectationville__username_id=user
+                ).values_list('identrepot', flat=True)
+            )
+        except Exception:
+            allowed_entrepots = []
+        cache.set(cache_key_ent, allowed_entrepots, 15 * 60)
+
     # Base queryset (restricted to user + specific etat values)
     base_qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user
+        entrepot_id__in=allowed_entrepots if allowed_entrepots else []
     ).filter(
         Q(etat='En attente requisition') | Q(etat="En attente d'echantillonage")
     )
@@ -1451,58 +1661,100 @@ def regularisation_response(request):
             base_qs = base_qs.filter(dateheurecargaison__date__lte=dt)
         except Exception:
             pass
-    if flt_frontiere:
-        base_qs = base_qs.filter(frontiere__nomville__icontains=flt_frontiere)
-    if flt_importateur:
-        base_qs = base_qs.filter(importateur__nomimportateur__icontains=flt_importateur)
-    if flt_entrepot:
-        base_qs = base_qs.filter(entrepot__nomentrepot__icontains=flt_entrepot)
-    if flt_produit:
-        base_qs = base_qs.filter(produit__nomproduit__icontains=flt_produit)
-    if flt_immat:
-        base_qs = base_qs.filter(immatriculation__icontains=flt_immat)
-    if flt_declaration:
-        base_qs = base_qs.filter(declaration__icontains=flt_declaration)
-    if flt_numdos:
-        base_qs = base_qs.filter(numdos__icontains=flt_numdos)
+    # Use index-friendly prefix searches where applicable; enforce min length (>=2) to avoid wide scans
+    def _has_min(s: str, n: int = 2) -> bool:
+        return bool(s) and len(s) >= n
+
+    # Strict backend enforcement: do not process or query if no filters and no valid global search
+    # This ensures the table only loads when a filter is applied (or a valid search is provided).
+    search_value_pre = (request.POST.get('search[value]') or '').strip()
+    has_any_filter = any([
+        flt_date_from, flt_date_to, flt_frontiere, flt_importateur,
+        flt_entrepot, flt_produit, flt_immat, flt_declaration, flt_numdos
+    ])
+    if not has_any_filter and not _has_min(search_value_pre):
+        try:
+            draw_val = int(request.POST.get('draw', 1) or 1)
+        except Exception:
+            draw_val = 1
+        return JsonResponse({
+            'data': [],
+            'draw': draw_val,
+            'recordsTotal': 0,
+            'recordsFiltered': 0,
+        })
+
+    if _has_min(flt_frontiere):
+        base_qs = base_qs.filter(frontiere__nomville__istartswith=flt_frontiere)
+    if _has_min(flt_importateur):
+        base_qs = base_qs.filter(importateur__nomimportateur__istartswith=flt_importateur)
+    if _has_min(flt_entrepot):
+        base_qs = base_qs.filter(entrepot__nomentrepot__istartswith=flt_entrepot)
+    if _has_min(flt_produit):
+        base_qs = base_qs.filter(produit__nomproduit__istartswith=flt_produit)
+    if _has_min(flt_immat):
+        base_qs = base_qs.filter(immatriculation__istartswith=flt_immat)
+    if _has_min(flt_declaration):
+        base_qs = base_qs.filter(declaration__istartswith=flt_declaration)
+    if _has_min(flt_numdos):
+        base_qs = base_qs.filter(numdos__istartswith=flt_numdos)
 
     # recordsTotal = after domain filters (but before global search)
-    records_total = base_qs.count()
+    # This COUNT(*) can be expensive on large datasets. Cache it briefly per user+filters.
+    try:
+        base_filters_payload = {
+            'u': user,
+            'df': flt_date_from,
+            'dt': flt_date_to,
+            'fr': flt_frontiere,
+            'impt': flt_importateur,
+            'ent': flt_entrepot,
+            'prd': flt_produit,
+            'imm': flt_immat,
+            'dec': flt_declaration,
+            'dos': flt_numdos,
+        }
+        base_key = 'reg:total:' + hashlib.md5(json.dumps(base_filters_payload, sort_keys=True).encode('utf-8')).hexdigest()
+        records_total = cache.get(base_key)
+        if records_total is None:
+            records_total = base_qs.count()
+            cache.set(base_key, records_total, 120)  # cache 2 minutes
+    except Exception:
+        records_total = base_qs.count()
 
     # Global search (DataTables)
     search_value = (request.POST.get('search[value]') or '').strip()
-    if search_value:
+    if _has_min(search_value):
         base_qs = base_qs.filter(
-            Q(immatriculation__icontains=search_value) |
-            Q(declaration__icontains=search_value) |
-            Q(importateur__nomimportateur__icontains=search_value) |
-            Q(entrepot__nomentrepot__icontains=search_value)
+            Q(immatriculation__istartswith=search_value) |
+            Q(declaration__istartswith=search_value) |
+            Q(importateur__nomimportateur__istartswith=search_value) |
+            Q(entrepot__nomentrepot__istartswith=search_value)
         )
 
-    # recordsFiltered
-    records_filtered = base_qs.count()
+    # recordsFiltered: COUNT after applying global search; cache briefly as well.
+    try:
+        filtered_filters_payload = dict(base_filters_payload)
+        filtered_filters_payload['q'] = search_value
+        filtered_key = 'reg:filtered:' + hashlib.md5(json.dumps(filtered_filters_payload, sort_keys=True).encode('utf-8')).hexdigest()
+        records_filtered = cache.get(filtered_key)
+        if records_filtered is None:
+            records_filtered = base_qs.count()
+            cache.set(filtered_key, records_filtered, 120)
+    except Exception:
+        records_filtered = base_qs.count()
 
     # Ordering (keep most recent first if none provided)
     qs_ordered = base_qs.order_by('-dateheurecargaison')
 
-    # Paging
+    # Paging (lazy): avoid Paginator to skip COUNT(*); use OFFSET/LIMIT slicing instead.
     draw = int(request.POST.get('draw', 1) or 1)
     start = int(request.POST.get('start', 0) or 0)
     length = int(request.POST.get('length', 15) or 15)
 
-    paginator = Paginator(qs_ordered, max(length, 1))
-    current_page = (start // max(length, 1)) + 1
-
-    try:
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        page = paginator.page(1)
-    except EmptyPage:
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': records_total, 'recordsFiltered': records_filtered})
-
     # Build response rows (values + formatted date)
     rows = []
-    for c in page.object_list.values(
+    values_qs = qs_ordered.values(
         'dateheurecargaison__date',
         'importateur__nomimportateur',
         'entrepot__nomentrepot',
@@ -1511,7 +1763,8 @@ def regularisation_response(request):
         'immatriculation',
         'declaration',
         'idcargaison'
-    ):
+    )
+    for c in values_qs[start:start + max(length, 1)]:
         d = dict(c)
         try:
             dt = d.get('dateheurecargaison__date')
@@ -1526,6 +1779,179 @@ def regularisation_response(request):
         'recordsTotal': records_total,
         'recordsFiltered': records_filtered,
     })
+
+
+@login_required(login_url='login')
+@require_GET
+def regularisation_filter_options(request):
+    """
+    Returns dropdown options for Regularisation page.
+
+    When `type` is provided, returns a compact format for a single list:
+      GET ?type=frontiere|importateur|entrepot|produit
+      -> { "items": [{"id": ..., "label": ..., (optional) "ville_id": ...}] }
+
+    When `type` is omitted, returns the full payload for all lists:
+      {
+        "frontieres":  [{id,label}],
+        "fournisseurs":[{id,label}],
+        "entrepots":   [{id,label, ville_id}],
+        "produits":    [{id,label}]
+      }
+    """
+    try:
+        from enreg.models import Cargaison
+
+        user_id = request.user.id
+        try:
+            _limit = int(request.GET.get('limit') or 200)
+        except Exception:
+            _limit = 200
+
+        base = Cargaison.objects.filter(
+            entrepot__ville__affectationville__username_id=user_id
+        )
+
+        # Build all lists once
+        frontieres_raw = list(
+            base.exclude(frontiere__idville__isnull=True)
+                .exclude(frontiere__nomville__isnull=True)
+                .exclude(frontiere__nomville__exact='')
+                .values('frontiere__idville', 'frontiere__nomville')
+                .order_by('frontiere__nomville')
+                .distinct()[:_limit]
+        )
+        fournisseurs_raw = list(
+            base.exclude(importateur__idimportateur__isnull=True)
+                .exclude(importateur__nomimportateur__isnull=True)
+                .exclude(importateur__nomimportateur__exact='')
+                .values('importateur__idimportateur', 'importateur__nomimportateur')
+                .order_by('importateur__nomimportateur')
+                .distinct()[:_limit]
+        )
+        entrepots_raw = list(
+            base.exclude(entrepot__identrepot__isnull=True)
+                .exclude(entrepot__nomentrepot__isnull=True)
+                .exclude(entrepot__nomentrepot__exact='')
+                .values('entrepot__identrepot', 'entrepot__nomentrepot', 'entrepot__ville_id')
+                .order_by('entrepot__nomentrepot')
+                .distinct()[:_limit]
+        )
+        produits_raw = list(
+            base.exclude(produit__idproduit__isnull=True)
+                .exclude(produit__nomproduit__isnull=True)
+                .exclude(produit__nomproduit__exact='')
+                .values('produit__idproduit', 'produit__nomproduit')
+                .order_by('produit__nomproduit')
+                .distinct()[:_limit]
+        )
+
+        frontieres = [
+            {"id": r["frontiere__idville"], "label": r["frontiere__nomville"]}
+            for r in frontieres_raw
+        ]
+        fournisseurs = [
+            {"id": r["importateur__idimportateur"], "label": r["importateur__nomimportateur"]}
+            for r in fournisseurs_raw
+        ]
+        entrepots = [
+            {"id": r["entrepot__identrepot"], "label": r["entrepot__nomentrepot"], "ville_id": r["entrepot__ville_id"]}
+            for r in entrepots_raw
+        ]
+        produits = [
+            {"id": r["produit__idproduit"], "label": r["produit__nomproduit"]}
+            for r in produits_raw
+        ]
+
+        t = (request.GET.get('type') or '').strip().lower()
+        if t in {"frontiere", "importateur", "entrepot", "produit"}:
+            if t == 'frontiere':
+                return JsonResponse({"items": frontieres})
+            if t == 'importateur':
+                return JsonResponse({"items": fournisseurs})
+            if t == 'entrepot':
+                return JsonResponse({"items": entrepots})
+            if t == 'produit':
+                return JsonResponse({"items": produits})
+
+        # default: full payload
+        return JsonResponse({
+            "frontieres": frontieres,
+            "fournisseurs": fournisseurs,
+            "entrepots": entrepots,
+            "produits": produits,
+        })
+
+    except Exception as exc:
+        return JsonResponse(
+            {"error": "Failed to load filter options", "detail": str(exc)},
+            status=500
+        )
+
+@login_required(login_url='login')
+@require_GET
+def importateur_options_all(request):
+    """
+    Return an unfiltered list of all importateurs for the CORRECTION FOURNISSEUR modal.
+    Response: { "items": [ {"id": idimportateur, "label": nomimportateur}, ... ] }
+    """
+    try:
+        from enreg.models import Importateur
+        try:
+            _limit = int(request.GET.get('limit') or 1000)
+        except Exception:
+            _limit = 1000
+
+        rows = list(
+            Importateur.objects
+            .exclude(nomimportateur__isnull=True)
+            .exclude(nomimportateur__exact='')
+            .values('idimportateur', 'nomimportateur')
+            .order_by('nomimportateur')[:_limit]
+        )
+        items = [{"id": r['idimportateur'], "label": r['nomimportateur']} for r in rows]
+
+        return JsonResponse({"items": items})
+    except Exception as exc:
+        return JsonResponse({"error": "Failed to load importateurs", "detail": str(exc)}, status=500)
+
+@login_required(login_url='login')
+@require_GET
+def produit_options_all(request):
+    """
+    Return an unfiltered list of all produits for the CORRECTION NATURE PRODUIT modal.
+    Response: { "items": [ {"id": idproduit, "label": nomproduit}, ... ] }
+    """
+    try:
+        # Try known locations for Produit model
+        try:
+            from enreg.models import Produit  # type: ignore
+        except Exception:
+            try:
+                from hydrocarbures.models import Produit  # type: ignore
+            except Exception:
+                Produit = None  # type: ignore
+
+        if Produit is None:
+            return JsonResponse({"error": "Produit model not found"}, status=500)
+
+        try:
+            _limit = int(request.GET.get('limit') or 1000)
+        except Exception:
+            _limit = 1000
+
+        rows = list(
+            Produit.objects
+            .exclude(nomproduit__isnull=True)
+            .exclude(nomproduit__exact='')
+            .values('idproduit', 'nomproduit')
+            .order_by('nomproduit')[:_limit]
+        )
+        items = [{"id": r['idproduit'], "label": r['nomproduit']} for r in rows]
+        return JsonResponse({"items": items})
+    except Exception as exc:
+        return JsonResponse({"error": "Failed to load produits", "detail": str(exc)}, status=500)
+
 
 
 
@@ -1598,54 +2024,85 @@ def transbordement(request):
         return redirect('regularisation')
 
 
-@login_required(login_url='login')
-def changementNature(request):
-    # template = 'regularisationDestination.html'
-    # form = ChangementDestination(request.POST or None)
-    # Getting Logged in user detail for filtering
-    user = request.user
-    id = user.id
-    role = user.role_id
 
-    # cargaison = Cargaison.objects.get(idcargaison=pk)
-    if request.method == 'POST':
-        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-            pk = request.POST.get('pk', None)
-            nouvelleNatureProduit = request.POST.get('nouvelleNatureProduit', None)
-            p = Produit.objects.get(idproduit=nouvelleNatureProduit)
-            cargaison = Cargaison.objects.get(idcargaison=pk)
-            cargaison.produit = p
-            cargaison.save(update_fields=['produit'])
-            # Return a JSON response indicating success
-            return JsonResponse({'status': 'success'})
-        else:
-            return redirect('regularisation')
-    else:
+@login_required(login_url='login')
+@require_POST
+def changementNature(request):
+    # Optional: align with your other endpoints (only allow some roles)
+    role = getattr(request.user, "role_id", None)
+    if role not in (1, 4):
+        return JsonResponse(
+            {"status": "error", "message": "Accès refusé."},
+            status=403
+        )
+
+    # Must be AJAX for this flow
+    if request.META.get('HTTP_X_REQUESTED_WITH') != 'XMLHttpRequest':
         return redirect('regularisation')
+
+    pk = (request.POST.get('pk') or '').strip()
+    produit_id = (request.POST.get('produit_id') or '').strip()  # ✅ matches JS
+    remarks = (request.POST.get('remarks') or '').strip()        # optional
+
+    if not pk:
+        return JsonResponse({"status": "error", "message": "pk manquant."}, status=400)
+
+    if not produit_id:
+        return JsonResponse({"status": "error", "message": "Veuillez sélectionner un produit."}, status=400)
+
+    try:
+        with transaction.atomic():
+            cargaison = Cargaison.objects.select_for_update().get(idcargaison=pk)
+            produit = Produit.objects.get(idproduit=produit_id)
+
+            cargaison.produit = produit
+            cargaison.save(update_fields=['produit'])  # add 'remarks' if used
+
+        return JsonResponse({
+            "status": "success",
+            "message": "Nature du produit mise à jour avec succès."
+        })
+
+    except Cargaison.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Cargaison introuvable."}, status=404)
+    except Produit.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Produit introuvable."}, status=404)
+    except Exception as e:
+        # Avoid leaking internals in production
+        return JsonResponse({"status": "error", "message": "Erreur serveur."}, status=500)
+
 
 
 @login_required(login_url='login')
 def del_record(request):
-    user = request.user
+    user = request.user  # keep if you need it later
+
     if request.method == 'POST':
         if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
             pk = request.POST.get('pk', None)
-            print("DELETED")
-            print(pk)
-            Cargaison.objects.get(idcargaison=pk).delete()
-            return JsonResponse({'status': 'success'})
-        else:
-            return redirect('regularisation')
-    else:
+            confirm_code = (request.POST.get('confirm_code') or '').strip()
+
+            # ✅ Server-side expected code (put in settings.py: DELETE_CONFIRMATION_CODE = "1234")
+            expected_code = str(getattr(settings, 'DELETE_CONFIRMATION_CODE', '')).strip()
+
+            if not pk:
+                return JsonResponse({'status': 'error', 'message': 'PK manquant.'}, status=400)
+
+            if not expected_code:
+                return JsonResponse({'status': 'error', 'message': 'Code de suppression non configuré côté serveur.'}, status=500)
+
+            if confirm_code != expected_code:
+                return JsonResponse({'status': 'error', 'message': 'Code de confirmation incorrect.'}, status=400)
+
+            try:
+                Cargaison.objects.get(idcargaison=pk).delete()
+                return JsonResponse({'status': 'success'})
+            except Cargaison.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Enregistrement introuvable.'}, status=404)
+
         return redirect('regularisation')
 
-
-    # log = UserActivityLog(
-    #     user=user,
-    #     action= "Delete",
-    #     description= "User has delete a record"
-    # )
-    # log.save()
+    return redirect('regularisation')
 
 
 
@@ -3083,25 +3540,48 @@ def regularisationEntrepot(request):
         return redirect('logout')
 
 
+
 @login_required(login_url='login')
+@require_POST
 def changementImportateur(request):
-    # cargaison = Cargaison.objects.get(idcargaison=pk)
-    if request.method == 'POST':
-        if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
-            pk = request.POST.get('pk', None)
-            print('TEST')
-            nouvelImportateur = request.POST.get('importateur', None)
-            print(nouvelImportateur)
-            i = Importateur.objects.get(idimportateur=nouvelImportateur)
-            cargaison = Cargaison.objects.get(idcargaison=pk)
-            cargaison.importateur = i
-            cargaison.save(update_fields=['importateur'])
-            # Return a JSON response indicating success
-            return JsonResponse({'status': 'success'})
-        else:
-            return redirect('regularisation')
-    else:
+    # Only accept AJAX calls (your frontend uses $.ajax)
+    if request.headers.get('x-requested-with') != 'XMLHttpRequest':
         return redirect('regularisation')
+
+    pk = (request.POST.get('pk') or '').strip()
+    nouvel_importateur = (request.POST.get('importateur_id') or '').strip()
+    remarks = (request.POST.get('remarks') or '').strip()  # optional, stored only if you have a field
+
+    if not pk:
+        return JsonResponse({'status': 'error', 'message': 'Aucune cargaison sélectionnée.'}, status=400)
+
+    if not nouvel_importateur:
+        return JsonResponse({'status': 'error', 'message': 'Veuillez sélectionner un fournisseur.'}, status=400)
+
+    try:
+        cargaison = Cargaison.objects.get(idcargaison=pk)
+    except Cargaison.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Cargaison introuvable.'}, status=404)
+
+    try:
+        imp = Importateur.objects.get(idimportateur=nouvel_importateur)
+    except Importateur.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Fournisseur introuvable.'}, status=404)
+
+    # update
+    cargaison.importateur = imp
+
+    # If you actually have a "remarks" field in Cargaison, you can save it:
+    # if hasattr(cargaison, 'remarks'):
+    #     cargaison.remarks = remarks
+
+    cargaison.save(update_fields=['importateur'])
+
+    return JsonResponse({
+        'status': 'success',
+        'message': 'Fournisseur (importateur) mis à jour avec succès.'
+    })
+
 
 
 @login_required(login_url='login')
@@ -3717,6 +4197,7 @@ def tableaudeBordHydro(request):
     )
     year_qs = base.filter(dateheurecargaison__year=current_year)
 
+    # Keep aggregates numeric for reliable math and format at render time if needed
     agg = year_qs.aggregate(
         e=Count('idcargaison', filter=Q(etat="En attente d'echantillonage")),
         l=Count('idcargaison', filter=Q(etat="Analyse Labo en cours")),
@@ -3724,26 +4205,11 @@ def tableaudeBordHydro(request):
         i=Count('idcargaison', filter=Q(etatInspection=True)),
         c=Count('idcargaison'),
 
-        gasoilVolume=Cast(
-            Coalesce(Sum('volume', filter=Q(produit_id=2)), Value(0.0)),
-            CharField()
-        ),
-        mogasVolume=Cast(
-            Coalesce(Sum('volume', filter=Q(produit_id=1)), Value(0.0)),
-            CharField()
-        ),
-        jetVolume=Cast(
-            Coalesce(Sum('volume', filter=Q(produit_id=3)), Value(0.0)),
-            CharField()
-        ),
-        petroleVolume=Cast(
-            Coalesce(Sum('volume', filter=Q(produit_id=4)), Value(0.0)),
-            CharField()
-        ),
-        totalVolume=Cast(
-            Coalesce(Sum('volume'), Value(0.0)),
-            CharField()
-        ),
+        gasoilVolume=Coalesce(Sum('volume', filter=Q(produit_id=2)), Value(0.0)),
+        mogasVolume=Coalesce(Sum('volume', filter=Q(produit_id=1)), Value(0.0)),
+        jetVolume=Coalesce(Sum('volume', filter=Q(produit_id=3)), Value(0.0)),
+        petroleVolume=Coalesce(Sum('volume', filter=Q(produit_id=4)), Value(0.0)),
+        totalVolume=Coalesce(Sum('volume'), Value(0.0)),
     )
 
     imp_agg = ImpressionResultat.objects.filter(
@@ -3753,27 +4219,120 @@ def tableaudeBordHydro(request):
         n=Count('idImpression', filter=Q(isConforme=False, control=False)),
     )
 
-    # Percentages must still use numeric values, so recalc from floats
-    tv = float(year_qs.aggregate(total=Coalesce(Sum('volume'), Value(0.0)))['total'] or 0.0)
+    # Use the already aggregated numeric total volume for percentage calculations
+    tv = float(agg['totalVolume'] or 0.0)
     def pct(x):
         x = float(x or 0.0)
         return round((x/tv)*100) if tv else 0
 
+    # Prepare display values as strings to preserve previous template expectations
+    gasoil_v = float(agg['gasoilVolume'] or 0.0)
+    mogas_v = float(agg['mogasVolume'] or 0.0)
+    jet_v = float(agg['jetVolume'] or 0.0)
+    petrole_v = float(agg['petroleVolume'] or 0.0)
+    total_v = float(agg['totalVolume'] or 0.0)
+
     context = {
         'e': agg['e'], 'l': agg['l'], 'p': agg['p'], 'i': agg['i'], 'c': agg['c'],
         'd': imp_agg['d'], 'n': imp_agg['n'],
-        'gasoilVolume': agg['gasoilVolume'],
-        'mogasVolume':  agg['mogasVolume'],
-        'jetVolume':    agg['jetVolume'],
-        'petroleVolume':agg['petroleVolume'],
-        'totalVolume':  agg['totalVolume'],
-        'gasoilPercentage':  pct(agg['gasoilVolume']),
-        'mogasPercentage':   pct(agg['mogasVolume']),
-        'jetPercentage':     pct(agg['jetVolume']),
-        'petrolePercentage': pct(agg['petroleVolume']),
+        'gasoilVolume': f"{gasoil_v}",
+        'mogasVolume':  f"{mogas_v}",
+        'jetVolume':    f"{jet_v}",
+        'petroleVolume':f"{petrole_v}",
+        'totalVolume':  f"{total_v}",
+        'gasoilPercentage':  pct(gasoil_v),
+        'mogasPercentage':   pct(mogas_v),
+        'jetPercentage':     pct(jet_v),
+        'petrolePercentage': pct(petrole_v),
         'current_year': current_year,
     }
     return render(request, 'dashboardHydro.html', context)
+
+
+@login_required(login_url='login')
+@require_POST
+def kpi_details_hydro(request):
+    """
+    POST-only endpoint returning paginated rows for KPI details on the Hydro dashboard.
+    Request body (form or JSON):
+      - kpi: one of [attente_echantillonnage, attente_reception_labo, attente_resultats, attente_inspection, total]
+      - page: optional, 1-based page number (default 1)
+    Response JSON:
+      {
+        rows: [ { dateheurecargaison, frontiere, importateur, entrepot, produit, volume } ],
+        page: int,
+        has_next: bool,
+        has_prev: bool
+      }
+    """
+
+    # Read data from POST supporting JSON or form-encoded
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}') if request.body else {}
+    except Exception:
+        payload = {}
+
+    kpi = (payload.get('kpi') or request.POST.get('kpi') or '').strip()
+    try:
+        page = int(payload.get('page') or request.POST.get('page') or 1)
+    except Exception:
+        page = 1
+    if page < 1:
+        page = 1
+
+    user_id = request.user.id
+    current_year = date.today().year
+
+    base = (
+        Cargaison.objects
+        .select_related("frontiere", "importateur", "entrepot", "produit")
+        .filter(entrepot__ville__affectationville__username_id=user_id,
+                dateheurecargaison__year=current_year)
+        .order_by('-dateheurecargaison')
+    )
+
+    # Map KPI to filters (aligned with aggregates in tableaudeBordHydro)
+    if kpi == 'attente_echantillonnage':
+        qs = base.filter(etat="En attente d'echantillonage")
+    elif kpi == 'attente_reception_labo':
+        qs = base.filter(etat="Echantillonner")
+    elif kpi == 'attente_resultats':
+        qs = base.filter(etat="Analyse Labo en cours")
+    elif kpi == 'attente_inspection':
+        qs = base.filter(etatInspection=True)
+    elif kpi == 'total':
+        qs = base
+    else:
+        return JsonResponse({
+            'rows': [], 'page': 1, 'has_next': False, 'has_prev': False,
+            'error': 'invalid_kpi'
+        }, status=400)
+
+    paginator = LazyPaginator(qs, per_page=15)
+    try:
+        page_obj = paginator.page(page)
+    except Exception:
+        page_obj = paginator.page(1)
+        page = 1
+
+    rows = [
+        {
+            "dateheurecargaison": (c.dateheurecargaison.isoformat() if c.dateheurecargaison else None),
+            "frontiere": c.frontiere.nomville if c.frontiere_id else "",
+            "importateur": c.importateur.nomimportateur if c.importateur_id else "",
+            "entrepot": c.entrepot.nomentrepot if c.entrepot_id else "",
+            "produit": c.produit.nomproduit if c.produit_id else "",
+            "volume": float(c.volume) if c.volume is not None else None,
+        }
+        for c in page_obj.object_list
+    ]
+
+    return JsonResponse({
+        'rows': rows,
+        'page': page,
+        'has_next': page_obj.has_next(),
+        'has_prev': page_obj.has_previous(),
+    })
 
 
 
@@ -3853,6 +4412,37 @@ def productCountShydro(request):
     return JsonResponse({
         'data': data
     })
+
+
+@login_required(login_url='login')
+@require_POST
+def startKpiExportHydro(request):
+    """
+    Start a Celery task that exports the full dataset for a given KPI to Excel.
+    POST-only. Body may be JSON or form-encoded with field:
+      - kpi: one of [attente_echantillonnage, attente_reception_labo, attente_resultats, attente_inspection, total]
+
+    Returns JSON: { task_id }
+    Use existing endpoint checkExportTaskStatus/<task_id> to poll status and get result.
+    """
+    try:
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}') if request.body else {}
+        except Exception:
+            payload = {}
+
+        kpi = (payload.get('kpi') or request.POST.get('kpi') or '').strip()
+        if not kpi:
+            return JsonResponse({'error': 'kpi is required'}, status=400)
+
+        # Dispatch Celery task
+        from shydro.tasks import export_kpi_details_to_excel
+        user_id = request.user.id
+        year = date.today().year
+        res = export_kpi_details_to_excel.delay(user_id, kpi, year)
+        return JsonResponse({ 'task_id': res.id })
+    except Exception as exc:
+        return JsonResponse({'error': 'Failed to start export', 'detail': str(exc)}, status=500)
 
 
 @login_required(login_url='login')

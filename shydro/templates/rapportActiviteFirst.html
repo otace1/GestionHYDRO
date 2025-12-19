@@ -1000,7 +1000,8 @@
 
             setRunningUI();
 
-            fetch("{% url 'startRapportActiviteExport' %}", {
+            // Always start export at ads endpoint rapportBrutExport (do NOT call shydro start/by-ville)
+            fetch("{% url 'rapportBrutExport' %}", {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
               body: JSON.stringify(payload)

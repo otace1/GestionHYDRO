@@ -1,12 +1,9 @@
 import os
 import io
-from django_tables2.export.export import TableExport
 import datetime
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django_tables2 import RequestConfig
-from django_tables2.export.export import TableExport
 
 from hydrocarbures.celery import app
 from shydro.tables import RapportActivite
@@ -28,6 +25,13 @@ def add(x, y):
 @app.task
 def export_report_task(export_format, queryset_data, request=None):
     try:
+        # Lazy import to avoid hard dependency at worker startup
+        try:
+            from django_tables2 import RequestConfig  # type: ignore
+            from django_tables2.export.export import TableExport  # type: ignore
+        except Exception as imp_err:
+            return {'error': f"django-tables2 is required for export_report_task: {imp_err}"}
+
         # Initialize the table with the queryset data
         table = RapportActivite(queryset_data)
 
@@ -68,18 +72,23 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
     Build the Rapport d'activités Excel asynchronously using server-side filters/order.
     Saves the file to the default storage and returns a public URL and filename.
 
-    params: Dict containing possible keys:
-        - search[value]
-        - date_from, date_to, frontiere, importateur, entrepot, produit,
-          immatriculation, declaration, numdos
-        - order: list of {column, dir} like DataTables
+    IMPORTANT CHANGE:
+      - We DO NOT filter by "frontiere" anymore.
+      - The UI field "frontiere" is now treated as "entrepot_ville_id" (filters by entrepot__ville_id) for compatibility.
+      - The primary param is now "entite" (also treated as entrepot_ville_id).
     """
+    import io
+    import datetime
+    from django.db.models import Q, Sum
+    from django.utils import timezone
     from django.core.files.base import ContentFile
     from django.core.files.storage import default_storage
+    from openpyxl import Workbook
 
     # Rebuild queryset similar to responseRapportActivite
     qs = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user_id
+        # entrepot__ville__affectationville__username_id=user_id,
+
     ).annotate(
         volConst=Sum('inspection__compartiment__gov'),
         gsvT=Sum('inspection__compartiment__gsv'),
@@ -110,33 +119,75 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
         'mtvT',
     )
 
-    # Advanced filters
+    # ---------- Helpers ----------
     def g(k):
         v = params.get(k)
         return (v or '').strip() if isinstance(v, str) else (v or '')
 
+    # ---------- Filters ----------
     date_from = g('date_from')
     date_to = g('date_to')
-    ft_name = g('frontiere')
+
+    # ⛔️ DO NOT USE "frontiere" as a direct frontiere filter anymore
+    # ✅ Instead, treat "entite" (primary) and optionally "frontiere" (compatibility)
+    #    as entrepot_ville_id (ville PK) if entrepot_ville_id is not explicitly provided
+    frontiere_value = g('frontiere')  # compatibility: treat as ville id
+    entite_value = g('entite')        # primary: treat as ville id
+
     imp_name = g('importateur')
     ent_name = g('entrepot')
+    ent_ids = params.get('entrepot_ids') or []
+
+    # New: allow filtering by entrepot.ville_id directly
+    ent_ville_id = params.get('entrepot_ville_id')
+    ent_ville_ids = params.get('entrepot_ville_ids') or []
+
+    # Fallback precedence for ville selection: explicit param > entite > frontiere (compat)
+    if ent_ville_id is None or str(ent_ville_id).strip() == '':
+        if entite_value:
+            ent_ville_id = entite_value
+        elif frontiere_value:
+            ent_ville_id = frontiere_value
+
     prod_name = g('produit')
     immat = g('immatriculation')
     decl = g('declaration')
     numd = g('numdos')
 
     adv = Q()
+
     if date_from and date_to:
         adv &= Q(dateheurecargaison__date__range=[date_from, date_to])
     elif date_from:
         adv &= Q(dateheurecargaison__date__gte=date_from)
     elif date_to:
         adv &= Q(dateheurecargaison__date__lte=date_to)
-    if ft_name:
-        adv &= Q(frontiere__nomville__icontains=ft_name)
+
+    # ✅ Apply entrepot__ville__idville filter (list > single)
+    try:
+        if ent_ville_ids:
+            _ids = [int(x) for x in ent_ville_ids if str(x).isdigit()]
+            if _ids:
+                adv &= Q(entrepot__ville__idville__in=_ids)
+
+        elif ent_ville_id is not None and str(ent_ville_id).strip() != '':
+            if str(ent_ville_id).isdigit():
+                adv &= Q(entrepot__ville__idville=int(ent_ville_id))
+    except Exception:
+        pass
+
+    # If a list of entrepôt IDs is explicitly provided, apply it (takes precedence over name filter)
+    if ent_ids:
+        try:
+            ids = [int(x) for x in ent_ids if str(x).isdigit()]
+            if ids:
+                adv &= Q(entrepot_id__in=ids)
+        except Exception:
+            pass
+
     if imp_name:
         adv &= Q(importateur__nomimportateur__icontains=imp_name)
-    if ent_name:
+    if ent_name and not ent_ids:
         adv &= Q(entrepot__nomentrepot__icontains=ent_name)
     if prod_name:
         adv &= Q(produit__nomproduit__icontains=prod_name)
@@ -146,10 +197,11 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
         adv &= Q(declaration__icontains=decl)
     if numd:
         adv &= Q(numdos__icontains=numd)
+
     if adv:
         qs = qs.filter(adv)
 
-    # Global search
+    # ---------- Global search ----------
     search_value = g('search[value]')
     if search_value:
         qs = qs.filter(
@@ -162,7 +214,7 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
             Q(numdos__icontains=search_value)
         )
 
-    # Ordering map aligned with DataTables columns
+    # ---------- Ordering ----------
     dt_columns_to_fields = [
         'dateheurecargaison__date',            # 0
         'frontiere__nomville',                 # 1
@@ -200,12 +252,10 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
                 order_by.append(('-' if dirv == 'desc' else '') + field)
     except Exception:
         order_by = []
-    if order_by:
-        qs = qs.order_by(*order_by)
-    else:
-        qs = qs.order_by('-dateheurecargaison__date')
 
-    # Build workbook
+    qs = qs.order_by(*order_by) if order_by else qs.order_by('-dateheurecargaison__date')
+
+    # ---------- Workbook ----------
     wb = Workbook(write_only=True)
     ws = wb.create_sheet('Rapport')
     try:
@@ -233,12 +283,10 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
         except Exception:
             return None
 
-    # Excel row limit (excluding header row): 1,048,575 rows
     EXCEL_MAX_DATA_ROWS = 1048576 - 1
-
     total = qs.count()
     if total > EXCEL_MAX_DATA_ROWS:
-        raise Exception("Le résultat dépasse la limite d’Excel (1 048 576 lignes). Affinez vos filtres et réessayez.")
+        raise Exception("Le résultat dépasse la limite d’Excel (1 048 576 lignes). Affinez vos filtres et réessayez.")
 
     done = 0
 
@@ -268,7 +316,7 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
         except Exception:
             d15 = None
             vcf_val = None
-        # Round for readability
+
         if isinstance(d15, (int, float)):
             try: d15 = round(float(d15), 5)
             except Exception: pass
@@ -308,7 +356,6 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
         ])
 
         done += 1
-        # Periodic progress update
         if done % 1000 == 0 or done == total:
             percent = round((done / max(total, 1)) * 100, 2)
             try:
@@ -316,25 +363,19 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
             except Exception:
                 pass
 
-    # Save to storage
+    # ---------- Save to storage ----------
     now_dt = timezone.now()
     now = now_dt.strftime('%Y%m%d%H%M%S')
-    # Store under dated path
     file_name = f"rapport_activites_{now}.xlsx"
     file_path = f"xlsx/{now_dt.strftime('%Y')}/{now_dt.strftime('%m')}/{file_name}"
-    # Ensure folder prefix exists (default_storage handles folders implicitly)
+
     content = io.BytesIO()
     wb.save(content)
     content.seek(0)
     default_storage.save(file_path, ContentFile(content.read()))
     file_url = default_storage.url(file_path)
 
-    return {
-        'file_url': file_url,
-        'file_name': file_name,
-        'expires_in_hours': 24,
-    }
-
+    return {'file_url': file_url, 'file_name': file_name, 'expires_in_hours': 24}
 
 
 
@@ -379,6 +420,128 @@ def cleanup_old_exports(self):
             continue
 
     return {'checked': checked, 'deleted': deleted}
+
+
+
+
+@app.task(bind=True)
+def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
+    """
+    Build an Excel file for KPI details (full dataset for the current user + year).
+    Columns: DATE/HEURE, FRONTIÈRE, IMPORTATEUR, ENTREPÔT, PRODUIT, VOLUME, and
+    one KPI-specific date column label as requested by the product owner.
+
+    Returns { file_url, file_name, expires_in_hours } on success.
+    """
+    from django.core.files.base import ContentFile
+    from django.core.files.storage import default_storage
+
+    # Base queryset within user scope and year
+    base = Cargaison.objects.filter(
+        entrepot__ville__affectationville__username_id=user_id,
+        dateheurecargaison__year=year
+    ).values(
+        'dateheurecargaison',
+        'frontiere__nomville',
+        'importateur__nomimportateur',
+        'entrepot__nomentrepot',
+        'produit__nomproduit',
+        'volume',
+        'requisitiondackdate__date',
+        'entrepot_echantillon__dateechantillonage__date',
+        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+    ).order_by('-dateheurecargaison')
+
+    # Map KPI to filter and label+date field
+    kpi = (kpi or '').strip()
+    date_label = 'Date'
+    date_key = 'dateheurecargaison'
+
+    if kpi == 'attente_echantillonnage':
+        qs = base.filter(etat="En attente d'echantillonage")
+        date_label = 'Date Réquisition'
+        date_key = 'requisitiondackdate__date'
+    elif kpi == 'attente_reception_labo':
+        qs = base.filter(etat="Echantillonner")
+        date_label = "Date Échantillonnage"
+        date_key = 'entrepot_echantillon__dateechantillonage__date'
+    elif kpi == 'attente_resultats':
+        qs = base.filter(etat="Analyse Labo en cours")
+        date_label = 'Date Réception Labo'
+        date_key = 'entrepot_echantillon__laboreception__datereceptionlabo__date'
+    elif kpi == 'attente_inspection':
+        qs = base.filter(etatInspection=True)
+        date_label = "Date Échantillonnage"
+        date_key = 'entrepot_echantillon__dateechantillonage__date'
+    else:
+        # total or any other -> no extra filter, use cargaison date
+        qs = base
+        date_label = 'Date Cargaison'
+        date_key = 'dateheurecargaison'
+
+    # Build workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'KPI'
+
+    headers = [
+        'DATE/HEURE', 'FRONTIÈRE', 'IMPORTATEUR', 'ENTREPÔT', 'PRODUIT', 'VOLUME', date_label
+    ]
+    ws.append(headers)
+
+    def _fmt_dt(v):
+        if not v:
+            return ''
+        try:
+            # Support datetime/date/str
+            if hasattr(v, 'strftime'):
+                return v.strftime('%Y-%m-%d %H:%M')
+            return str(v)
+        except Exception:
+            return str(v)
+
+    total = qs.count()
+    done = 0
+
+    # Iterate in chunks to avoid memory spikes
+    chunk_size = 2000
+    for start in range(0, total, chunk_size):
+        for row in qs[start:start+chunk_size]:
+            ws.append([
+                _fmt_dt(row.get('dateheurecargaison')),
+                row.get('frontiere__nomville') or '',
+                row.get('importateur__nomimportateur') or '',
+                row.get('entrepot__nomentrepot') or '',
+                row.get('produit__nomproduit') or '',
+                row.get('volume') if row.get('volume') is not None else '',
+                _fmt_dt(row.get(date_key)),
+            ])
+
+            done += 1
+            if done % 1000 == 0:
+                try:
+                    self.update_state(state='PROGRESS', meta={'total': total, 'done': done, 'percent': round(done/max(total,1)*100,2)})
+                except Exception:
+                    pass
+
+    # Save to storage
+    now_dt = timezone.now()
+    now = now_dt.strftime('%Y%m%d%H%M%S')
+    safe_kpi = (kpi or 'total').replace(' ', '_')
+    file_name = f"kpi_{safe_kpi}_{now}.xlsx"
+    file_path = f"xlsx/kpi/{now_dt.strftime('%Y')}/{now_dt.strftime('%m')}/{file_name}"
+
+    content = io.BytesIO()
+    wb.save(content)
+    content.seek(0)
+    default_storage.save(file_path, ContentFile(content.read()))
+    file_url = default_storage.url(file_path)
+
+    return {
+        'file_url': file_url,
+        'file_name': file_name,
+        'expires_in_hours': 24,
+    }
 
 
 
