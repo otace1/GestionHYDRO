@@ -3,83 +3,110 @@ name: Build Docker Container & Push to DO registry
 on:
   workflow_call:
   workflow_dispatch:
-
   push:
-    branches: [ "Dockerized" ]
+    branches: ["Dockerized"]
   pull_request:
-    branches: [ "Dockerized" ]
+    branches: ["Dockerized"]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test_django_job:
     uses: otace1/GestionHYDRO/.github/workflows/test-django.yaml@Dockerized
+
   build:
     runs-on: ubuntu-latest
     needs: [test_django_job]
 
     env:
-      DJANGO_SECRET_KEY: this-is-a-test-key-for-this-deployment
       CLUSTER_NAME: k8s-gestionhydro
+      REGISTRY: registry.digitalocean.com/otace
+      IMAGE_NAME: gestionhydro-amd64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Install DOCTL
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DO_API_TOKEN_KEY }}
-      - name: Login to Do Container registry with short-lived creds
+
+      - name: Login to DO Container registry (short-lived)
         run: doctl registry login --expiry-seconds 1200
+
       - name: Build container image
-        working-directory: .
         run: |
+          set -euo pipefail
           docker build --platform linux/amd64 -f Dockerfile \
-            -t registry.digitalocean.com/otace/gestionhydro-amd64:latest \
-            -t registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
+            -t $REGISTRY/$IMAGE_NAME:latest \
+            -t $REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7} \
             .
-      - name: Push Image to DO
+
+      - name: Push image to DO
         run: |
-          docker push registry.digitalocean.com/otace/gestionhydro-amd64 --all-tags
-      - name: K8s cluster KubeConfig File with short-lived creds
+          set -euo pipefail
+          docker push $REGISTRY/$IMAGE_NAME --all-tags
+
+      - name: Fetch kubeconfig (short-lived)
         run: |
+          set -euo pipefail
           doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ env.CLUSTER_NAME }}
-      - name: Update deployment secrets
+
+      # ============================================================
+      # ✅ Secret update: match your Kubernetes Secret stringData keys
+      # ============================================================
+      - name: Apply deployment secret (django-deploy-env)
         run: |
-          cat << EOF >> prod.env
-          DEBUG=0
-          DEVELOPMENT_MODE=0
-          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-          ALLOWED_HOSTS=localhost,127.0.0.1,django-server,suivicargo.com,trackflow.plus
-          CELERY_BROKER=${{ secrets.REDIS }}
-          DATABASE_HOST=${{ secrets.DATABASE_HOST }}
-          DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-          DATABASE_USER=${{ secrets.DATABASE_USER }}
-          DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-          DATABASE_PORT=25060
-          DB_IGNORE_SSL=True
-          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          EOF
-          kubectl delete secret django-deploy-env
-          kubectl create secret generic django-deploy-env --from-env-file=prod.env
-      - name: Update deployment image for django-server
+          set -euo pipefail
+
+          kubectl create secret generic django-deploy-env \
+            --from-literal=DEBUG="0" \
+            --from-literal=DEVELOPMENT_MODE="0" \
+            --from-literal=DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+            --from-literal=ALLOWED_HOSTS="trackflow.plus" \
+            --from-literal=CELERY_BROKER="${{ secrets.CELERY_BROKER }}" \
+            --from-literal=DATABASE_HOST="${{ secrets.DATABASE_HOST }}" \
+            --from-literal=DATABASE_NAME="${{ secrets.DATABASE_NAME }}" \
+            --from-literal=DATABASE_USER="${{ secrets.DATABASE_USER }}" \
+            --from-literal=DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
+            --from-literal=DATABASE_PORT="25060" \
+            --from-literal=DB_IGNORE_SSL="True" \
+            --from-literal=CSRF_TRUSTED_ORIGINS="https://trackflow.plus" \
+            --from-literal=SPACE_SECRET="${{ secrets.SPACE_SECRET }}" \
+            --from-literal=SPACE_ACCESS_KEY="${{ secrets.SPACE_ACCESS_KEY }}" \
+            --from-literal=SPACE_REGION="sfo3" \
+            --from-literal=SPACE_ENDPOINT="digitaloceanspaces.com" \
+            --from-literal=SERVICE_NAME="s3" \
+            --from-literal=SPACE_NAME="gestionhydro" \
+            --from-literal=AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            --from-literal=AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            --from-literal=DELETE_CONFIRMATION_CODE="${{ secrets.DELETE_CONFIRMATION_CODE }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update deployment image (django-server)
         run: |
+          set -euo pipefail
           kubectl set image deployment/gestionhydro-deployment \
-            django-server=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7} \
-      - name: Update deployment image for celery-worker
+            django-server=$REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}
+
+      - name: Update deployment image (celery-worker)
         run: |
+          set -euo pipefail
           kubectl set image deployment/gestionhydro-celery \
-            celery-worker=registry.digitalocean.com/otace/gestionhydro-amd64:${GITHUB_SHA::7}
+            celery-worker=$REGISTRY/$IMAGE_NAME:${GITHUB_SHA::7}
+
       - name: Wait for rollout to finish
         run: |
-          kubectl rollout status deployment/gestionhydro-deployment
-          kubectl rollout status deployment/gestionhydro-celery
-      - name: Migrate database command
-        run: |
-          export SINGLE_POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}") 
-          kubectl exec -it $SINGLE_POD_NAME -- bash /app/scripts/migration.sh
-          kubectl exec -it $SINGLE_POD_NAME -- bash /app/scripts/collectstatic.sh
-          
-          
-    
+          set -euo pipefail
+          kubectl rollout status deployment/gestionhydro-deployment --timeout=300s
+          kubectl rollout status deployment/gestionhydro-celery --timeout=300s
 
-        
-        
+      - name: Run migrate + collectstatic inside one pod
+        run: |
+          set -euo pipefail
+          POD_NAME=$(kubectl get pod -l app=gestionhydro-deployment -o jsonpath="{.items[0].metadata.name}")
+          kubectl exec "$POD_NAME" -- bash /app/scripts/migration.sh
+          kubectl exec "$POD_NAME" -- bash /app/scripts/collectstatic.sh
