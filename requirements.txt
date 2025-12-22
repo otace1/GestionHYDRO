@@ -36,6 +36,7 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 coloredlogs==15.0.1
 coverage==7.10.6
+crispy-bootstrap4==2025.6
 cron-descriptor==1.4.5
 cryptography==45.0.5
 cssselect2==0.8.0
