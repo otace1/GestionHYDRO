@@ -74,7 +74,7 @@ flower==2.0.1
 fonttools==4.58.5
 freezegun==1.5.5
 frozenlist==1.7.0
-GDAL==3.11.4
+
 google-api-core==2.28.1
 google-auth==2.45.0
 google-cloud-core==2.5.0
