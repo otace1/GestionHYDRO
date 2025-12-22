@@ -1430,7 +1430,11 @@ def filterOptionsRapportActivite(request):
         return JsonResponse({'error': 'Failed to load filter options', 'detail': str(exc)}, status=500)
 
 
+from django.views.decorators.http import require_POST, require_GET
+
+
 @login_required(login_url='login')
+@require_POST
 def filterOptionsRapportActiviteAll(request):
     """
     JSON endpoint to populate Filters modal dropdowns for Rapport d'activités (GLOBAL scope).
@@ -4496,6 +4500,7 @@ def kpi_details_hydro(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def lastrecordShydro(request):
     user = request.user
     user_id = getattr(user, "id", None)
@@ -4538,6 +4543,7 @@ def lastrecordShydro(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def topImportersShydro(request):
     user_id = request.user.id
     current_year = date.today().year
@@ -4561,6 +4567,7 @@ def topImportersShydro(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def productCountShydro(request):
     user_id = request.user.id
     current_year = date.today().year

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from ads import views
+from ads.kpis import kpiStatusCounts
 
 urlpatterns = [
 
@@ -76,6 +77,7 @@ urlpatterns = [
     path('response/latest/', views.lastRecords, name='lastRecords'),
     path('response/products/', views.productCount, name='productCount'),
     path('response/topImporters/', views.topImporters, name='topImporters'),
+    path('response/kpiStatus/', kpiStatusCounts, name='kpiStatusCounts'),
 
 
     path('document/getDocuments/', views.getDocuments, name='getDocuments'),

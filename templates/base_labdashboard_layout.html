@@ -1,661 +1,260 @@
-{% load static %}
-{% load bootstrap4 %}
-{% load django_bootstrap5 %}
+{% extends 'base_template/base_template.html' %}
 
+{% block extra_css %}
+<style>
+  :root{
+    --tf-primary:#0d6efd;
+    --tf-success:#198754;
+    --tf-info:#0dcaf0;
+    --tf-warning:#ffc107;
+    --tf-danger:#dc3545;
+    --tf-ink:#111827;
+    --tf-muted:#6b7280;
+    --tf-bd:rgba(0,0,0,.08);
+    --tf-shadow:0 10px 30px rgba(0,0,0,.08);
+    --tf-shadow2:0 14px 60px rgba(0,0,0,.18);
+  }
 
-{% block extrahead %}
+  /* Header mini-hero */
+  .tf-hero{
+    border:1px solid var(--tf-bd);
+    border-radius:14px;
+    background:linear-gradient(135deg, rgba(13,110,253,.12), rgba(25,135,84,.10));
+    box-shadow: var(--tf-shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .tf-title{
+    margin:0;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:var(--tf-ink);
+    line-height:1.1;
+    font-size:1.35rem;
+  }
+  .tf-sub{ color:var(--tf-muted); margin-top:4px; font-size:.92rem; }
+
+  .btn-pill{
+    border-radius:999px !important;
+    font-weight:800;
+    letter-spacing:.2px;
+    padding:.45rem .9rem;
+  }
+
+  /* Card wrapper */
+  .tf-card{
+    border:1px solid var(--tf-bd);
+    border-radius:14px;
+    background:#fff;
+    box-shadow: var(--tf-shadow);
+    overflow:hidden;
+    margin-bottom: 20px;
+  }
+  .tf-card-header{
+    padding:14px 16px;
+    border-bottom:1px solid var(--tf-bd);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fff;
+  }
+  .tf-card-left{
+    display:flex; align-items:center; gap:10px; min-width:0;
+  }
+  .tf-icon{
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(13,110,253,.10);
+    color:var(--tf-primary);
+    flex:0 0 auto;
+  }
+  .tf-card-titles h3{
+    margin:0;
+    font-weight:900;
+    color:var(--tf-ink);
+    font-size:1.05rem;
+  }
+
+  /* Small box adjustments */
+  .small-box{
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--tf-shadow);
+    border: 1px solid var(--tf-bd);
+  }
+
+  .modal-content{
+    border:0;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: var(--tf-shadow2);
+  }
+  .modal-header{
+    border-bottom:1px solid rgba(0,0,0,.06);
+    background: linear-gradient(135deg, rgba(13,110,253,.10), rgba(25,135,84,.08));
+  }
+  .modal-title{ font-weight:900; color:var(--tf-ink); }
+</style>
 {% endblock %}
 
-<html>
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="tf-hero">
+      <div>
+        <h1 class="tf-title">Tableau de Bord — Laboratoire</h1>
+        <div class="tf-sub">Vue d'ensemble et statistiques de production</div>
+      </div>
 
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>TrackFlow+</title>
-<!-- Tell the browser to be responsive to screen width -->
-<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+      <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+        <ol class="breadcrumb mb-0" style="background:transparent; padding:0;">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Laboratoire</li>
+          <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
 
-<link href="{% static 'fontawesomefree/css/fontawesome.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'fontawesomefree/css/brands.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'fontawesomefree/css/solid.css' %}" rel="stylesheet" type="text/css">
-<!-- Ionicons -->
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+<section class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3 id="count-attente-reception">...</h3>
+            <p>En attente de réception</p>
+          </div>
+          <div class="icon"><i class="fas fa-truck-loading"></i></div>
+          <a href="{% url 'enchAttenteReception' %}" class="small-box-footer">Plus d'info <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3 id="count-attente-resultat">...</h3>
+            <p>En cours d'analyse</p>
+          </div>
+          <div class="icon"><i class="fas fa-flask"></i></div>
+          <a href="{% url 'enchAttenteResultat' %}" class="small-box-footer">Plus d'info <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+          <div class="inner">
+            <h3 id="count-attente-validation">...</h3>
+            <p>En attente de validation</p>
+          </div>
+          <div class="icon"><i class="fas fa-check-double"></i></div>
+          <a href="{% url 'enchAttenteValidation' %}" class="small-box-footer">Plus d'info <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+          <div class="inner">
+            <h3 id="count-certificats-imprimes">...</h3>
+            <p>Certificats Imprimés</p>
+          </div>
+          <div class="icon"><i class="fas fa-print"></i></div>
+          <a href="{% url 'enchPrintedCert' %}" class="small-box-footer">Plus d'info <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+      </div>
+    </div>
 
-<!-- Tempusdominus Bbootstrap 4 -->
-<link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <button type="button" data-toggle="modal" data-target="#RechercheModal" class="btn btn-primary btn-pill">
+          <i class="fas fa-file-alt mr-1"></i> Rapport du Labo
+        </button>
+      </div>
+    </div>
 
-<!-- iCheck -->
-<link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-<!-- JQVMap -->
-<link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-<!-- Theme style -->
-<link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
-<!-- overlayScrollbars -->
-<link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-<!-- Daterange picker -->
-<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
-<!-- summernote -->
-<link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.css' %}">
-<!-- DataTables -->
-<link rel="stylesheet" href="{% static 'plugins/datatables-bs4/css/dataTables.bootstrap4.min.css' %}">
-<link rel="stylesheet" href="{% static 'plugins/datatables-responsive/css/responsive.bootstrap4.min.css' %}">
+    <div class="row">
+      <div class="col-md-6">
+        <div class="tf-card">
+          <div class="tf-card-header">
+            <div class="tf-card-left">
+              <div class="tf-icon"><i class="fas fa-chart-line"></i></div>
+              <div class="tf-card-titles">
+                <h3>Courbe Annuelle de production</h3>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            {% block dashboard %}{% endblock %}
+          </div>
+        </div>
+      </div>
 
-<!-- Google Font: Source Sans Pro -->
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+      <div class="col-md-6">
+        <div class="tf-card">
+          <div class="tf-card-header">
+            <div class="tf-card-left">
+              <div class="tf-icon"><i class="fas fa-history"></i></div>
+              <div class="tf-card-titles">
+                <h3>Derniers enregistrements</h3>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-0 table-responsive">
+            {% block stats %}{% endblock %}
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <div class="row">
+      <div class="col-md-6">
+        {% block reception %}{% endblock %}
+      </div>
+      <div class="col-md-6">
+        {% block pie %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</section>
 
-<!-- Date picker -->
-{#  <script src="{% static '/bower_components/datepicker/dist/jquery.js' %}"></script><!-- jQuery is required -->#}
+<!-- Modal Rapport -->
+<div class="modal fade" id="RechercheModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Rapport du Laboratoire</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'labodashboardrapport' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          {% block modal1 %}{% endblock %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-pill" data-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary btn-pill">Recherche</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
-
-{% block extra_js %}
-
+<script>
+  $(document).ready(function() {
+    // Load counts asynchronously if endpoints exist
+    $.get("{% url 'echantCount' %}", function(data) {
+      $('#count-attente-reception').text(data.attente_reception || '0');
+      $('#count-attente-resultat').text(data.attente_resultat || '0');
+      $('#count-attente-validation').text(data.attente_validation || '0');
+      $('#count-certificats-imprimes').text(data.certificats_imprimes || '0');
+    });
+  });
+</script>
 {% endblock %}
-
-
-</head>
-
-<!-- sidebar: style can be found in sidebar.less -->
-
-<body class="hold-transition sidebar-mini sidebar-collapse">
-<div class="wrapper">
-
-    <!-- Navbar -->
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-        <!-- Left navbar links -->
-        <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-            </li>
-        </ul>
-
-        <!-- Right navbar links -->
-        <ul class="navbar-nav ml-auto">
-            <a href="{% url 'logout' %}" class="btn btn-danger btn-sm"><b>Déconnexion</b>
-            </a>
-            <!-- Messages Dropdown Menu -->
-            {#      <li class="nav-item dropdown">#}
-            {#        <a class="nav-link" data-toggle="dropdown" href="#">#}
-            {#          <i class="far fa-comments"></i>#}
-            {#          <span class="badge badge-danger navbar-badge">3</span>#}
-            {#        </a>#}
-            {#        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">#}
-            {#          <a href="#" class="dropdown-item">#}
-            {#            <!-- Message Start -->#}
-            {#            <div class="media">#}
-            {#              <img src="" alt="User Avatar" class="img-size-50 mr-3 img-circle">#}
-            {#              <div class="media-body">#}
-            {#                <h3 class="dropdown-item-title">#}
-            {#                  Brad Diesel#}
-            {#                  <span class="float-right text-sm text-danger"><i class="fas fa-star"></i></span>#}
-            {#                </h3>#}
-            {#                <p class="text-sm">Call me whenever you can...</p>#}
-            {#                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>#}
-            {#              </div>#}
-            {#            </div>#}
-            {#            <!-- Message End -->#}
-            {#          </a>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item">#}
-            {#            <!-- Message Start -->#}
-            {#            <div class="media">#}
-            {#              <img src="" alt="User Avatar" class="img-size-50 img-circle mr-3">#}
-            {#              <div class="media-body">#}
-            {#                <h3 class="dropdown-item-title">#}
-            {#                  John Pierce#}
-            {#                  <span class="float-right text-sm text-muted"><i class="fas fa-star"></i></span>#}
-            {#                </h3>#}
-            {#                <p class="text-sm">I got your message bro</p>#}
-            {#                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>#}
-            {#              </div>#}
-            {#            </div>#}
-            {#            <!-- Message End -->#}
-            {#          </a>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item">#}
-            {#            <!-- Message Start -->#}
-            {#            <div class="media">#}
-            {#              <img src="" alt="User Avatar" class="img-size-50 img-circle mr-3">#}
-            {#              <div class="media-body">#}
-            {#                <h3 class="dropdown-item-title">#}
-            {#                  Nora Silvester#}
-            {#                  <span class="float-right text-sm text-warning"><i class="fas fa-star"></i></span>#}
-            {#                </h3>#}
-            {#                <p class="text-sm">The subject goes here</p>#}
-            {#                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>#}
-            {#              </div>#}
-            {#            </div>#}
-            {#            <!-- Message End -->#}
-            {#          </a>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>#}
-            {#        </div>#}
-            {#      </li>#}
-            <!-- Notifications Dropdown Menu -->
-            {#      <li class="nav-item dropdown">#}
-            {#        <a class="nav-link" data-toggle="dropdown" href="#">#}
-            {#          <i class="far fa-bell"></i>#}
-            {#          <span class="badge badge-warning navbar-badge">15</span>#}
-            {#        </a>#}
-            {#        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">#}
-            {#          <span class="dropdown-item dropdown-header">15 Notifications</span>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item">#}
-            {#            <i class="fas fa-envelope mr-2"></i> 4 new messages#}
-            {#            <span class="float-right text-muted text-sm">3 mins</span>#}
-            {#          </a>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item">#}
-            {#            <i class="fas fa-users mr-2"></i> 8 friend requests#}
-            {#            <span class="float-right text-muted text-sm">12 hours</span>#}
-            {#          </a>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item">#}
-            {#            <i class="fas fa-file mr-2"></i> 3 new reports#}
-            {#            <span class="float-right text-muted text-sm">2 days</span>#}
-            {#          </a>#}
-            {#          <div class="dropdown-divider"></div>#}
-            {#          <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>#}
-            {#        </div>#}
-            {#      </li>#}
-            {#      <li class="nav-item">#}
-            {#        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">#}
-            {#          <i class="fas fa-th-large"></i>#}
-            {#        </a>#}
-            {#      </li>#}
-        </ul>
-    </nav>
-
-    <!-- Left side column. contains the logo and sidebar -->
-    <!-- Left side column. contains the logo and sidebar -->
-    <aside class="main-sidebar sidebar-dark-secondary elevation-4">
-        <!-- Brand Logo -->
-        <a href="#" class="brand-link">
-            {#      <img src="" alt="logo" class="brand-image img-circle elevation-3" style="opacity: .8">#}
-            <span class="brand-text font-weight-light"><b>GESTION</b>DES<b>HYDROS</b></span>
-        </a>
-
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <!-- Sidebar user panel (optional) -->
-            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                <div class="image">
-                    <img src="/media/images.png" class="img-circle elevation-2" alt="User Image">
-                </div>
-                <div class="info">
-                    <a href="#" class="d-block">{{ request.user.first_name }} {{ request.user.last_name }}</a>
-                </div>
-            </div>
-            <!-- sidebar: style can be found in sidebar.less -->
-            <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
-                    data-accordion="false">
-                    <!-- Add icons to the links using the .nav-icon class
-                         with font-awesome or any other icon font library -->
-                    {% if user.role_id == 1 or user.role_id == 8 %}
-                        <li class="header" style="color: red">DEPARTEMENT</li>
-                        <li class="nav-item has-treeview menu-open">
-                            <a href="{% url 'dashboard' %}" class="nav-link active">
-                                <i class="nav-icon fas fa-tachometer-alt"></i>
-                                <p>TABLEAU DE BORD</p>
-                            </a>
-                        </li>
-
-                    {% endif %}
-
-                    {% if user.role_id == 2 or user.role_id == 1 %}
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'cargaison' %}" class="nav-link">
-                                <i class="nav-icon fas fa-truck-moving"></i>
-                                <p>
-                                    ENREGISTREMENT
-                                    <i class="fas fa-save right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-
-                        </li>
-                    {% endif %}
-
-
-                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
-                        <li class="header">ENTREPOT</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'entrepot' %}" class="nav-link">
-                                <i class="nav-icon fas fa fa-industry"></i>
-                                <p>
-                                    ENTREPOT
-                                    <i class="right fas fa-truck"></i>
-                                </p>
-                            </a>
-
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
-
-                        <li class="header">CERTIFICATION</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fas fa-flask"></i>
-                                <p>
-                                    LABORATOIRE
-                                    <i class="fas fa-angle-left right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-
-                                {% endif %}
-                                {% if user.role_id == 4 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'labo' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>RECEPTION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 5 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'analyse' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>ENCODAGE & IMPR.</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 6 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation1' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION SCE HYDRO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 10 or user.role_id == 1 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'validation2' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>VALIDATION CHEF LABO</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
-                                    <li class="nav-item">
-                                        <a href="{% url 'impression' %}" class="nav-link">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>IMPRESSION</p>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                    {% endif %}
-
-
-                    {% if user.role_id == 7 or user.role_id == 1 %}
-                        <li class="header">HYDRO OCC</li>
-
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-building"></i>
-                                <p>
-                                    HYDRO
-                                    <i class="fas fa-trailer right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link">
-                                        <i class="nav-icon fas fa-tachometer-alt"></i>
-                                        <p>TABLEAU DE BORD</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'codification' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>GESTION REQUISITION</p>
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
-                                    <a href="{% url 'regularisation' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>REGULARISATION</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'rapportActivite' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>RAPPORT D'ACTIVITE</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    {% endif %}
-                    {% if role == 10 %}
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-file-archive"></i>
-                                <p>
-                                    FACTURATIONS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{% url 'facturations' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LIQUIDATION</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{% url 'appuration' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>APPURATION</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    {% endif %}
-
-                    {% if user.role_id == 1 %}
-                        <li class="nav-item has-treeview">ADMINISTRATION</li>
-                        <li class="nav-item has-treeview">
-                            <a href="" class="nav-link">
-                                <i class="nav-icon fas fa-user"></i>
-                                <p>
-                                    USERS
-                                    <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right"></span>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-
-                                <li class="nav-item">
-                                    <a href="{% url 'userslist' %}" class="nav-link">
-                                        <i class="far fa-circle nav-icon"></i>
-                                        <p>LISTE D'UTILISATEURS</p>
-                                    </a>
-                                </li>
-
-
-                            </ul>
-                        </li>
-                        <li class="nav-item has-treeview">
-                            <a href="{% url 'activityLog' %}" class="nav-link">
-                                <i class="nav-icon fas fa-file"></i>
-                                <p>
-                                    JOURNAL D'ACTIVITES
-
-
-                                </p>
-                            </a>
-                        </li>
-
-
-                    {% endif %}
-
-                    <li class="nav-item has-treeview">
-                        <a href="" class="nav-link">
-                            <i class="nav-icon fas fa-hands-helping"></i>
-                            <p>
-                                AIDE
-                            </p>
-                        </a>
-                    </li>
-
-                </ul>
-            </nav>
-            <!-- /.sidebar -->
-        </div>
-    </aside>
-
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
-        <!-- Content Header (Page header) -->
-        <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1 class="m-0 text-dark">Dashboard Labo PP</h1>
-                    </div><!-- /.col -->
-                    <div class="col-sm-6">
-                        <ol class="breadcrumb float-sm-right">
-                            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-                            <li class="breadcrumb-item"><a href="#">Laboratoire</a></li>
-                            <li class="breadcrumb-item active">Dashboard</li>
-                        </ol>
-                    </div><!-- /.col -->
-                </div><!-- /.row -->
-            </div><!-- /.container-fluid -->
-        </div>
-        <!-- /.content-header -->
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-3 col-6">
-                        <!-- small box -->
-                        <div class="small-box bg-info">
-                            <div class="inner">
-                                <h3>150</h3>
-
-                                <p>Échantillons en attente de réceptions</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-bag"></i>
-                            </div>
-                            <a href="#" class="small-box-footer">Plus d'info <i
-                                    class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <!-- ./col -->
-                    <div class="col-lg-3 col-6">
-                        <!-- small box -->
-                        <div class="small-box bg-success">
-                            <div class="inner">
-                                <h3>53<sup style="font-size: 20px">%</sup></h3>
-
-                                <p>Échantillons réceptionnés et En cours d'analyse</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-stats-bars"></i>
-                            </div>
-                            <a href="#" class="small-box-footer">Plus d'info <i
-                                    class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <!-- ./col -->
-                    <div class="col-lg-3 col-6">
-                        <!-- small box -->
-                        <div class="small-box bg-warning">
-                            <div class="inner">
-                                <h3>44</h3>
-
-                                <p>En Attente de vérification et validation</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-person-add"></i>
-                            </div>
-                            <a href="#" class="small-box-footer">Plus d'info <i
-                                    class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <!-- ./col -->
-                    <div class="col-lg-3 col-6">
-                        <!-- small box -->
-                        <div class="small-box bg-danger">
-                            <div class="inner">
-                                <h3>65</h3>
-
-                                <p>Certificats Imprimés</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-pie-graph"></i>
-                            </div>
-                            <a href="#" class="small-box-footer">Plus d'info <i
-                                    class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <!-- ./col -->
-
-                    <!-- /.row -->
-                </div><!-- /.container-fluid -->
-            </div>
-            <!-- /.content-header -->
-            <br>
-            <!-- Main content -->
-            <div class="container-fluid">
-
-                <div class="row">
-                    <div class="col-md-2">
-                        <a href="" data-toggle="modal" data-target="#RechercheModal" class="btn btn-info" role="button">Rapport
-                            du Labo</a>
-                    </div>
-                    <!--Modal Rapport d'importation-->
-                    <div class="modal" tabindex="-1" role="dialog" id="RechercheModal">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h3 class="modal-title">Rapport du Laboratoire</h3>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <form method="post" action="{% url 'labodashboardrapport' %}">
-
-                                    <div class="modal-body">
-                                        {% block modal1 %}
-                                        {% endblock %}
-
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type='submit' class="btn btn-success">Recherche</button>
-                                        <button type="reset" class="btn btn-danger" data-dismiss="modal">Annuler
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div><!-- /.container-fluid -->
-                <br>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h1 class="card-title"><b>Courbe Annuelle de production des Certificats</b></h1>
-                                <div class="card-tools">
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="tab-content">
-                                    {% block dashboard %}
-                                    {% endblock %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h1 class="card-title"><b>Derniers enregistrements effectués</b></h1>
-                                <div class="card-tools">
-                                </div>
-                            </div>
-                            <div class="card-body table-responsive p-0">
-                                {% block stats %}
-                                {% endblock %}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        {% block reception %}
-
-                        {% endblock %}
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    {% block pie %}
-                    {% endblock %}
-                </div>
-            </div>
-    </div>
-    </section>
-    <!-- /.content -->
-</div>
-<!-- /.content-wrapper -->
-<!-- /.content-wrapper -->
-<footer class="main-footer">
-    <strong>Copyright &copy; {% now 'Y' %} <a href="http://www.cgworldwide.org">Compass Green WorldWide
-        SARL</a>.</strong>
-    All rights reserved.
-    <div class="float-right d-none d-sm-inline-block">
-        <b>Version</b> 3.0
-    </div>
-</footer>
-<!-- Control Sidebar -->
-<aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-</aside>
-<!-- /.control-sidebar -->
-
-</div>
-
-
-
-<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-<script>
-    $.widget.bridge('uibutton', $.ui.button)
-</script>
-
-<!-- ChartJS -->
-<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
-<!-- Sparkline -->
-<script src="{% static 'plugins/sparklines/sparkline.js' %}"></script>
-<!-- JQVMap -->
-<script src="{% static 'plugins/jqvmap/jquery.vmap.min.js' %}"></script>
-<script src="{% static 'plugins/jqvmap/maps/jquery.vmap.usa.js' %}"></script>
-<!-- jQuery Knob Chart -->
-<script src="{% static 'plugins/jquery-knob/jquery.knob.min.js' %}"></script>
-<!-- daterangepicker -->
-<script src="{% static 'plugins/moment/moment.min.js' %}"></script>
-<script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
-<!-- Tempusdominus Bootstrap 4 -->
-<script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js' %}"></script>
-<!-- Summernote -->
-<script src="{% static 'plugins/summernote/summernote-bs4.min.js' %}"></script>
-<!-- overlayScrollbars -->
-<script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js' %}"></script>
-<!-- AdminLTE App -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
-
-
-<!-- /.JS script for modal -->
-
-
-
-<!-- DataTables -->
-<link href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css">
-<link href="https://cdn.datatables.net/2.1.8/js/dataTables.min.js" rel="stylesheet" type="text/css">
-<link href="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js" rel="stylesheet" type="text/css">
-
-<script>
-    var Id;
-    $(document).ready(function () {
-        {% block javascript %}
-        {% endblock %}
-    })
-</script>
-
-</body>
-</html>

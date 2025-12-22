@@ -733,7 +733,8 @@
     $spn.show();
     $.ajax({
       url:'{% url "lastrecordShydro" %}',
-      type:'GET',
+      type:'POST',
+      headers:{ 'X-CSRFToken': '{{ csrf_token }}' },
       cache:false,
       success:function(resp){
         const rows = resp.data || [];
@@ -794,7 +795,8 @@
   $(function(){
     $.ajax({
       url:'{% url "topImportersShydro" %}',
-      type:'GET',
+      type:'POST',
+      headers:{ 'X-CSRFToken': '{{ csrf_token }}' },
       cache:true,
       success:(resp)=>renderImporters(resp.data||[]),
       error:()=>$('#importers-progress').html('<div class="text-danger">Erreur de chargement</div>')
