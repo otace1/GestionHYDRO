@@ -1,10 +1,51 @@
-{% extends 'rapportsBrutes.html' %}
+{% extends 'base_template/base_template.html' %}
 {% load crispy_forms_tags %}
 {% load render_table from django_tables2 %}
 {% load querystring from django_tables2 %}
 
 
 {% block content %}
+
+    <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark page-title font-weight-bold">GESTION DES RÉQUISITIONS</h1>
+          <div class="text-muted small">Contrôle des Hydrocarbures</div>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right mb-0">
+            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+            <li class="breadcrumb-item active">Gestion des réquisitions</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <section class="content">
+    <div class="container-fluid">
+
+        <div class="row">
+                    <a class="btn btn-app bg-danger" href="{% url 'dashboard' %}">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-backward"></i> RETOUR
+                    </a>
+
+                    <a class="btn btn-app bg-warning" data-toggle="modal" data-target="#modal-rapport">
+                        <span class="badge bg-success"></span>
+                        <i class="fas fa-filter"></i> FILTRES
+                    </a>
+
+                    <a id="export-link" href="#" class="btn btn-app bg-warning">
+                        <span class="badge bg-info"></span>
+                        <i class="fas fa-file-excel"></i> EXPORT EXCEL.
+                    </a>
+
+                    <input type="hidden" id="parameter-input" name="parameter" value="2">
+
+                </div>
 
     <div class="modal fade" id="modal-rapport">
         <div class="modal-dialog">
@@ -28,6 +69,37 @@
     </div>
       <!-- /.modal -->
 
+    <!-- Left-side slide-in modal for export progress -->
+    <div class="modal fade" id="export-progress-modal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm" role="document" style="margin:0; height:100vh;">
+        <div class="modal-content" style="height:100vh; border-radius:0;">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title"><i class="fas fa-file-excel"></i> Export en cours</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="progress-bar-container" style="display:none;">
+              <div class="progress" style="height: 22px;">
+                <div id="progress-bar-inner" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="mt-2 small text-muted" id="progress-bar-label">Préparation du fichier…</div>
+            </div>
+            <div id="progress-error" class="alert alert-danger mt-2" style="display:none;"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>
+      /* Slide modal from the left */
+      #export-progress-modal .modal-dialog { transform: translateX(-100%); transition: transform .35s ease; }
+      #export-progress-modal.show .modal-dialog { transform: translateX(0); }
+    </style>
+
     <div class="modal fade" id="modal-details">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -50,40 +122,24 @@
     </div>
       <!-- /.modal -->
 
+
+        <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header bg-gradient-dark">
+              <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
+            </div>
+
+            <div class="card-body">
+              <div id="data-table-wrapper" class="table-scroll">
+                <div class="loading-spinner"></div>
+
     {% render_table table %}
-{#    <table id="data-table" class="table table-bordered display responsive" style="width:100%">#}
-{#    <thead>#}
-{#      <tr>#}
-{#        <th>ID</th>#}
-{#        <th>DATE D'ENTREE</th>#}
-{#        <th>FRONTIERE</th>#}
-{#        <th>DECL.(E)</th>#}
-{#        <th>IMPORTATEUR</th>#}
-{#        <th>ENTREPOT</th>#}
-{#        <th>IMMATR.</th>#}
-{#        <th>PRODUIT</th>#}
-{#        <th>DATE REQ.</th>#}
-{#        <th>DATE ECH.</th>#}
-{#        <th>DATE REC.LABO</th>#}
-{#        <th>DATE INSPEC.</th>#}
-{#        <th>DATE DECH.</th>#}
-{#        <th>VOL DECL.</th>#}
-{#        <th>VOL JAUGE</th>#}
-{#        <th>VOL METER</th>#}
-{#        <th>DENS.15</th>#}
-{#        <th>TEMP.</th>#}
-{#        <th>MTA</th>#}
-{#        <th>MTV</th>#}
-{#        <th>GSV JAUGE</th>#}
-{#        <th>GSV METER</th>#}
-{#        <th></th>#}
-{#      </tr>#}
-{#    </thead>#}
-{#  </table>#}
-
-
-
-
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
 
     <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -108,14 +164,25 @@ async function startExport() {
     try {
 
         // Make an AJAX request to start the export process
+        // Open the left-side progress modal
+        $('#export-progress-modal').modal({backdrop: 'static', keyboard: true});
+
         const response = await fetch('{% url "rapportBrutExport" %}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json', // Specify JSON content type
-                'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token in the request header
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (function(){
+                    // Try to obtain CSRF token from cookie for reliability
+                    function getCookie(name){
+                        const value = `; ${document.cookie}`;
+                        const parts = value.split(`; ${name}=`);
+                        if (parts.length === 2) return parts.pop().split(';').shift();
+                    }
+                    return getCookie('csrftoken') || '{{ csrf_token }}';
+                })(),
 
             },
-
+            body: JSON.stringify({})
         });
 		console.log(response)
 
@@ -135,6 +202,8 @@ async function startExport() {
         }
     } catch (error) {
         console.error('An error occurred:', error);
+        const err = document.getElementById('progress-error');
+        if (err){ err.style.display = 'block'; err.textContent = (error && error.message) ? error.message : 'Erreur inconnue.'; }
     }
 }
 
@@ -149,11 +218,11 @@ function updateProgressBar(taskId) {
         fetch(`/shydro/checkExportTaskStatus/${taskId}?parameter=${parameterValue}`)
             .then(response => response.json())
             .then(data => {
-                if (data.state === 'PENDING') {
-                    const progress = data.progress;
+                if (data.state === 'PENDING' || data.state === 'PROGRESS') {
+                    const progress = data.progress || (data.meta && (data.meta.percent || Math.floor((data.meta.done||0) / Math.max((data.meta.total||1),1) * 100))) || 0;
                     progressBar.style.width = progress + '%';
                     progressBar.setAttribute('aria-valuenow', progress);
-                    progressBarLabel.textContent = `Exporting... ${progress}%`;
+                    progressBarLabel.textContent = `Export en cours… ${progress}%`;
 					const parameterInput = document.getElementById('parameter-input');
 					parameterInput.value = progress;
                     // Check progress again after 1 second
@@ -162,13 +231,17 @@ function updateProgressBar(taskId) {
 					// Update progress bar to 100%
 					progressBar.style.width = '100%';
 					progressBar.setAttribute('aria-valuenow', 100);
-					progressBarLabel.textContent = 'Export completed!';
+					progressBarLabel.textContent = 'Export terminé!';
 
 					// Trigger file download
-					downloadFile(data.result.file_url, data.result.file_name);
+					downloadFile((data.result && data.result.file_url) || data.file_url, (data.result && data.result.file_name) || data.file_name);
+					// Re-enable button and auto-close modal after a short delay
+					setTimeout(function(){ $('#export-progress-modal').modal('hide'); document.querySelector('#export-link').style.display = 'inline-block'; }, 1200);
 				} else if (data.state === 'FAILURE') {
                     // Task failed, display error message or retry option
-                    progressBarLabel.textContent = 'Export failed!';
+                    progressBarLabel.textContent = 'Échec de l\'export';
+                    const err = document.getElementById('progress-error');
+                    if (err){ err.style.display = 'block'; err.textContent = (data.error || 'Une erreur est survenue.'); }
                 } else {
                     // Handle other task states as needed
                 }
@@ -276,7 +349,8 @@ function downloadPdf(pdfData) {
 
 });
 </script>
-
+    </div>
+    </section>
 
 
 {% endblock %}

@@ -642,7 +642,7 @@ def verificationQrCode(request):
 @permission_classes([IsAuthenticated])
 def showDataSaved(request):
     user = request.user.id
-    c = Cargaison.objects.filter(user=user).order_by('-dateheurecargaison')
+    c = Cargaison.objects.select_related('importateur', 'entrepot').filter(user=user).order_by('-dateheurecargaison')
     list = []
     for data in c:
         context = {
@@ -697,7 +697,7 @@ def attenteRequisition(request):
 @permission_classes([IsAuthenticated])
 def attenteRequisitionListe(request):
     user = request.user.id
-    c = Cargaison.objects.filter(etat="En attente requisition").filter(entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    c = Cargaison.objects.select_related('importateur', 'entrepot', 'produit', 'frontiere').filter(etat="En attente requisition").filter(entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
 
     # Apply pagination
     paginator = CustomPagination()
@@ -815,8 +815,10 @@ def enregistrementEchantillonnage(request):
 @permission_classes([IsAuthenticated])
 def cargaisonEchantillonnageList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(etat="En attente d'echantillonage",
-                                    entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    data = Cargaison.objects.select_related('importateur', 'produit').filter(
+        etat="En attente d'echantillonage",
+        entrepot__affectationentrepot__username_id=user
+    ).order_by('-dateheurecargaison')
 
     # Configure pagination
     page_size = int(request.GET.get('pagination', 5))  # You can adjust this value according to your preference
@@ -855,8 +857,10 @@ def cargaisonEchantillonnageList(request):
 @permission_classes([IsAuthenticated])
 def cargaisonListeDechargement(request):
     user = request.user.id
-    data = Cargaison.objects.filter(etat='Conforme aux exigences',before=False,
-                                              entrepot__affectationentrepot__username_id=user).order_by('-dateheurecargaison')
+    data = Cargaison.objects.select_related('importateur', 'produit').filter(
+        etat='Conforme aux exigences', before=False,
+        entrepot__affectationentrepot__username_id=user
+    ).order_by('-dateheurecargaison')
 
 
     # Configure pagination
@@ -916,7 +920,7 @@ def cargaisonInspectionList(request):
         status_appurement = Value("Pending")
         status_other = Value("Pending")
 
-    data = (Cargaison.objects.filter(etatInspection=True, entrepot__affectationentrepot__username_id=user)
+    data = (Cargaison.objects.select_related('importateur', 'produit').filter(etatInspection=True, entrepot__affectationentrepot__username_id=user)
             .annotate(
                 status=Case(
                     When(entrepot__ville__nomville="KALEMIE", then=status_appurement),  # Ville is KALEMIE
@@ -966,7 +970,7 @@ def cargaisonInspectionList(request):
 @permission_classes([IsAuthenticated])
 def cargaisonRequisitionList(request):
     user = request.user.id
-    data = Cargaison.objects.filter(
+    data = Cargaison.objects.select_related('importateur', 'produit').filter(
         etat="En attente requisition",
         entrepot__affectationentrepot__username_id=user
     ).order_by('-dateheurecargaison')

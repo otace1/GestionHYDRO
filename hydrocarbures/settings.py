@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     "rest_framework_api_key",
     "fontawesomefree",
     "push_notifications",  # Push Notification
+    "django.contrib.humanize",
     # Ajax
     "ajax_datatable",
     # My Apps

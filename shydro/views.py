@@ -196,9 +196,24 @@ def responseAffichageTableau(request):
             'data': []
         })
 
+    # Resolve allowed entrepôts for this user once and cache (avoids heavy joins each request)
+    cache_key_ent = f"u:{uid}:allowed_entrepots"
+    allowed_entrepots = cache.get(cache_key_ent)
+    if allowed_entrepots is None:
+        try:
+            from enreg.models import Entrepot
+            allowed_entrepots = list(
+                Entrepot.objects.filter(
+                    ville__affectationville__username_id=uid
+                ).values_list('identrepot', flat=True)
+            )
+        except Exception:
+            allowed_entrepots = []
+        cache.set(cache_key_ent, allowed_entrepots, 15 * 60)
+
     qs = Cargaison.objects.filter(
         etat="En attente requisition",
-        entrepot__ville__affectationville__username_id=uid
+        entrepot_id__in=allowed_entrepots if allowed_entrepots else []
     )
 
     # Base scope for records_total
@@ -223,7 +238,8 @@ def responseAffichageTableau(request):
         # Optimized lookup for indexed field
         qs = qs.filter(immatriculation__istartswith=flt_immat)
     if flt_declaration:
-        qs = qs.filter(declaration__icontains=flt_declaration)
+        # Use istartswith for indexed field
+        qs = qs.filter(declaration__istartswith=flt_declaration)
 
     # ✅ FIX: dossier filter must target numdos (not numreq)
     if flt_numdos:
@@ -234,13 +250,13 @@ def responseAffichageTableau(request):
     if search_value:
         qs = qs.filter(
             Q(numdos__istartswith=search_value) |
-            Q(declaration__icontains=search_value) |
+            Q(declaration__istartswith=search_value) |
             Q(immatriculation__istartswith=search_value) |
-            Q(numreq__icontains=search_value) |
-            Q(importateur__nomimportateur__icontains=search_value) |
-            Q(entrepot__nomentrepot__icontains=search_value) |
-            Q(produit__nomproduit__icontains=search_value) |
-            Q(frontiere__nomville__icontains=search_value)
+            Q(numreq__istartswith=search_value) |
+            Q(importateur__nomimportateur__istartswith=search_value) |
+            Q(entrepot__nomentrepot__istartswith=search_value) |
+            Q(produit__nomproduit__istartswith=search_value) |
+            Q(frontiere__nomville__istartswith=search_value)
         )
 
     # Execution of counts
@@ -1430,7 +1446,11 @@ def filterOptionsRapportActivite(request):
         return JsonResponse({'error': 'Failed to load filter options', 'detail': str(exc)}, status=500)
 
 
+from django.views.decorators.http import require_POST, require_GET
+
+
 @login_required(login_url='login')
+@require_POST
 def filterOptionsRapportActiviteAll(request):
     """
     JSON endpoint to populate Filters modal dropdowns for Rapport d'activités (GLOBAL scope).
@@ -4496,6 +4516,7 @@ def kpi_details_hydro(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def lastrecordShydro(request):
     user = request.user
     user_id = getattr(user, "id", None)
@@ -4538,6 +4559,7 @@ def lastrecordShydro(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def topImportersShydro(request):
     user_id = request.user.id
     current_year = date.today().year
@@ -4561,6 +4583,7 @@ def topImportersShydro(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def productCountShydro(request):
     user_id = request.user.id
     current_year = date.today().year
