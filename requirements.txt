@@ -47,6 +47,7 @@ django-anymail==12.0
 django-appconf==1.1.0
 django-celery-beat==2.8.1
 django-compressor==4.5.1
+django-countries==8.2.0
 django-debug-toolbar==4.4.6
 django-environ==0.12.0
 django-extensions==3.2.3
@@ -54,11 +55,14 @@ django-filter==25.1
 django-mysql==4.17.0
 django-rosetta==0.10.2
 django-storages==1.14.6
+django-stubs==5.2.8
+django-stubs-ext==5.2.8
 django-timezone-field==7.1
 django-weasyprint==2.4.0
 django-widget-tweaks==1.5.0
 djangorestframework==3.16.0
 djangorestframework-gis==1.2.0
+djangorestframework-stubs==3.16.6
 dparse==0.6.4
 ecdsa==0.19.1
 et_xmlfile==2.0.0
@@ -219,6 +223,8 @@ traitlets==5.14.3
 twilio==9.6.4
 typer==0.20.0
 types-awscrt==0.30.0
+types-PyYAML==6.0.12.20250915
+types-requests==2.32.4.20250913
 types-s3transfer==0.16.0
 typing-inspection==0.4.2
 typing_extensions==4.14.1
