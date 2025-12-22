@@ -15,9 +15,6 @@ class TypeUniteTransport(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idunite})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Nationalites(models.Model):
     idnationalite = models.AutoField(primary_key=True, auto_created=True)
@@ -28,9 +25,6 @@ class Nationalites(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idnationalite})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class Banques(models.Model):
@@ -43,9 +37,6 @@ class Banques(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idbanque})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Voie(models.Model):
     idvoie = models.AutoField(primary_key=True, auto_created=True)
@@ -56,9 +47,6 @@ class Voie(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idvoie})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class Ville(models.Model):
@@ -71,9 +59,6 @@ class Ville(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idville})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class Importateur(models.Model):
@@ -89,9 +74,6 @@ class Importateur(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idimportateur})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Entrepot(models.Model):
     identrepot = models.AutoField(primary_key=True, auto_created=True)
@@ -105,9 +87,6 @@ class Entrepot(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.identrepot})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Produit(models.Model):
     idproduit = models.AutoField(primary_key=True, auto_created=True)
@@ -119,9 +98,6 @@ class Produit(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idproduit})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Cargaison(models.Model):
     idcargaison = models.AutoField(primary_key=True, auto_created=True)
@@ -132,13 +108,13 @@ class Cargaison(models.Model):
     provenance = CountryField(blank_label='(Selectionner le pays)', verbose_name='Provenance')
     entrepot = models.ForeignKey(Entrepot, on_delete=models.PROTECT, verbose_name='Entrepot')
     volume = models.FloatField(verbose_name='Volume')
-    immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation')
-    dateheurecargaison = models.DateTimeField(auto_now_add=True, verbose_name='Date et heure')
+    immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation', db_index=True)
+    dateheurecargaison = models.DateTimeField(auto_now_add=True, verbose_name='Date et heure', db_index=True)
     qrcode = models.CharField(max_length=250, default='NULL')
-    etat = models.CharField(max_length=250, default='NULL')
-    numdossier = models.CharField(max_length=30, null=True, blank=True, verbose_name="Numéro Dossier Hydro")
-    codecargaison = models.CharField(max_length=30, null=True, blank=True, verbose_name="Codification Hydro")
-    numact = models.IntegerField(null=True, blank=True, verbose_name="Numéro ACT")
+    etat = models.CharField(max_length=250, default='NULL', db_index=True)
+    numdossier = models.CharField(max_length=30, null=True, blank=True, verbose_name="Numéro Dossier Hydro", db_index=True)
+    codecargaison = models.CharField(max_length=30, null=True, blank=True, verbose_name="Codification Hydro", db_index=True)
+    numact = models.IntegerField(null=True, blank=True, verbose_name="Numéro ACT", db_index=True)
     numCertInspection = models.IntegerField(null=True)
     conformite = models.CharField(max_length=30, blank=True, null=True, verbose_name='DECISION LABO')
     impression = models.BooleanField(default="0")
@@ -150,7 +126,7 @@ class Cargaison(models.Model):
     requisitiondackdate = models.DateTimeField(blank=True, null=True)
 
     # numero de dossier a considere
-    numdos = models.IntegerField(blank=True, null=True)
+    numdos = models.IntegerField(blank=True, null=True, db_index=True)
     numreq = models.CharField(max_length=255, blank=True, null=True)
 
     # Controle rapport d'echantillonage
@@ -197,14 +173,11 @@ class Cargaison(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Entrepot_echantillon(models.Model):
     idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT, primary_key=True)
     numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage", blank=True, null=True)
-    numrappechauto = models.IntegerField(blank=True, null=True, verbose_name="Num. RE")
+    numrappechauto = models.IntegerField(blank=True, null=True, verbose_name="Num. RE", db_index=True)
     qte = models.CharField(max_length=256, blank=True, null=True)
     conformite = models.CharField(max_length=256, blank=True)
     dateechantillonage = models.DateTimeField(auto_now_add=True, blank=True, null=True)
@@ -215,14 +188,12 @@ class Entrepot_echantillon(models.Model):
 
 class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.PROTECT, primary_key=True)
-    numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True)
-    codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ")
-    datereceptionlabo = models.DateTimeField(blank=True,null=True)
+    numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True, db_index=True)
+    codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ", db_index=True)
+    datereceptionlabo = models.DateTimeField(blank=True,null=True, db_index=True)
 
     def get_absolute_url(self):
         return reverse('reception', kwargs={'pk': self.idcargaison})
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class Resultat(models.Model):
@@ -316,9 +287,6 @@ class BureauDGDA(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idbureau})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Paiement(models.Model):
     code_bur = models.CharField(max_length=128, verbose_name='Code BUR')
@@ -327,11 +295,11 @@ class Paiement(models.Model):
     nif_importateur = models.CharField(max_length=128, verbose_name='NIF Importateur')
     importateur = models.CharField(max_length=255, verbose_name='Nom Importateur')
     nom_decl = models.CharField(max_length=255, verbose_name='Declarant')
-    n_liq = models.CharField(max_length=128, verbose_name='BL')
-    date_liq = models.DateField(verbose_name='Date BL')
+    n_liq = models.CharField(max_length=128, verbose_name='BL', db_index=True)
+    date_liq = models.DateField(verbose_name='Date BL', db_index=True)
     ide_ser = models.CharField(max_length=128, verbose_name='')
-    ide_nbr = models.CharField(max_length=128, verbose_name='Quittance')
-    date_pay = models.DateField(verbose_name='Date Paiement')
+    ide_nbr = models.CharField(max_length=128, verbose_name='Quittance', db_index=True)
+    date_pay = models.DateField(verbose_name='Date Paiement', db_index=True)
     tax_cod = models.CharField(max_length=128, verbose_name='')
     bnk_nam = models.CharField(max_length=255, verbose_name='Nom Banque')
     libelle = models.CharField(max_length=255, verbose_name='libelle')
@@ -346,9 +314,6 @@ class Paiement(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idbureau})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class LiquidationModel(models.Model):
@@ -391,9 +356,6 @@ class InspectionSeal(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.id})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Inspection(models.Model):
     idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT)
@@ -414,9 +376,6 @@ class Inspection(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idinspection})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class Compartiment(models.Model):
@@ -439,9 +398,6 @@ class Compartiment(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison_id})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class ShoreTank(models.Model):
@@ -477,9 +433,6 @@ class ShoreTank(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.id})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class Shore(models.Model):
     idinspection = models.ForeignKey(Inspection, on_delete=models.PROTECT, null=True)
@@ -494,9 +447,6 @@ class Shore(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idshore})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class ShoreBefore(models.Model):
@@ -514,9 +464,6 @@ class ShoreBefore(models.Model):
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idshore})
 
-    def natural_key(self):
-        return self.my_natural_key
-
 
 class ShoreAfter(models.Model):
     idshore = models.ForeignKey(Shore, on_delete=models.PROTECT)
@@ -532,9 +479,6 @@ class ShoreAfter(models.Model):
 
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idshore})
-
-    def natural_key(self):
-        return self.my_natural_key
 
 
 class ControlNatureProduit(models.Model):
@@ -566,7 +510,7 @@ class AffectationParametre(models.Model):
 class ResultatAnalyse(models.Model):
     idResultatAnalyse = models.AutoField(primary_key=True, auto_created=True)
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
-    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
+    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT, db_index=True)
     valeurResultat = models.FloatField(blank=True,null=True)
     valeurResultatChar = models.CharField(max_length=64,blank=True,null=True)
 
