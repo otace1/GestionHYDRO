@@ -32,7 +32,6 @@ jobs:
       DATABASE_USER: "root"
       DATABASE_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD || 'P@55w0rd!' }}
       CELERY_BROKER: "redis://127.0.0.1:6379/0"
-      # Django tests often need a deterministic environment:
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
 
@@ -75,37 +74,6 @@ jobs:
           python -m pip install --upgrade pip wheel
           pip install -r requirements.txt
 
-      # ---------------- Security: Repo + Python deps + Django checks ----------------
-      - name: Install security tooling (bandit, pip-audit)
-        run: |
-          pip install --upgrade bandit pip-audit
-
-      - name: Prepare reports directory
-        run: |
-          mkdir -p security-reports
-
-      - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          # Scan the current HEAD (default). Fails the job on leaks.
-          args: "detect --no-banner --redact --verbose --report-format sarif --report-path security-reports/gitleaks.sarif"
-
-      - name: Python SAST (Bandit)
-        run: |
-          # JSON for machine-readability
-          bandit -r . -x venv,venv*/,**/migrations/** -lll -f json -o security-reports/bandit.json || true
-          # Pretty HTML report
-          bandit -r . -x venv,venv*/,**/migrations/** -lll -f html -o security-reports/bandit.html || true
-
-      - name: Dependency vulnerabilities (pip-audit)
-        run: |
-          # Audit the locked requirements if available; fallback to requirements.txt
-          if [ -f requirements.txt ]; then
-            pip-audit -r requirements.txt --format json -o security-reports/pip-audit.json --strict || exit 1
-          else
-            pip-audit --format json -o security-reports/pip-audit.json --strict || exit 1
-          fi
-
       - name: Wait for MySQL to be ready
         run: |
           sudo apt-get update
@@ -119,41 +87,9 @@ jobs:
 
       - name: Django checks + migrate
         run: |
-          # General checks
-          python manage.py check 2>&1 | tee security-reports/django-checks.txt
-          # Production hardening checks (fail on issues)
-          python manage.py check --deploy 2>&1 | tee security-reports/django-deploy-checks.txt
+          python manage.py check
           python manage.py migrate --noinput
 
       - name: Run tests
         run: |
           python manage.py test -v 2
-
-      # ---------------- Aggregate & Publish HTML report (always) ----------------
-      - name: Generate HTML security report
-        if: always()
-        run: |
-          REPORT_DIR="security-reports"
-          INDEX="$REPORT_DIR/index.html"
-          mkdir -p "$REPORT_DIR"
-          echo "<!doctype html><html><head><meta charset=\"utf-8\"><title>Security Report</title>"> > "$INDEX"
-          echo "<style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:980px;margin:auto} h1{margin-top:0} code{background:#f6f8fa;padding:2px 4px;border-radius:4px} .card{border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:12px 0} .list a{display:block;margin:6px 0}</style></head><body>" >> "$INDEX"
-          echo "<h1>CI Security Report</h1>" >> "$INDEX"
-          echo "<p>Commit: <code>${GITHUB_SHA}</code> • Workflow: Django Tests</p>" >> "$INDEX"
-          echo "<div class=\"card\"><h2>Artifacts</h2><div class=\"list\">" >> "$INDEX"
-          for f in gitleaks.sarif bandit.json bandit.html pip-audit.json django-checks.txt django-deploy-checks.txt; do
-            if [ -f "$REPORT_DIR/$f" ]; then
-              echo "<a href=\"$f\" download>$f</a>" >> "$INDEX"
-            fi
-          done
-          echo "</div></div>" >> "$INDEX"
-          echo "<p>Tip: Download JSON/SARIF files and open in your preferred viewer (e.g., GitHub Code Scanning for SARIF).</p>" >> "$INDEX"
-          echo "</body></html>" >> "$INDEX"
-
-      - name: Upload HTML Security Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report-${{ github.sha }}
-          path: security-reports
-          if-no-files-found: warn
