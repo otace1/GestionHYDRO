@@ -186,17 +186,17 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
             pass
 
     if imp_name:
-        adv &= Q(importateur__nomimportateur__icontains=imp_name)
+        adv &= Q(importateur__nomimportateur__istartswith=imp_name)
     if ent_name and not ent_ids:
-        adv &= Q(entrepot__nomentrepot__icontains=ent_name)
+        adv &= Q(entrepot__nomentrepot__istartswith=ent_name)
     if prod_name:
-        adv &= Q(produit__nomproduit__icontains=prod_name)
+        adv &= Q(produit__nomproduit__istartswith=prod_name)
     if immat:
-        adv &= Q(immatriculation__icontains=immat)
+        adv &= Q(immatriculation__istartswith=immat)
     if decl:
-        adv &= Q(declaration__icontains=decl)
+        adv &= Q(declaration__istartswith=decl)
     if numd:
-        adv &= Q(numdos__icontains=numd)
+        adv &= Q(numdos__istartswith=numd)
 
     if adv:
         qs = qs.filter(adv)
@@ -204,14 +204,16 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
     # ---------- Global search ----------
     search_value = g('search[value]')
     if search_value:
+        # Optimization: use istartswith for indexed fields and group them.
+        # Prefix search on indexed fields (immatriculation, declaration, numdos) is much faster.
         qs = qs.filter(
+            Q(immatriculation__istartswith=search_value) |
+            Q(declaration__istartswith=search_value) |
+            Q(numdos__istartswith=search_value) |
             Q(frontiere__nomville__icontains=search_value) |
             Q(importateur__nomimportateur__icontains=search_value) |
             Q(entrepot__nomentrepot__icontains=search_value) |
-            Q(produit__nomproduit__icontains=search_value) |
-            Q(immatriculation__icontains=search_value) |
-            Q(declaration__icontains=search_value) |
-            Q(numdos__icontains=search_value)
+            Q(produit__nomproduit__icontains=search_value)
         )
 
     # ---------- Ordering ----------
@@ -304,31 +306,36 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
             return None
         return str(val)
 
-    for row in qs.iterator(chunk_size=1000):
+    # Optimized Loop for large datasets
+    # Caching function lookups
+    f_densite15 = densite15
+    f_vcf = vcf
+    
+    def r3(v):
+        try:
+            return round(float(v), 3) if v is not None else None
+        except Exception:
+            return v
+
+    for row in qs.iterator(chunk_size=2000):
         dens = _to_float(row.get('inspection__dens'))
         temp = _to_float(row.get('inspection__temp'))
         d15 = None
         vcf_val = None
-        try:
-            if dens is not None and temp is not None:
-                d15 = densite15(temp, dens)
-                vcf_val = vcf(d15 if d15 is not None else dens, temp)
-        except Exception:
-            d15 = None
-            vcf_val = None
-
-        if isinstance(d15, (int, float)):
-            try: d15 = round(float(d15), 5)
-            except Exception: pass
-        if isinstance(vcf_val, (int, float)):
-            try: vcf_val = round(float(vcf_val), 6)
-            except Exception: pass
-
-        def r3(v):
+        
+        if dens is not None and temp is not None:
             try:
-                return round(float(v), 3) if v is not None else None
+                # Direct calculation only if values are present
+                d15 = f_densite15(temp, dens)
+                if d15 is not None:
+                    vcf_val = f_vcf(d15, temp)
+                    # Rounding optimized
+                    d15 = round(float(d15), 5)
+                if vcf_val is not None:
+                    vcf_val = round(float(vcf_val), 6)
             except Exception:
-                return v
+                d15 = None
+                vcf_val = None
 
         ws.append([
             _fmt_dt(row.get('dateheurecargaison__date')),
@@ -356,7 +363,8 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
         ])
 
         done += 1
-        if done % 1000 == 0 or done == total:
+        # Update progress less frequently to reduce Redis/database I/O
+        if done % 2000 == 0 or done == total:
             percent = round((done / max(total, 1)) * 100, 2)
             try:
                 self.update_state(state='PROGRESS', meta={'total': total, 'done': done, 'percent': percent})
