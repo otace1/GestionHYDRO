@@ -60,6 +60,7 @@ django-rosetta==0.10.2
 django-storages==1.14.6
 django-stubs==5.2.8
 django-stubs-ext==5.2.8
+django-tables2==2.8.0
 django-timezone-field==7.1
 django-weasyprint==2.4.0
 django-widget-tweaks==1.5.0
