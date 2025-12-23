@@ -55,6 +55,7 @@ django-environ==0.12.0
 django-extensions==3.2.3
 django-filter==25.1
 django-mysql==4.17.0
+django-qr-code==4.2.0
 django-rosetta==0.10.2
 django-storages==1.14.6
 django-stubs==5.2.8
@@ -82,7 +83,6 @@ freezegun==1.5.5
 frozenlist==1.7.0
 
 google-api-core==2.28.1
-
 google-auth==2.45.0
 google-cloud-core==2.5.0
 google-cloud-firestore==2.21.0
@@ -206,6 +206,7 @@ s3transfer==0.13.0
 safety==3.2.10
 safety-schemas==0.0.17
 scipy==1.16.2
+segno==1.6.6
 sendgrid==6.12.4
 sentry-sdk==2.34.1
 setuptools==80.9.0
