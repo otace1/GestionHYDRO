@@ -1,21 +1,20 @@
-{# templates/shydro/gestionRequisitions.html (FULL CODE) #}
+{# templates/shydro/gestionRequisitions.html (REDESIGN - Bootstrap 4 / AdminLTE) #}
 {% extends 'base_template/base_template.html' %}
 
 {% block content %}
+  <!-- PAGE HEADER -->
   <div class="content-header">
     <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-6">
-          <h1 class="m-0 text-dark page-title font-weight-bold">GESTION DES RÉQUISITIONS</h1>
-          <div class="text-muted small">Contrôle des Hydrocarbures</div>
+      <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <div class="mb-2">
+          <h1 class="m-0 text-dark page-title font-weight-bold">Gestion des réquisitions</h1>
+          <div class="text-muted small">Contrôle des Hydrocarbures • Suivi opérationnel</div>
         </div>
-        <div class="col-sm-6">
-          <ol class="breadcrumb float-sm-right mb-0">
-            <li class="breadcrumb-item"><a href="#">Accueil</a></li>
-            <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
-            <li class="breadcrumb-item active">Gestion des réquisitions</li>
-          </ol>
-        </div>
+        <ol class="breadcrumb mb-2 bg-transparent p-0">
+          <li class="breadcrumb-item"><a href="#">Accueil</a></li>
+          <li class="breadcrumb-item active">Contrôle des Hydrocarbures</li>
+          <li class="breadcrumb-item active">Réquisitions</li>
+        </ol>
       </div>
     </div>
   </div>
@@ -23,78 +22,138 @@
   <section class="content">
     <div class="container-fluid">
 
-      <div class="row">
-        <div class="col-md-2 col-sm-2 col-12">
-          <div class="info-box bg-info">
-            <span class="info-box-icon"><i class="far fa-file"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">En attente d'échantillonnage</span>
-              <span class="info-box-number">{{ e }}</span>
-              <a href="{% url 'enAttenteEchantillonnage' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-2 col-sm-2 col-12">
-          <div class="info-box bg-success">
-            <span class="info-box-icon"><i class="far fa-thumbs-up"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">En attente de réception Labo</span>
-              <span class="info-box-number">{{ p }}</span>
-              <a href="{% url 'enAttenteReceptionLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-2 col-sm-2 col-12">
-          <div class="info-box bg-warning">
-            <span class="info-box-icon"><i class="far fa-file-alt"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">En attente des résultats</span>
-              <span class="info-box-number">{{ l }}</span>
-              <a href="{% url 'enAttenteResultatLabo' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-2 col-sm-2 col-12">
-          <div class="info-box bg-danger">
-            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">En attente d'inspection</span>
-              <span class="info-box-number">{{ i }}</span>
-              <a href="{% url 'enAttenteInspection' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-2 col-sm-2 col-12">
-          <div class="info-box bg-danger">
-            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">En attente de déchargement</span>
-              <span class="info-box-number">{{ d }}</span>
-              <a href="{% url 'enAttenteDechargement' %}" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-2 col-sm-2 col-12">
-          <div class="info-box bg-danger">
-            <span class="info-box-icon"><i class="fas fa-file-archive"></i></span>
-            <div class="info-box-content">
-              <span class="info-box-text">Total des cargaisons</span>
-              <span class="info-box-number">{{ c }}</span>
-              <a href="#" class="small-box-footer">DETAILS <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-      </div><!-- /.row -->
-
       <style>
-        #data-table-wrapper { position: relative; }
+        /* =========================
+           KPI (display-only)
+           ========================= */
+        .kpi-grid .col { margin-bottom: 12px; }
 
-        .loading-spinner {
+        /* Not clickable / no hover affordance */
+        .kpi-card,
+        .kpi-card * {
+          cursor: default !important;
+        }
+        .kpi-card {
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid rgba(0,0,0,.06);
+          box-shadow: 0 10px 26px rgba(0,0,0,.06);
+          background: #fff;
+          height: 100%;
+          user-select: none;
+        }
+
+        .kpi-card__body{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          padding: 14px 14px 12px 14px;
+        }
+
+        .kpi-icon{
+          width:46px;height:46px;border-radius:14px;
+          display:flex;align-items:center;justify-content:center;
+          color:#fff;
+          flex:0 0 auto;
+        }
+
+        .kpi-meta{ min-width:0; flex:1; }
+        .kpi-title{
+          font-size:.84rem;
+          color:#6c757d;
+          margin:0;
+          line-height:1.1;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+
+        /* ✅ Stylish number (big + badge-like) */
+        .kpi-value{
+          margin-top:6px;
+          display:flex;
+          align-items:baseline;
+          gap:8px;
+        }
+        .kpi-number{
+          font-weight: 900;
+          font-size: 1.55rem;
+          line-height: 1;
+          letter-spacing: .2px;
+          color:#111827;
+        }
+        .kpi-pill{
+          display:inline-flex;
+          align-items:center;
+          height: 22px;
+          padding: 0 10px;
+          border-radius: 999px;
+          font-size: .75rem;
+          font-weight: 800;
+          letter-spacing: .4px;
+          text-transform: uppercase;
+          border: 1px solid rgba(0,0,0,.06);
+          background: rgba(0,0,0,.03);
+          color:#374151;
+          white-space:nowrap;
+        }
+
+        /* Soft backgrounds */
+        .bg-soft-info    { background: rgba(23,162,184,.10); }
+        .bg-soft-success { background: rgba(40,167,69,.10); }
+        .bg-soft-warning { background: rgba(255,193,7,.18); }
+        .bg-soft-danger  { background: rgba(220,53,69,.12); }
+        .bg-soft-dark    { background: rgba(52,58,64,.10); }
+
+        .ico-info    { background:#17a2b8; }
+        .ico-success { background:#28a745; }
+        .ico-warning { background:#ffc107; color:#212529; }
+        .ico-danger  { background:#dc3545; }
+        .ico-dark    { background:#343a40; }
+
+        /* =========================
+           Toolbar / Filters
+           ========================= */
+        .action-bar{
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: #f4f6f9;
+          padding: 10px 0;
+          border-bottom: 1px solid rgba(0,0,0,.06);
+          margin-bottom: 10px;
+        }
+        .action-bar .card{
+          border-radius: 14px;
+          border: 1px solid rgba(0,0,0,.06);
+          box-shadow: 0 10px 26px rgba(0,0,0,.05);
+        }
+        .action-bar .card-body{ padding: 10px; }
+        .btn-pill{ border-radius: 999px; padding-left: 14px; padding-right: 14px; }
+
+        .filters-bar { display:flex; gap:.5rem; flex-wrap:wrap; }
+        .chip{
+          background:#eef6ff;
+          border:1px solid #cfe6ff;
+          border-radius:999px;
+          padding:6px 10px;
+          font-size:.86rem;
+          display:inline-flex;
+          align-items:center;
+          gap:8px;
+        }
+        .chip b{ font-weight:900; }
+        .chip button{
+          border:0; background:none;
+          font-weight:900; cursor:pointer; opacity:.75;
+        }
+        .chip button:hover{ opacity:1; }
+
+        /* =========================
+           Table / Spinner / Empty
+           ========================= */
+        #data-table-wrapper { position: relative; }
+        .loading-spinner{
           display:none;
           width:34px;height:34px;border-radius:50%;
           border:4px solid rgba(0,0,0,.15);
@@ -105,68 +164,32 @@
           z-index:10;
         }
         @keyframes spin { to { transform: rotate(360deg) } }
-
         .table-scroll { overflow-x:auto; }
-        .empty-card { border:1px dashed #ccc; border-radius:12px; padding:16px; background:#fff; }
 
-        .filters-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:12px; }
-        .chip {
-          background:#e8f2fb;
-          border:1px solid #b6d8f2;
-          border-radius:20px;
-          padding:4px 10px;
-          font-size:.85rem;
-          display:inline-flex;
-          align-items:center;
-        }
-        .chip button { border:0; background:none; font-weight:900; margin-left:8px; cursor:pointer; }
-
-        /* ===== Modern Result Modal ===== */
-        .result-modal{
-          border:0;
-          border-radius:16px;
-          overflow:hidden;
-          box-shadow: 0 18px 60px rgba(0,0,0,.22);
-        }
-        .result-modal__header{
-          border:0;
-          padding:18px 18px 12px 18px;
-          display:flex;
-          align-items:flex-start;
-          gap:14px;
+        .empty-state{
+          border:1px dashed rgba(0,0,0,.25);
+          border-radius:14px;
+          padding:18px;
           background:#fff;
         }
-        .result-modal__icon{
-          width:44px;height:44px;
-          border-radius:14px;
-          display:flex;align-items:center;justify-content:center;
-          background: rgba(0,123,255,.10);
-          color:#0b5ed7;
-          flex:0 0 auto;
-        }
+        .empty-state h6{ font-weight:900; color:#111827; }
+        .empty-state p{ margin:0; color:#6c757d; }
+
+        /* =========================
+           Result modal (kept)
+           ========================= */
+        .result-modal{ border:0; border-radius:16px; overflow:hidden; box-shadow: 0 18px 60px rgba(0,0,0,.22); }
+        .result-modal__header{ border:0; padding:18px 18px 12px 18px; display:flex; align-items:flex-start; gap:14px; background:#fff; }
+        .result-modal__icon{ width:44px;height:44px; border-radius:14px; display:flex;align-items:center;justify-content:center; background: rgba(0,123,255,.10); color:#0b5ed7; flex:0 0 auto; }
         .result-modal__icon i{ font-size:20px; }
         .result-modal__titles{ flex:1; min-width:0; }
-        .result-modal__titles .modal-title{
-          font-weight:900;
-          letter-spacing:.2px;
-          color:#111827;
-          line-height:1.1;
-        }
-        .result-modal__subtitle{
-          margin-top:4px;
-          color:#6b7280;
-          font-size:.9rem;
-        }
+        .result-modal__titles .modal-title{ font-weight:900; color:#111827; line-height:1.1; }
+        .result-modal__subtitle{ margin-top:4px; color:#6b7280; font-size:.9rem; }
         .result-modal__close{ margin:-2px -2px 0 auto; opacity:.7; }
         .result-modal__close:hover{ opacity:1; }
         .result-modal__footer{ border:0; padding:12px 18px 18px 18px; background:#fff; }
 
-        .success-card{
-          border:1px solid rgba(25,135,84,.18);
-          background: rgba(25,135,84,.06);
-          border-radius:14px;
-          padding:14px;
-        }
+        .success-card{ border:1px solid rgba(25,135,84,.18); background: rgba(25,135,84,.06); border-radius:14px; padding:14px; }
         .success-card__title{ font-weight:800; color:#0f5132; margin-bottom:6px; }
         .success-card__text{ color:#1f2937; margin:0; }
 
@@ -200,121 +223,225 @@
         .rm-warning .result-modal__icon{ background: rgba(255,193,7,.18); color:#b45309; }
       </style>
 
-      <!-- TOOLBAR -->
-      <div class="mb-3 d-flex justify-content-between">
-        <div>
-          {# ✅ IMPORTANT: Bootstrap 4 uses data-toggle/data-target (NOT data-bs-*) #}
-          <button class="btn btn-primary" id="btn-open-filters" data-toggle="modal" data-target="#filtersModal">
-            <i class="fas fa-filter"></i> Filtres
-          </button>
-
-          <button class="btn btn-outline-secondary" id="btn-clear" type="button">
-            <i class="fas fa-undo"></i> Effacer
-          </button>
-        </div>
-      </div>
-
-      <!-- ACTIVE FILTERS -->
-      <div id="active-filters" class="filters-bar" style="display:none"></div>
-
-      <!-- EMPTY STATE -->
-      <div id="empty-state" class="empty-card">
-        <h6 class="mb-1">Aucune donnée chargée</h6>
-        <p class="text-muted mb-0">
-          Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
-          <br>Le tableau ne charge jamais toutes les données (performance optimale).
-        </p>
-      </div>
-
-      <!-- TABLE -->
-      <div class="row">
-        <div class="col-md-12">
-          <div class="card">
-            <div class="card-header bg-gradient-dark">
-              <h1 class="card-title"><b>EN ATTENTE DE REQUISITION</b></h1>
-            </div>
-
-            <div class="card-body">
-              <div id="data-table-wrapper" class="table-scroll">
-                <div class="loading-spinner"></div>
-
-                <table id="data-table" class="table table-bordered" style="display:none;width:100%">
-                  <thead>
-                    <tr>
-                      <th>Date entrée</th>
-                      <th>Fournisseur</th>
-                      <th>Entrepôt</th>
-                      <th>Produit</th>
-                      <th>Volume</th>
-                      <th>Immatriculation</th>
-                      <th>Déclaration</th>
-                      <th>Réquisition</th>
-                    </tr>
-                  </thead>
-                </table>
+      <!-- KPI GRID (display-only) -->
+      <div class="row kpi-grid">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="kpi-card">
+            <div class="kpi-card__body bg-soft-info">
+              <div class="kpi-icon ico-info"><i class="fas fa-vial"></i></div>
+              <div class="kpi-meta">
+                <p class="kpi-title">En attente d’échantillonnage</p>
+                <div class="kpi-value">
+                  <span class="kpi-number">{{ e }}</span>
+                  <span class="kpi-pill"></span>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
 
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="kpi-card">
+            <div class="kpi-card__body bg-soft-success">
+              <div class="kpi-icon ico-success"><i class="fas fa-flask"></i></div>
+              <div class="kpi-meta">
+                <p class="kpi-title">En attente réception labo</p>
+                <div class="kpi-value">
+                  <span class="kpi-number">{{ p }}</span>
+                  <span class="kpi-pill"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="kpi-card">
+            <div class="kpi-card__body bg-soft-warning">
+              <div class="kpi-icon ico-warning"><i class="fas fa-clipboard-check"></i></div>
+              <div class="kpi-meta">
+                <p class="kpi-title">En attente résultats</p>
+                <div class="kpi-value">
+                  <span class="kpi-number">{{ l }}</span>
+                  <span class="kpi-pill"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="kpi-card">
+            <div class="kpi-card__body bg-soft-danger">
+              <div class="kpi-icon ico-danger"><i class="fas fa-search"></i></div>
+              <div class="kpi-meta">
+                <p class="kpi-title">En attente inspection</p>
+                <div class="kpi-value">
+                  <span class="kpi-number">{{ i }}</span>
+                  <span class="kpi-pill"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="kpi-card">
+            <div class="kpi-card__body bg-soft-danger">
+              <div class="kpi-icon ico-danger"><i class="fas fa-truck-loading"></i></div>
+              <div class="kpi-meta">
+                <p class="kpi-title">En attente déchargement</p>
+                <div class="kpi-value">
+                  <span class="kpi-number">{{ d }}</span>
+                  <span class="kpi-pill"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+          <div class="kpi-card">
+            <div class="kpi-card__body bg-soft-dark">
+              <div class="kpi-icon ico-dark"><i class="fas fa-layer-group"></i></div>
+              <div class="kpi-meta">
+                <p class="kpi-title">Total des cargaisons</p>
+                <div class="kpi-value">
+                  <span class="kpi-number">{{ c }}</span>
+                  <span class="kpi-pill">Total</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- RESULT MODAL (Modern - Bootstrap 4, centered) -->
+
+      <!-- ACTION BAR -->
+      <div class="action-bar">
+        <div class="card">
+          <div class="card-body d-flex align-items-center justify-content-between flex-wrap" style="gap:8px;">
+            <div class="d-flex align-items-center flex-wrap" style="gap:8px;">
+              <button class="btn btn-primary btn-pill" data-toggle="modal" data-target="#filtersModal">
+                <i class="fas fa-filter"></i> Filtres
+              </button>
+
+              <button class="btn btn-outline-secondary btn-pill" id="btn-clear" type="button">
+                <i class="fas fa-undo"></i> Effacer
+              </button>
+
+              <span class="badge badge-light" id="filters-count" style="display:none;">
+                <i class="fas fa-tag"></i> <span id="filters-count-val">0</span> filtre(s)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVE FILTERS -->
+        <div id="active-filters" class="filters-bar mt-2" style="display:none"></div>
+      </div>
+
+      <!-- MAIN TABLE CARD -->
+      <div class="card" style="border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.05); border:1px solid rgba(0,0,0,.06);">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap" style="gap:8px;">
+          <div>
+            <h5 class="mb-0 font-weight-bold">En attente de réquisition</h5>
+            <small class="text-muted">Le tableau charge uniquement les données filtrées (performance optimale)</small>
+          </div>
+          <div class="text-muted small">
+            <i class="fas fa-info-circle"></i> Applique un filtre pour afficher les données
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- EMPTY STATE -->
+          <div id="empty-state" class="empty-state">
+            <h6 class="mb-1">Aucune donnée chargée</h6>
+            <p>
+              Cliquez sur <b>Filtres</b>, sélectionnez au moins un filtre, puis cliquez sur <b>Appliquer</b>.
+              <br>Le système évite volontairement le chargement total pour prévenir les lenteurs.
+            </p>
+          </div>
+
+          <!-- TABLE -->
+          <div id="data-table-wrapper" class="table-scroll mt-3">
+            <div class="loading-spinner"></div>
+
+            <table id="data-table" class="table table-hover table-bordered" style="display:none;width:100%">
+              <thead>
+                <tr>
+                  <th>Date entrée</th>
+                  <th>Fournisseur</th>
+                  <th>Entrepôt</th>
+                  <th>Produit</th>
+                  <th>Volume</th>
+                  <th>Immatriculation</th>
+                  <th>Déclaration</th>
+                  <th>Réquisition</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT MODAL (kept) -->
       <div class="modal fade" id="result-modal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content result-modal">
-
             <div class="modal-header result-modal__header">
               <div class="result-modal__icon">
                 <i id="result-modal-icon" class="fas fa-info-circle"></i>
               </div>
-
               <div class="result-modal__titles">
                 <h5 class="modal-title mb-0" id="result-modal-title">Information</h5>
                 <div class="result-modal__subtitle" id="result-modal-subtitle">Message</div>
               </div>
-
               <button type="button" class="close result-modal__close" data-dismiss="modal" aria-label="Fermer">
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-
             <div class="modal-body" id="result-modal-body"></div>
-
             <div class="modal-footer result-modal__footer" id="result-modal-footer">
               <button type="button" class="btn btn-light" data-dismiss="modal">Fermer</button>
             </div>
-
           </div>
         </div>
       </div>
 
-      <!-- FILTER MODAL (Bootstrap 4) -->
+      <!-- FILTER MODAL -->
       <div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content">
-
+          <div class="modal-content" style="border-radius:14px; overflow:hidden;">
             <div class="modal-header">
-              <h5 class="modal-title">Filtres avancés</h5>
+              <h5 class="modal-title"><i class="fas fa-filter"></i> Filtres avancés</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
 
             <div class="modal-body">
-              <div class="row">
+              <div class="alert alert-light border mb-3" style="border-radius:12px;">
+                <div class="d-flex align-items-center" style="gap:10px;">
+                  <i class="fas fa-bolt text-primary"></i>
+                  <div class="small text-muted">
+                    Pour la performance, <b>au moins un filtre</b> est requis pour charger les données.
+                  </div>
+                </div>
+              </div>
 
+              <div class="row">
                 <div class="col-md-3">
-                  <label class="form-label">Date début</label>
+                  <label>Date début</label>
                   <input type="date" id="flt_date_from" class="form-control">
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Date fin</label>
+                  <label>Date fin</label>
                   <input type="date" id="flt_date_to" class="form-control">
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Frontière</label>
+                  <label>Frontière</label>
                   <select id="flt_frontiere" class="form-control">
                     <option value="">Toutes</option>
                     {% for f in frontieres %}
@@ -323,8 +450,8 @@
                   </select>
                 </div>
 
-                <div class="col-md-6 mt-2">
-                  <label class="form-label">Fournisseur</label>
+                <div class="col-md-6 mt-3">
+                  <label>Fournisseur</label>
                   <select id="flt_importateur" class="form-control">
                     <option value="">Tous</option>
                     {% for f in fournisseurs %}
@@ -333,8 +460,8 @@
                   </select>
                 </div>
 
-                <div class="col-md-6 mt-2">
-                  <label class="form-label">Entrepôt</label>
+                <div class="col-md-6 mt-3">
+                  <label>Entrepôt</label>
                   <select id="flt_entrepot" class="form-control">
                     <option value="">Tous</option>
                     {% for e in entrepots %}
@@ -343,8 +470,8 @@
                   </select>
                 </div>
 
-                <div class="col-md-6 mt-2">
-                  <label class="form-label">Produit</label>
+                <div class="col-md-6 mt-3">
+                  <label>Produit</label>
                   <select id="flt_produit" class="form-control">
                     <option value="">Tous</option>
                     {% for p in produits %}
@@ -353,33 +480,29 @@
                   </select>
                 </div>
 
-                <div class="col-md-6 mt-2">
-                  <label class="form-label">Immatriculation</label>
-                  <input id="flt_immat" class="form-control">
+                <div class="col-md-6 mt-3">
+                  <label>Immatriculation</label>
+                  <input id="flt_immat" class="form-control" placeholder="Ex: 1234ABC">
                 </div>
 
-                <div class="col-md-6 mt-2">
-                  <label class="form-label">Déclaration</label>
-                  <input id="flt_declaration" class="form-control">
+                <div class="col-md-6 mt-3">
+                  <label>Déclaration</label>
+                  <input id="flt_declaration" class="form-control" placeholder="Ex: IM7 / TR8 ...">
                 </div>
 
-                <div class="col-md-6 mt-2">
-                  <label class="form-label">Dossier</label>
-                  <input id="flt_numdos" class="form-control">
+                <div class="col-md-6 mt-3">
+                  <label>Dossier</label>
+                  <input id="flt_numdos" class="form-control" placeholder="Numéro dossier">
                 </div>
-
-                <div class="col-12 mt-3">
-                  <small class="text-muted">⚠️ Au moins un filtre est requis pour charger les données.</small>
-                </div>
-
               </div>
             </div>
 
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" id="btn-reset">Réinitialiser</button>
-              <button type="button" class="btn btn-primary" id="btn-apply">Appliquer</button>
+              <button type="button" class="btn btn-outline-secondary" id="btn-reset">Réinitialiser</button>
+              <button type="button" class="btn btn-primary" id="btn-apply">
+                <i class="fas fa-check"></i> Appliquer
+              </button>
             </div>
-
           </div>
         </div>
       </div>
@@ -410,6 +533,18 @@
           return Object.values(f).some(v => String(v || '').trim() !== '');
         }
 
+        function applyFiltersToUI(f){
+          $('#flt_date_from').val(f.flt_date_from || '');
+          $('#flt_date_to').val(f.flt_date_to || '');
+          $('#flt_frontiere').val(f.flt_frontiere || '');
+          $('#flt_importateur').val(f.flt_importateur || '');
+          $('#flt_entrepot').val(f.flt_entrepot || '');
+          $('#flt_produit').val(f.flt_produit || '');
+          $('#flt_immat').val(f.flt_immat || '');
+          $('#flt_declaration').val(f.flt_declaration || '');
+          $('#flt_numdos').val(f.flt_numdos || '');
+        }
+
         function humanLabel(k){
           const map = {
             flt_date_from: 'Date début',
@@ -425,23 +560,20 @@
           return map[k] || k;
         }
 
-        function applyFiltersToUI(f){
-          $('#flt_date_from').val(f.flt_date_from || '');
-          $('#flt_date_to').val(f.flt_date_to || '');
-          $('#flt_frontiere').val(f.flt_frontiere || '');
-          $('#flt_importateur').val(f.flt_importateur || '');
-          $('#flt_entrepot').val(f.flt_entrepot || '');
-          $('#flt_produit').val(f.flt_produit || '');
-          $('#flt_immat').val(f.flt_immat || '');
-          $('#flt_declaration').val(f.flt_declaration || '');
-          $('#flt_numdos').val(f.flt_numdos || '');
-        }
-
         function renderActiveFilters(f){
           const box = document.getElementById('active-filters');
           box.innerHTML = '';
+
           const entries = Object.entries(f).filter(([k,v]) => String(v || '').trim() !== '');
-          if(entries.length === 0){ box.style.display = 'none'; return; }
+          if(entries.length === 0){
+            box.style.display = 'none';
+            $('#filters-count').hide();
+            $('#filters-count-val').text('0');
+            return;
+          }
+
+          $('#filters-count').show();
+          $('#filters-count-val').text(String(entries.length));
 
           entries.forEach(([k,v])=>{
             const chip = document.createElement('span');
@@ -451,6 +583,7 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.innerHTML = '&times;';
+            btn.title = 'Retirer ce filtre';
             btn.addEventListener('click', ()=>{
               const current = filters();
               current[k] = '';
@@ -470,11 +603,6 @@
           });
 
           box.style.display = 'flex';
-        }
-
-        // Bootstrap 4 modal hide helper
-        function hideModal(id){
-          $('#' + id).modal('hide');
         }
 
         function destroyTableAndShowEmpty(){
@@ -561,7 +689,6 @@
           return table;
         }
 
-        // ===== Modern professional result modal =====
         function escapeHtml(str){
           return String(str ?? '')
             .replaceAll('&','&amp;')
@@ -683,32 +810,28 @@
           $m.modal('show');
         }
 
-        // APPLY (must close modal)
+        // Apply filters
         $('#btn-apply').on('click', function () {
-    const f = filters();
+          const f = filters();
+          if (!hasFilters(f)) {
+            alert('Veuillez appliquer au moins un filtre.');
+            return;
+          }
 
-    if (!hasFilters(f)) {
-      alert('Veuillez appliquer au moins un filtre.');
-      return;
-    }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
+          renderActiveFilters(f);
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(f));
-    renderActiveFilters(f);
+          if (!table) initTable();
+          table.ajax.reload(null, true);
 
-    if (!table) initTable();
-    table.ajax.reload(null, true);
+          $('#filtersModal').modal('hide');
+          $('#filtersModal').one('hidden.bs.modal', function () {
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open').css('padding-right', '');
+          });
+        });
 
-    // ✅ Dismiss modal (Bootstrap 4)
-    $('#filtersModal').modal('hide');
-
-    // ✅ Safety cleanup (sometimes backdrop sticks)
-    $('#filtersModal').one('hidden.bs.modal', function () {
-      $('.modal-backdrop').remove();
-      $('body').removeClass('modal-open').css('padding-right', '');
-    });
-  });
-
-        // Reset filters (UI only)
+        // Reset (modal)
         $('#btn-reset').on('click', function(){
           applyFiltersToUI({
             flt_date_from:'', flt_date_to:'', flt_frontiere:'',
@@ -717,7 +840,7 @@
           });
         });
 
-        // Clear
+        // Clear all
         $('#btn-clear').on('click', function(){
           localStorage.removeItem(STORAGE_KEY);
           applyFiltersToUI({
@@ -730,16 +853,11 @@
 
         async function envoyerNumreq(rowId, inputId, btn){
           const input = document.getElementById(inputId);
-          if(!input){
-            showResultModal('Erreur', "Champ introuvable.");
-            return;
-          }
+          if(!input){ showResultModal('Erreur', "Champ introuvable."); return; }
 
           let value = String(input.value || '').trim();
-          if(!value){
-            showResultModal('Validation', "Veuillez saisir la référence de réquisition.");
-            return;
-          }
+          if(!value){ showResultModal('Validation', "Veuillez saisir la référence de réquisition."); return; }
+
           value = value.toUpperCase();
           input.value = value;
 
@@ -750,10 +868,7 @@
           try{
             const resp = await fetch('{% url "numreq" %}', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-              },
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
               body: JSON.stringify({ jsonData: value, idcargaison: rowId })
             });
 

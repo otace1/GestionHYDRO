@@ -12509,6 +12509,7 @@ def rapportFiltres(request):
                                'immatriculation',
                                'produit__nomproduit',
                                'declaration',
+                               'numdos',
                                'volume',
                                'inspection__temp',
                                'impressionresultat__printDate',
@@ -14695,45 +14696,33 @@ def rapportBrutExport(request):
     # New fast-path: if JSON payload with compact filters is provided, start a Celery task
     # that will build the queryset and stream an Excel with progress updates.
 
-    print('TEST EXPORT')
-
-    qs = Cargaison.objects.annotate(
-        volJauge=Round(Sum('inspection__compartiment__gov'), 3),
-        gsvJauge=Round(Sum('inspection__compartiment__gsv'), 3),
-        govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'), 3),
-        gsvMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'), 3),
-        mtaTotal=Round(Sum('inspection__compartiment__mta'), 3),
-        mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3),
-        fraisOcc=Case(
-            When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                 then=Sum('inspection__compartiment__gsv') * 11),
-            default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-            output_field=FloatField()
-        ), ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)
-                      ).values('requisitiondackdate__date', 'dateDechargement__date',
-                               'inspection__compartiment__vcf',
-                               'idcargaison',
-                               'dateheurecargaison__date',
-                               'requisitiondackdate',
-                               'importateur__nomimportateur',
-                               'entrepot__nomentrepot',
-                               'entrepot_echantillon__laboreception__datereceptionlabo__date',
-                               'entrepot_echantillon__dateechantillonage__date',
-                               'frontiere__nomville',
-                               'immatriculation',
-                               'produit__nomproduit',
-                               'declaration',
-                               'volume',
-                               'inspection__temp',
-                               'impressionresultat__printDate',
-                               'inspection__dens',
-                               'inspection__dateinspection__date',
-                               'volJauge',
-                               'gsvJauge',
-                               'govMeter',
-                               'gsvMeter',
-                               'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
-                               )
+    # Optimized base queryset using denormalized fields
+    qs = Cargaison.objects.values(
+        'requisitiondackdate',
+        'dateDechargement',
+        'idcargaison',
+        'dateheurecargaison',
+        'nom_importateur',
+        'nom_entrepot',
+        'date_reception_labo',
+        'date_echantillon',
+        'date_analyse',
+        'nom_frontiere',
+        'immatriculation',
+        'nom_produit',
+        'declaration',
+        'numdos',
+        'numdossier',
+        'numreq',
+        'volume',
+        'gov_total',
+        'gsv_total',
+        'mta_total',
+        'mtv_total',
+        'densite_inspection',
+        'temperature_inspection',
+        'date_inspection',
+    )
 
     if request.method == 'POST':
         # Try to parse JSON payload for the new compact export flow
@@ -14756,16 +14745,21 @@ def rapportBrutExport(request):
             except Exception:
                 return None
 
-        # If the payload contains the new keys, use the new Celery streaming task path
-        if any(k in _payload for k in ['entrepot_ville_id', 'date_from', 'date_to', 'importateur', 'entrepot', 'produit', 'immatriculation', 'declaration', 'numdos']):
+        # If the payload contains any relevant filters, use the new Celery streaming task path
+        filter_keys = [
+            'entrepot_ville_id', 'date_from', 'date_to', 'importateur', 'entrepot', 'produit',
+            'immatriculation', 'declaration', 'numdos',
+            'frontiere_id', 'importateur_id', 'entrepot_id', 'produit_id'
+        ]
+        if any(k in _payload for k in filter_keys):
             params = {
                 'date_from': (_payload.get('date_from') or '').strip() if isinstance(_payload.get('date_from'), str) else (_payload.get('date_from') or ''),
                 'date_to': (_payload.get('date_to') or '').strip() if isinstance(_payload.get('date_to'), str) else (_payload.get('date_to') or ''),
-                # Primary ville filter: entrepot_ville_id; accept fallback from ville/entite if provided
-                'entrepot_ville_id': _to_int(_payload.get('entrepot_ville_id') or _payload.get('ville') or _payload.get('entite')),
-                'importateur': _to_int(_payload.get('importateur')),
-                'entrepot': _to_int(_payload.get('entrepot')),
-                'produit': _to_int(_payload.get('produit')),
+                # Primary ville filter: entrepot_ville_id; accept fallback from frontiere_id/ville/entite
+                'entrepot_ville_id': _to_int(_payload.get('entrepot_ville_id') or _payload.get('frontiere_id') or _payload.get('ville') or _payload.get('entite')),
+                'importateur_id': _to_int(_payload.get('importateur_id') or _payload.get('importateur')),
+                'entrepot_id': _to_int(_payload.get('entrepot_id') or _payload.get('entrepot')),
+                'produit_id': _to_int(_payload.get('produit_id') or _payload.get('produit')),
             }
             # Optionals (strings, keep as-is for icontains)
             if _payload.get('immatriculation') is not None:
@@ -16261,8 +16255,6 @@ def rapportBrutExport(request):
                 return JsonResponse({'task_id': task_id})
 
 
-
-
 @login_required(login_url='login')
 # Fonction Recherche Statistique Detaillé
 def rapportBrutResponse(request):
@@ -16291,6 +16283,7 @@ def rapportBrutResponse(request):
                                'immatriculation',
                                'produit__nomproduit',
                                'declaration',
+                               'numdos',
                                'volume',
                                'inspection__temp',
                                'impressionresultat__printDate',
@@ -18872,6 +18865,7 @@ def rapportBrutResponse(request):
     })
 
 
+
 @login_required(login_url='login')
 # Fonction Recherche Statistique Detaillé
 def rapportBrutResponseExport(request):
@@ -18900,6 +18894,7 @@ def rapportBrutResponseExport(request):
                                'immatriculation',
                                'produit__nomproduit',
                                'declaration',
+                               'numdos',
                                'volume',
                                'inspection__temp',
                                'impressionresultat__printDate',

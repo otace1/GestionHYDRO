@@ -59,7 +59,7 @@ class SearchByDate(forms.Form):
 
 
 class ChangementDestination(forms.Form):
-    nouvelleDestination = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'), label='Selectionner la nouvelle destination')
+    nouvelleDestination = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot').only('identrepot', 'nomentrepot'), label='Selectionner la nouvelle destination')
     def __init__(self, *args, **kwargs):
         super(ChangementDestination, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
@@ -137,7 +137,7 @@ class Transbordement(forms.Form):
 
 
 class Filters(forms.Form):
-    fournisseur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'), label='FOURNISSEUR',required=False)
+    fournisseur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur').only('idimportateur', 'nomimportateur'), label='FOURNISSEUR',required=False)
     entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.none(), label='ENTREPOT',required=False)
     dateDebut = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE DEBUT',required=False)
     dateFin = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label='DATE FIN',required=False)
@@ -146,7 +146,7 @@ class Filters(forms.Form):
         user = kwargs.pop('user',None)  # Get the logged-in user from kwargs
         super(Filters, self).__init__(*args, **kwargs)
 
-        self.fields['entrepot'].queryset = Entrepot.objects.filter(ville__affectationville__username=user).order_by('nomentrepot')
+        self.fields['entrepot'].queryset = Entrepot.objects.filter(ville__affectationville__username=user).order_by('nomentrepot').only('identrepot', 'nomentrepot')
 
         self.helper = FormHelper()
         self.helper.form_method = 'POST'
@@ -179,7 +179,7 @@ class Filters(forms.Form):
 
 
 class ChangementNatureProduit(forms.Form):
-    nouvelleNatureProduit = forms.ModelChoiceField(queryset=Produit.objects.all().order_by('nomproduit'), label='NOUVELLE NATURE')
+    nouvelleNatureProduit = forms.ModelChoiceField(queryset=Produit.objects.all().order_by('nomproduit').only('idproduit', 'nomproduit'), label='NOUVELLE NATURE')
 
     def __init__(self, *args, **kwargs):
         super(ChangementNatureProduit, self).__init__(*args, **kwargs)
@@ -204,15 +204,15 @@ class ChangementNatureProduit(forms.Form):
 
 
 class RegularisationNouvelleEntree(forms.ModelForm):
-    voie = forms.ModelChoiceField(queryset=Voie.objects.all(), label="TYPE VOIE D'ENTREE")
-    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('nomville'), label="FRONTIERE D'ENTREE")
-    typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport'),
+    voie = forms.ModelChoiceField(queryset=Voie.objects.all().only('idvoie', 'nomvoie'), label="TYPE VOIE D'ENTREE")
+    frontiere = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('nomville').only('idville', 'nomville'), label="FRONTIERE D'ENTREE")
+    typeunitetransport = forms.ModelChoiceField(queryset=TypeUniteTransport.objects.all().order_by('unitetransport').only('idunite', 'unitetransport'),
                                                 label="TYPE D'UNITE DE TRANPORT", required=False)
     provenance = CountryField().formfield()
-    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'),
+    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur').only('idimportateur', 'nomimportateur'),
                                          label="FOURNISSEUR", required=True)
-    produit = forms.ModelChoiceField(queryset=Produit.objects.all(), label="NATURE DU PRODUIT")
-    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot'),
+    produit = forms.ModelChoiceField(queryset=Produit.objects.all().only('idproduit', 'nomproduit'), label="NATURE DU PRODUIT")
+    entrepot = forms.ModelChoiceField(queryset=Entrepot.objects.all().order_by('nomentrepot').only('identrepot', 'nomentrepot'),
                                       label="ENTREPOT DE DESTINATION")
     immatriculation = forms.CharField(label="IMMATRICULATION")
     transitaire = forms.CharField(label='TRANSITAIRE')
@@ -315,7 +315,7 @@ class ImportateurRegularisationForm(forms.Form):
 class EntrepotRegularisationForm(forms.Form):
     nomentrepot = forms.CharField(label='NOM ENTREPOT')
     adresseentrepot = forms.CharField(label='ADRESSE ENTREPOT', required=False)
-    ville = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('-nomville'),label='VILLE')
+    ville = forms.ModelChoiceField(queryset=Ville.objects.all().order_by('-nomville').only('idville', 'nomville'),label='VILLE')
 
     def __init__(self, *args, **kwargs):
         super(EntrepotRegularisationForm, self).__init__(*args, **kwargs)
@@ -344,7 +344,7 @@ class EntrepotRegularisationForm(forms.Form):
 
 
 class ChangementImportateur(forms.Form):
-    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur'), label='FOURNISSEUR')
+    importateur = forms.ModelChoiceField(queryset=Importateur.objects.all().order_by('nomimportateur').only('idimportateur', 'nomimportateur'), label='FOURNISSEUR')
 
     def __init__(self, *args, **kwargs):
         super(ChangementImportateur, self).__init__(*args, **kwargs)

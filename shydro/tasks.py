@@ -86,37 +86,31 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
     from openpyxl import Workbook
 
     # Rebuild queryset similar to responseRapportActivite
-    qs = Cargaison.objects.filter(
-        # entrepot__ville__affectationville__username_id=user_id,
-
-    ).annotate(
-        volConst=Sum('inspection__compartiment__gov'),
-        gsvT=Sum('inspection__compartiment__gsv'),
-        mtaT=Sum('inspection__compartiment__mta'),
-        mtvT=Sum('inspection__compartiment__mtv'),
-    ).values(
+    qs = Cargaison.objects.all().values(
         'idcargaison',
         'numdos',
+        'numdossier',
+        'numreq',
         'declaration',
-        'frontiere__nomville',
-        'entrepot__nomentrepot',
-        'inspection__dateinspection',
-        'inspection__dens',
-        'inspection__temp',
-        'importateur__nomimportateur',
+        'nom_frontiere',
+        'nom_entrepot',
+        'nom_importateur',
         'immatriculation',
-        'produit__nomproduit',
-        'dateheurecargaison__date',
-        'requisitiondackdate__date',
-        'entrepot_echantillon__dateechantillonage__date',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
-        'impressionresultat__printDate',
+        'nom_produit',
+        'dateheurecargaison',
+        'requisitiondackdate',
+        'date_echantillon',
+        'date_reception_labo',
+        'date_analyse',
+        'date_inspection',
         'dateDechargement',
         'volume',
-        'volConst',
-        'gsvT',
-        'mtaT',
-        'mtvT',
+        'gov_total',
+        'gsv_total',
+        'mta_total',
+        'mtv_total',
+        'densite_inspection',
+        'temperature_inspection',
     )
 
     # ---------- Helpers ----------
@@ -135,11 +129,13 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
     entite_value = g('entite')        # primary: treat as ville id
 
     imp_name = g('importateur')
+    imp_id = g('importateur_id')
     ent_name = g('entrepot')
+    ent_id = g('entrepot_id')
     ent_ids = params.get('entrepot_ids') or []
 
     # New: allow filtering by entrepot.ville_id directly
-    ent_ville_id = params.get('entrepot_ville_id')
+    ent_ville_id = params.get('entrepot_ville_id') or g('frontiere_id')
     ent_ville_ids = params.get('entrepot_ville_ids') or []
 
     # Fallback precedence for ville selection: explicit param > entite > frontiere (compat)
@@ -150,6 +146,7 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
             ent_ville_id = frontiere_value
 
     prod_name = g('produit')
+    prod_id = g('produit_id')
     immat = g('immatriculation')
     decl = g('declaration')
     numd = g('numdos')
@@ -163,40 +160,49 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
     elif date_to:
         adv &= Q(dateheurecargaison__date__lte=date_to)
 
-    # ✅ Apply entrepot__ville__idville filter (list > single)
+    # Scoping by IDs (using indexed foreign keys is efficient)
     try:
         if ent_ville_ids:
             _ids = [int(x) for x in ent_ville_ids if str(x).isdigit()]
-            if _ids:
-                adv &= Q(entrepot__ville__idville__in=_ids)
+            if _ids: adv &= Q(frontiere_id__in=_ids)
+        elif ent_ville_id and str(ent_ville_id).isdigit():
+            adv &= Q(frontiere_id=int(ent_ville_id))
+    except: pass
 
-        elif ent_ville_id is not None and str(ent_ville_id).strip() != '':
-            if str(ent_ville_id).isdigit():
-                adv &= Q(entrepot__ville__idville=int(ent_ville_id))
-    except Exception:
-        pass
-
-    # If a list of entrepôt IDs is explicitly provided, apply it (takes precedence over name filter)
     if ent_ids:
         try:
             ids = [int(x) for x in ent_ids if str(x).isdigit()]
-            if ids:
-                adv &= Q(entrepot_id__in=ids)
-        except Exception:
-            pass
+            if ids: adv &= Q(entrepot_id__in=ids)
+        except: pass
+    elif ent_id and str(ent_id).isdigit():
+        adv &= Q(entrepot_id=int(ent_id))
 
-    if imp_name:
-        adv &= Q(importateur__nomimportateur__istartswith=imp_name)
-    if ent_name and not ent_ids:
-        adv &= Q(entrepot__nomentrepot__istartswith=ent_name)
-    if prod_name:
-        adv &= Q(produit__nomproduit__istartswith=prod_name)
+    if imp_id and str(imp_id).isdigit():
+        adv &= Q(importateur_id=int(imp_id))
+    elif imp_name:
+        adv &= Q(nom_importateur__istartswith=imp_name)
+
+    if ent_name and not ent_ids and not ent_id:
+        adv &= Q(nom_entrepot__istartswith=ent_name)
+
+    if prod_id and str(prod_id).isdigit():
+        adv &= Q(produit_id=int(prod_id))
+    elif prod_name:
+        adv &= Q(nom_produit__istartswith=prod_name)
+
     if immat:
         adv &= Q(immatriculation__istartswith=immat)
     if decl:
         adv &= Q(declaration__istartswith=decl)
+    # Safe filter for dossier
+    numd = g('numdos')
     if numd:
-        adv &= Q(numdos__istartswith=numd)
+        s_num = str(numd).strip()
+        if s_num:
+            d_q = Q(numdossier__icontains=s_num) | Q(numreq__icontains=s_num)
+            if s_num.isdigit():
+                d_q |= Q(numdos=int(s_num))
+            adv &= d_q
 
     if adv:
         qs = qs.filter(adv)
@@ -204,43 +210,43 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
     # ---------- Global search ----------
     search_value = g('search[value]')
     if search_value:
-        # Optimization: use istartswith for indexed fields and group them.
-        # Prefix search on indexed fields (immatriculation, declaration, numdos) is much faster.
+        # Optimized prefix search using denormalized fields
         qs = qs.filter(
             Q(immatriculation__istartswith=search_value) |
             Q(declaration__istartswith=search_value) |
             Q(numdos__istartswith=search_value) |
-            Q(frontiere__nomville__icontains=search_value) |
-            Q(importateur__nomimportateur__icontains=search_value) |
-            Q(entrepot__nomentrepot__icontains=search_value) |
-            Q(produit__nomproduit__icontains=search_value)
+            Q(nom_frontiere__istartswith=search_value) |
+            Q(nom_importateur__istartswith=search_value) |
+            Q(nom_entrepot__istartswith=search_value) |
+            Q(nom_produit__istartswith=search_value) |
+            Q(numreq__istartswith=search_value)
         )
 
     # ---------- Ordering ----------
     dt_columns_to_fields = [
-        'dateheurecargaison__date',            # 0
-        'frontiere__nomville',                 # 1
-        'importateur__nomimportateur',         # 2
-        'entrepot__nomentrepot',               # 3
-        'produit__nomproduit',                 # 4
-        'volume',                               # 5
-        'immatriculation',                      # 6
-        'declaration',                          # 7
-        'numdos',                               # 8
-        'requisitiondackdate__date',           # 9
-        'entrepot_echantillon__dateechantillonage__date', # 10
-        'entrepot_echantillon__laboreception__datereceptionlabo__date', # 11
-        'impressionresultat__printDate',       # 12
-        'inspection__dateinspection',          # 13
-        'dateDechargement',                    # 14
-        'volConst',                             # 15
-        None,                                   # 16
-        'inspection__temp',                     # 17
-        None,                                   # 18
-        'mtaT',                                 # 19
-        'mtvT',                                 # 20
-        'gsvT',                                 # 21
-        None,                                   # 22
+        'dateheurecargaison',            # 0
+        'nom_frontiere',                 # 1
+        'nom_importateur',               # 2
+        'nom_entrepot',                 # 3
+        'nom_produit',                  # 4
+        'volume',                       # 5
+        'immatriculation',              # 6
+        'declaration',                  # 7
+        'numdos',                       # 8
+        'requisitiondackdate',          # 9
+        'date_echantillon',             # 10
+        'date_reception_labo',          # 11
+        'date_analyse',                 # 12
+        'date_inspection',              # 13
+        'dateDechargement',             # 14
+        'gov_total',                    # 15
+        None,                           # 16 (densite15)
+        'inspection__temp',              # 17
+        None,                           # 18 (vcf)
+        'mta_total',                    # 19
+        'mtv_total',                    # 20
+        'gsv_total',                    # 21
+        None,                           # 22 (actions)
     ]
 
     order = params.get('order') or []
@@ -268,7 +274,7 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
 
     headers = [
         'DATE ENTREE','FRONTIERE','FOURNISSEUR','ENTREPOT','PRODUIT','VOL.DECL.',
-        'IMMATR.','#.DECLARATION','#.DOSSIER','DATE REQUISITION','DATE ECHANTILLONNAGE',
+        'IMMATR.','#.DECLARATION','#.DOSSIER','NUMDOS','DATE REQUISITION','DATE ECHANTILLONNAGE',
         'DATE RECEPTION LABO','DATE D\'ANALYSE','DATE D\'INSPECTION','DATE DE DECHARGEMENT',
         'VOL JAUGE (GOV)','DENSITE @15','TEMPERATURE','VCF','MTA','MTV','GSV'
     ]
@@ -318,8 +324,8 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
             return v
 
     for row in qs.iterator(chunk_size=2000):
-        dens = _to_float(row.get('inspection__dens'))
-        temp = _to_float(row.get('inspection__temp'))
+        dens = _to_float(row.get('densite_inspection'))
+        temp = _to_float(row.get('temperature_inspection'))
         d15 = None
         vcf_val = None
         
@@ -337,29 +343,33 @@ def export_rapport_activites_task(self, params: dict, user_id: int):
                 d15 = None
                 vcf_val = None
 
+        # Dossier fallback logic
+        dossier = row.get('numdos') or row.get('numdossier') or row.get('numreq') or ''
+
         ws.append([
-            _fmt_dt(row.get('dateheurecargaison__date')),
-            row.get('frontiere__nomville'),
-            row.get('importateur__nomimportateur'),
-            row.get('entrepot__nomentrepot'),
-            row.get('produit__nomproduit'),
+            _fmt_dt(row.get('dateheurecargaison')),
+            row.get('nom_frontiere'),
+            row.get('nom_importateur'),
+            row.get('nom_entrepot'),
+            row.get('nom_produit'),
             row.get('volume'),
             row.get('immatriculation'),
             row.get('declaration'),
+            dossier,
             row.get('numdos'),
-            _fmt_dt(row.get('requisitiondackdate__date')),
-            _fmt_dt(row.get('entrepot_echantillon__dateechantillonage__date')),
-            _fmt_dt(row.get('entrepot_echantillon__laboreception__datereceptionlabo__date')),
-            _fmt_dt(row.get('impressionresultat__printDate')),
-            _fmt_dt(row.get('inspection__dateinspection')),
+            _fmt_dt(row.get('requisitiondackdate')),
+            _fmt_dt(row.get('date_echantillon')),
+            _fmt_dt(row.get('date_reception_labo')),
+            _fmt_dt(row.get('date_analyse')),
+            _fmt_dt(row.get('date_inspection')),
             _fmt_dt(row.get('dateDechargement')),
-            row.get('volConst'),
+            row.get('gov_total'),
             d15,
             temp,
             vcf_val,
-            r3(row.get('mtaT')),
-            r3(row.get('mtvT')),
-            r3(row.get('gsvT')),
+            r3(row.get('mta_total')),
+            r3(row.get('mtv_total')),
+            r3(row.get('gsv_total')),
         ])
 
         done += 1
@@ -433,31 +443,40 @@ def cleanup_old_exports(self):
 
 
 @app.task(bind=True)
-def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
+def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int = None):
     """
-    Build an Excel file for KPI details (full dataset for the current user + year).
-    Columns: DATE/HEURE, FRONTIÈRE, IMPORTATEUR, ENTREPÔT, PRODUIT, VOLUME, and
-    one KPI-specific date column label as requested by the product owner.
+    Build an Excel file for KPI details (full dataset for the current user).
+    Columns: DATE/HEURE, FRONTIÈRE, IMPORTATEUR, ENTREPÔT, PRODUIT, VOLUME, #.DOSSIER and
+    one KPI-specific date column label.
 
     Returns { file_url, file_name, expires_in_hours } on success.
     """
     from django.core.files.base import ContentFile
     from django.core.files.storage import default_storage
+    from openpyxl import Workbook
+    from enreg.models import Cargaison
+    from django.db.models import Q
 
-    # Base queryset within user scope and year
-    base = Cargaison.objects.filter(
-        entrepot__ville__affectationville__username_id=user_id,
-        dateheurecargaison__year=year
-    ).values(
+    # Base queryset within user scope
+    # Note: Removed mandatory year filter to match dashboard real-time counts
+    filters = Q(entrepot__ville__affectationville__username_id=user_id)
+    if year:
+        filters &= Q(dateheurecargaison__year=year)
+
+    base_qs = Cargaison.objects.filter(filters).values(
         'dateheurecargaison',
         'frontiere__nomville',
         'importateur__nomimportateur',
         'entrepot__nomentrepot',
         'produit__nomproduit',
         'volume',
-        'requisitiondackdate__date',
-        'entrepot_echantillon__dateechantillonage__date',
-        'entrepot_echantillon__laboreception__datereceptionlabo__date',
+        'numdos',
+        'requisitiondackdate',
+        'date_echantillon',
+        'date_reception_labo',
+        'date_analyse',
+        'date_inspection',
+        'dateDechargement',
     ).order_by('-dateheurecargaison')
 
     # Map KPI to filter and label+date field
@@ -466,24 +485,28 @@ def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
     date_key = 'dateheurecargaison'
 
     if kpi == 'attente_echantillonnage':
-        qs = base.filter(etat="En attente d'echantillonage")
+        qs = base_qs.filter(etat="En attente d'echantillonage")
         date_label = 'Date Réquisition'
-        date_key = 'requisitiondackdate__date'
+        date_key = 'requisitiondackdate'
     elif kpi == 'attente_reception_labo':
-        qs = base.filter(etat="Echantillonner")
+        qs = base_qs.filter(etat="Echantillonner")
         date_label = "Date Échantillonnage"
-        date_key = 'entrepot_echantillon__dateechantillonage__date'
+        date_key = 'date_echantillon'
     elif kpi == 'attente_resultats':
-        qs = base.filter(etat="Analyse Labo en cours")
+        qs = base_qs.filter(etat="Analyse Labo en cours")
         date_label = 'Date Réception Labo'
-        date_key = 'entrepot_echantillon__laboreception__datereceptionlabo__date'
+        date_key = 'date_reception_labo'
     elif kpi == 'attente_inspection':
-        qs = base.filter(etatInspection=True)
+        qs = base_qs.filter(etatInspection=True)
         date_label = "Date Échantillonnage"
-        date_key = 'entrepot_echantillon__dateechantillonage__date'
+        date_key = 'date_echantillon'
+    elif kpi == 'attente_dechargement':
+        qs = base_qs.filter(etat="Conforme aux exigences")
+        date_label = "Date d'Analyse"
+        date_key = 'date_analyse'
     else:
-        # total or any other -> no extra filter, use cargaison date
-        qs = base
+        # total or any other -> no extra filter
+        qs = base_qs
         date_label = 'Date Cargaison'
         date_key = 'dateheurecargaison'
 
@@ -493,7 +516,7 @@ def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
     ws.title = 'KPI'
 
     headers = [
-        'DATE/HEURE', 'FRONTIÈRE', 'IMPORTATEUR', 'ENTREPÔT', 'PRODUIT', 'VOLUME', date_label
+        'DATE/HEURE', 'FRONTIÈRE', 'IMPORTATEUR', 'ENTREPÔT', 'PRODUIT', 'VOLUME', '#.DOSSIER', date_label
     ]
     ws.append(headers)
 
@@ -501,9 +524,11 @@ def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
         if not v:
             return ''
         try:
-            # Support datetime/date/str
             if hasattr(v, 'strftime'):
-                return v.strftime('%Y-%m-%d %H:%M')
+                from django.utils import timezone as _tz
+                if isinstance(v, datetime.datetime) and _tz.is_aware(v):
+                    v = _tz.localtime(v)
+                return v.strftime('%d/%m/%Y %H:%M')
             return str(v)
         except Exception:
             return str(v)
@@ -511,26 +536,26 @@ def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
     total = qs.count()
     done = 0
 
-    # Iterate in chunks to avoid memory spikes
-    chunk_size = 2000
-    for start in range(0, total, chunk_size):
-        for row in qs[start:start+chunk_size]:
-            ws.append([
-                _fmt_dt(row.get('dateheurecargaison')),
-                row.get('frontiere__nomville') or '',
-                row.get('importateur__nomimportateur') or '',
-                row.get('entrepot__nomentrepot') or '',
-                row.get('produit__nomproduit') or '',
-                row.get('volume') if row.get('volume') is not None else '',
-                _fmt_dt(row.get(date_key)),
-            ])
+    # Use iterator for memory efficiency on large exports
+    for row in qs.iterator(chunk_size=2000):
+        ws.append([
+            _fmt_dt(row.get('dateheurecargaison')),
+            row.get('frontiere__nomville') or '',
+            row.get('importateur__nomimportateur') or '',
+            row.get('entrepot__nomentrepot') or '',
+            row.get('produit__nomproduit') or '',
+            row.get('volume') if row.get('volume') is not None else '',
+            row.get('numdos') or '',
+            _fmt_dt(row.get(date_key)),
+        ])
 
-            done += 1
-            if done % 1000 == 0:
-                try:
-                    self.update_state(state='PROGRESS', meta={'total': total, 'done': done, 'percent': round(done/max(total,1)*100,2)})
-                except Exception:
-                    pass
+        done += 1
+        if done % 1000 == 0 or done == total:
+            try:
+                percent = round(done / max(total, 1) * 100, 2)
+                self.update_state(state='PROGRESS', meta={'total': total, 'done': done, 'percent': percent})
+            except Exception:
+                pass
 
     # Save to storage
     now_dt = timezone.now()
@@ -539,17 +564,14 @@ def export_kpi_details_to_excel(self, user_id: int, kpi: str, year: int):
     file_name = f"kpi_{safe_kpi}_{now}.xlsx"
     file_path = f"xlsx/kpi/{now_dt.strftime('%Y')}/{now_dt.strftime('%m')}/{file_name}"
 
-    content = io.BytesIO()
+    import io as _io
+    content = _io.BytesIO()
     wb.save(content)
     content.seek(0)
     default_storage.save(file_path, ContentFile(content.read()))
     file_url = default_storage.url(file_path)
 
-    return {
-        'file_url': file_url,
-        'file_name': file_name,
-        'expires_in_hours': 24,
-    }
+    return {'file_url': file_url, 'file_name': file_name, 'expires_in_hours': 24}
 
 
 

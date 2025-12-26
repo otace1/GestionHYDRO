@@ -260,6 +260,7 @@ class SyntheseEncaissement(tables.Table):
 
 
 class RapportBrut(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOSSIER")
     idcargaison = tables.Column(visible=False)
     dateheurecargaison__date = tables.Column(verbose_name="DATE ENTREE")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE")
@@ -296,6 +297,7 @@ class RapportBrut(tables.Table):
 
 
 class RapportBrutJournalier(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOSSIER")
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE D'ENT.")
     declaration = tables.Column(verbose_name='N.T1E')
@@ -314,6 +316,7 @@ class RapportBrutJournalier(tables.Table):
 
 
 class RapportBrutJournalierEchantillonnage(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOSSIER")
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     frontiere = tables.Column(verbose_name="FRONTIERE D'ENT.")
     declaration = tables.Column(verbose_name='N.T1E')
@@ -332,6 +335,7 @@ class RapportBrutJournalierEchantillonnage(tables.Table):
 
 
 class RapportBrutJournalierAnalyse(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOSSIER")
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE D'ENT.")
     declaration = tables.Column(verbose_name='N.T1E')
@@ -352,6 +356,7 @@ class RapportBrutJournalierAnalyse(tables.Table):
 
 
 class RapportBrutJournalierInspection(tables.Table):
+    numdos = tables.Column(verbose_name="#.DOSSIER")
     dateheurecargaison = tables.Column(verbose_name="DATE ENT.")
     frontiere__nomville = tables.Column(verbose_name="FRONTIERE D'ENT.")
     declaration = tables.Column(verbose_name='N.T1E')

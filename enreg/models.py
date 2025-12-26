@@ -66,7 +66,7 @@ class Importateur(models.Model):
     nomimportateur = models.CharField(max_length=100, db_index=True)
     adresseimportateur = models.CharField(max_length=100, blank=True)
     nifimportateur = models.CharField(max_length=100, blank=True)
-    email = models.EmailField(blank=True,null=True)
+    email = models.EmailField(blank=True, null=True)
 
     def __str__(self):
         return self.nomimportateur
@@ -108,12 +108,15 @@ class Cargaison(models.Model):
     provenance = CountryField(blank_label='(Selectionner le pays)', verbose_name='Provenance')
     entrepot = models.ForeignKey(Entrepot, on_delete=models.PROTECT, verbose_name='Entrepot')
     volume = models.FloatField(verbose_name='Volume')
-    immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation', db_index=True)
+    immatriculation = models.CharField(max_length=200, blank=True, null=True, verbose_name='Immatriculation',
+                                       db_index=True)
     dateheurecargaison = models.DateTimeField(auto_now_add=True, verbose_name='Date et heure', db_index=True)
     qrcode = models.CharField(max_length=250, default='NULL')
     etat = models.CharField(max_length=250, default='NULL', db_index=True)
-    numdossier = models.CharField(max_length=30, null=True, blank=True, verbose_name="Numéro Dossier Hydro", db_index=True)
-    codecargaison = models.CharField(max_length=30, null=True, blank=True, verbose_name="Codification Hydro", db_index=True)
+    numdossier = models.CharField(max_length=30, null=True, blank=True, verbose_name="Numéro Dossier Hydro",
+                                  db_index=True)
+    codecargaison = models.CharField(max_length=30, null=True, blank=True, verbose_name="Codification Hydro",
+                                     db_index=True)
     numact = models.IntegerField(null=True, blank=True, verbose_name="Numéro ACT", db_index=True)
     numCertInspection = models.IntegerField(null=True)
     conformite = models.CharField(max_length=30, blank=True, null=True, verbose_name='DECISION LABO')
@@ -139,25 +142,23 @@ class Cargaison(models.Model):
     tonnagevide = models.FloatField(blank=True, null=True)
     tonnageair = models.FloatField(blank=True, null=True)
 
-
     # Shore Inspection
     before = models.BooleanField(default=0, verbose_name='SHORE BEFORE')
     after = models.BooleanField(default=0, verbose_name='SHORE AFTER')
 
     # Champ ajouter apres la mission de l'EST
-    declaration = models.CharField(max_length=255, blank=True, null=True, db_index=True)  #Numero de declaration
+    declaration = models.CharField(max_length=255, blank=True, null=True, db_index=True)  # Numero de declaration
 
-    transitaire = models.CharField(max_length=255, blank=True, null=True)  #Transitaire
+    transitaire = models.CharField(max_length=255, blank=True, null=True)  # Transitaire
 
-
-    #Champ de control pour l'inspection
+    # Champ de control pour l'inspection
     etatInspection = models.BooleanField(default=False, db_index=True)
 
-    #Date et heure d'analyse
-    dateHeureAnalyseLabo = models.DateTimeField(blank=True,null=True)
-    dateDechargement = models.DateTimeField(blank=True,null=True)
+    # Date et heure d'analyse
+    dateHeureAnalyseLabo = models.DateTimeField(blank=True, null=True)
+    dateDechargement = models.DateTimeField(blank=True, null=True)
 
-    #For the Consignation
+    # For the Consignation
     toBeRefouler = models.BooleanField(default=False)
     toBeConsignated = models.BooleanField(default=False)
     isConsignated = models.BooleanField(default=False)
@@ -165,10 +166,10 @@ class Cargaison(models.Model):
 
     # True or False, is True if the file is liquidatetd totally, and stay false otherwise
     controlLiquidation = models.BooleanField(default=False)
-    partialLiquidattion = models.BooleanField(default=False) # change based on the type of paiement
+    partialLiquidattion = models.BooleanField(default=False)  # change based on the type of paiement
 
-    #File path saving
-    files_path = models.CharField(blank=True,null=True, max_length=256)
+    # File path saving
+    files_path = models.CharField(blank=True, null=True, max_length=256)
 
     # Denormalized fields
     nom_importateur = models.CharField(max_length=255, blank=True, null=True, db_index=True)
@@ -225,7 +226,6 @@ class Cargaison(models.Model):
         return reverse('update', kwargs={'pk': self.idcargaison})
 
 
-
 class Entrepot_echantillon(models.Model):
     idcargaison = models.OneToOneField(Cargaison, on_delete=models.PROTECT, primary_key=True)
     numrappech = models.CharField(max_length=256, verbose_name="Rapport d'Echantillonage", blank=True, null=True)
@@ -245,12 +245,12 @@ class Entrepot_echantillon(models.Model):
             self.idcargaison.save(update_fields=['date_echantillon'])
 
 
-
 class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.PROTECT, primary_key=True)
-    numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True, db_index=True)
+    numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True,
+                                               db_index=True)
     codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ", db_index=True)
-    datereceptionlabo = models.DateTimeField(blank=True,null=True, db_index=True)
+    datereceptionlabo = models.DateTimeField(blank=True, null=True, db_index=True)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -404,6 +404,7 @@ class Paiement(models.Model):
 class LiquidationModel(models.Model):
     idLiquidationMod = models.AutoField(primary_key=True, auto_created=True)
     liquidationModel = models.CharField(max_length=64, blank=True)
+
     def __str__(self):
         return self.liquidationModel
 
@@ -418,7 +419,7 @@ class Liquidation(models.Model):
     codebureau = models.ForeignKey(BureauDGDA, on_delete=models.PROTECT, verbose_name='Code Bureau')
     modele = models.ForeignKey(LiquidationModel, on_delete=models.PROTECT, null=True)
     vol_liq = models.DecimalField(max_digits=32, decimal_places=4, blank=True)
-    type_appurement = models.CharField(max_length=32,blank=True,null=True)
+    type_appurement = models.CharField(max_length=32, blank=True, null=True)
     user = models.CharField(max_length=32, blank=True, null=True)
 
     class Meta:
@@ -480,7 +481,7 @@ class Compartiment(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
     compart = models.CharField(max_length=32, blank=True, verbose_name='DENOM. COMPARTIMENT')
     sealstate = models.ForeignKey(SealState, on_delete=models.PROTECT, verbose_name='SEAL STATE')
-    sealNumber = models.CharField(max_length=30,blank=True,null=True,verbose_name='SEAL NUMBER')
+    sealNumber = models.CharField(max_length=30, blank=True, null=True, verbose_name='SEAL NUMBER')
     # produit = models.ForeignKey(Produit, on_delete=models.PROTECT, verbose_name='PRODUIT')
     innage = models.FloatField(null=True, blank=True, verbose_name='INNAGE')
     gov = models.FloatField(null=True, verbose_name='GOV JAUGE')
@@ -595,39 +596,41 @@ class ShoreAfter(models.Model):
 
 class ControlNatureProduit(models.Model):
     idcontrol = models.AutoField(primary_key=True, auto_created=True)
-    idcargaison = models.ForeignKey(Cargaison,on_delete=models.PROTECT, blank=True, null=True)
-    natureProduitEntrepot = models.CharField(max_length=20,blank=True, null=True)
-    natureProduitLabo = models.CharField(max_length=20,blank=True, null=True)
-    userEntrepot = models.IntegerField(blank=True,null=True)
+    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT, blank=True, null=True)
+    natureProduitEntrepot = models.CharField(max_length=20, blank=True, null=True)
+    natureProduitLabo = models.CharField(max_length=20, blank=True, null=True)
+    userEntrepot = models.IntegerField(blank=True, null=True)
     userLabo = models.IntegerField(blank=True, null=True)
     conformiteProduit = models.BooleanField(default=True)
-    correctionNature = models.CharField(max_length=20,blank=True,null=True)
-    userHydro = models.IntegerField(blank=True,null=True)
+    correctionNature = models.CharField(max_length=20, blank=True, null=True)
+    userHydro = models.IntegerField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now=True, blank=True, null=True)
 
 
 class ParametresProduits(models.Model):
     idParametre = models.AutoField(primary_key=True, auto_created=True)
-    nomParametre = models.CharField(max_length=64,blank=True,null=True)
+    nomParametre = models.CharField(max_length=64, blank=True, null=True)
 
     def __str__(self):
         return self.nomParametre
 
+
 class AffectationParametre(models.Model):
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
     idproduit = models.ForeignKey(Produit, on_delete=models.PROTECT)
-    valeurMin = models.FloatField(blank=True,null=True)
-    valeurMax = models.FloatField(blank=True,null=True)
+    valeurMin = models.FloatField(blank=True, null=True)
+    valeurMax = models.FloatField(blank=True, null=True)
 
     class Meta:
         unique_together = ('idParametre', 'idproduit')
+
 
 class ResultatAnalyse(models.Model):
     idResultatAnalyse = models.AutoField(primary_key=True, auto_created=True)
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
     idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT, db_index=True)
-    valeurResultat = models.FloatField(blank=True,null=True)
-    valeurResultatChar = models.CharField(max_length=64,blank=True,null=True)
+    valeurResultat = models.FloatField(blank=True, null=True)
+    valeurResultatChar = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
         unique_together = ('idcargaison', 'idParametre')
@@ -639,17 +642,8 @@ class ResultatAnalyse(models.Model):
 
 class ImpressionResultat(models.Model):
     idImpression = models.AutoField(primary_key=True, auto_created=True)
-    idcargaison = models.ForeignKey(Cargaison,on_delete=models.PROTECT)
-    printDate = models.DateField(auto_now_add=True,blank=True,null=True)
-    isConforme = models.BooleanField(null=True,blank=True)
-    isPrinted = models.BooleanField(null=True,blank=True)
+    idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
+    printDate = models.DateField(auto_now_add=True, blank=True, null=True)
+    isConforme = models.BooleanField(null=True, blank=True)
+    isPrinted = models.BooleanField(null=True, blank=True)
     control = models.BooleanField(default=0)
-
-
-
-
-
-
-
-
-

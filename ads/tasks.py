@@ -1,6 +1,6 @@
+from celery import shared_task
 
-
-    #     # # Define the media directory
+#     # # Define the media directory
     #     # media_dir = os.path.join("/vol/web/media", 'xlsx')
     #     # os.makedirs(media_dir, exist_ok=True)  # Ensure the directory exists\
     #
@@ -63,7 +63,9 @@ def exportLargeDataSet(export_format, queryset_data, request=None):
         return {'error': str(e)}
 
 
-@app.task(bind=True)
+
+
+@shared_task(bind=True)
 def exportRapportBrutExcel(self, params: dict):
     """
     Build the queryset using provided filters, stream an Excel file, report progress,
@@ -71,46 +73,55 @@ def exportRapportBrutExcel(self, params: dict):
 
     Expected params keys:
       - date_from, date_to (YYYY-MM-DD or date-like)
-      - entrepot_ville_id (int) — filters by entrepot__ville__idville
+      - entrepot_ville_id (int) — filters by frontiere_id (denormalized frontiere)
       - importateur (int), entrepot (int), produit (int)
       - immatriculation (str), declaration (str), numdos (str) — optional icontains filters
     """
     try:
         # Lazy imports to avoid heavy initialization at worker start
-        from django.db.models import Q, Sum, Case, When, FloatField
-        from django.db.models.functions import Round
+        from django.db.models import Q
         from django.utils import timezone
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
         from openpyxl import Workbook
         from enreg.models import Cargaison
 
         def g(key, default=None):
             return params.get(key, default)
 
-        # Build base queryset (match columns used in the existing view)
-        qs = Cargaison.objects.annotate(
-            volJauge=Round(Sum('inspection__compartiment__gov'), 3),
-            gsvJauge=Round(Sum('inspection__compartiment__gsv'), 3),
-            govMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__govmeter'), 3),
-            gsvMeter=Round(Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter'), 3),
-            mtaTotal=Round(Sum('inspection__compartiment__mta'), 3),
-            mtvTotal=Round(Sum('inspection__compartiment__mtv'), 3),
-            fraisOcc=Case(
-                When(entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter__isnull=True,
-                     then=Sum('inspection__compartiment__gsv') * 11),
-                default=Sum('entrepot_echantillon__laboreception__resultat__dechargement__gsvmeter') * 11,
-                output_field=FloatField()
-            ),
-        ).annotate(fraisOcc_rounded=Round('fraisOcc', 2)).values(
-            'requisitiondackdate__date', 'dateDechargement__date', 'inspection__compartiment__vcf',
-            'idcargaison', 'dateheurecargaison__date', 'requisitiondackdate', 'importateur__nomimportateur',
-            'entrepot__nomentrepot', 'entrepot_echantillon__laboreception__datereceptionlabo__date',
-            'entrepot_echantillon__dateechantillonage__date', 'frontiere__nomville', 'immatriculation',
-            'produit__nomproduit', 'declaration', 'volume', 'inspection__temp', 'impressionresultat__printDate',
-            'inspection__dens', 'inspection__dateinspection__date', 'volJauge', 'gsvJauge', 'govMeter', 'gsvMeter',
-            'mtaTotal', 'mtvTotal', 'fraisOcc_rounded',
+        # -------------------------
+        # Base queryset (denormalized fields)
+        # -------------------------
+        qs = Cargaison.objects.all().values(
+            'idcargaison',
+            'numdos',                # ✅ keep for Excel "#.DOSSIER"
+            'numdossier',
+            'numreq',
+            'declaration',
+            'nom_frontiere',
+            'nom_entrepot',
+            'nom_importateur',
+            'immatriculation',
+            'nom_produit',
+            'dateheurecargaison',
+            'requisitiondackdate',
+            'date_echantillon',
+            'date_reception_labo',
+            'date_analyse',
+            'date_inspection',
+            'dateDechargement',
+            'volume',
+            'gov_total',
+            'gsv_total',
+            'mta_total',
+            'mtv_total',
+            'densite_inspection',
+            'temperature_inspection',
         )
 
-        # Build filters strictly as specified (no direct frontiere filtering)
+        # -------------------------
+        # Filters
+        # -------------------------
         adv = Q()
 
         date_from = g('date_from')
@@ -125,11 +136,15 @@ def exportRapportBrutExcel(self, params: dict):
         v_id = g('entrepot_ville_id')
         if v_id is not None and str(v_id).strip() != '':
             try:
-                adv &= Q(entrepot__ville__idville=int(v_id))
+                # Use denormalized frontiere_id for performance
+                adv &= Q(frontiere_id=int(v_id))
             except Exception:
                 pass
 
         for key, field in [
+            ('produit_id', 'produit_id'),
+            ('importateur_id', 'importateur_id'),
+            ('entrepot_id', 'entrepot_id'),
             ('produit', 'produit_id'),
             ('importateur', 'importateur_id'),
             ('entrepot', 'entrepot_id'),
@@ -141,20 +156,31 @@ def exportRapportBrutExcel(self, params: dict):
             except Exception:
                 pass
 
-        # Optional text filters (icontains)
+        # Optional text filters
         for key, field in [
             ('immatriculation', 'immatriculation__icontains'),
             ('declaration', 'declaration__icontains'),
-            ('numdos', 'numdos__icontains'),
         ]:
             val = g(key)
             if isinstance(val, str) and val.strip():
                 adv &= Q(**{field: val.strip()})
 
+        # Safe filter for dossier (search across multiple potential fields)
+        numdos_val = g('numdos')
+        if numdos_val:
+            s_num = str(numdos_val).strip()
+            if s_num:
+                d_q = Q(numdossier__icontains=s_num) | Q(numreq__icontains=s_num)
+                if s_num.isdigit():
+                    d_q |= Q(numdos=int(s_num))
+                adv &= d_q
+
         if adv:
             qs = qs.filter(adv)
 
-        # Prepare workbook
+        # -------------------------
+        # Workbook
+        # -------------------------
         wb = Workbook(write_only=True)
         ws = wb.create_sheet('Rapport')
         try:
@@ -163,6 +189,7 @@ def exportRapportBrutExcel(self, params: dict):
         except Exception:
             pass
 
+        # ✅ removed duplicated "NUMDOS" column
         headers = [
             'DATE ENTREE','FRONTIERE','FOURNISSEUR','ENTREPOT','PRODUIT','VOL.DECL.',
             'IMMATR.','#.DECLARATION','#.DOSSIER','DATE REQUISITION','DATE ECHANTILLONNAGE',
@@ -174,7 +201,7 @@ def exportRapportBrutExcel(self, params: dict):
         total = qs.count()
         done = 0
 
-        from shydro.views import densite15, vcf  # assuming these helpers exist as per prior code references
+        from entrepot.calculs import densite15, vcf
         from django.utils import timezone as _tz
 
         def _fmt_dt(val):
@@ -203,59 +230,82 @@ def exportRapportBrutExcel(self, params: dict):
             except Exception:
                 return None
 
-        for row in qs.iterator(chunk_size=1000):
-            dens = _to_float(row.get('inspection__dens'))
-            temp = _to_float(row.get('inspection__temp'))
+        def r3(v):
+            try:
+                return round(float(v), 3) if v is not None else None
+            except Exception:
+                return v
+
+        # -------------------------
+        # Iterate rows
+        # -------------------------
+        for row in qs.iterator(chunk_size=2000):
+            dens = _to_float(row.get('densite_inspection'))
+            temp = _to_float(row.get('temperature_inspection'))
+            gov = _to_float(row.get('gov_total')) or 0
+            gsv_val = _to_float(row.get('gsv_total')) or 0
+
             d15 = None
             vcf_val = None
             try:
                 if dens is not None and temp is not None:
                     d15 = densite15(temp, dens)
-                    vcf_val = vcf(d15 if d15 is not None else dens, temp)
+                    if d15 is not None:
+                        vcf_val = vcf(d15, temp)
+                        d15 = round(float(d15), 5)
+                    if vcf_val is not None:
+                        vcf_val = round(float(vcf_val), 6)
+                elif gov > 0 and gsv_val > 0:
+                    vcf_val = round(gsv_val / gov, 6)
             except Exception:
-                d15 = None
-                vcf_val = None
+                pass
 
-            def r3(v):
-                try:
-                    return round(float(v), 3) if v is not None else None
-                except Exception:
-                    return v
+            # ✅ "#.DOSSIER" must take value of numdos only
+            db_numdos = row.get('numdos')
+            dossier = '' if db_numdos is None else str(db_numdos)
 
             ws.append([
-                _fmt_dt(row.get('dateheurecargaison__date')),
-                row.get('frontiere__nomville'),
-                row.get('importateur__nomimportateur'),
-                row.get('entrepot__nomentrepot'),
-                row.get('produit__nomproduit'),
+                _fmt_dt(row.get('dateheurecargaison')),
+                row.get('nom_frontiere'),
+                row.get('nom_importateur'),
+                row.get('nom_entrepot'),
+                row.get('nom_produit'),
                 row.get('volume'),
                 row.get('immatriculation'),
                 row.get('declaration'),
-                row.get('numdos'),
-                _fmt_dt(row.get('requisitiondackdate__date')),
-                _fmt_dt(row.get('entrepot_echantillon__dateechantillonage__date')),
-                _fmt_dt(row.get('entrepot_echantillon__laboreception__datereceptionlabo__date')),
-                _fmt_dt(row.get('impressionresultat__printDate')),
-                _fmt_dt(row.get('inspection__dateinspection__date')),
-                _fmt_dt(row.get('dateDechargement__date')),
-                row.get('volJauge'),
+
+                # ✅ only one dossier column
+                dossier,
+
+                _fmt_dt(row.get('requisitiondackdate')),
+                _fmt_dt(row.get('date_echantillon')),
+                _fmt_dt(row.get('date_reception_labo')),
+                _fmt_dt(row.get('date_analyse')),
+                _fmt_dt(row.get('date_inspection')),
+                _fmt_dt(row.get('dateDechargement')),
+                row.get('gov_total'),
                 d15,
                 temp,
                 vcf_val,
-                r3(row.get('mtaTotal')),
-                r3(row.get('mtvTotal')),
-                r3(row.get('gsvJauge')),
+                r3(row.get('mta_total')),
+                r3(row.get('mtv_total')),
+                r3(row.get('gsv_total')),
             ])
 
             done += 1
             if done % 1000 == 0 or done == total:
                 try:
                     percent = round((done / max(total, 1)) * 100, 2)
-                    self.update_state(state='PROGRESS', meta={'total': total, 'done': done, 'percent': percent})
+                    self.update_state(
+                        state='PROGRESS',
+                        meta={'total': total, 'done': done, 'percent': percent}
+                    )
                 except Exception:
                     pass
 
+        # -------------------------
         # Save to storage
+        # -------------------------
         now_dt = timezone.now()
         now = now_dt.strftime('%Y%m%d%H%M%S')
         file_name = f"rapport_brut_{now}.xlsx"
@@ -265,10 +315,13 @@ def exportRapportBrutExcel(self, params: dict):
         content = _io.BytesIO()
         wb.save(content)
         content.seek(0)
+
         default_storage.save(file_path, ContentFile(content.read()))
         file_url = default_storage.url(file_path)
 
         return {'file_url': file_url, 'file_name': file_name}
 
     except Exception as e:
+        # Let Celery mark the task as FAILURE by raising if you prefer,
+        # but keeping your current pattern:
         return {'error': str(e)}

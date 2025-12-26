@@ -179,6 +179,24 @@
                     </select>
                   </div>
                 </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="id_immatriculation">Immatriculation</label>
+                    <input type="text" class="form-control" id="id_immatriculation" name="immatriculation" placeholder="Ex: ABC-123">
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="id_declaration">Déclaration</label>
+                    <input type="text" class="form-control" id="id_declaration" name="declaration" placeholder="# Déclaration">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="id_numdos">Dossier</label>
+                    <input type="text" class="form-control" id="id_numdos" name="numdos" placeholder="# Dossier">
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -389,14 +407,13 @@
       </div>
     </div>
 
-    <!-- Latest Records (ONLY ONE card + ONE table ID) -->
+    <!-- Latest Records -->
     <div class="card card-outline card-info card-elevate card-animated mb-4" id="latest-records-card">
       <div class="card-header d-flex align-items-center justify-content-between latest-header">
         <div class="d-flex align-items-center">
           <span class="icon-pill bg-info"><i class="fas fa-clock"></i></span>
           <div class="ml-2">
             <h3 class="card-title font-weight-bold mb-0">Derniers enregistrements</h3>
-{#            <small class="text-muted d-block">Mises à jour en temps réel via le serveur</small>#}
           </div>
         </div>
 
@@ -404,12 +421,6 @@
           <button type="button" class="btn btn-tool btn-tool-rounded" id="btn-refresh-latest" title="Rafraîchir">
             <i class="fas fa-rotate-right"></i>
           </button>
-{#          <button type="button" class="btn btn-tool btn-tool-rounded" data-card-widget="collapse" title="Réduire">#}
-{#            <i class="fas fa-minus"></i>#}
-{#          </button>#}
-{#          <button type="button" class="btn btn-tool btn-tool-rounded" data-card-widget="remove" title="Fermer">#}
-{#            <i class="fas fa-times"></i>#}
-{#          </button>#}
         </div>
       </div>
 
@@ -522,6 +533,12 @@
     // ==========================
     // Helpers
     // ==========================
+    function getCookie(name){
+      var value = "; " + document.cookie;
+      var parts = value.split("; " + name + "=");
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
     function setLatestLoading(show){
       const el = document.getElementById('latest-loading');
       if(!el) return;
@@ -535,12 +552,6 @@
       el.textContent = "Dernière actualisation: " + now.toLocaleString();
     }
 
-    function getCookie(name){
-      var value = "; " + document.cookie;
-      var parts = value.split("; " + name + "=");
-      if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
     // ==========================
     // Chart (Chart.js v4)
     // ==========================
@@ -548,9 +559,9 @@
       const el = document.getElementById('myChart');
       if(!el || !window.Chart) return;
 
-      const gasoil = Number("{{ gasoilVolume|default:0 }}") || 0;
-      const mogas = Number("{{ mogasVolume|default:0 }}") || 0;
-      const jet = Number("{{ jetVolume|default:0 }}") || 0;
+      const gasoil  = Number("{{ gasoilVolume|default:0 }}")  || 0;
+      const mogas   = Number("{{ mogasVolume|default:0 }}")   || 0;
+      const jet     = Number("{{ jetVolume|default:0 }}")     || 0;
       const petrole = Number("{{ petroleVolume|default:0 }}") || 0;
 
       new Chart(el, {
@@ -573,19 +584,15 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true }
-          },
-          plugins: {
-            legend: { display: true }
-          }
+          scales: { y: { beginAtZero: true } },
+          plugins: { legend: { display: true } }
         }
       });
 
       // Progress bars
-      const gasoilPct = Number("{{ gasoilPercentage|default:0 }}") || 0;
-      const mogasPct = Number("{{ mogasPercentage|default:0 }}") || 0;
-      const jetPct = Number("{{ jetPercentage|default:0 }}") || 0;
+      const gasoilPct  = Number("{{ gasoilPercentage|default:0 }}")  || 0;
+      const mogasPct   = Number("{{ mogasPercentage|default:0 }}")   || 0;
+      const jetPct     = Number("{{ jetPercentage|default:0 }}")     || 0;
       const petrolePct = Number("{{ petrolePercentage|default:0 }}") || 0;
 
       $('#progress-gasoil').css('width', gasoilPct + '%');
@@ -734,33 +741,36 @@
 
           _filtersLoaded = true;
 
-          $('#id_entite').off('change._entite_dep').on('change._entite_dep', function(){
-            var selectedVille = $(this).val();
-            var $entrepot = $('#id_entrepot');
-            $entrepot.val('');
+          $('#id_entite')
+            .off('change._entite_dep')
+            .on('change._entite_dep', function(){
+              var selectedVille = $(this).val();
+              var $entrepot = $('#id_entrepot');
+              $entrepot.val('');
 
-            if(!selectedVille){
-              populateSelect($entrepot, _allEntrepots, 'id', 'label');
-              return;
-            }
+              if(!selectedVille){
+                populateSelect($entrepot, _allEntrepots, 'id', 'label');
+                return;
+              }
 
-            var filtered = _allEntrepots.filter(function(e){
-              var vId = (e && (e.ville_id != null ? e.ville_id : e.frontiere_id));
-              return String(vId) === String(selectedVille);
+              var filtered = _allEntrepots.filter(function(e){
+                var vId = (e && (e.ville_id != null ? e.ville_id : e.frontiere_id));
+                return String(vId) === String(selectedVille);
+              });
+
+              populateSelect($entrepot, filtered, 'id', 'label');
             });
-
-            populateSelect($entrepot, filtered, 'id', 'label');
-          });
         },
         error: function(xhr){ console.error('filterOptions error:', xhr && xhr.responseText); }
       });
     });
 
     // ==========================
-    // Export Toast + Polling (kept as you had)
+    // Export Toast + Polling
     // ==========================
     function ensureExportToast(){
       if($('#export-toast').length) return;
+
       var html = ''+
         '<div aria-live="polite" aria-atomic="true" style="position: fixed; bottom: 1rem; right: 1rem; z-index: 1080;">'+
         '  <div class="toast" id="export-toast" data-delay="0" role="status" aria-live="assertive" aria-atomic="true">'+
@@ -779,25 +789,34 @@
         '    </div>'+
         '  </div>'+
         '</div>';
+
       $('body').append(html);
       $('#export-toast').toast({ autohide: false }).toast('show');
     }
 
     function updateExportToast(opts){
       var percent = Math.max(0, Math.min(100, Math.floor((opts && opts.percent) || 0)));
-      var state = (opts && opts.state) || 'PENDING';
-      var text = (opts && opts.text) || '';
-      var $bar = $('#export-toast-bar');
-      var $txt = $('#export-toast-text');
+      var state   = (opts && opts.state) || 'PENDING';
+      var text    = (opts && opts.text) || '';
+
+      var $bar   = $('#export-toast-bar');
+      var $txt   = $('#export-toast-text');
       var $small = $('#export-toast-small');
-      var $err = $('#export-toast-error');
+      var $err   = $('#export-toast-error');
 
       $bar.css('width', percent + '%').attr('aria-valuenow', percent);
       if(text) $txt.text(text);
-      $small.text(state === 'SUCCESS' ? 'Terminé' : (state === 'FAILURE' ? 'Échec' : 'En cours…'));
 
-      if(opts && opts.error){ $err.text(opts.error).show(); }
-      else { $err.hide().text(''); }
+      $small.text(
+        state === 'SUCCESS' ? 'Terminé' :
+        state === 'FAILURE' ? 'Échec' : 'En cours…'
+      );
+
+      if(opts && opts.error){
+        $err.text(opts.error).show();
+      } else {
+        $err.hide().text('');
+      }
     }
 
     function startExport(payload){
@@ -826,10 +845,14 @@
 
             if(state === 'PENDING' || state === 'PROGRESS'){
               var progress = data.progress;
+
               if(progress == null && data.meta){
                 var m = data.meta;
-                progress = (m.percent != null) ? m.percent : Math.floor((m.done||0) / Math.max((m.total||1),1) * 100);
+                progress = (m.percent != null)
+                  ? m.percent
+                  : Math.floor((m.done||0) / Math.max((m.total||1),1) * 100);
               }
+
               progress = Math.max(0, Math.min(100, Math.floor(progress || 0)));
               updateExportToast({ percent: progress, text: 'Export en cours… ' + progress + '%', state: state });
               setTimeout(tick, 1000);
@@ -838,6 +861,7 @@
 
             if(state === 'SUCCESS'){
               updateExportToast({ percent: 100, text: 'Export terminé !', state: 'SUCCESS' });
+
               var res = data.result || {};
               if(res.file_url){
                 var a = document.createElement('a');
@@ -847,21 +871,42 @@
                 a.click();
                 document.body.removeChild(a);
               }
+
               setTimeout(function(){ $('#export-toast').toast('hide'); }, 2000);
               return;
             }
 
-            updateExportToast({ percent: 100, text: "Échec de l'export", state: 'FAILURE', error: data.error || 'Erreur inconnue.' });
+            updateExportToast({
+              percent: 100,
+              text: "Échec de l'export",
+              state: 'FAILURE',
+              error: data.error || 'Erreur inconnue.'
+            });
           })
           .catch(function(e){
-            updateExportToast({ percent: 100, text: 'Erreur lors du suivi', state: 'FAILURE', error: e.message || 'Erreur inconnue' });
+            updateExportToast({
+              percent: 100,
+              text: 'Erreur lors du suivi',
+              state: 'FAILURE',
+              error: e.message || 'Erreur inconnue'
+            });
           });
       }
       tick();
     }
 
+    // ✅ Submit: close modal immediately + launch export
     $('#rapport-form').on('submit', function(ev){
       ev.preventDefault();
+
+      {#// Close the modal right away#}
+      {#$('#modal-rapport').modal('hide');#}
+
+      // Safety cleanup (avoids stuck backdrop sometimes)
+      $('#modal-rapport').one('hidden.bs.modal', function(){
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
+      });
 
       var $btn = $('#btn-generate-rapport');
       $btn.prop('disabled', true).addClass('disabled');
@@ -875,14 +920,18 @@
         entrepot_ville_id: params.entite || '',
         importateur: params.importateur || '',
         entrepot: params.entrepot || '',
-        produit: params.produit || ''
+        produit: params.produit || '',
+        immatriculation: params.immatriculation || '',
+        declaration: params.declaration || '',
+        numdos: params.numdos || ''
       };
+
+      ensureExportToast();
+      updateExportToast({ percent: 0, text: 'Export en cours… 0%', state: 'PENDING' });
 
       startExport(payload)
         .then(function(data){
           if(data && data.task_id){
-            $('#modal-rapport').modal('hide');
-            updateExportToast({ percent: 0, text: 'Export en cours… 0%', state: 'PENDING' });
             pollProgress(data.task_id);
           } else {
             throw new Error('Aucun task_id retourné.');
@@ -890,10 +939,17 @@
         })
         .catch(function(err){
           ensureExportToast();
-          updateExportToast({ percent: 100, text: "Erreur de démarrage", state: 'FAILURE', error: err.message || '' });
+          updateExportToast({
+            percent: 100,
+            text: "Erreur de démarrage",
+            state: 'FAILURE',
+            error: err.message || ''
+          });
         })
         .finally(function(){
-          setTimeout(function(){ $btn.prop('disabled', false).removeClass('disabled'); }, 800);
+          setTimeout(function(){
+            $btn.prop('disabled', false).removeClass('disabled');
+          }, 800);
         });
     });
 
