@@ -51,7 +51,7 @@ class Voie(models.Model):
 
 class Ville(models.Model):
     idville = models.AutoField(primary_key=True, auto_created=True)
-    nomville = models.CharField(max_length=30)
+    nomville = models.CharField(max_length=30, db_index=True)
     province = models.CharField(max_length=30)
 
     def __str__(self):
@@ -63,7 +63,7 @@ class Ville(models.Model):
 
 class Importateur(models.Model):
     idimportateur = models.AutoField(primary_key=True, auto_created=True)
-    nomimportateur = models.CharField(max_length=100)
+    nomimportateur = models.CharField(max_length=100, db_index=True)
     adresseimportateur = models.CharField(max_length=100, blank=True)
     nifimportateur = models.CharField(max_length=100, blank=True)
     email = models.EmailField(blank=True,null=True)
@@ -77,7 +77,7 @@ class Importateur(models.Model):
 
 class Entrepot(models.Model):
     identrepot = models.AutoField(primary_key=True, auto_created=True)
-    nomentrepot = models.CharField(max_length=100, verbose_name="NOM ENTREPOT")
+    nomentrepot = models.CharField(max_length=100, verbose_name="NOM ENTREPOT", db_index=True)
     adresseentrepot = models.CharField(max_length=100, verbose_name="ADRESSE PHYSIQUE")
     ville = models.ForeignKey(Ville, on_delete=models.PROTECT, verbose_name="VILLE")
 
@@ -90,7 +90,7 @@ class Entrepot(models.Model):
 
 class Produit(models.Model):
     idproduit = models.AutoField(primary_key=True, auto_created=True)
-    nomproduit = models.CharField(max_length=30)
+    nomproduit = models.CharField(max_length=30, db_index=True)
 
     def __str__(self):
         return self.nomproduit
@@ -127,7 +127,7 @@ class Cargaison(models.Model):
 
     # numero de dossier a considere
     numdos = models.IntegerField(blank=True, null=True, db_index=True)
-    numreq = models.CharField(max_length=255, blank=True, null=True)
+    numreq = models.CharField(max_length=255, blank=True, null=True, db_index=True)
 
     # Controle rapport d'echantillonage
     rapechctrl = models.IntegerField(blank=True, null=True)
@@ -145,13 +145,13 @@ class Cargaison(models.Model):
     after = models.BooleanField(default=0, verbose_name='SHORE AFTER')
 
     # Champ ajouter apres la mission de l'EST
-    declaration = models.CharField(max_length=255, blank=True, null=True)  #Numero de declaration
+    declaration = models.CharField(max_length=255, blank=True, null=True, db_index=True)  #Numero de declaration
 
     transitaire = models.CharField(max_length=255, blank=True, null=True)  #Transitaire
 
 
     #Champ de control pour l'inspection
-    etatInspection = models.BooleanField(default=False)
+    etatInspection = models.BooleanField(default=False, db_index=True)
 
     #Date et heure d'analyse
     dateHeureAnalyseLabo = models.DateTimeField(blank=True,null=True)
@@ -170,8 +170,60 @@ class Cargaison(models.Model):
     #File path saving
     files_path = models.CharField(blank=True,null=True, max_length=256)
 
+    # Denormalized fields
+    nom_importateur = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    nom_entrepot = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    nom_produit = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    nom_frontiere = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+
+    date_echantillon = models.DateTimeField(blank=True, null=True, db_index=True)
+    date_reception_labo = models.DateTimeField(blank=True, null=True, db_index=True)
+    date_analyse = models.DateTimeField(blank=True, null=True, db_index=True)
+    date_inspection = models.DateTimeField(blank=True, null=True, db_index=True)
+
+    gov_total = models.FloatField(default=0.0, db_index=True)
+    gsv_total = models.FloatField(default=0.0, db_index=True)
+    mta_total = models.FloatField(default=0.0, db_index=True)
+    mtv_total = models.FloatField(default=0.0, db_index=True)
+
+    densite_inspection = models.FloatField(null=True, blank=True, db_index=True)
+    temperature_inspection = models.FloatField(null=True, blank=True, db_index=True)
+
+    # Denormalized Labo fields
+    num_certificat_qualite = models.IntegerField(null=True, blank=True, db_index=True)
+    code_labo = models.IntegerField(null=True, blank=True, db_index=True)
+
+    def save(self, *args, **kwargs):
+        if self.importateur_id:
+            self.nom_importateur = self.importateur.nomimportateur
+        if self.entrepot_id:
+            self.nom_entrepot = self.entrepot.nomentrepot
+        if self.produit_id:
+            self.nom_produit = self.produit.nomproduit
+        if self.frontiere_id:
+            self.nom_frontiere = self.frontiere.nomville
+        super().save(*args, **kwargs)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['etat', 'entrepot', '-dateheurecargaison', '-idcargaison']),
+            models.Index(fields=['dateheurecargaison']),
+            models.Index(fields=['immatriculation']),
+            models.Index(fields=['declaration']),
+            models.Index(fields=['numdos']),
+            models.Index(fields=['nom_importateur']),
+            models.Index(fields=['nom_entrepot']),
+            models.Index(fields=['nom_produit']),
+            models.Index(fields=['nom_frontiere']),
+            models.Index(fields=['date_echantillon']),
+            models.Index(fields=['date_reception_labo']),
+            models.Index(fields=['date_analyse']),
+            models.Index(fields=['date_inspection']),
+        ]
+
     def get_absolute_url(self):
         return reverse('update', kwargs={'pk': self.idcargaison})
+
 
 
 class Entrepot_echantillon(models.Model):
@@ -185,12 +237,29 @@ class Entrepot_echantillon(models.Model):
     matricule = models.CharField(max_length=256, blank=True)
     methodeutilisee = models.CharField(max_length=256, blank=True)
 
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            self.idcargaison.date_echantillon = self.dateechantillonage
+            self.idcargaison.save(update_fields=['date_echantillon'])
+
+
 
 class LaboReception(models.Model):
     idcargaison = models.OneToOneField(Entrepot_echantillon, on_delete=models.PROTECT, primary_key=True)
     numcertificatqualite = models.IntegerField(verbose_name="Numero du Certificat de Qualite ", null=True, blank=True, db_index=True)
     codelabo = models.IntegerField(null=True, blank=True, verbose_name="Code Labo ", db_index=True)
     datereceptionlabo = models.DateTimeField(blank=True,null=True, db_index=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Up to Cargaison (via Entrepot_echantillon)
+        cargaison = self.idcargaison.idcargaison
+        cargaison.date_reception_labo = self.datereceptionlabo
+        cargaison.num_certificat_qualite = self.numcertificatqualite
+        cargaison.code_labo = self.codelabo
+        cargaison.save(update_fields=['date_reception_labo', 'num_certificat_qualite', 'code_labo'])
 
     def get_absolute_url(self):
         return reverse('reception', kwargs={'pk': self.idcargaison})
@@ -254,6 +323,13 @@ class Resultat(models.Model):
     dateanalyse = models.DateTimeField(auto_now_add=True, verbose_name="Date d'analyse", blank=True, null=True)
     dateimpression = models.DateField(blank=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Up to Cargaison (via LaboReception -> Entrepot_echantillon)
+        cargaison = self.idcargaison.idcargaison.idcargaison
+        cargaison.date_analyse = self.dateanalyse
+        cargaison.save(update_fields=['date_analyse'])
+
 
 class Dechargement(models.Model):
     idcargaison = models.OneToOneField(Resultat, on_delete=models.PROTECT, primary_key=True)
@@ -289,19 +365,19 @@ class BureauDGDA(models.Model):
 
 
 class Paiement(models.Model):
-    code_bur = models.CharField(max_length=128, verbose_name='Code BUR')
+    code_bur = models.CharField(max_length=128, verbose_name='Code BUR', db_index=True)
     bureau = models.CharField(max_length=255, verbose_name='Nom BUR')
     modele = models.CharField(max_length=255, verbose_name='Modele')
-    nif_importateur = models.CharField(max_length=128, verbose_name='NIF Importateur')
-    importateur = models.CharField(max_length=255, verbose_name='Nom Importateur')
-    nom_decl = models.CharField(max_length=255, verbose_name='Declarant')
+    nif_importateur = models.CharField(max_length=128, verbose_name='NIF Importateur', db_index=True)
+    importateur = models.CharField(max_length=255, verbose_name='Nom Importateur', db_index=True)
+    nom_decl = models.CharField(max_length=255, verbose_name='Declarant', db_index=True)
     n_liq = models.CharField(max_length=128, verbose_name='BL', db_index=True)
     date_liq = models.DateField(verbose_name='Date BL', db_index=True)
     ide_ser = models.CharField(max_length=128, verbose_name='')
     ide_nbr = models.CharField(max_length=128, verbose_name='Quittance', db_index=True)
     date_pay = models.DateField(verbose_name='Date Paiement', db_index=True)
     tax_cod = models.CharField(max_length=128, verbose_name='')
-    bnk_nam = models.CharField(max_length=255, verbose_name='Nom Banque')
+    bnk_nam = models.CharField(max_length=255, verbose_name='Nom Banque', db_index=True)
     libelle = models.CharField(max_length=255, verbose_name='libelle')
     ref_pay = models.CharField(max_length=255, verbose_name='')
     taux = models.DecimalField(max_digits=32, decimal_places=4, verbose_name='Taux')
@@ -309,11 +385,20 @@ class Paiement(models.Model):
     qp_cgw = models.DecimalField(max_digits=32, decimal_places=4, verbose_name='QP CGW')
     qp_occ = models.DecimalField(max_digits=32, decimal_places=4, verbose_name='QP OCC')
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['code_bur', 'date_liq', 'n_liq']),
+            models.Index(fields=['importateur']),
+            models.Index(fields=['nif_importateur']),
+            models.Index(fields=['date_pay']),
+            models.Index(fields=['ide_nbr']),
+        ]
+
     def __str__(self):
         return self.bnk_nam
 
     def get_absolute_url(self):
-        return reverse('update', kwargs={'pk': self.idbureau})
+        return reverse('update', kwargs={'pk': self.pk})
 
 
 class LiquidationModel(models.Model):
@@ -326,7 +411,7 @@ class LiquidationModel(models.Model):
 class Liquidation(models.Model):
     idliquidation = models.AutoField(primary_key=True, auto_created=True)
     idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT)
-    numerobl = models.CharField(max_length=30, blank=True, verbose_name='Numéro BL')
+    numerobl = models.CharField(max_length=30, blank=True, verbose_name='Numéro BL', db_index=True)
     datebl = models.DateField(blank=True, null=True, verbose_name='Date de BL')
     datepay = models.DateField(blank=True, null=True)
     bankName = models.CharField(max_length=128, blank=True)
@@ -335,6 +420,11 @@ class Liquidation(models.Model):
     vol_liq = models.DecimalField(max_digits=32, decimal_places=4, blank=True)
     type_appurement = models.CharField(max_length=32,blank=True,null=True)
     user = models.CharField(max_length=32, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['idcargaison', 'codebureau']),
+        ]
 
 
 class SealState(models.Model):
@@ -371,6 +461,13 @@ class Inspection(models.Model):
     meterafter = models.FloatField(null=True)
     dateinspection = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.idcargaison.date_inspection = self.dateinspection
+        self.idcargaison.densite_inspection = self.dens
+        self.idcargaison.temperature_inspection = self.temp
+        self.idcargaison.save(update_fields=['date_inspection', 'densite_inspection', 'temperature_inspection'])
+
     # def __str__(self):
     #     return self.idinspection
 
@@ -393,11 +490,26 @@ class Compartiment(models.Model):
     mtv = models.FloatField(null=True)
     gsv = models.FloatField(null=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update Cargaison totals
+        inspection = self.idinspection
+        cargaison = inspection.idcargaison
+        from django.db.models import Sum
+        totals = Compartiment.objects.filter(idinspection=inspection).aggregate(
+            gov=Sum('gov'), gsv=Sum('gsv'), mta=Sum('mta'), mtv=Sum('mtv')
+        )
+        cargaison.gov_total = totals['gov'] or 0.0
+        cargaison.gsv_total = totals['gsv'] or 0.0
+        cargaison.mta_total = totals['mta'] or 0.0
+        cargaison.mtv_total = totals['mtv'] or 0.0
+        cargaison.save(update_fields=['gov_total', 'gsv_total', 'mta_total', 'mtv_total'])
+
     def __str__(self):
         return self.compart
 
     def get_absolute_url(self):
-        return reverse('update', kwargs={'pk': self.idcargaison_id})
+        return reverse('update', kwargs={'pk': self.idinspection_id})
 
 
 class ShoreTank(models.Model):
@@ -507,12 +619,22 @@ class AffectationParametre(models.Model):
     valeurMin = models.FloatField(blank=True,null=True)
     valeurMax = models.FloatField(blank=True,null=True)
 
+    class Meta:
+        unique_together = ('idParametre', 'idproduit')
+
 class ResultatAnalyse(models.Model):
     idResultatAnalyse = models.AutoField(primary_key=True, auto_created=True)
     idParametre = models.ForeignKey(ParametresProduits, on_delete=models.PROTECT)
     idcargaison = models.ForeignKey(Cargaison, on_delete=models.PROTECT, db_index=True)
     valeurResultat = models.FloatField(blank=True,null=True)
     valeurResultatChar = models.CharField(max_length=64,blank=True,null=True)
+
+    class Meta:
+        unique_together = ('idcargaison', 'idParametre')
+        indexes = [
+            models.Index(fields=['idcargaison', 'idParametre']),
+            models.Index(fields=['idParametre', 'valeurResultat']),
+        ]
 
 
 class ImpressionResultat(models.Model):
