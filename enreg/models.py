@@ -171,20 +171,20 @@ class Cargaison(models.Model):
     files_path = models.CharField(blank=True,null=True, max_length=256)
 
     # Denormalized fields
-    nom_importateur = models.CharField(max_length=255, blank=True, null=True, db_index=True)
-    nom_entrepot = models.CharField(max_length=255, blank=True, null=True, db_index=True)
-    nom_produit = models.CharField(max_length=255, blank=True, null=True, db_index=True)
-    nom_frontiere = models.CharField(max_length=255, blank=True, null=True, db_index=True)
-
-    date_echantillon = models.DateTimeField(blank=True, null=True, db_index=True)
-    date_reception_labo = models.DateTimeField(blank=True, null=True, db_index=True)
-    date_analyse = models.DateTimeField(blank=True, null=True, db_index=True)
-    date_inspection = models.DateTimeField(blank=True, null=True, db_index=True)
-
-    gov_total = models.FloatField(default=0.0, db_index=True)
-    gsv_total = models.FloatField(default=0.0, db_index=True)
-    mta_total = models.FloatField(default=0.0, db_index=True)
-    mtv_total = models.FloatField(default=0.0, db_index=True)
+    # nom_importateur = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    # nom_entrepot = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    # nom_produit = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    # nom_frontiere = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    #
+    # date_echantillon = models.DateTimeField(blank=True, null=True, db_index=True)
+    # date_reception_labo = models.DateTimeField(blank=True, null=True, db_index=True)
+    # date_analyse = models.DateTimeField(blank=True, null=True, db_index=True)
+    # date_inspection = models.DateTimeField(blank=True, null=True, db_index=True)
+    #
+    # gov_total = models.FloatField(default=0.0, db_index=True)
+    # gsv_total = models.FloatField(default=0.0, db_index=True)
+    # mta_total = models.FloatField(default=0.0, db_index=True)
+    # mtv_total = models.FloatField(default=0.0, db_index=True)
 
     densite_inspection = models.FloatField(null=True, blank=True, db_index=True)
     temperature_inspection = models.FloatField(null=True, blank=True, db_index=True)
