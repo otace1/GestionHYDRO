@@ -1,35 +1,40 @@
-# Use Python 3.11-slim-buster base image
-FROM python:3.11-slim-buster
+# syntax=docker/dockerfile:1.5
+FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100
 
-# Create Directory
-RUN mkdir /app
-
-# Set working directory
 WORKDIR /app
 
-# Copy the application files
+# System deps (add only what you need)
+# - build-essential/gcc: for compiling some python wheels
+# - default-libmysqlclient-dev/pkg-config: if using mysqlclient
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    pkg-config \
+    default-libmysqlclient-dev \
+    curl \
+    nano \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Python deps first (better caching)
+COPY requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+# Copy scripts and make them executable
+COPY scripts/ /scripts/
+RUN chmod +x /scripts/*.sh
+
+# Copy project code last
 COPY . /app
 
-# Copy entrypoint script and set permissions
-COPY ./scripts/entrypoint.sh /scripts/entrypoint.sh
-COPY ./scripts/worker-entrypoint.sh /scripts/worker-entrypoint.sh
-COPY ./scripts/migration.sh /scripts/migration.sh
-COPY ./scripts/collectstatic.sh /scripts/collectstatic.sh
-RUN chmod +x /scripts/*
+# Create non-root user
+RUN useradd -m -u 10001 appuser \
+  && chown -R appuser:appuser /app /scripts
+USER appuser
 
-
-### Create directories for static and media files with appropriate permissions
-#RUN mkdir -p /app/vol/web/static
-#RUN mkdir -p /app/vol/web/media
-
-## Copy contents of assets/img to MEDIA_ROOT
-#COPY ./assets/img /vol/web/media
-
-COPY ./requirements.txt requirements.txt
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Set the entrypoint
 ENTRYPOINT ["/scripts/entrypoint.sh"]
