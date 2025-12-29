@@ -1995,7 +1995,7 @@ def regularisationDestination(request):
                     })
 
             cargaison.entrepot = entrepot
-            cargaison.save(update_fields=['entrepot'])
+            cargaison.save(update_fields=['entrepot', 'nom_entrepot'])
 
             UserActivityLog.objects.create(
                 user=user,
@@ -2100,7 +2100,7 @@ def changementNature(request):
             
             if cargaison.produit_id != int(produit_id):
                 cargaison.produit = nouveau_produit
-                cargaison.save(update_fields=['produit'])
+                cargaison.save(update_fields=['produit', 'nom_produit'])
 
                 UserActivityLog.objects.create(
                     user=user,
@@ -3637,7 +3637,7 @@ def changementImportateur(request):
     # if hasattr(cargaison, 'remarks'):
     #     cargaison.remarks = remarks
 
-    cargaison.save(update_fields=['importateur'])
+    cargaison.save(update_fields=['importateur', 'nom_importateur'])
 
     return JsonResponse({
         'status': 'success',
