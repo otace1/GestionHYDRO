@@ -1787,7 +1787,7 @@ def regularisation_filter_options(request):
         # Optimization: Resolve allowed entrepôts once (avoids heavy joins in each subquery)
         allowed_entrepots = list(
             Entrepot.objects.filter(
-                ville__affectationville__username_id=user_id
+                # ville__affectationville__username_id=user_id
             ).values_list('identrepot', flat=True)
         )
         
