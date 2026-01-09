@@ -145,8 +145,8 @@ def listeutilisateursResponse(request):
         qs = MyUser.objects.all().values(
             'id','first_name','last_name','username','role__role','last_login'
                                         )
-        # Get the search value from the request's GET parameters
-        search_value = request.GET.get('search[value]', '')
+        # Get the search value from the request's POST parameters
+        search_value = request.POST.get('search[value]', '')
 
         # Apply search filter to the QuerySet
         if search_value:
@@ -162,10 +162,10 @@ def listeutilisateursResponse(request):
         # Initialize the Paginator with the QuerySet and the number of items per page
         paginator = Paginator(qs, items_per_page)
 
-        # Get the current page number from the request's GET parameters
-        draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-        length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+        # Get the current page number from the request's POST parameters
+        draw = int(request.POST.get('draw', 1))  # Get the draw value for proper AJAX handling
+        start = int(request.POST.get('start', 0))  # Get the starting index for pagination
+        length = int(request.POST.get('length', items_per_page))  # Get the number of items per page
 
         # Calculate the current page number based on start and length
         current_page = (start // length) + 1
@@ -184,8 +184,7 @@ def listeutilisateursResponse(request):
         data = list(page)
 
         # Check if it's an AJAX request and if the export flag is set
-        # Check if it's an AJAX request and if the export flag is set
-        export = request.GET.get('export', None)
+        export = request.POST.get('export', None)
         if export == 'excel':
             # Retrieve all data (no lazy pagination) and store it in a list
             data = list(qs)
@@ -497,10 +496,14 @@ def retireraffectationville(request, pk):
     user = request.user
     role = user.role_id
     if role == 1:
-        url = request.session['url']
-        object = AffectationVille.objects.get(idaffectation_ville=pk)
-        object.delete()
-        return redirect('userslist')
+        try:
+            object = AffectationVille.objects.get(idaffectation_ville=pk)
+            object.delete()
+            return JsonResponse({'status': 200})
+        except AffectationVille.DoesNotExist:
+            return JsonResponse({'status': 404, 'error': 'Assignment not found'})
+        except Exception as e:
+            return JsonResponse({'status': 500, 'error': str(e)})
     else:
         return redirect('logout')
 
@@ -757,6 +760,7 @@ def detailsAffectationVille(request,pk):
         'username__last_name',
         'username__role__role',
         'ville__nomville',
+        'idaffectation_ville',
     )
 
     # Number of items to show per page

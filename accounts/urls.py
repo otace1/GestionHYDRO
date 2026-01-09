@@ -10,6 +10,7 @@ urlpatterns = [
 
     path('detailsAffectationUtilisateur/<int:pk>', views.detailsAffectationUtilisateur, name='detailsAffectationUtilisateur'),
     path('detailsAffectationLabo/<int:pk>', views.detailsAffectationLabo, name='detailsAffectationLabo'),
+    path('detailsAffectationVille/<int:pk>', views.detailsAffectationVille, name='detailsAffectationVille'),
 
     path('detailsaffectation/<int:pk>', views.detailsaffectation, name='detailsaffectation'),
     path('retireraffectationEntrepot/<int:pk>', views.retireraffectationEntrepot, name='retireraffectationEntrepot'),

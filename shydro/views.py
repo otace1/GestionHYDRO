@@ -2072,12 +2072,12 @@ def changementNature(request):
     """
     user = request.user
     # Optional: align with your other endpoints (only allow some roles)
-    role = getattr(user, "role_id", None)
-    if role not in (1, 4, 7): # Added role 7 (Hydro admin/op) if applicable
-        return JsonResponse(
-            {"status": "error", "message": "Accès refusé."},
-            status=403
-        )
+    # role = getattr(user, "role_id", None)
+    # if role not in (1, 4, 5, 7, ): # Added role 7 (Hydro admin/op) if applicable
+    #     return JsonResponse(
+    #         {"status": "error", "message": "Accès refusé."},
+    #         status=403
+    #     )
 
     # Must be AJAX for this flow
     if request.META.get('HTTP_X_REQUESTED_WITH') != 'XMLHttpRequest':
