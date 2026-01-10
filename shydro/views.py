@@ -34,7 +34,7 @@ from enreg.models import Entrepot   # for per-user entrepôt scoping
 from enreg.uploadToStorage import download_file_from_space
 from entrepot.calculs import densite15, vcf, gsv, mta
 from hydrocarbures.celery import app
-from shydro.utils import render_to_pdf
+from shydro.utils import render_to_pdf, render_to_pdf_content
 from .forms import *
 from .numact import num_cert_inspection
 # from .numact import numeroactcurrent
@@ -1634,16 +1634,16 @@ def regularisation_response(request):
             'recordsFiltered': 0,
         })
 
-    # 4. Apply domain-specific filters
+    # 4. Apply domain-specific filters (Optimized for index usage)
     if flt_date_from:
         try:
-            dt = datetime.datetime.strptime(flt_date_from, '%Y-%m-%d').date()
-            base_qs = base_qs.filter(dateheurecargaison__date__gte=dt)
+            dt_from = datetime.datetime.strptime(flt_date_from, '%Y-%m-%d').date()
+            base_qs = base_qs.filter(dateheurecargaison__gte=datetime.datetime.combine(dt_from, datetime.time.min))
         except Exception: pass
     if flt_date_to:
         try:
-            dt = datetime.datetime.strptime(flt_date_to, '%Y-%m-%d').date()
-            base_qs = base_qs.filter(dateheurecargaison__date__lte=dt)
+            dt_to = datetime.datetime.strptime(flt_date_to, '%Y-%m-%d').date()
+            base_qs = base_qs.filter(dateheurecargaison__lte=datetime.datetime.combine(dt_to, datetime.time.max))
         except Exception: pass
 
     # Use istartswith for indexed/high-cardinality fields where possible
@@ -1678,13 +1678,15 @@ def regularisation_response(request):
     except Exception:
         records_total = base_qs.count()
 
-    # 6. Global Search
+    # 6. Global Search (Optimized to use denormalized indexed fields and avoid JOINs)
     if _has_min(search_value):
         base_qs = base_qs.filter(
             Q(immatriculation__istartswith=search_value) |
             Q(declaration__istartswith=search_value) |
-            Q(importateur__nomimportateur__istartswith=search_value) |
-            Q(entrepot__nomentrepot__istartswith=search_value) |
+            Q(nom_importateur__istartswith=search_value) |
+            Q(nom_entrepot__istartswith=search_value) |
+            Q(nom_produit__istartswith=search_value) |
+            Q(nom_frontiere__istartswith=search_value) |
             Q(numdos__istartswith=search_value)
         )
 
@@ -3808,11 +3810,12 @@ def impressionRappEch(request):
         }
 
         # Render PDF Files
-        pdf = render_to_pdf(template, data)
-
-        # Convert PDF content to Base64-encoded string
-        pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-        return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+        pdf_content = render_to_pdf_content(template, data)
+        if pdf_content:
+            pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+            return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Erreur de génération PDF'})
     except:
         return JsonResponse({'status': 'error'})
 
@@ -4000,10 +4003,12 @@ def impressionRappInsp(request):
 
         }
         # Render PDF Files
-        pdf = render_to_pdf(template, data)
-        # Convert PDF content to Base64-encoded string
-        pdf_base64 = base64.b64encode(pdf.getvalue()).decode('utf-8')
-        return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+        pdf_content = render_to_pdf_content(template, data)
+        if pdf_content:
+            pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+            return JsonResponse({'status': 'success', 'pdf_base64': pdf_base64})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Erreur de génération PDF'})
     except:
         return JsonResponse({'status': 'error'})
 
