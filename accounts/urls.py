@@ -44,6 +44,8 @@ urlpatterns = [
 
     path('activityLog/', views.activityLog, name='activityLog'),
     path('activityLogResponse/', views.activityLogResponse, name='activityLogResponse'),
+    path('activityLogPurge/', views.activityLogPurge, name='activityLogPurge'),
+    path('task-status/<str:task_id>/', views.get_task_status, name='task_status'),
 
 
 ]

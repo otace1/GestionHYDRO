@@ -17,10 +17,13 @@ from django.db.models import Q, F
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
+from celery.result import AsyncResult
+from .tasks import purge_old_logs
 from jsignature.utils import draw_signature
 from openpyxl import Workbook
 
 from accounts.models import *
+from django.utils import timezone
 from .services import log_action
 from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm, \
     Affectation_Role, Affectation_Labo
@@ -876,13 +879,14 @@ def activityLog(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def activityLogResponse(request):
     """
     Enhanced activity log endpoint that primarily reads from AuditLog.
     Supports advanced filtering and optimized pagination for DataTables.
     """
     # Source toggle: default to AuditLog
-    source = request.GET.get('source', 'audit')
+    source = request.POST.get('source', 'audit')
     
     if source == 'activity':
         qs = UserActivityLog.objects.all().select_related('user')
@@ -892,15 +896,15 @@ def activityLogResponse(request):
         records_total = AuditLog.objects.count()
 
     # Advanced Filters
-    q = request.GET.get('q') or request.GET.get('search[value]', '')
-    user_filter = request.GET.get('user')
-    action_filter = request.GET.get('action')
-    module_filter = request.GET.get('module')
-    ip_filter = request.GET.get('ip')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    only_mine = request.GET.get('only_mine') == '1'
-    level_filter = request.GET.get('level')
+    q = request.POST.get('q') or request.POST.get('search[value]', '')
+    user_filter = request.POST.get('user')
+    action_filter = request.POST.get('action')
+    module_filter = request.POST.get('module')
+    ip_filter = request.POST.get('ip')
+    date_from = request.POST.get('date_from')
+    date_to = request.POST.get('date_to')
+    only_mine = request.POST.get('only_mine') == '1'
+    level_filter = request.POST.get('level')
 
     if source == 'activity':
         if q:
@@ -953,9 +957,9 @@ def activityLogResponse(request):
     records_filtered = qs.count()
 
     # Pagination
-    draw = int(request.GET.get('draw', 1))
-    start = int(request.GET.get('start', 0))
-    length = int(request.GET.get('length', 15))
+    draw = int(request.POST.get('draw', 1))
+    start = int(request.POST.get('start', 0))
+    length = int(request.POST.get('length', 15))
 
     qs = qs.order_by('-timestamp')[start:start + length]
 
@@ -1001,6 +1005,41 @@ def activityLogResponse(request):
         'recordsFiltered': records_filtered,
         'data': data_list,
     })
+
+
+@login_required(login_url='login')
+@require_POST
+def activityLogPurge(request):
+    """
+    Initiate asynchronous purge of old audit logs.
+    """
+    days = int(request.POST.get('days', 90))
+    task = purge_old_logs.delay(days, request.user.id)
+
+    return JsonResponse({
+        'status': 'success',
+        'task_id': task.id
+    })
+
+
+@login_required(login_url='login')
+def get_task_status(request, task_id):
+    """
+    Check the status of a Celery task.
+    """
+    task_result = AsyncResult(task_id)
+    
+    # When a task fails, task_result.result is an Exception object, which is not JSON serializable.
+    res_data = task_result.result
+    if isinstance(res_data, Exception):
+        res_data = str(res_data)
+
+    result = {
+        "task_id": task_id,
+        "task_status": task_result.status,
+        "task_result": res_data,
+    }
+    return JsonResponse(result, status=200)
 
 
 

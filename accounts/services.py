@@ -142,7 +142,7 @@ def _fill_actor_data(data, request):
         if hasattr(request, 'session') and request.session.session_key:
             data['session_key'] = request.session.session_key
 
-def log_action(request, action, description="", *, obj=None, status="success", http_status=None, extra=None):
+def log_action(request=None, action=None, description="", *, user=None, module=None, obj=None, status="success", http_status=None, extra=None):
     """
     Centralized logging function for UserActivityLog.
     """
@@ -156,12 +156,19 @@ def log_action(request, action, description="", *, obj=None, status="success", h
             'username_snapshot': 'System',
         }
 
+        if user:
+            log_data['user'] = user
+            log_data['username_snapshot'] = user.username
+        
+        if module:
+            log_data['module'] = module
+
         if request:
-            user = getattr(request, 'user', None)
-            if user and user.is_authenticated:
-                log_data['user'] = user
-                log_data['username_snapshot'] = user.username
-            else:
+            req_user = getattr(request, 'user', None)
+            if not user and req_user and req_user.is_authenticated:
+                log_data['user'] = req_user
+                log_data['username_snapshot'] = req_user.username
+            elif not user and (not req_user or not req_user.is_authenticated):
                 log_data['username_snapshot'] = 'Anonymous'
 
             log_data.update({
@@ -192,9 +199,10 @@ def log_action(request, action, description="", *, obj=None, status="success", h
                 'object_type': obj._meta.model_name,
                 'object_id': str(getattr(obj, 'pk', '')),
                 'object_repr': str(obj)[:255],
-                'module': obj._meta.app_label,
             })
-        elif request:
+            if not module:
+                log_data['module'] = obj._meta.app_label
+        elif not module and request:
             path_parts = [p for p in request.path.split('/') if p]
             if path_parts:
                 log_data['module'] = path_parts[0]
