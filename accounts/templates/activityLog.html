@@ -1,77 +1,388 @@
-{% extends 'accounts/activityLog.html' %}
-
+{% extends 'base_template/base_template.html' %}
+{% load i18n %}
 
 {% block content %}
 
-    <!-- Default box -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Journal d'activités</h3>
+<style>
+  /* Small, clean helpers */
+  .tf-toolbar .form-control, .tf-toolbar .btn { height: calc(1.5em + .75rem + 2px); }
+  #data-table-wrapper { position: relative; }
+  #data-table-wrapper .loading-spinner{
+    display:none; position:absolute; inset:0; background:rgba(255,255,255,.6);
+    z-index: 5; align-items:center; justify-content:center;
+  }
+  #data-table-wrapper .loading-spinner::after{
+    content:""; width:2.2rem; height:2.2rem; border:.3rem solid #cbd5e1;
+    border-top-color:#0d6efd; border-radius:50%; display:block; animation:spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .badge-action { font-size: 0.75rem; }
+  .text-xs { font-size: .78rem; }
+</style>
 
-            <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
-                    <i class="fas fa-minus"></i>
-                </button>
-                <button type="button" class="btn btn-tool" data-card-widget="remove" title="Remove">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <table id="data-table" class="table table-bordered display responsive" style="width:100%">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>UTILISATEUR</th>
-                    <th>DATE/HEURE</th>
-                    <th>ACTION</th>
-                    <th>DESCRIPTION</th>
-                </tr>
-                </thead>
-            </table>
-        </div>
-        <!-- /.card-body -->
-        <div class="card-footer">
+<section class="content">
+  <div class="container-fluid">
 
-        </div>
-        <!-- /.card-footer-->
+    <!-- Header -->
+    <div class="d-flex align-items-start justify-content-between mb-3">
+      <div>
+        <h1 class="h3 mb-0">{% trans "Journal d'activités" %}</h1>
+        <small class="text-muted">
+          {% trans "Filtrez, recherchez, exportez et archivez les événements pour l’audit et le suivi." %}
+        </small>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button id="btnRefresh" class="btn btn-outline-secondary">
+          <i class="fas fa-sync-alt mr-1"></i> {% trans "Actualiser" %}
+        </button>
+        <button id="btnExportCsv" class="btn btn-outline-primary">
+          <i class="fas fa-file-csv mr-1"></i> {% trans "Exporter CSV" %}
+        </button>
+        <button id="btnExportXlsx" class="btn btn-outline-success">
+          <i class="fas fa-file-excel mr-1"></i> {% trans "Exporter Excel" %}
+        </button>
+      </div>
     </div>
-    <!-- /.card -->
 
+    <!-- Filters / Controls -->
+    <div class="card card-outline card-secondary tf-toolbar">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-lg-3 mb-2">
+            <label class="mb-1 text-xs">{% trans "Recherche" %}</label>
+            <input id="logSearch" type="text" class="form-control"
+                   placeholder="{% trans 'Utilisateur, action, description…' %}">
+          </div>
 
-    <script>
+          <div class="col-lg-2 mb-2">
+            <label class="mb-1 text-xs">{% trans "Source" %}</label>
+            <select id="sourceFilter" class="form-control">
+              <option value="audit">{% trans "Audit Données" %}</option>
+              <option value="activity">{% trans "Activités Utilisateur" %}</option>
+            </select>
+          </div>
 
-    $(document).ready(function () {
-        var dataTable = $('#data-table').DataTable({
-            lengthChange: false, // Display the length change dropdown
-            ordering: false,
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            ajax: {
-                url: '{% url 'activityLogResponse' %}',
-                type: 'GET',
-                beforeSend: function() {
-                  $('#data-table-wrapper .loading-spinner').show();
-                },
-                // Hide the loading spinner after DataTable processing
-                complete: function() {
-                  $('#data-table-wrapper .loading-spinner').hide();
-                }
-            },
-            columns: [
-                { data: 'id' }, // Use array index to access 'dateheurecargaison__date'
-                { data: 'user__username' }, // Use array index to access 'frontiere__nomville'
-                { data: 'timestamp' }, // Use array index to access 'importateur__nomimportateur'
-                { data: 'action' }, // Use array index to access 'entrepot__nomentrepot'
-                {#{ data: 'role__role' }, // Use array index to access 'produit__nomproduit'#}
-                { data: 'description' },
-            ],
-        });
-    })
+          <div class="col-lg-2 mb-2">
+            <label class="mb-1 text-xs">{% trans "Utilisateur" %}</label>
+            <input id="userFilter" type="text" class="form-control"
+                   placeholder="{% trans 'username…' %}">
+          </div>
 
-    </script>
+          <div class="col-lg-2 mb-2">
+            <label class="mb-1 text-xs">{% trans "Action" %}</label>
+            <select id="actionFilter" class="form-control">
+              <option value="">{% trans "Toutes" %}</option>
+              <option value="CREATE">CREATE</option>
+              <option value="UPDATE">UPDATE</option>
+              <option value="DELETE">DELETE</option>
+              <option value="LOGIN">LOGIN</option>
+              <option value="LOGOUT">LOGOUT</option>
+              <option value="EXPORT">EXPORT</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+            <small class="text-muted text-xs d-block mt-1">
+              {% trans "Optionnel: adaptez selon vos valeurs d’action." %}
+            </small>
+          </div>
 
+          <div class="col-lg-2 mb-2">
+            <label class="mb-1 text-xs">{% trans "Du" %}</label>
+            <input id="dateFrom" type="date" class="form-control">
+          </div>
 
+          <div class="col-lg-2 mb-2">
+            <label class="mb-1 text-xs">{% trans "Au" %}</label>
+            <input id="dateTo" type="date" class="form-control">
+          </div>
+
+          <div class="col-lg-1 mb-2 d-flex align-items-end">
+            <button id="btnResetFilters" class="btn btn-outline-secondary btn-block">
+              {% trans "Reset" %}
+            </button>
+          </div>
+        </div>
+
+        <div class="row mt-1">
+          <div class="col-lg-3 mb-2">
+            <label class="mb-1 text-xs">{% trans "Niveau" %}</label>
+            <select id="levelFilter" class="form-control">
+              <option value="">{% trans "Tous" %}</option>
+              <option value="INFO">INFO</option>
+              <option value="WARNING">WARNING</option>
+              <option value="ERROR">ERROR</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+            <small class="text-muted text-xs d-block mt-1">
+              {% trans "Si votre modèle de logs supporte un niveau." %}
+            </small>
+          </div>
+
+          <div class="col-lg-3 mb-2">
+            <label class="mb-1 text-xs">{% trans "Type / Module" %}</label>
+            <input id="moduleFilter" type="text" class="form-control" placeholder="{% trans 'ex: accounts, labo…' %}">
+          </div>
+
+          <div class="col-lg-3 mb-2">
+            <label class="mb-1 text-xs">{% trans "Adresse IP" %}</label>
+            <input id="ipFilter" type="text" class="form-control" placeholder="{% trans 'ex: 41.***.***.***' %}">
+          </div>
+
+          <div class="col-lg-3 mb-2 d-flex align-items-end justify-content-between">
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input" id="onlyMine">
+              <label class="custom-control-label" for="onlyMine">{% trans "Mes activités" %}</label>
+            </div>
+
+            <button id="btnApplyFilters" class="btn btn-primary">
+              <i class="fas fa-filter mr-1"></i> {% trans "Appliquer" %}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">{% trans "Événements" %}</h3>
+        <div class="card-tools">
+          <button type="button" class="btn btn-tool" data-card-widget="collapse" title="{% trans 'Réduire' %}">
+            <i class="fas fa-minus"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div id="data-table-wrapper">
+          <div class="loading-spinner"></div>
+
+          <table id="data-table" class="table table-hover table-bordered display responsive" style="width:100%">
+            <thead>
+              <tr>
+                <th>{% trans "ID" %}</th>
+                <th>{% trans "Utilisateur" %}</th>
+                <th>{% trans "Date/Heure" %}</th>
+                <th>{% trans "Action" %}</th>
+                <th>{% trans "Description" %}</th>
+                <th class="text-center">{% trans "Détails" %}</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer text-muted text-xs">
+        <span>{% trans "Conseil:" %}</span>
+        {% trans "définissez une politique de rétention (ex: 90 jours), activez l’export, et limitez l’accès au journal aux rôles autorisés." %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="modal-log-detail" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% trans "Détail de l’activité" %}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th style="width: 40%">{% trans "ID" %}</th><td id="d-id">-</td></tr>
+              <tr><th>{% trans "Utilisateur" %}</th><td id="d-user">-</td></tr>
+              <tr><th>{% trans "Date/Heure" %}</th><td id="d-ts">-</td></tr>
+              <tr><th>{% trans "Action" %}</th><td id="d-action">-</td></tr>
+              <tr><th>{% trans "Status" %}</th><td id="d-status">-</td></tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <table class="table table-sm table-borderless mb-0">
+              <tr><th style="width: 40%">{% trans "Module" %}</th><td id="d-module">-</td></tr>
+              <tr><th>{% trans "IP" %}</th><td id="d-ip">-</td></tr>
+              <tr><th>{% trans "Correlation ID" %}</th><td id="d-request-id" class="text-xs">-</td></tr>
+            </table>
+          </div>
+        </div>
+        <hr>
+        <div class="px-2">
+          <label class="text-xs text-muted mb-1">{% trans "Description" %}</label>
+          <p id="d-desc" class="mb-3"></p>
+          
+          <div id="d-changes-wrapper" style="display:none">
+            <label class="text-xs text-muted mb-1">{% trans "Changements / Données" %}</label>
+            <pre id="d-changes" class="bg-light p-2 border rounded" style="max-height: 300px; overflow: auto; font-size: 0.75rem;"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">{% trans "Fermer" %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Helpers for export without backend (uses current DataTables filter) ----
+  function downloadBlob(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  function exportCurrentTableToCSV(dt) {
+    const rows = dt.rows({ search: 'applied' }).data().toArray();
+    const header = ["ID","Utilisateur","Date/Heure","Action","Description"];
+    const escape = (v) => {
+      const s = (v ?? "").toString().replace(/"/g,'""');
+      return `"${s}"`;
+    };
+    const lines = [header.map(escape).join(",")].concat(
+      rows.map(r => [r.id, r.user__username, r.timestamp, r.action, r.description].map(escape).join(","))
+    );
+    downloadBlob(lines.join("\n"), "activity_logs.csv", "text/csv;charset=utf-8");
+  }
+
+  $(document).ready(function () {
+
+    // DataTable
+    const dt = $('#data-table').DataTable({
+      lengthChange: true,
+      ordering: false,
+      processing: true,
+      serverSide: true,
+      responsive: true,
+      pageLength: 25,
+      ajax: {
+        url: '{% url "activityLogResponse" %}',
+        type: 'GET',
+        data: function(d){
+          d.source = $('#sourceFilter').val();
+          d.q = $('#logSearch').val();
+          d.user = $('#userFilter').val();
+          d.action = $('#actionFilter').val();
+          d.level = $('#levelFilter').val();
+          d.module = $('#moduleFilter').val();
+          d.ip = $('#ipFilter').val();
+          d.date_from = $('#dateFrom').val();
+          d.date_to = $('#dateTo').val();
+          d.only_mine = $('#onlyMine').is(':checked') ? 1 : 0;
+        },
+        beforeSend: function() { $('#data-table-wrapper .loading-spinner').css('display','flex'); },
+        complete: function() { $('#data-table-wrapper .loading-spinner').hide(); }
+      },
+      columns: [
+        { data: 'id' },
+        { data: 'user__username' },
+        { data: 'timestamp' },
+        {
+          data: 'action',
+          render: function(val){
+            const v = (val || '').toString().toUpperCase();
+            let cls = 'badge-secondary';
+            if (v.includes('DELETE')) cls = 'badge-danger';
+            else if (v.includes('CREATE')) cls = 'badge-success';
+            else if (v.includes('UPDATE')) cls = 'badge-info';
+            else if (v.includes('LOGIN')) cls = 'badge-primary';
+            else if (v.includes('ERROR')) cls = 'badge-danger';
+            return `<span class="badge ${cls} badge-action">${v || '-'}</span>`;
+          }
+        },
+        {
+          data: 'description',
+          render: function(val){
+            const s = (val || '').toString();
+            return s.length > 140 ? (s.slice(0,140) + '…') : s;
+          }
+        },
+        {
+          data: null,
+          className: 'text-center',
+          render: function(_, __, row){
+            return `
+              <button class="btn btn-sm btn-outline-primary btn-log-detail" data-id="${row.id}">
+                <i class="fas fa-eye"></i>
+              </button>
+            `;
+          }
+        }
+      ]
+    });
+
+    // Search debounce
+    let t = null;
+    $('#logSearch').on('keyup', function(){
+      clearTimeout(t);
+      t = setTimeout(() => dt.ajax.reload(), 250);
+    });
+
+    // Apply / Reset
+    $('#btnApplyFilters').on('click', function(){ dt.ajax.reload(); });
+    $('#btnRefresh').on('click', function(){ dt.ajax.reload(null, false); });
+
+    $('#btnResetFilters').on('click', function(){
+      $('#logSearch,#userFilter,#moduleFilter,#ipFilter').val('');
+      $('#actionFilter,#levelFilter').val('');
+      $('#dateFrom,#dateTo').val('');
+      $('#onlyMine').prop('checked', false);
+      dt.ajax.reload();
+    });
+
+    // Export (front-only). If you prefer server export, replace by window.location to an export endpoint.
+    $('#btnExportCsv').on('click', function(){
+      exportCurrentTableToCSV(dt);
+    });
+
+    $('#btnExportXlsx').on('click', function(){
+      // Simple approach: export CSV but with .xls extension is NOT real Excel.
+      // Better: create a backend endpoint that returns a real xlsx.
+      exportCurrentTableToCSV(dt);
+    });
+
+    // Detail modal (using row data directly; if you have more fields, include them in response)
+    $(document).on('click', '.btn-log-detail', function(){
+      const tr = $(this).closest('tr');
+      const row = dt.row(tr).data();
+      if (!row) return;
+
+      $('#d-id').text(row.id ?? '-');
+      $('#d-user').text(row.user__username ?? '-');
+      $('#d-ts').text(row.timestamp ?? '-');
+      $('#d-action').text(row.action ?? '-');
+      $('#d-desc').text(row.description ?? '-');
+      $('#d-status').text(row.status ?? '-');
+      $('#d-module').text(row.module ?? '-');
+      $('#d-ip').text(row.ip_address ?? '-');
+      $('#d-request-id').text(row.request_id ?? '-');
+
+      // Show changes if available
+      if (row.changes || row.new_state || row.old_state) {
+        const payload = {
+          changes: row.changes,
+          new_state: row.new_state,
+          old_state: row.old_state
+        };
+        $('#d-changes').text(JSON.stringify(payload, null, 2));
+        $('#d-changes-wrapper').show();
+      } else {
+        $('#d-changes-wrapper').hide();
+      }
+
+      $('#modal-log-detail').modal('show');
+    });
+
+    $('#sourceFilter').on('change', function(){ dt.ajax.reload(); });
+
+  });
+</script>
 
 {% endblock %}

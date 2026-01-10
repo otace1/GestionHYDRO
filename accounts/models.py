@@ -27,9 +27,29 @@ USERNAME_REGEX = '^[a-zA-Z0-9.+-]*$'
 
 
 # Tables des roles
+class AuditedQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        # We import here to avoid circular dependency
+        from .services import log_bulk_audit
+        log_bulk_audit(self, 'BULK_UPDATE', changes={'updated_fields': list(kwargs.keys()), 'values': kwargs})
+        return super().update(**kwargs)
+
+    def delete(self):
+        from .services import log_bulk_audit
+        log_bulk_audit(self, 'BULK_DELETE')
+        return super().delete()
+
+
+class AuditedManager(models.Manager):
+    def get_queryset(self):
+        return AuditedQuerySet(self.model, using=self._db)
+
+
 class Roles(models.Model):
     idrole = models.AutoField(primary_key=True, auto_created=True)
     role = models.CharField(max_length=32, verbose_name='Role')
+
+    objects = AuditedManager()
 
     def __str__(self):
         return self.role
@@ -73,7 +93,7 @@ class MyUser(AbstractBaseUser):
 
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
-    role = models.ForeignKey(Roles, on_delete=models.CASCADE)
+    role = models.ForeignKey(Roles, on_delete=models.SET_NULL, null=True, blank=True)
     fonction = models.CharField(max_length=256, null=True, blank=True)
     poste = models.CharField(max_length=100, null=True, blank=True)
     # fonctions = models.CharField(max_length=256, null=True, blank=True)
@@ -207,8 +227,9 @@ class AffectationVille(models.Model):
 
 class SignaturesModel(models.Model):
     idSignature = models.AutoField(primary_key=True, auto_created=True)
-    userId = models.ForeignKey(MyUser, on_delete=models.PROTECT)
+    userId = models.OneToOneField(MyUser, on_delete=models.CASCADE, related_name='signature')
     signatureData = models.BinaryField()
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 # # Gestion des signatures electroniques
@@ -239,10 +260,91 @@ class AffectationLaboratoire(models.Model):
 #Table to follow activity Logs
 class UserActivityLog(models.Model):
     id = models.AutoField(primary_key=True, auto_created=True)
-    user = models.ForeignKey(MyUser, on_delete=models.PROTECT)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=100)
+    user = models.ForeignKey(MyUser, on_delete=models.SET_NULL, null=True, blank=True)
+    username_snapshot = models.CharField(max_length=150, null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    action = models.CharField(max_length=100, db_index=True)
+    module = models.CharField(max_length=100, db_index=True, null=True, blank=True)
+
+    object_type = models.CharField(max_length=100, null=True, blank=True)
+    object_id = models.CharField(max_length=255, null=True, blank=True)
+    object_repr = models.CharField(max_length=255, null=True, blank=True)
+
     description = models.TextField()
 
+    request_method = models.CharField(max_length=10, null=True, blank=True)
+    path = models.CharField(max_length=255, null=True, blank=True)
+    query_params = models.JSONField(null=True, blank=True)
+    request_body_summary = models.JSONField(null=True, blank=True)
+
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    session_key = models.CharField(max_length=40, null=True, blank=True)
+
+    status = models.CharField(max_length=20, default='success')
+    http_status_code = models.IntegerField(null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
+
+    extra = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['user']),
+            models.Index(fields=['action']),
+            models.Index(fields=['module']),
+        ]
+
     def __str__(self):
-        return f"{self.user.username} - {self.timestamp}"
+        user_str = self.username_snapshot or (self.user.username if self.user else 'System')
+        return f"{user_str} - {self.action} - {self.timestamp}"
+
+
+class AuditLog(models.Model):
+    id = models.AutoField(primary_key=True, auto_created=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    
+    # Actor details
+    actor = models.ForeignKey(MyUser, on_delete=models.SET_NULL, null=True, blank=True)
+    actor_username_snapshot = models.CharField(max_length=150, null=True, blank=True)
+    actor_type = models.CharField(max_length=20, default='user') # user, system, api
+    
+    # Request context
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    session_key = models.CharField(max_length=40, null=True, blank=True)
+    request_id = models.CharField(max_length=50, db_index=True, null=True, blank=True)
+    
+    # Object details
+    app_label = models.CharField(max_length=100, db_index=True)
+    model_name = models.CharField(max_length=100, db_index=True)
+    object_pk = models.CharField(max_length=255, db_index=True)
+    object_repr = models.CharField(max_length=255, null=True, blank=True)
+    
+    # Action details
+    action = models.CharField(max_length=20, db_index=True) # CREATE, UPDATE, DELETE, BULK_UPDATE, BULK_DELETE
+    changes = models.JSONField(null=True, blank=True) # {field: {from: X, to: Y}}
+    new_state = models.JSONField(null=True, blank=True) # for CREATE
+    old_state = models.JSONField(null=True, blank=True) # for DELETE
+    
+    # Status
+    status = models.CharField(max_length=20, default='success')
+    error_message = models.TextField(null=True, blank=True)
+    
+    extra = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['actor']),
+            models.Index(fields=['model_name']),
+            models.Index(fields=['object_pk']),
+            models.Index(fields=['action']),
+            models.Index(fields=['request_id']),
+        ]
+
+    def __str__(self):
+        actor_str = self.actor_username_snapshot or (self.actor.username if self.actor else 'System')
+        return f"{actor_str} - {self.action} - {self.model_name}({self.object_pk}) - {self.timestamp}"

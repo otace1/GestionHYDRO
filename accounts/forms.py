@@ -122,11 +122,11 @@ class UserRegisterForm(forms.ModelForm):
         self.helper.label_class = 'col-md-12'
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(
-            Row("",
+            Row(
                 Column('first_name', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
                 ),
-            Row("",
+            Row(
                 Column('last_name', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
                 ),
@@ -179,7 +179,7 @@ class Affectation_Entrepot(forms.Form):
         self.helper.label_class = 'col-md-12'
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(
-     Row("",
+     Row(
                 Column('entrepot', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
                 ),
@@ -203,7 +203,7 @@ class Affectation_Ville(forms.Form):
         self.helper.label_class = 'col-md-12'
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(
-     Row("",
+     Row(
                 Column('ville', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
                 ),
@@ -226,7 +226,7 @@ class Affectation_Labo(forms.Form):
         self.helper.label_class = 'col-md-12'
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(
-     Row("",
+     Row(
                 Column('laboratoire', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
                 ),
@@ -252,7 +252,7 @@ class Affectation_Role(forms.Form):
         self.helper.label_class = 'col-md-12'
         self.helper.field_class = 'col-md-12'
         self.helper.layout = Layout(
-     Row("",
+     Row(
                 Column('role', css_class='form-group col-md-12 mb-0'),
                 css_class='form-row'
                 ),
@@ -266,4 +266,4 @@ class Affectation_Role(forms.Form):
 
 # Formulaire pour l'enregistrement des signatures electroniques
 class SignatureForm(forms.Form):
-    signature = JSignatureField(widget=JSignatureWidget(jsignature_attrs={'color': '#CCC'}))
+    signature = JSignatureField(widget=JSignatureWidget(jsignature_attrs={'color': '#000'}))

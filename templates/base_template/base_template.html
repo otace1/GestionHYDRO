@@ -6,289 +6,359 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>TrackFlow+</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>TrackFlow+</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  {# Fonts / Icons #}
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    {# Fonts / Icons #}
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
 
-  {# AdminLTE / Plugins CSS (Bootstrap 4 based) #}
-  <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
-  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
+    {# AdminLTE / Plugins CSS (Bootstrap 4 based) #}
+    <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+    <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
 
-  {# DataTables (Bootstrap 4 integration) — stable with AdminLTE 3 #}
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
+    {# DataTables (Bootstrap 4 integration) — stable with AdminLTE 3 #}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap4.min.css">
 
-  <style>
-    body { overflow-x: hidden; font-family: "Source Sans Pro", sans-serif; }
+    <style>
+        body {
+            overflow-x: hidden;
+            font-family: "Source Sans Pro", sans-serif;
+        }
 
-    /* Make footer stick to bottom */
-    .wrapper { min-height: 100vh; display:flex; flex-direction:column; }
-    .content-wrapper { flex: 1; }
+        /* Make footer stick to bottom */
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-    /* Navbar pill */
-    .user-pill{
-      display:inline-flex; align-items:center; gap:.5rem;
-      padding:.35rem .65rem;
-      border-radius:999px;
-      background: rgba(40,167,69,.12);
-      border: 1px solid rgba(40,167,69,.25);
-      color:#1b5e20;
-      font-weight:700;
-      white-space:nowrap;
-    }
-    .btn-logout{
-      background:#dc3545; border-color:#dc3545; color:#fff;
-    }
-    .btn-logout:hover{ filter:brightness(.95); color:#fff; }
+        .content-wrapper {
+            flex: 1;
+        }
 
-    /* Sidebar brand */
-    .brand-link{
-      display:flex; align-items:center; justify-content:center;
-      gap:.5rem;
-    }
-    .brand-text{ font-weight:900; letter-spacing:.2px; }
+        /* Navbar pill */
+        .user-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .35rem .65rem;
+            border-radius: 999px;
+            background: rgba(40, 167, 69, .12);
+            border: 1px solid rgba(40, 167, 69, .25);
+            color: #1b5e20;
+            font-weight: 700;
+            white-space: nowrap;
+        }
 
-    /* Better headers */
-    .content-header .breadcrumb { background: transparent; margin-bottom:0; }
-    .page-title{
-      font-weight: 900;
-      letter-spacing: .2px;
-    }
+        .btn-logout {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #fff;
+        }
 
-    /* Table */
-    .table-responsive { overflow-x:auto; }
-    table.dataTable { width:100% !important; }
-  </style>
+        .btn-logout:hover {
+            filter: brightness(.95);
+            color: #fff;
+        }
 
-  {% block extra_css %}{% endblock %}
+        /* Sidebar brand */
+        .brand-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+        }
+
+        .brand-text {
+            font-weight: 900;
+            letter-spacing: .2px;
+        }
+
+        /* Better headers */
+        .content-header .breadcrumb {
+            background: transparent;
+            margin-bottom: 0;
+        }
+
+        .page-title {
+            font-weight: 900;
+            letter-spacing: .2px;
+        }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table.dataTable {
+            width: 100% !important;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
 
-  <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
-    <ul class="navbar-nav">
-      <li class="nav-item">
-        <a class="nav-link" data-widget="pushmenu" href="#" role="button">
-          <i class="fas fa-bars"></i>
-        </a>
-      </li>
-    </ul>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                    <i class="fas fa-bars"></i>
+                </a>
+            </li>
+        </ul>
 
-    <ul class="navbar-nav ml-auto align-items-center" style="gap:.5rem;">
-      <li class="nav-item d-none d-md-block">
+        <ul class="navbar-nav ml-auto align-items-center" style="gap:.5rem;">
+            <li class="nav-item d-none d-md-block">
         <span class="user-pill">
           <i class="fa fa-circle-check text-success"></i>
           {{ request.user.first_name }} {{ request.user.last_name }}
         </span>
-      </li>
-      <li class="nav-item">
-        <a href="{% url 'logout' %}" class="btn btn-sm btn-logout">
-          <i class="fas fa-right-from-bracket"></i> Déconnexion
-        </a>
-      </li>
-    </ul>
-  </nav>
-
-  <!-- Sidebar -->
-  <aside class="main-sidebar sidebar-dark-secondary elevation-4">
-    <a href="#" class="brand-link">
-      <span class="brand-text text-warning">TrackFlow+</span>
-    </a>
-
-    <div class="sidebar">
-      <nav class="mt-2">
-        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-
-          {# ======= YOUR MENU (cleaned, logic unchanged) ======= #}
-
-          {% if user.role_id == 1 or user.role_id == 8 %}
-            <li class="nav-header text-danger">DÉPARTEMENT</li>
+            </li>
             <li class="nav-item">
-              <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                <i class="nav-icon fas fa-tachometer-alt"></i>
-                <p>TABLEAU DE BORD</p>
-              </a>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-logout">
+                    <i class="fas fa-right-from-bracket"></i> Déconnexion
+                </a>
             </li>
-          {% endif %}
-
-          {% if user.role_id == 2 or user.role_id == 1 %}
-            <li class="nav-header text-danger">FRONTIÈRE</li>
-            <li class="nav-item">
-              <a href="{% url 'cargaison' %}" class="nav-link {% if request.resolver_match.url_name == 'cargaison' %}active{% endif %}">
-                <i class="nav-icon fas fa-truck-moving"></i>
-                <p>ENREGISTREMENT</p>
-              </a>
-            </li>
-          {% endif %}
-
-          {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
-            <li class="nav-header text-danger">ENTREPÔT</li>
-            <li class="nav-item">
-              <a href="{% url 'entrepot' %}" class="nav-link {% if request.resolver_match.url_name == 'entrepot' %}active{% endif %}">
-                <i class="nav-icon fas fa-industry"></i>
-                <p>ENTREPÔT</p>
-              </a>
-            </li>
-          {% endif %}
-
-          {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
-            <li class="nav-header text-danger">CERTIFICATION</li>
-
-            <li class="nav-item has-treeview">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-flask"></i>
-                <p>LABORATOIRE <i class="right fas fa-angle-left"></i></p>
-              </a>
-              <ul class="nav nav-treeview">
-                {% if user.role_id == 4 or user.role_id == 1 %}
-                  <li class="nav-item">
-                    <a href="{% url 'labo' %}" class="nav-link {% if request.resolver_match.url_name == 'labo' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>RÉCEPTION</p>
-                    </a>
-                  </li>
-                {% endif %}
-                {% if user.role_id == 5 or user.role_id == 1 %}
-                  <li class="nav-item">
-                    <a href="{% url 'analyse' %}" class="nav-link {% if request.resolver_match.url_name == 'analyse' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>ENCODAGE & IMPR.</p>
-                    </a>
-                  </li>
-                {% endif %}
-                {% if user.role_id == 6 or user.role_id == 1 %}
-                  <li class="nav-item">
-                    <a href="{% url 'validation1' %}" class="nav-link {% if request.resolver_match.url_name == 'validation1' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>VALIDATION SCE HYDRO</p>
-                    </a>
-                  </li>
-                {% endif %}
-                {% if user.role_id == 10 or user.role_id == 1 %}
-                  <li class="nav-item">
-                    <a href="{% url 'validation2' %}" class="nav-link {% if request.resolver_match.url_name == 'validation2' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>VALIDATION CHEF LABO</p>
-                    </a>
-                  </li>
-                {% endif %}
-                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
-                  <li class="nav-item">
-                    <a href="{% url 'impression' %}" class="nav-link {% if request.resolver_match.url_name == 'impression' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>IMPRESSION</p>
-                    </a>
-                  </li>
-                {% endif %}
-              </ul>
-            </li>
-          {% endif %}
-
-          {% if user.role_id == 7 or user.role_id == 1 or user.role_id == 11 or user.role_id == 13 %}
-            <li class="nav-header text-danger">CELLULE HYDRO</li>
-            <li class="nav-item has-treeview">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-building"></i>
-                <p>HYDRO <i class="right fas fa-angle-left"></i></p>
-              </a>
-
-              <ul class="nav nav-treeview">
-                {% if user.role_id == 1 or user.role_id == 7 %}
-                  <li class="nav-item">
-                    <a href="{% url 'tableaudeBordHydro' %}" class="nav-link {% if request.resolver_match.url_name == 'tableaudeBordHydro' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>TABLEAU DE BORD</p>
-                    </a>
-                  </li>
-                {% endif %}
-
-                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 7 %}
-                  <li class="nav-item">
-                    <a href="{% url 'codification' %}" class="nav-link {% if request.resolver_match.url_name == 'codification' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>GESTION REQUISITION</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="{% url 'regularisation' %}" class="nav-link {% if request.resolver_match.url_name == 'regularisation' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>REGULARISATION</p>
-                    </a>
-                  </li>
-                {% endif %}
-
-                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
-                  <li class="nav-item">
-                    <a href="{% url 'rapportActivite' %}" class="nav-link {% if request.resolver_match.url_name == 'rapportActivite' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>RAPPORT D'ACTIVITÉ</p>
-                    </a>
-                  </li>
-                {% endif %}
-
-                {% if user.role_id == 1 or user.role_id == 13 or user.role_id == 7 %}
-                  <li class="nav-item">
-                    <a href="{% url 'facturations' %}" class="nav-link {% if request.resolver_match.url_name == 'facturations' %}active{% endif %}">
-                      <i class="far fa-circle nav-icon"></i><p>PAIEMENTS</p>
-                    </a>
-                  </li>
-                {% endif %}
-              </ul>
-            </li>
-          {% endif %}
-
-          {% if user.role_id == 1 %}
-            <li class="nav-header text-danger">ADMINISTRATION</li>
-
-            <li class="nav-item has-treeview">
-              <a href="#" class="nav-link">
-                <i class="nav-icon fas fa-user"></i>
-                <p>USERS <i class="right fas fa-angle-left"></i></p>
-              </a>
-              <ul class="nav nav-treeview">
-                <li class="nav-item">
-                  <a href="{% url 'userslist' %}" class="nav-link {% if request.resolver_match.url_name == 'userslist' %}active{% endif %}">
-                    <i class="far fa-circle nav-icon"></i><p>LISTE D'UTILISATEURS</p>
-                  </a>
-                </li>
-              </ul>
-            </li>
-
-            <li class="nav-item">
-              <a href="{% url 'activityLog' %}" class="nav-link {% if request.resolver_match.url_name == 'activityLog' %}active{% endif %}">
-                <i class="nav-icon fas fa-file"></i>
-                <p>JOURNAL D'ACTIVITÉS</p>
-              </a>
-            </li>
-          {% endif %}
-
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-hands-helping"></i>
-              <p>AIDE</p>
-            </a>
-          </li>
-
         </ul>
-      </nav>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-secondary elevation-4">
+        <a href="#" class="brand-link">
+            <span class="brand-text text-warning">TrackFlow+</span>
+        </a>
+
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+
+                    {# ======= YOUR MENU (cleaned, logic unchanged) ======= #}
+
+                    {% if user.role_id == 1 or user.role_id == 8 %}
+                        <li class="nav-header text-danger">DÉPARTEMENT</li>
+                        <li class="nav-item">
+                            <a href="{% url 'dashboard' %}"
+                               class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>TABLEAU DE BORD</p>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 2 or user.role_id == 1 %}
+                        <li class="nav-header text-danger">FRONTIÈRE</li>
+                        <li class="nav-item">
+                            <a href="{% url 'cargaison' %}"
+                               class="nav-link {% if request.resolver_match.url_name == 'cargaison' %}active{% endif %}">
+                                <i class="nav-icon fas fa-truck-moving"></i>
+                                <p>ENREGISTREMENT</p>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 3 or user.role_id == 1 or user.role_id == 9 %}
+                        <li class="nav-header text-danger">ENTREPÔT</li>
+                        <li class="nav-item">
+                            <a href="{% url 'entrepot' %}"
+                               class="nav-link {% if request.resolver_match.url_name == 'entrepot' %}active{% endif %}">
+                                <i class="nav-icon fas fa-industry"></i>
+                                <p>ENTREPÔT</p>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 4 or user.role_id == 5 or user.role_id == 6 or user.role_id == 10 or user.role_id == 1 %}
+                        <li class="nav-header text-danger">CERTIFICATION</li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-flask"></i>
+                                <p>LABORATOIRE <i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                {% if user.role_id == 4 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'labo' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'labo' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RÉCEPTION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 5 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'analyse' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'analyse' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>ENCODAGE & IMPR.</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 6 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation1' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'validation1' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION - NIVEAU 1</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 10 or user.role_id == 1 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'validation2' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'validation2' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>VALIDATION - NIVEAU 2</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.role_id == 'v2' or user.role_id == 1 or user.role_id == 6 or user.role_id == 5 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'impression' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'impression' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>IMPRESSION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 7 or user.role_id == 1 or user.role_id == 11 or user.role_id == 13 %}
+                        <li class="nav-header text-danger">CELLULE HYDRO</li>
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-building"></i>
+                                <p>HYDRO <i class="right fas fa-angle-left"></i></p>
+                            </a>
+
+                            <ul class="nav nav-treeview">
+                                {% if user.role_id == 1 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'tableaudeBordHydro' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'tableaudeBordHydro' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>TABLEAU DE BORD</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'codification' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'codification' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>GESTION REQUISITION</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{% url 'regularisation' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'regularisation' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>REGULARISATION</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% if user.role_id == 1 or user.role_id == 11 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'rapportActivite' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'rapportActivite' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>RAPPORT D'ACTIVITÉ</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% if user.role_id == 1 or user.role_id == 13 or user.role_id == 7 %}
+                                    <li class="nav-item">
+                                        <a href="{% url 'facturations' %}"
+                                           class="nav-link {% if request.resolver_match.url_name == 'facturations' %}active{% endif %}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>PAIEMENTS</p>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    {% if user.role_id == 1 %}
+                        <li class="nav-header text-danger">ADMINISTRATION</li>
+
+                        <li class="nav-item has-treeview">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon fas fa-user"></i>
+                                <p>USERS <i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{% url 'userslist' %}"
+                                       class="nav-link {% if request.resolver_match.url_name == 'userslist' %}active{% endif %}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>LISTE D'UTILISATEURS</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{% url 'activityLog' %}"
+                               class="nav-link {% if request.resolver_match.url_name == 'activityLog' %}active{% endif %}">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>JOURNAL D'ACTIVITÉS</p>
+                            </a>
+                        </li>
+
+
+                        <li class="nav-item">
+                            <a href="{% url 'activityLog' %}"
+                               class="nav-link {% if request.resolver_match.url_name == 'app_settings' %}active{% endif %}">
+                                <i class="nav-icon fas fa-file"></i>
+                                <p>PARAMÈTRES</p>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-hands-helping"></i>
+                            <p>AIDE</p>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        {% block content %}{% endblock %}
     </div>
-  </aside>
 
-  <!-- Content -->
-  <div class="content-wrapper">
-   {% block content %}{% endblock %}
-  </div>
+    <!-- Footer -->
+    <footer class="main-footer">
+        <strong>Copyright &copy; {% now 'Y' %}
+            <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.
+        </strong>
+        All rights reserved.
+        <div class="float-right d-none d-sm-inline-block"><b>Version</b> 3.0</div>
+    </footer>
 
-  <!-- Footer -->
-  <footer class="main-footer">
-    <strong>Copyright &copy; {% now 'Y' %}
-      <a href="http://www.cgworldwide.org">Compass Green WorldWide SARL</a>.
-    </strong>
-    All rights reserved.
-    <div class="float-right d-none d-sm-inline-block"><b>Version</b> 3.0</div>
-  </footer>
-
-  <aside class="control-sidebar control-sidebar-dark"></aside>
+    <aside class="control-sidebar control-sidebar-dark"></aside>
 
 </div>
 
@@ -308,32 +378,33 @@
 
 {# Sentry Browser SDK (Tracing + Replay). Only initialize if DSN is provided #}
 {% if SENTRY_DSN_JS %}
-  <script src="https://browser.sentry-cdn.com/7.120.1/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
-  <script>
-    try {
-      Sentry.init({
-        dsn: "{{ SENTRY_DSN_JS }}",
-        environment: "{{ SENTRY_ENV }}",
-        release: "{{ SENTRY_RELEASE }}",
-        integrations: [new Sentry.BrowserTracing(), new Sentry.Replay()],
-        tracesSampleRate: parseFloat("{{ SENTRY_TRACES_SAMPLE_RATE|default:'1.0' }}") || 1.0,
-        replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0,
-      });
-      {% if request.user.is_authenticated %}
-      Sentry.setUser({ id: "{{ request.user.id }}", username: "{{ request.user.username }}" });
-      {% endif %}
-    } catch (e) { /* no-op */ }
-  </script>
+    <script src="https://browser.sentry-cdn.com/7.120.1/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>
+    <script>
+        try {
+            Sentry.init({
+                dsn: "{{ SENTRY_DSN_JS }}",
+                environment: "{{ SENTRY_ENV }}",
+                release: "{{ SENTRY_RELEASE }}",
+                integrations: [new Sentry.BrowserTracing(), new Sentry.Replay()],
+                tracesSampleRate: parseFloat("{{ SENTRY_TRACES_SAMPLE_RATE|default:'1.0' }}") || 1.0,
+                replaysSessionSampleRate: 0.1,
+                replaysOnErrorSampleRate: 1.0,
+            });
+            {% if request.user.is_authenticated %}
+                Sentry.setUser({id: "{{ request.user.id }}", username: "{{ request.user.username }}"});
+            {% endif %}
+        } catch (e) { /* no-op */
+        }
+    </script>
 {% endif %}
 
 {% block extra_js %}{% endblock %}
 
 {# Keep your page specific JS hook #}
 <script>
-  $(document).ready(function(){
-    {% block javascript %}{% endblock %}
-  });
+    $(document).ready(function () {
+        {% block javascript %}{% endblock %}
+    });
 </script>
 
 </body>

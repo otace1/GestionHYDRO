@@ -1,5 +1,9 @@
 import base64
+import datetime
 import io
+import json
+import secrets
+import string
 
 from django.contrib.auth import (
     authenticate,
@@ -12,10 +16,12 @@ from django.core.paginator import PageNotAnInteger, EmptyPage, Paginator
 from django.db.models import Q, F
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
 from jsignature.utils import draw_signature
-from xlsxwriter import Workbook
+from openpyxl import Workbook
 
 from accounts.models import *
+from .services import log_action
 from .forms import UserLoginForm, UserEdit, UserRegisterForm, Affectation_Entrepot, Affectation_Ville, SignatureForm, \
     Affectation_Role, Affectation_Labo
 from .tables import ListeUtilisateurs, DetailsAffectation, DetailsVille, SignatureTable
@@ -37,13 +43,6 @@ def login_user(request):
                 login(request, user)
                 re = request.user
                 role = re.role_id
-
-                #Activity Log
-                UserActivityLog.objects.create(
-                    user=re,
-                    action="System login",
-                    description="User logged in successfully",
-                )
 
                 # Roles frontière
                 if role == 2:
@@ -114,11 +113,12 @@ def logout_user(request):
 def listeutilisateurs(request):
     user = request.user
     role = user.role_id
-    userForm = UserRegisterForm(request.POST)
+    userForm = UserRegisterForm()
     affectationRol = Affectation_Role()
     affectationEntr = Affectation_Entrepot()
     affectationVil = Affectation_Ville()
     affectationLab = Affectation_Labo()
+    sig_form = SignatureForm()
 
     if role == 1:
         template = 'accounts/userslist.html'
@@ -128,6 +128,8 @@ def listeutilisateurs(request):
             'affectationEntr':affectationEntr,
             'affectationVil':affectationVil,
             'affectationLab':affectationLab,
+            'sig_form': sig_form,
+            'roles': Roles.objects.all().order_by('role'),
         }
         return render(request, template,context)
     else:
@@ -136,102 +138,97 @@ def listeutilisateurs(request):
 
 
 @login_required(login_url='login')
-# fonctions pour afficher la liste des utilisateurs
+@require_POST
 def listeutilisateursResponse(request):
     user = request.user
-    role = user.role_id
+    if user.role_id != 1:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
 
-    if role == 1:
-        qs = MyUser.objects.all().values(
-            'id','first_name','last_name','username','role__role','last_login'
-                                        )
-        # Get the search value from the request's POST parameters
-        search_value = request.POST.get('search[value]', '')
+    # Base QuerySet
+    base_qs = MyUser.objects.all()
+    records_total = base_qs.count()
 
-        # Apply search filter to the QuerySet
-        if search_value:
-            qs = qs.filter(
-                Q(first_name__icontains=search_value) |
-                Q(last_name__icontains=search_value) |
-                Q(username__icontains=search_value)
-            )
+    # Get DataTables parameters
+    try:
+        draw = int(request.POST.get('draw', 1))
+        start = int(request.POST.get('start', 0))
+        length = int(request.POST.get('length', 15))
+    except (ValueError, TypeError):
+        draw, start, length = 1, 0, 15
 
-        # Number of items to show per page
-        items_per_page = 15
+    # Filters
+    search_value = request.POST.get('search[value]', '').strip()
+    role_id = request.POST.get('role')
+    status = request.POST.get('status')
 
-        # Initialize the Paginator with the QuerySet and the number of items per page
-        paginator = Paginator(qs, items_per_page)
+    qs = base_qs
 
-        # Get the current page number from the request's POST parameters
-        draw = int(request.POST.get('draw', 1))  # Get the draw value for proper AJAX handling
-        start = int(request.POST.get('start', 0))  # Get the starting index for pagination
-        length = int(request.POST.get('length', items_per_page))  # Get the number of items per page
+    if role_id:
+        qs = qs.filter(role_id=role_id)
 
-        # Calculate the current page number based on start and length
-        current_page = (start // length) + 1
+    if search_value:
+        qs = qs.filter(
+            Q(first_name__icontains=search_value) |
+            Q(last_name__icontains=search_value) |
+            Q(username__icontains=search_value)
+        )
+    
+    records_filtered = qs.count()
 
-        try:
-            # Get the current page from the Paginator
-            page = paginator.page(current_page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver the first page.
-            page = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), return an empty JSON response.
-            return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+    # Values to fetch
+    qs = qs.values(
+        'id', 'first_name', 'last_name', 'username', 'role__role', 'last_login',
+        'fonction', 'poste', 'is_admin', 'is_staff'
+    )
 
-        # Convert the page object to a list of dictionaries
-        data = list(page)
+    # Export check
+    export = request.POST.get('export')
+    if export == 'excel':
+        data = list(qs)
+        workbook = Workbook()
+        sheet = workbook.active
+        
+        # Headers
+        header_row = ['ID UTILISATEUR', 'PRÉNOM', 'NOM', 'NOM D\'UTILISATEUR', 'NIVEAU DE DROITS', 'DERNIÈRE CONNEXION']
+        sheet.append(header_row)
 
-        # Check if it's an AJAX request and if the export flag is set
-        export = request.POST.get('export', None)
-        if export == 'excel':
-            # Retrieve all data (no lazy pagination) and store it in a list
-            data = list(qs)
+        # Data rows
+        for row in data:
+            sheet.append([
+                row['id'],
+                row['first_name'],
+                row['last_name'],
+                row['username'],
+                row.get('role__role') or '-',
+                row['last_login'].strftime('%d/%m/%Y %H:%M') if row['last_login'] else '-'
+            ])
 
-            # Create a new Excel workbook
-            workbook = Workbook()
-            sheet = workbook.active
+        excel_stream = io.BytesIO()
+        workbook.save(excel_stream)
+        excel_stream.seek(0)
 
-            # Write headers to the Excel file
-            header_row = ['USER ID', 'FIRST NAME', 'LAST NAME', 'USERNAME', 'APP.RIGHT LVL', 'DERNIERE CONNEXION']
+        response = HttpResponse(
+            excel_stream,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="rapport_utilisateurs.xlsx"'
+        return response
 
-            # Combine header and data rows using zip
-            all_rows = [header_row] + [
-                [
-                    row['id'],
-                    row['first_name'],
-                    row['last_name'],
-                    row['username'],
-                    row['role__role'],
-                    row['last_login'],
-                ] for row in data
-            ]
-
-            # Write data rows to the Excel file
-            for row in all_rows:
-                sheet.append(row)
-
-            # Create an in-memory stream to hold the Excel file data
-            excel_stream = io.BytesIO()
-            workbook.save(excel_stream)
-            excel_stream.seek(0)
-
-            # Prepare the response to return the Excel file
-            response = HttpResponse(excel_stream,
-                                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = 'attachment; filename="rapport.xlsx"'
-            return response
-
-        # Return JSON response with the data
-        return JsonResponse({
-            'data': data,
-            'draw': draw,
-            'recordsTotal': paginator.count,
-            'recordsFiltered': paginator.count,
-        })
+    # Pagination
+    if length == -1:
+        data = list(qs)
     else:
-        return redirect('logout')
+        data = list(qs[start:start + length])
+
+    # Convert datetime to string for JSON serialization (optional, but good for consistency)
+    # JsonResponse with DjangoJSONEncoder already does this, but we can do it manually if needed.
+
+    return JsonResponse({
+        'data': data,
+        'draw': draw,
+        'recordsTotal': records_total,
+        'recordsFiltered': records_filtered,
+    })
 
 
 
@@ -347,13 +344,52 @@ def effacerutilisateurs(request, pk):
 
             # Delete the user
             user_to_delete.delete()
-            return JsonResponse({'status': 'User and related records deleted successfully'}, status=200)
+            return JsonResponse({'status': 'Utilisateur et enregistrements associés supprimés avec succès'}, status=200)
         except MyUser.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)
+            return JsonResponse({'error': 'Utilisateur non trouvé'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse(status=400)
+
+
+@login_required(login_url='login')
+@require_POST
+def reset_password(request, pk):
+    """
+    Securely resets a user's password and returns the new temporary password.
+    Restricted to Admin (role_id=1).
+    """
+    if request.user.role_id != 1:
+        return JsonResponse({'success': False, 'error': 'Permission refusée'}, status=403)
+
+    try:
+        target_user = get_object_or_404(MyUser, id=pk)
+
+        # Generate a secure random password (14 characters)
+        alphabet = string.ascii_letters + string.digits
+        generated_password = ''.join(secrets.choice(alphabet) for i in range(14))
+
+        # Update password using Django's best practices
+        target_user.set_password(generated_password)
+        target_user.save()
+
+        # Audit logging
+        log_action(
+            request,
+            action="PASSWORD_RESET",
+            description=f"Admin a réinitialisé le mot de passe pour l'utilisateur : {target_user.username}",
+            obj=target_user
+        )
+
+        return JsonResponse({
+            'success': True,
+            'password': generated_password,
+            'username': target_user.username,
+            'full_name': target_user.get_full_name()
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 
@@ -509,6 +545,19 @@ def retireraffectationville(request, pk):
 
 
 @login_required(login_url='login')
+def retireraffectationRole(request, pk):
+    user = request.user
+    role = user.role_id
+    if role == 1:
+        target_user = get_object_or_404(MyUser, id=pk)
+        target_user.role = None
+        target_user.save(update_fields=['role'])
+        return JsonResponse({'status': 200})
+    else:
+        return JsonResponse({'status': 403})
+
+
+@login_required(login_url='login')
 # Affectation des signatures
 def affectation_signature(request):
     template = 'accounts/profileville.html'
@@ -546,94 +595,94 @@ def createToken(request, pk):
         # Return a JsonResponse with an error message indicating token already exists
         print('TEST')
         print(Token.objects.filter(user=user))
-        return JsonResponse({'error': 'Token already exists for this user'}, status=400)
+        return JsonResponse({'error': 'Le jeton existe déjà pour cet utilisateur'}, status=400)
     else:
         # Create a new token for the user
         Token.objects.create(user=user)
         # Return a JsonResponse indicating successful token creation
-        return JsonResponse({'message': 'Token created successfully'}, status=201)
+        return JsonResponse({'message': 'Jeton créé avec succès'}, status=201)
 
 
 @login_required(login_url='login')
+@require_POST
 def ajoutSignature(request):
-    if request.method == 'POST' and request.FILES.get('image') and request.POST.get('dataRow'):
-        image_file = request.FILES['image']
-        tr_id = request.POST['dataRow']
-        try:
-            MyUser.objects.get(id=tr_id)
-            return JsonResponse({'error': 'Invalid request'}, status=400)
-        except:
-            # Save the base64 encoded image data to the database along with the tr_id
-            SignaturesModel.objects.create(signatureData=image_file.read(), userId_id=tr_id)
-            return JsonResponse({'message': 'Signature uploaded successfully'}, status=200)
-    else:
-        return JsonResponse({'error': 'Invalid request'}, status=400)
+    """
+    Saves or updates a user signature.
+    Supports both file upload and JSON data from jsignature.
+    """
+    if request.user.role_id != 1:
+        return JsonResponse({'error': 'Permission refusée'}, status=403)
 
+    user_id = request.POST.get('dataRow')
+    if not user_id:
+        return JsonResponse({'error': 'ID utilisateur manquant'}, status=400)
 
-@login_required(login_url='login')
-def getSignature(request,pk):
     try:
-        # Assuming your model has a field named 'image_data' where base64 data is stored
-        obj = SignaturesModel.objects.get(idSignature=pk)
+        target_user = MyUser.objects.get(id=user_id)
+    except MyUser.DoesNotExist:
+        return JsonResponse({'error': 'Utilisateur non trouvé'}, status=404)
 
-        # Fetch the base64 data from the model
-        base64_data = base64.b64encode(obj.signatureData).decode('utf-8')  # Encode bytes to base64 string
+    binary_data = None
 
-        # Return the base64 data in a JSON response
-        return JsonResponse({'base64_image': base64_data}, status=200)
+    # Check if it's a drawn signature (jsignature JSON)
+    signature_json = request.POST.get('signature')
+    if signature_json:
+        try:
+            # Parse JSON string to Python list
+            signature_data = json.loads(signature_json)
+            # draw_signature converts list of lines to a PIL Image
+            signature_img = draw_signature(signature_data)
+            if signature_img:
+                buffer = io.BytesIO()
+                signature_img.save(buffer, format='PNG')
+                binary_data = buffer.getvalue()
+        except Exception as e:
+            return JsonResponse({'error': f'Erreur lors du traitement de la signature dessinée : {str(e)}'}, status=400)
 
-    except ObjectDoesNotExist:
-        return JsonResponse({'error': 'Object not found'}, status=404)
+    # Check if it's an uploaded file
+    elif 'image' in request.FILES:
+        image_file = request.FILES['image']
+        # Validate file size (e.g., max 2MB)
+        if image_file.size > 2 * 1024 * 1024:
+            return JsonResponse({'error': 'Fichier trop volumineux. La taille maximale est de 2 Mo.'}, status=400)
+        # Validate file type
+        if not image_file.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            return JsonResponse({'error': 'Type de fichier invalide. Veuillez télécharger un fichier PNG ou JPG.'}, status=400)
+        binary_data = image_file.read()
 
-    except Exception as e:
-        print('SIGNATURE')
-        print(e)
-        return JsonResponse({'error': str(e)}, status=500)
+    if not binary_data:
+        return JsonResponse({'error': 'Aucune donnée de signature fournie'}, status=400)
 
-
-
-@login_required(login_url='login')
-def listeSignature(request,pk):
-    qs = SignaturesModel.objects.filter(userId=pk).values(
-        'idSignature',
-        'userId__first_name',
-        'userId__last_name'
+    # Update or create
+    SignaturesModel.objects.update_or_create(
+        userId=target_user,
+        defaults={'signatureData': binary_data}
     )
 
-    # Number of items to show per page
-    items_per_page = 15
+    return JsonResponse({'message': 'Signature enregistrée avec succès'}, status=200)
 
-    # Initialize the Paginator with the QuerySet and the number of items per page
-    paginator = Paginator(qs, items_per_page)
 
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
-
-    # Calculate the current page number based on start and length
-    current_page = (start // length) + 1
-
+@login_required(login_url='login')
+def getSignature(request, pk):
+    """
+    Fetches the signature for a user (pk is userId).
+    """
     try:
-        # Get the current page from the Paginator
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
-        page = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+        # Lookup by userId since it's OneToOne
+        obj = SignaturesModel.objects.get(userId_id=pk)
+        base64_data = base64.b64encode(obj.signatureData).decode('utf-8')
+        return JsonResponse({
+            'success': True,
+            'base64_image': base64_data,
+            'updated_at': obj.updated_at.strftime('%d/%m/%Y %H:%M')
+        }, status=200)
+    except SignaturesModel.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Aucune signature trouvée'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-    # Convert the page object to a list of dictionaries
-    data = list(page)
 
-    # Return JSON response with the data
-    return JsonResponse({
-        'data': data,
-        'draw': draw,
-        'recordsTotal': paginator.count,
-        'recordsFiltered': paginator.count,
-    })
+
 
 
 
@@ -799,6 +848,16 @@ def detailsAffectationVille(request,pk):
     })
 
 
+@login_required(login_url='login')
+def detailsAffectationRole(request, pk):
+    target_user = get_object_or_404(MyUser, id=pk)
+    data = []
+    if target_user.role:
+        data.append({
+            'id': target_user.id,
+            'role_name': target_user.role.role,
+        })
+    return JsonResponse({'data': data})
 
 
 @login_required(login_url='login')
@@ -818,58 +877,129 @@ def activityLog(request):
 
 @login_required(login_url='login')
 def activityLogResponse(request):
-    qs = UserActivityLog.objects.all().order_by('-timestamp').values(
-        'id',
-        'user__username',
-        'timestamp',
-        'action',
-        'description'
-    )
+    """
+    Enhanced activity log endpoint that primarily reads from AuditLog.
+    Supports advanced filtering and optimized pagination for DataTables.
+    """
+    # Source toggle: default to AuditLog
+    source = request.GET.get('source', 'audit')
+    
+    if source == 'activity':
+        qs = UserActivityLog.objects.all().select_related('user')
+        records_total = UserActivityLog.objects.count()
+    else:
+        qs = AuditLog.objects.all().select_related('actor')
+        records_total = AuditLog.objects.count()
 
-    # Get the search value from the request's GET parameters
-    search_value = request.GET.get('search[value]', '')
+    # Advanced Filters
+    q = request.GET.get('q') or request.GET.get('search[value]', '')
+    user_filter = request.GET.get('user')
+    action_filter = request.GET.get('action')
+    module_filter = request.GET.get('module')
+    ip_filter = request.GET.get('ip')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    only_mine = request.GET.get('only_mine') == '1'
+    level_filter = request.GET.get('level')
 
-    # Apply search filter to the QuerySet
-    if search_value:
-        qs = qs.filter(
-            Q(user__username__icontains=search_value) |
-            Q(action__icontains=search_value) |
-            Q(description__icontains=search_value)
-        )
+    if source == 'activity':
+        if q:
+            qs = qs.filter(
+                Q(user__username__icontains=q) |
+                Q(username_snapshot__icontains=q) |
+                Q(action__icontains=q) |
+                Q(description__icontains=q) |
+                Q(module__icontains=q) |
+                Q(ip_address__icontains=q)
+            )
+        if user_filter:
+            qs = qs.filter(Q(user__username__icontains=user_filter) | Q(username_snapshot__icontains=user_filter))
+        if action_filter:
+            qs = qs.filter(action__icontains=action_filter)
+        if module_filter:
+            qs = qs.filter(module__icontains=module_filter)
+        if only_mine:
+            qs = qs.filter(user=request.user)
+    else:
+        # AuditLog filters
+        if q:
+            qs = qs.filter(
+                Q(actor__username__icontains=q) |
+                Q(actor_username_snapshot__icontains=q) |
+                Q(action__icontains=q) |
+                Q(model_name__icontains=q) |
+                Q(object_repr__icontains=q) |
+                Q(ip_address__icontains=q)
+            )
+        if user_filter:
+            qs = qs.filter(Q(actor__username__icontains=user_filter) | Q(actor_username_snapshot__icontains=user_filter))
+        if action_filter:
+            qs = qs.filter(action__icontains=action_filter)
+        if module_filter:
+            qs = qs.filter(model_name__icontains=module_filter)
+        if only_mine:
+            qs = qs.filter(actor=request.user)
 
-    # Number of items to show per page
-    items_per_page = 15
+    if ip_filter:
+        qs = qs.filter(ip_address__icontains=ip_filter)
+    if date_from:
+        qs = qs.filter(timestamp__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(timestamp__date__lte=date_to)
+    if level_filter:
+        qs = qs.filter(status__icontains=level_filter)
 
-    # Initialize the Paginator with the QuerySet and the number of items per page
-    paginator = Paginator(qs, items_per_page)
+    # Count after filtering
+    records_filtered = qs.count()
 
-    # Get the current page number from the request's GET parameters
-    draw = int(request.GET.get('draw', 1))  # Get the draw value for proper AJAX handling
-    start = int(request.GET.get('start', 0))  # Get the starting index for pagination
-    length = int(request.GET.get('length', items_per_page))  # Get the number of items per page
+    # Pagination
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 15))
 
-    # Calculate the current page number based on start and length
-    current_page = (start // length) + 1
+    qs = qs.order_by('-timestamp')[start:start + length]
 
-    try:
-        # Get the current page from the Paginator
-        page = paginator.page(current_page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver the first page.
-        page = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), return an empty JSON response.
-        return JsonResponse({'data': [], 'draw': draw, 'recordsTotal': 0, 'recordsFiltered': 0})
+    # Format data
+    data_list = []
+    for log in qs:
+        if source == 'activity':
+            data_list.append({
+                'id': log.id,
+                'user__username': log.username_snapshot or (log.user.username if log.user else 'System'),
+                'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'action': log.action,
+                'description': log.description,
+                'module': log.module or '',
+                'ip_address': log.ip_address or '',
+                'status': log.status,
+            })
+        else:
+            # For AuditLog, construct description
+            desc = f"{log.action} on {log.model_name}: {log.object_repr}"
+            if log.action == 'UPDATE' and log.changes:
+                changed_fields = ", ".join(log.changes.keys())
+                desc += f" (Fields: {changed_fields})"
+            
+            data_list.append({
+                'id': log.id,
+                'user__username': log.actor_username_snapshot or (log.actor.username if log.actor else 'System'),
+                'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'action': log.action,
+                'description': desc,
+                'module': log.model_name,
+                'ip_address': log.ip_address or '',
+                'status': log.status,
+                'changes': log.changes,
+                'new_state': log.new_state,
+                'old_state': log.old_state,
+                'request_id': log.request_id,
+            })
 
-    # Convert the page object to a list of dictionaries
-    data = list(page)
-
-    # Return JSON response with the data
     return JsonResponse({
-        'data': data,
         'draw': draw,
-        'recordsTotal': paginator.count,
-        'recordsFiltered': paginator.count,
+        'recordsTotal': records_total,
+        'recordsFiltered': records_filtered,
+        'data': data_list,
     })
 
 

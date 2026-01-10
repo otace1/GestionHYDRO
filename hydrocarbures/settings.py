@@ -19,7 +19,7 @@ import api.authentication
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Env File loading here (no-op in Kubernetes if .env doesn't exist)
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+dotenv_path = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path)
 
 
@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     # Ajax
     "ajax_datatable",
+    "jsignature",
     # My Apps
     "enreg",
     "shydro",
@@ -102,6 +103,7 @@ INSTALLED_APPS = [
     "facturations",
     # "theme",
     "api",
+    "app_settings",
     # "verification",
 ]
 
@@ -159,6 +161,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.RequestStoreMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
@@ -183,6 +186,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.csrf",
                 # Expose Sentry vars to templates for browser SDK
                 "hydrocarbures.context_processors.sentry",
             ],
@@ -337,3 +341,21 @@ CELERY_RESULT_BACKEND = "django-db"
 
 # SECRET DELETION CODE
 DELETE_CONFIRMATION_CODE = os.environ.get("DELETE_CONFIRMATION_CODE")
+# Audit Log Settings
+AUDIT_LOG_ENABLED = True
+AUDIT_LOG_EXCLUDE_MODELS = [
+    'accounts.auditlog',
+    'accounts.useractivitylog',
+    'sessions.session',
+    'admin.logentry',
+    'contenttypes.contenttype',
+    'auth.permission',
+    'django_celery_results.taskresult',
+    'django_celery_beat.periodictask',
+    'django_celery_beat.periodictasks',
+    'django_celery_beat.crontabschedule',
+    'django_celery_beat.intervalschedule',
+    'django_celery_beat.solarschedule',
+    'django_celery_beat.clockedschedule',
+]
+AUDIT_LOG_RETENTION_DAYS = 90

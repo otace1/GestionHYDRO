@@ -2,6 +2,22 @@
 {% load crispy_forms_tags %}
 {% load i18n %}
 
+{% block extra_css %}
+  {{ sig_form.media.css }}
+  <style>
+    #signature-pad-wrapper .jSignature, #signature-pad-wrapper .jsignature {
+      width: 100% !important;
+      height: 150px !important;
+      background: #fff;
+      cursor: crosshair;
+    }
+    .jSignature canvas, .jsignature canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
 
 <section class="content">
@@ -10,13 +26,13 @@
     <!-- Page Header -->
     <div class="d-flex align-items-center justify-content-between mb-3">
       <div>
-        <h1 class="h3 mb-0">{% trans "User Management" %}</h1>
-        <small class="text-muted">{% trans "Create, assign roles, manage access and reset credentials." %}</small>
+        <h1 class="h3 mb-0">{% trans "Gestion des utilisateurs" %}</h1>
+        <small class="text-muted">{% trans "Créer, attribuer des rôles, gérer les accès et réinitialiser les identifiants." %}</small>
       </div>
 
       <div class="d-flex gap-2">
         <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-user-create">
-          <i class="fas fa-user-plus mr-1"></i> {% trans "Add User" %}
+          <i class="fas fa-user-plus mr-1"></i> {% trans "Ajouter un utilisateur" %}
         </button>
       </div>
     </div>
@@ -26,31 +42,33 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-4 mb-2">
-            <label class="mb-1 text-sm">{% trans "Search" %}</label>
+            <label class="mb-1 text-sm">{% trans "Rechercher" %}</label>
             <input id="userSearch" type="text" class="form-control"
-                   placeholder="{% trans 'Search by name, username, email...' %}">
+                   placeholder='{% trans "Rechercher par nom, nom d’utilisateur, e-mail..." %}'>
           </div>
 
           <div class="col-md-3 mb-2">
-            <label class="mb-1 text-sm">{% trans "Status" %}</label>
+            <label class="mb-1 text-sm">{% trans "Statut" %}</label>
             <select id="statusFilter" class="form-control">
-              <option value="">{% trans "All" %}</option>
-              <option value="active">{% trans "Active" %}</option>
-              <option value="inactive">{% trans "Inactive" %}</option>
+              <option value="">{% trans "Tous" %}</option>
+              <option value="active">{% trans "Actif" %}</option>
+              <option value="inactive">{% trans "Inactif" %}</option>
             </select>
           </div>
 
           <div class="col-md-3 mb-2">
-            <label class="mb-1 text-sm">{% trans "Role" %}</label>
+            <label class="mb-1 text-sm">{% trans "Rôle" %}</label>
             <select id="roleFilter" class="form-control">
-              <option value="">{% trans "All roles" %}</option>
-              {# Optional: populate roles if you have them in context #}
+              <option value="">{% trans "Tous les rôles" %}</option>
+              {% for role in roles %}
+                <option value="{{ role.idrole }}">{{ role.role }}</option>
+              {% endfor %}
             </select>
           </div>
 
           <div class="col-md-2 mb-2 d-flex align-items-end">
             <button id="resetFilters" class="btn btn-outline-secondary btn-block">
-              {% trans "Reset" %}
+              {% trans "Réinitialiser" %}
             </button>
           </div>
         </div>
@@ -61,15 +79,15 @@
     <div class="card">
       <div class="card-body">
         <div id="data-table-wrapper" style="position:relative;">
-          <div class="loading-spinner"></div>
+          <div class="loading-spinner" style="display:none;"></div>
 
           <table id="users-table" class="table table-hover table-bordered w-100">
             <thead>
               <tr>
-                <th>{% trans "User ID" %}</th>
-                <th>{% trans "Name" %}</th>
-                <th>{% trans "Username" %}</th>
-                <th>{% trans "Last Login" %}</th>
+                <th>{% trans "ID Utilisateur" %}</th>
+                <th>{% trans "Nom" %}</th>
+                <th>{% trans "Nom d'utilisateur" %}</th>
+                <th>{% trans "Dernière connexion" %}</th>
                 <th class="text-center">{% trans "Actions" %}</th>
               </tr>
             </thead>
@@ -82,7 +100,7 @@
 </section>
 
 <!-- =========================
-     MODALS (clean naming)
+     MODALS
 ========================== -->
 
 <!-- Create User Modal -->
@@ -90,7 +108,7 @@
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">{% trans "Create User" %}</h5>
+        <h5 class="modal-title">{% trans "Créer un utilisateur" %}</h5>
         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
       </div>
 
@@ -102,10 +120,10 @@
 
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
-            {% trans "Cancel" %}
+            {% trans "Annuler" %}
           </button>
           <button type="submit" class="btn btn-primary">
-            {% trans "Create" %}
+            {% trans "Créer" %}
           </button>
         </div>
       </form>
@@ -113,14 +131,14 @@
   </div>
 </div>
 
-<!-- Manage User Modal (single modal for assignments + actions) -->
+<!-- Manage User Modal -->
 <div class="modal fade" id="modal-user-manage" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
 
       <div class="modal-header">
         <div>
-          <h5 class="modal-title mb-0">{% trans "Manage User" %}</h5>
+          <h5 class="modal-title mb-0">{% trans "Gérer l'utilisateur" %}</h5>
           <small class="text-muted" id="manageUserSubtitle"></small>
         </div>
         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
@@ -130,13 +148,18 @@
         <!-- Tabs -->
         <ul class="nav nav-tabs" role="tablist">
           <li class="nav-item">
-            <a class="nav-link active" data-toggle="tab" href="#tab-assignments" role="tab">
-              {% trans "Assignments" %}
+            <a class="nav-link active" data-toggle="tab" href="#tab-details" role="tab">
+              {% trans "Détails de l'utilisateur" %}
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#tab-assignments" role="tab">
+              {% trans "Affectations" %}
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" data-toggle="tab" href="#tab-security" role="tab">
-              {% trans "Security" %}
+              {% trans "Sécurité" %}
             </a>
           </li>
           <li class="nav-item">
@@ -147,50 +170,73 @@
         </ul>
 
         <div class="tab-content pt-3">
+          <!-- User Details -->
+          <div class="tab-pane fade show active" id="tab-details" role="tabpanel">
+            <div class="row">
+              <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                  <tr><th style="width:40%">{% trans "Prénom" %}</th><td id="detail-first-name">-</td></tr>
+                  <tr><th>{% trans "Nom" %}</th><td id="detail-last-name">-</td></tr>
+                  <tr><th>{% trans "Nom d'utilisateur" %}</th><td id="detail-username">-</td></tr>
+                  <tr><th>{% trans "Rôle" %}</th><td id="detail-role">-</td></tr>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                  <tr><th style="width:40%">{% trans "Fonction" %}</th><td id="detail-fonction">-</td></tr>
+                  <tr><th>{% trans "Poste" %}</th><td id="detail-poste">-</td></tr>
+                  <tr><th>{% trans "Administrateur" %}</th><td id="detail-is-admin">-</td></tr>
+                  <tr><th>{% trans "Personnel" %}</th><td id="detail-is-staff">-</td></tr>
+                  <tr><th>{% trans "Dernière connexion" %}</th><td id="detail-last-login">-</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+
           <!-- Assignments -->
-          <div class="tab-pane fade show active" id="tab-assignments" role="tabpanel">
+          <div class="tab-pane fade" id="tab-assignments" role="tabpanel">
             <div class="row">
               <div class="col-lg-4">
                 <div class="card card-outline card-info">
-                  <div class="card-header"><strong>{% trans "Role" %}</strong></div>
+                  <div class="card-header"><strong>{% trans "Rôle" %}</strong></div>
                   <div class="card-body">
                     <form id="form-role">
                       {% csrf_token %}
                       {{ affectationRol|crispy }}
-                      <button type="submit" class="btn btn-info btn-block">{% trans "Update Role" %}</button>
+                      <button type="submit" class="btn btn-info btn-block">{% trans "Modifier le rôle" %}</button>
                     </form>
                   </div>
                 </div>
 
                 <div class="card card-outline card-info">
-                  <div class="card-header"><strong>{% trans "Warehouse / Location" %}</strong></div>
+                  <div class="card-header"><strong>{% trans "Entrepôt / Emplacement" %}</strong></div>
                   <div class="card-body">
                     <form id="form-entr">
                       {% csrf_token %}
                       {{ affectationEntr|crispy }}
-                      <button type="submit" class="btn btn-info btn-block">{% trans "Assign Warehouse" %}</button>
+                      <button type="submit" class="btn btn-info btn-block">{% trans "Affecter à l'entrepôt" %}</button>
                     </form>
                   </div>
                 </div>
 
                 <div class="card card-outline card-info">
-                  <div class="card-header"><strong>{% trans "City" %}</strong></div>
+                  <div class="card-header"><strong>{% trans "Ville" %}</strong></div>
                   <div class="card-body">
                     <form id="form-ville">
                       {% csrf_token %}
                       {{ affectationVil|crispy }}
-                      <button type="submit" class="btn btn-info btn-block">{% trans "Assign City" %}</button>
+                      <button type="submit" class="btn btn-info btn-block">{% trans "Affecter à la ville" %}</button>
                     </form>
                   </div>
                 </div>
 
                 <div class="card card-outline card-info">
-                  <div class="card-header"><strong>{% trans "Laboratory" %}</strong></div>
+                  <div class="card-header"><strong>{% trans "Laboratoire" %}</strong></div>
                   <div class="card-body">
                     <form id="form-labo">
                       {% csrf_token %}
                       {{ affectationLab|crispy }}
-                      <button type="submit" class="btn btn-info btn-block">{% trans "Assign Laboratory" %}</button>
+                      <button type="submit" class="btn btn-info btn-block">{% trans "Affecter au laboratoire" %}</button>
                     </form>
                   </div>
                 </div>
@@ -198,19 +244,17 @@
 
               <div class="col-lg-8">
                 <div class="card">
-                  <div class="card-header"><strong>{% trans "Current Assignments" %}</strong></div>
+                  <div class="card-header"><strong>{% trans "Affectations actuelles" %}</strong></div>
                   <div class="card-body">
                     <table id="user-assignments-table" class="table table-bordered w-100">
                       <thead>
                         <tr>
                           <th>{% trans "Type" %}</th>
-                          <th>{% trans "Value" %}</th>
+                          <th>{% trans "Valeur" %}</th>
                           <th class="text-center">{% trans "Action" %}</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {# Fill via AJAX from your existing endpoints #}
-                      </tbody>
+                      <tbody></tbody>
                     </table>
                   </div>
                 </div>
@@ -222,44 +266,103 @@
           <!-- Security -->
           <div class="tab-pane fade" id="tab-security" role="tabpanel">
             <div class="d-flex flex-wrap gap-2">
-              <button class="btn btn-warning" id="btn-reset-pwd">
-                <i class="fas fa-key mr-1"></i> {% trans "Reset Password" %}
+              <button class="btn btn-warning" id="btn-reset-pwd" type="button">
+                <i class="fas fa-key mr-1"></i> {% trans "Réinitialiser le mot de passe" %}
               </button>
-              <button class="btn btn-outline-warning" id="btn-app-token">
-                <i class="fas fa-shield-alt mr-1"></i> {% trans "Generate App Token" %}
+              <button class="btn btn-outline-warning" id="btn-app-token" type="button">
+                <i class="fas fa-shield-alt mr-1"></i> {% trans "Générer un jeton d'application" %}
               </button>
-              <button class="btn btn-danger ml-auto" id="btn-delete-user">
-                <i class="fas fa-trash mr-1"></i> {% trans "Delete User" %}
+              <button class="btn btn-danger ml-auto" id="btn-delete-user" type="button">
+                <i class="fas fa-trash mr-1"></i> {% trans "Supprimer l'utilisateur" %}
               </button>
             </div>
           </div>
 
           <!-- Signature -->
           <div class="tab-pane fade" id="tab-signature" role="tabpanel">
-            {# reuse your signature upload + table here (cleaned) #}
-            <div class="alert alert-info mb-2">
-              {% trans "Upload a PNG signature for this user." %}
-            </div>
-            <form id="uploadForm" enctype="multipart/form-data">
-              <div class="form-group">
-                <label for="imageUpload">{% trans "Choose a PNG file" %}</label>
-                <input type="file" class="form-control-file" id="imageUpload" accept="image/png">
-              </div>
-              <button type="button" class="btn btn-primary submit-signature">{% trans "Save Signature" %}</button>
-            </form>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="card card-outline card-secondary h-100 mb-0">
+                  <div class="card-header">
+                    <h3 class="card-title text-sm"><i class="fas fa-pen mr-1"></i> {% trans "Capturer la signature" %}</h3>
+                  </div>
+                  <div class="card-body">
+                    <ul class="nav nav-pills mb-3" id="signature-method-tabs" role="tablist">
+                      <li class="nav-item">
+                        <a class="nav-link active" id="method-draw-tab" data-toggle="pill" href="#method-draw" role="tab">
+                          <i class="fas fa-signature mr-1"></i> {% trans "Dessiner" %}
+                        </a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" id="method-upload-tab" data-toggle="pill" href="#method-upload" role="tab">
+                          <i class="fas fa-upload mr-1"></i> {% trans "Importer" %}
+                        </a>
+                      </li>
+                    </ul>
 
-            <hr>
-            <div class="form-group">
-              <label>{% trans "Preview" %}</label>
-              <img id="signatureImage" class="img-fluid" alt="Signature">
+                    <div class="tab-content">
+                      <!-- Draw -->
+                      <div class="tab-pane fade show active" id="method-draw" role="tabpanel">
+                        <div id="signature-pad-wrapper" class="border rounded bg-light p-1">
+                          {{ sig_form.signature }}
+                        </div>
+                        <div class="mt-2">
+                          <button type="button" class="btn btn-xs btn-outline-danger" id="btn-clear-sig">
+                            <i class="fas fa-eraser mr-1"></i> {% trans "Effacer le canevas" %}
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Upload -->
+                      <div class="tab-pane fade" id="method-upload" role="tabpanel">
+                        <div class="form-group mb-0">
+                          <label class="text-xs">{% trans "Choisir un fichier PNG ou JPG" %}</label>
+                          <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="sig-upload-input" accept="image/png,image/jpeg">
+                            <label class="custom-file-label" for="sig-upload-input">{% trans "Choisir le fichier" %}</label>
+                          </div>
+                          <small class="text-muted">{% trans "Le format PNG avec fond transparent est recommandé." %}</small>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="card-footer">
+                    <button type="button" class="btn btn-primary btn-block" id="btn-save-sig">
+                      <i class="fas fa-save mr-1"></i> {% trans "Enregistrer la signature" %}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="card card-outline card-secondary h-100 mb-0">
+                  <div class="card-header">
+                    <h3 class="card-title text-sm"><i class="fas fa-eye mr-1"></i> {% trans "Signature actuelle" %}</h3>
+                  </div>
+                  <div class="card-body text-center d-flex align-items-center justify-content-center"
+                       style="min-height:220px;border:1px dashed #dee2e6;background:#fff;">
+                    <div id="sig-preview-placeholder" class="text-muted">
+                      <i class="fas fa-image fa-3x mb-2 d-block"></i>
+                      {% trans "Aucune signature enregistrée" %}
+                    </div>
+                    <img id="sig-preview-display" src="" class="img-fluid" style="display:none;max-height:200px;" alt="Signature">
+                  </div>
+                  <div class="card-footer text-center">
+                    <small class="text-muted">{% trans "Dernière mise à jour" %}: <span id="sig-last-updated">-</span></small>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+
+        </div><!-- /tab-content -->
+      </div><!-- /modal-body -->
 
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
-          {% trans "Close" %}
+          {% trans "Fermer" %}
         </button>
       </div>
 
@@ -267,220 +370,499 @@
   </div>
 </div>
 
+<!-- Reset Password Modal -->
+<div class="modal fade" id="modal-password-reset" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="fas fa-key mr-2"></i>{% trans "Réinitialiser le mot de passe" %}</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="reset-initial-view">
+          <p class="mb-3">
+            {% trans "Vous êtes sur le point de réinitialiser le mot de passe pour :" %}<br>
+            <strong id="reset-user-name"></strong> (<span id="reset-user-username"></span>)
+          </p>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle mr-2"></i>
+            {% trans "Un nouveau mot de passe temporaire sécurisé sera généré et le mot de passe actuel de l'utilisateur sera mis à jour immédiatement." %}
+          </div>
+        </div>
+
+        <div id="reset-result-view" style="display:none;">
+          <div class="alert alert-success">
+            <i class="fas fa-check-circle mr-2"></i>
+            {% trans "Le mot de passe a été réinitialisé avec succès !" %}
+          </div>
+
+          <div class="form-group">
+            <label>{% trans "Nouveau mot de passe temporaire" %}</label>
+            <div class="input-group">
+              <input type="text" id="generated-pwd-input" class="form-control font-weight-bold" readonly>
+              <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="btn-copy-pwd">
+                  <i class="fas fa-copy mr-1"></i> {% trans "Copier" %}
+                </button>
+              </div>
+            </div>
+            <small class="text-danger">
+              {% trans "Veuillez copier ce mot de passe maintenant. Il ne sera plus affiché." %}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal" id="btn-reset-cancel">
+          {% trans "Annuler" %}
+        </button>
+        <button type="button" class="btn btn-warning" id="btn-confirm-reset">
+          {% trans "Générer le mot de passe" %}
+        </button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal" id="btn-reset-close" style="display:none;">
+          {% trans "Terminé" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script>
-  let selectedUserId = null;
+  {{ sig_form.media.js }}
+  <script>
+    let selectedUserId = null;
+    let selectedUserRow = null;
 
-  $(function () {
-    const table = $('#users-table').DataTable({
-      lengthChange: true,
-      ordering: false,
-      processing: true,
-      serverSide: true,
-      responsive: true,
-      ajax: {
-        url: '{% url "listeutilisateursResponse" %}',
-        type: 'POST',
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        beforeSend: function() { $('#data-table-wrapper .loading-spinner').show(); },
-        complete: function() { $('#data-table-wrapper .loading-spinner').hide(); }
-      },
-      columns: [
-        { data: 'id' },
-        {
-          data: null,
-          render: function(_, __, row){
-            const name = (row.first_name || '') + ' ' + (row.last_name || '');
-            return name.trim() || '-';
-          }
-        },
-        { data: 'username' },
-        { data: 'last_login' },
-        {
-          data: 'id',
-          className: 'text-center',
-          render: function (id, type, row) {
-            return `
-              <button class="btn btn-sm btn-outline-primary btn-manage" data-id="${id}">
-                <i class="fas fa-cog mr-1"></i> Manage
-              </button>
-            `;
-          }
-        }
-      ]
-    });
-
-    // Simple search input -> DataTables global search
-    $('#userSearch').on('keyup', function(){
-      table.search(this.value).draw();
-    });
-
-    $('#resetFilters').on('click', function(){
-      $('#userSearch').val('');
-      table.search('').draw();
-    });
-
-    // Manage button
-    $(document).on('click', '.btn-manage', function(){
-      selectedUserId = $(this).data('id');
-      $('#manageUserSubtitle').text('User ID: ' + selectedUserId);
-      $('#modal-user-manage').modal('show');
-      loadAssignments(selectedUserId);
-    });
-
-    $(document).on('click', '.btn-remove-assignment', function(){
-      if(confirm('{% trans "Are you sure you want to remove this assignment?" %}')){
-        const url = $(this).data('url');
-        $.get(url, function(resp){
-          if(resp.status === 200){
-            loadAssignments(selectedUserId);
-          } else {
-            alert('{% trans "Error removing assignment" %}');
-          }
-        });
+    function initSignaturePadIfNeeded() {
+      const $sig = $("#id_signature");
+      if ($sig.length && !$sig.data("jSignature")) {
+        $sig.jSignature({ height: 150, width: "100%" });
       }
-    });
+    }
 
-    // Create user form
-    $('#form-user-create').on('submit', function(e){
-      e.preventDefault();
-      $.ajax({
-        type: 'POST',
-        url: '{% url "addUser" %}',
-        data: $(this).serialize(),
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        success: function(){
-          $('#modal-user-create').modal('hide');
-          table.ajax.reload();
+    function resetSignaturePad() {
+      const $sig = $("#id_signature");
+      if ($sig.data("jSignature")) {
+        $sig.jSignature("reset");
+      }
+    }
+
+    function isSignatureEmpty() {
+      // base30 returns [format, dataString]
+      const data = $("#id_signature").jSignature("getData", "base30");
+      return !data || !data[1] || data[1].length === 0;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
         }
-      });
-    });
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
 
-    // Role / Warehouse forms should append selectedUserId in the payload
-    $('#form-role').on('submit', function(e){
-      e.preventDefault();
-      let data = $(this).serialize() + '&dataRow=' + selectedUserId;
-      $.ajax({
-        type: 'POST',
-        url: '{% url "affectationrole" %}',
-        data: data,
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        success: function(resp){ 
-          if(resp.status === 200) loadAssignments(selectedUserId);
-          else alert('Error updating role');
+    function loadSignature(userId) {
+      const placeholder = $('#sig-preview-placeholder');
+      const display = $('#sig-preview-display');
+      const updatedAt = $('#sig-last-updated');
+
+      placeholder.show();
+      display.hide().attr('src', '');
+      updatedAt.text('-');
+
+      $.get(`/accounts/getSignature/${userId}/`, function(resp) {
+        if (resp && resp.success && resp.base64_image) {
+          placeholder.hide();
+          display.attr('src', 'data:image/png;base64,' + resp.base64_image).show();
+          updatedAt.text(resp.updated_at || '-');
         }
+      }).fail(function() {
+        placeholder.show();
+        display.hide();
+        updatedAt.text('-');
       });
-    });
+    }
 
-    $('#form-entr').on('submit', function(e){
-      e.preventDefault();
-      let data = $(this).serialize() + '&dataRow=' + selectedUserId;
-      $.ajax({
-        type: 'POST',
-        url: '{% url "affectationentreprot" %}',
-        data: data,
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        success: function(resp){
-          if(resp.status === 200) loadAssignments(selectedUserId);
-          else alert('Error assigning warehouse');
-        }
-      });
-    });
+    function loadAssignments(userId) {
+      const tableBody = $('#user-assignments-table tbody');
+      tableBody.html('<tr><td colspan="3" class="text-center">{% trans "Chargement..." %}</td></tr>');
 
-    $('#form-ville').on('submit', function(e){
-      e.preventDefault();
-      let data = $(this).serialize() + '&dataRow=' + selectedUserId;
-      $.ajax({
-        type: 'POST',
-        url: '{% url "affectationville" %}',
-        data: data,
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        success: function(resp){
-          if(resp.status === 200) loadAssignments(selectedUserId);
-          else alert('Error assigning city');
-        }
-      });
-    });
+      const endpoints = [
+        { url: '/accounts/detailsAffectationRole/' + userId, type: '{% trans "Rôle" %}', idKey: 'id', valKey: 'role_name', delUrl: '/accounts/retireraffectationRole/' },
+        { url: '/accounts/detailsAffectationUtilisateur/' + userId, type: '{% trans "Entrepôt" %}', idKey: 'idaffectation_entrepot', valKey: 'entrepot__nomentrepot', delUrl: '/accounts/retireraffectationEntrepot/' },
+        { url: '/accounts/detailsAffectationLabo/' + userId, type: '{% trans "Laboratoire" %}', idKey: 'idAffectation', valKey: 'idLaboratoire__denominationLaboratoire', delUrl: '/accounts/retireraffectationLabo/' },
+        { url: '/accounts/detailsAffectationVille/' + userId, type: '{% trans "Ville" %}', idKey: 'idaffectation_ville', valKey: 'ville__nomville', delUrl: '/accounts/retireraffectationville/' }
+      ];
 
-    $('#form-labo').on('submit', function(e){
-      e.preventDefault();
-      let data = $(this).serialize() + '&dataRow=' + selectedUserId;
-      $.ajax({
-        type: 'POST',
-        url: '{% url "affectationlabo" %}',
-        data: data,
-        headers: {'X-CSRFToken': '{{ csrf_token }}'},
-        success: function(resp){
-          if(resp.status === 200) loadAssignments(selectedUserId);
-          else alert('Error assigning laboratory');
-        }
-      });
-    });
+      const promises = endpoints.map(ep => $.get(ep.url).then(
+        data => ({ ok: true, ep, payload: data }),
+        err  => ({ ok: false, ep, error: err })
+      ));
 
-    // Security actions
-    $('#btn-app-token').on('click', function(){
-      $.get('/accounts/createToken/' + selectedUserId);
-    });
+      Promise.all(promises).then(results => {
+        tableBody.empty();
+        const allData = [];
 
-    $('#btn-delete-user').on('click', function(){
-      $.get('/accounts/delete/' + selectedUserId);
-    });
-
-  });
-
-  function loadAssignments(userId) {
-    const tableBody = $('#user-assignments-table tbody');
-    tableBody.empty().append('<tr><td colspan="3" class="text-center">Loading...</td></tr>');
-
-    // We have 3 endpoints to fetch from
-    const endpoints = [
-      { url: '/accounts/detailsAffectationUtilisateur/' + userId, type: '{% trans "Warehouse" %}', idKey: 'idaffectation_entrepot', valKey: 'entrepot__nomentrepot', delUrl: '/accounts/retireraffectationEntrepot/' },
-      { url: '/accounts/detailsAffectationLabo/' + userId, type: '{% trans "Laboratory" %}', idKey: 'idAffectation', valKey: 'idLaboratoire__denominationLaboratoire', delUrl: '/accounts/retireraffectationLabo/' },
-      { url: '/accounts/detailsAffectationVille/' + userId, type: '{% trans "City" %}', idKey: 'idaffectation_ville', valKey: 'ville__nomville', delUrl: '/accounts/retireraffectationville/' }
-    ];
-
-    let promises = endpoints.map(ep => $.get(ep.url));
-
-    $.when(...promises).done(function(...responses) {
-      tableBody.empty();
-      let allData = [];
-      
-      // $.when logic for multiple arguments
-      endpoints.forEach((ep, index) => {
-          let resp = responses[index];
-          // if only one promise was used, resp would be [data, status, xhr]
-          // but here we always have 3.
-          const data = resp[0].data;
-          data.forEach(item => {
-              allData.push({
-                  type: ep.type,
-                  value: item[ep.valKey],
-                  id: item[ep.idKey],
-                  delUrl: ep.delUrl
-              });
+        results.forEach(r => {
+          if (!r.ok) return;
+          const list = (r.payload && r.payload.data) ? r.payload.data : [];
+          list.forEach(item => {
+            allData.push({
+              type: r.ep.type,
+              value: item[r.ep.valKey] ?? '-',
+              id: item[r.ep.idKey],
+              delUrl: r.ep.delUrl
+            });
           });
-      });
+        });
 
-      if (allData.length === 0) {
-        tableBody.append('<tr><td colspan="3" class="text-center">{% trans "No assignments found" %}</td></tr>');
-      } else {
+        if (allData.length === 0) {
+          tableBody.append('<tr><td colspan="3" class="text-center">{% trans "Aucune affectation trouvée" %}</td></tr>');
+          return;
+        }
+
         allData.forEach(item => {
+          const safeId = item.id ?? '';
           tableBody.append(`
             <tr>
               <td>${item.type}</td>
               <td>${item.value}</td>
               <td class="text-center">
-                <button class="btn btn-sm btn-danger btn-remove-assignment" data-url="${item.delUrl}${item.id}">
+                <button type="button" class="btn btn-sm btn-danger btn-remove-assignment" data-url="${item.delUrl}${safeId}">
                   <i class="fas fa-times"></i>
                 </button>
               </td>
             </tr>
           `);
         });
+      });
+    }
+
+    $(function () {
+      const table = $('#users-table').DataTable({
+        lengthChange: true,
+        ordering: false,
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/fr-FR.json' },
+        ajax: {
+          url: '{% url "listeutilisateursResponse" %}',
+          type: 'POST',
+          headers: {'X-CSRFToken': '{{ csrf_token }}'},
+          data: function(d) {
+            d.status = $('#statusFilter').val();
+            d.role = $('#roleFilter').val();
+          },
+          beforeSend: function() { $('#data-table-wrapper .loading-spinner').show(); },
+          complete: function() { $('#data-table-wrapper .loading-spinner').hide(); },
+          error: function(xhr) {
+            console.error('DataTable Error:', xhr);
+            alert('{% trans "Erreur lors du chargement des données utilisateurs." %}');
+          }
+        },
+        columns: [
+          { data: 'id' },
+          {
+            data: null,
+            render: function(_, __, row){
+              const name = ((row.first_name || '') + ' ' + (row.last_name || '')).trim();
+              return name || '-';
+            }
+          },
+          { data: 'username' },
+          { data: 'last_login' },
+          {
+            data: 'id',
+            className: 'text-center',
+            render: function (id) {
+              return `
+                <button type="button" class="btn btn-sm btn-outline-primary btn-manage" data-id="${id}">
+                  <i class="fas fa-cog mr-1"></i> {% trans "Gérer" %}
+                </button>
+              `;
+            }
+          }
+        ]
+      });
+
+      // Search
+      $('#userSearch').on('keyup', function(){ table.search(this.value).draw(); });
+
+      // Filters change
+      $('#statusFilter, #roleFilter').on('change', function(){
+        table.draw();
+      });
+
+      $('#resetFilters').on('click', function(){
+        $('#userSearch').val('');
+        $('#statusFilter').val('');
+        $('#roleFilter').val('');
+        table.search('').draw();
+      });
+
+      // Optional: if you want status/role filters to affect server-side results,
+      // you must pass them to server in ajax.data. Here we keep your original behavior.
+
+      // Open Manage modal
+      $(document).on('click', '.btn-manage', function(){
+        const tr = $(this).closest('tr');
+        selectedUserRow = table.row(tr).data();
+        selectedUserId = $(this).data('id');
+
+        $('#manageUserSubtitle').text('{% trans "ID Utilisateur" %}: ' + selectedUserId);
+
+        $('#detail-first-name').text(selectedUserRow.first_name || '-');
+        $('#detail-last-name').text(selectedUserRow.last_name || '-');
+        $('#detail-username').text(selectedUserRow.username || '-');
+        $('#detail-role').text(selectedUserRow.role__role || '-');
+        $('#detail-fonction').text(selectedUserRow.fonction || '-');
+        $('#detail-poste').text(selectedUserRow.poste || '-');
+        $('#detail-is-admin').html(selectedUserRow.is_admin ? '<span class="badge badge-success">Oui</span>' : '<span class="badge badge-secondary">Non</span>');
+        $('#detail-is-staff').html(selectedUserRow.is_staff ? '<span class="badge badge-success">Oui</span>' : '<span class="badge badge-secondary">Non</span>');
+        $('#detail-last-login').text(selectedUserRow.last_login || '-');
+
+        $('#modal-user-manage .nav-link').first().tab('show');
+        $('#modal-user-manage').modal('show');
+
+        loadAssignments(selectedUserId);
+        loadSignature(selectedUserId);
+
+        // don't reset here if you want to keep existing drawn signature while editing
+        initSignaturePadIfNeeded();
+        resetSignaturePad();
+      });
+
+      // Ensure signature pad initializes once modal is visible (width correct)
+      $('#modal-user-manage').on('shown.bs.modal', function(){
+        initSignaturePadIfNeeded();
+      });
+
+      // When Signature tab is shown
+      $('a[href="#tab-signature"]').on('shown.bs.tab', function () {
+        initSignaturePadIfNeeded();
+        loadSignature(selectedUserId);
+      });
+
+      // Reset Password open
+      $('#btn-reset-pwd').on('click', function() {
+        if (!selectedUserRow || !selectedUserId) return;
+
+        const fullName = ((selectedUserRow.first_name || '') + ' ' + (selectedUserRow.last_name || '')).trim();
+        $('#reset-user-name').text(fullName || '-');
+        $('#reset-user-username').text(selectedUserRow.username || '-');
+
+        $('#reset-initial-view').show();
+        $('#reset-result-view').hide();
+        $('#btn-confirm-reset').show().prop('disabled', false).html('{% trans "Générer le mot de passe" %}');
+        $('#btn-reset-cancel').show();
+        $('#btn-reset-close').hide();
+        $('#generated-pwd-input').val('');
+
+        $('#modal-password-reset').modal('show');
+      });
+
+      // Confirm reset
+      $('#btn-confirm-reset').on('click', function() {
+        const btn = $(this);
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> {% trans "Traitement..." %}');
+
+        $.ajax({
+          url: `/accounts/reset-password/${selectedUserId}/`,
+          type: 'POST',
+          headers: {'X-CSRFToken': '{{ csrf_token }}'},
+          success: function(resp) {
+            const pwd = resp && (resp.password || resp.temp_password || resp.generated_password);
+            if (resp && resp.success && pwd) {
+              $('#generated-pwd-input').val(pwd);
+              $('#reset-initial-view').hide();
+              $('#reset-result-view').fadeIn();
+              $('#btn-confirm-reset').hide();
+              $('#btn-reset-cancel').hide();
+              $('#btn-reset-close').show();
+            } else {
+              alert('{% trans "Erreur" %}: ' + ((resp && resp.error) ? resp.error : '{% trans "Réinitialisation impossible." %}'));
+            }
+          },
+          error: function(xhr) {
+            const r = xhr.responseJSON;
+            alert('{% trans "Erreur" %}: ' + (r && r.error ? r.error : '{% trans "Une erreur inconnue est survenue." %}'));
+          },
+          complete: function() {
+            btn.prop('disabled', false).html('{% trans "Générer le mot de passe" %}');
+          }
+        });
+      });
+
+      // Copy password
+      $('#btn-copy-pwd').on('click', async function() {
+        const pwd = $('#generated-pwd-input').val();
+        if (!pwd) return;
+
+        const ok = await copyToClipboard(pwd);
+        if (!ok) {
+          alert('{% trans "Impossible de copier automatiquement. Veuillez copier manuellement." %}');
+          return;
+        }
+
+        const btn = $(this);
+        const original = btn.html();
+        btn.removeClass('btn-outline-secondary').addClass('btn-success')
+          .html('<i class="fas fa-check mr-1"></i> {% trans "Copié !" %}');
+        setTimeout(() => {
+          btn.removeClass('btn-success').addClass('btn-outline-secondary').html(original);
+        }, 1500);
+      });
+
+      // Remove assignment
+      $(document).on('click', '.btn-remove-assignment', function(){
+        if(!confirm('{% trans "Êtes-vous sûr de vouloir supprimer cette affectation ?" %}')) return;
+        const url = $(this).data('url');
+        $.get(url, function(resp){
+          if(resp && resp.status === 200){
+            loadAssignments(selectedUserId);
+          } else {
+            alert('{% trans "Erreur lors de la suppression de l’affectation." %}');
+          }
+        }).fail(function(){
+          alert('{% trans "Erreur lors de la suppression de l’affectation." %}');
+        });
+      });
+
+      // Create user
+      $('#form-user-create').on('submit', function(e){
+        e.preventDefault();
+        $.ajax({
+          type: 'POST',
+          url: '{% url "addUser" %}',
+          data: $(this).serialize(),
+          headers: {'X-CSRFToken': '{{ csrf_token }}'},
+          success: function(){
+            $('#modal-user-create').modal('hide');
+            table.ajax.reload(null, false);
+          },
+          error: function(){
+            alert('{% trans "Erreur lors de la création de l’utilisateur." %}');
+          }
+        });
+      });
+
+      // Assignment forms
+      function postAssign(formId, urlName, errorMsg){
+        $(formId).on('submit', function(e){
+          e.preventDefault();
+          if(!selectedUserId) return;
+          const data = $(this).serialize() + '&dataRow=' + selectedUserId;
+          $.ajax({
+            type: 'POST',
+            url: urlName,
+            data,
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(resp){
+              if(resp && resp.status === 200) loadAssignments(selectedUserId);
+              else alert(errorMsg);
+            },
+            error: function(){ alert(errorMsg); }
+          });
+        });
       }
+
+      postAssign('#form-role', '{% url "affectationrole" %}', '{% trans "Erreur lors de la mise à jour du rôle." %}');
+      postAssign('#form-entr', '{% url "affectationentreprot" %}', '{% trans "Erreur lors de l’affectation de l’entrepôt." %}');
+      postAssign('#form-ville', '{% url "affectationville" %}', '{% trans "Erreur lors de l’affectation de la ville." %}');
+      postAssign('#form-labo', '{% url "affectationlabo" %}', '{% trans "Erreur lors de l’affectation du laboratoire." %}');
+
+      // Security actions
+      $('#btn-app-token').on('click', function(){
+        if(!selectedUserId) return;
+        $.get('/accounts/createToken/' + selectedUserId);
+      });
+
+      $('#btn-delete-user').on('click', function(){
+        if(!selectedUserId) return;
+        $.get('/accounts/delete/' + selectedUserId);
+      });
+
+      // Signature actions
+      $('#btn-clear-sig').on('click', function(){
+        initSignaturePadIfNeeded();
+        resetSignaturePad();
+      });
+
+      $('#sig-upload-input').on('change', function(){
+        const fileName = (this.value || '').split('\\').pop();
+        $(this).next('.custom-file-label').text(fileName || '{% trans "Choisir le fichier" %}');
+      });
+
+      $('#btn-save-sig').on('click', function(){
+        if(!selectedUserId) return;
+
+        const activeTab = $('#signature-method-tabs .nav-link.active').attr('href');
+        const formData = new FormData();
+        formData.append('dataRow', selectedUserId);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        if (activeTab === '#method-draw') {
+          initSignaturePadIfNeeded();
+          if (isSignatureEmpty()) {
+            alert('{% trans "Veuillez d’abord dessiner une signature." %}');
+            return;
+          }
+          const sigData = $("#id_signature").jSignature("getData", "base30");
+          formData.append('signature', JSON.stringify(sigData));
+        } else {
+          const fileInput = $('#sig-upload-input')[0];
+          if (!fileInput.files || fileInput.files.length === 0) {
+            alert('{% trans "Veuillez sélectionner un fichier à télécharger." %}');
+            return;
+          }
+          formData.append('image', fileInput.files[0]);
+        }
+
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> {% trans "Enregistrement..." %}');
+
+        $.ajax({
+          url: '{% url "ajoutSignature" %}',
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function(resp){
+            alert(resp && resp.message ? resp.message : '{% trans "Signature enregistrée." %}');
+            loadSignature(selectedUserId);
+
+            if (activeTab === '#method-draw') resetSignaturePad();
+            else {
+              $('#sig-upload-input').val('');
+              $('#sig-upload-input').next('.custom-file-label').text('{% trans "Choisir le fichier" %}');
+            }
+          },
+          error: function(xhr){
+            const err = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : '{% trans "Erreur inconnue" %}';
+            alert('{% trans "Erreur" %}: ' + err);
+          },
+          complete: function(){
+            btn.prop('disabled', false).html(originalHtml);
+          }
+        });
+      });
+
     });
-  }
-</script>
+  </script>
 {% endblock %}

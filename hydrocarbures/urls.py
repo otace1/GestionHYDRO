@@ -32,6 +32,7 @@ if settings.DEBUG:
                       # Api
                       path('api/', include("api.urls")),
                       # path('verification/', include("verification.urls")),
+                      path('settings/', include("app_settings.urls")),
 
                       # Progress Bar
                       path('celery-progress/', include('celery_progress.urls')),
@@ -55,6 +56,7 @@ else:
 
         # Api
         path('api/', include("api.urls")),
+        path('settings/', include("app_settings.urls")),
         # path('verification/', include("verification.urls")),
 
         # Progress Bar

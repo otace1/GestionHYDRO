@@ -11,11 +11,13 @@ urlpatterns = [
     path('detailsAffectationUtilisateur/<int:pk>', views.detailsAffectationUtilisateur, name='detailsAffectationUtilisateur'),
     path('detailsAffectationLabo/<int:pk>', views.detailsAffectationLabo, name='detailsAffectationLabo'),
     path('detailsAffectationVille/<int:pk>', views.detailsAffectationVille, name='detailsAffectationVille'),
+    path('detailsAffectationRole/<int:pk>', views.detailsAffectationRole, name='detailsAffectationRole'),
 
     path('detailsaffectation/<int:pk>', views.detailsaffectation, name='detailsaffectation'),
     path('retireraffectationEntrepot/<int:pk>', views.retireraffectationEntrepot, name='retireraffectationEntrepot'),
     path('retireraffectationville/<int:pk>', views.retireraffectationville, name='retireraffectationville'),
     path('retireraffectationLabo/<int:pk>', views.retireraffectationLabo, name='retireraffectationLabo'),
+    path('retireraffectationRole/<int:pk>', views.retireraffectationRole, name='retireraffectationRole'),
     path('affectation_entrepot/', views.affectationentreprot, name='affectationentreprot'),
     path('affectation_laboratoire/', views.affectationlabo, name='affectationlabo'),
     path('affectation_role/', views.affectationrole, name='affectationrole'),
@@ -23,13 +25,13 @@ urlpatterns = [
     path('affectation_signature/', views.affectation_signature, name='affectation_signature'),
     path('usersadd/', views.ajoututilisateurs, name='usersadd'),
     path('delete/<int:pk>', views.effacerutilisateurs, name='delete_user'),
+    path('reset-password/<int:pk>/', views.reset_password, name='reset_password'),
     path('edit/<int:pk>', views.editionutilisateurs, name='edit'),
 
 
     path('addUser/', views.addUser, name='addUser'),
     path('ajoutSignature/', views.ajoutSignature, name='ajoutSignature'),
-    path('listeSignature/<int:pk>', views.listeSignature, name='listeSignature'),
-    path('getSignature/<int:pk>', views.getSignature, name='getSignature'),
+    path('getSignature/<int:pk>/', views.getSignature, name='getSignature'),
 
 
     # Signature
